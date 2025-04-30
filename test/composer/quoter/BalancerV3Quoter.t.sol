@@ -41,7 +41,7 @@ contract BalancerV3QuoterTest is BaseTest {
     function setUp() public virtual {
         string memory chainName = Chains.BASE;
 
-        _init(chainName, forkBlock);
+        _init(chainName, forkBlock, true);
 
         WETH = chain.getTokenAddress(Tokens.WETH);
         cbETH = chain.getTokenAddress(Tokens.CBETH);

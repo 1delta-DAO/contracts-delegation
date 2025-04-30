@@ -1,4 +1,3 @@
-
 export const templateAaveV3 = (addressContants: string, switchCaseContent: string) => `
 // SPDX-License-Identifier: BUSL-1.1
 
@@ -37,7 +36,7 @@ contract AaveV3FlashLoanCallback is Masks, DeltaErrors {
             // but ONLY if the caller address is
             // an Aave V3 type lending pool
             if xor(address(), initiator) {
-                mstore(0, INVALID_CALLER)
+                mstore(0, INVALID_INITIATOR)
                 revert(0, 0x4)
             }
             // Slice the original caller off the beginnig of the calldata
@@ -61,4 +60,4 @@ contract AaveV3FlashLoanCallback is Masks, DeltaErrors {
     function _deltaComposeInternal(address callerAddress, uint256 offset, uint256 length) internal virtual {}
 }
 
-`
+`;

@@ -1,16 +1,16 @@
-import { AAVE_FORK_POOL_DATA, AAVE_V2_LENDERS, AAVE_V3_LENDERS, MORPHO_BLUE_POOL_DATA } from "@1delta/asset-registry";
-import { getAddress } from "ethers/lib/utils";
+import {AAVE_FORK_POOL_DATA, AAVE_V2_LENDERS, AAVE_V3_LENDERS, MORPHO_BLUE_POOL_DATA} from "@1delta/asset-registry";
+import {getAddress} from "ethers/lib/utils";
 import * as fs from "fs";
-import { templateAaveV2 } from "./templates/flashLoan/aaveV2Callback";
-import { templateAaveV3 } from "./templates/flashLoan/aaveV3Callback";
-import { templateFlashLoan } from "./templates/flashLoan/flashLoanCallbacks.ts";
-import { templateMorphoBlue } from "./templates/flashLoan/morphoCallback";
-import { templateBalancerV2 } from "./templates/flashLoan/balancerV2Callback";
-import { templateComposer } from "./templates/composer";
-import { CREATE_CHAIN_IDS, getChainKey, toCamelCaseWithFirstUpper } from "./config";
-import { templateUniversalFlashLoan } from "./templates/flashLoan/universalFlashLoan";
-import { templateBalancerV2Trigger } from "./templates/flashLoan/balancerV2Trigger";
-import { BALANCER_V2_FORKS, FLASH_LOAN_IDS } from "@1delta/dex-registry";
+import {templateAaveV2} from "./templates/flashLoan/aaveV2Callback";
+import {templateAaveV3} from "./templates/flashLoan/aaveV3Callback";
+import {templateFlashLoan} from "./templates/flashLoan/flashLoanCallbacks.ts";
+import {templateMorphoBlue} from "./templates/flashLoan/morphoCallback";
+import {templateBalancerV2} from "./templates/flashLoan/balancerV2Callback";
+import {templateComposer} from "./templates/composer";
+import {CREATE_CHAIN_IDS, getChainKey, toCamelCaseWithFirstUpper} from "./config";
+import {templateUniversalFlashLoan} from "./templates/flashLoan/universalFlashLoan";
+import {templateBalancerV2Trigger} from "./templates/flashLoan/balancerV2Trigger";
+import {BALANCER_V2_FORKS, FLASH_LOAN_IDS} from "@1delta/dex-registry";
 
 /** constant for the head part */
 function createConstant(pool: string, lender: string) {
@@ -23,9 +23,17 @@ function createCase(lender: string, lenderId: string) {
 }
 
 /** switch-case entry for flash loan that validates a caller */
-function createCaseSolo(lender: string) {
-    return `    if xor(caller(), ${lender}) {
-                    mstore(0, INVALID_CALLER)
+function createCaseSolo(lender: string, lenderId: string) {
+    return `
+    switch and(UINT8_MASK, shr(88, firstWord))
+            case ${lenderId} { 
+            if xor(caller(), ${lender}) {
+                        mstore(0, INVALID_CALLER)
+                        revert(0, 0x4)
+                    }  
+            }
+        default{
+                    mstore(0, INVALID_FLASH_LOAN)
                     revert(0, 0x4)
                 }`;
 }
@@ -95,7 +103,7 @@ function splitIntoGroups(numbers: number[], splits = 4): number[][] {
 }
 
 function generateSwitchCaseStructure(entities: FlashLoanIdData[]): string {
-    const groups = splitIntoGroups(entities.map(({ entityId }) => Number(entityId)));
+    const groups = splitIntoGroups(entities.map(({entityId}) => Number(entityId)));
 
     // Create map for quick entityName lookup
     const entityMap = new Map<string, string>();
@@ -247,12 +255,12 @@ async function main() {
         lenderIdsAaveV2 = lenderIdsAaveV2.sort((a, b) => (Number(a.entityId) < Number(b.entityId) ? -1 : 1));
 
         if (lenderIdsAaveV2.length === 1) {
-            const { pool, entityName } = lenderIdsAaveV2[0];
+            const {pool, entityName, entityId} = lenderIdsAaveV2[0];
             constantsDataV2 += createConstant(pool, entityName);
-            switchCaseContentV2 += createCaseSolo(entityName);
+            switchCaseContentV2 += createCaseSolo(entityName, entityId);
         } else {
             switchCaseContentV2 += multiSwitchCaseHead;
-            lenderIdsAaveV2.forEach(({ pool, entityName, entityId }) => {
+            lenderIdsAaveV2.forEach(({pool, entityName, entityId}) => {
                 constantsDataV2 += createConstant(pool, entityName);
                 switchCaseContentV2 += createCase(entityName, entityId);
             });
@@ -266,19 +274,19 @@ async function main() {
         let switchCaseContentV3 = ``;
         lenderIdsAaveV3 = lenderIdsAaveV3.sort((a, b) => (Number(a.entityId) < Number(b.entityId) ? -1 : 1));
         if (lenderIdsAaveV3.length === 1) {
-            const { pool, entityName } = lenderIdsAaveV3[0];
+            const {pool, entityName, entityId} = lenderIdsAaveV3[0];
             constantsDataV3 += createConstant(pool, entityName);
-            switchCaseContentV3 += createCaseSolo(entityName);
+            switchCaseContentV3 += createCaseSolo(entityName, entityId);
         } else if (lenderIdsAaveV3.length <= 5) {
             switchCaseContentV3 += multiSwitchCaseHead;
-            lenderIdsAaveV3.forEach(({ pool, entityName, entityId }) => {
+            lenderIdsAaveV3.forEach(({pool, entityName, entityId}) => {
                 constantsDataV3 += createConstant(pool, entityName);
                 switchCaseContentV3 += createCase(entityName, entityId);
             });
             switchCaseContentV3 += multiSwitchCaseEnd;
         } else {
             // create the constants for all
-            lenderIdsAaveV3.forEach(({ pool, entityName }) => {
+            lenderIdsAaveV3.forEach(({pool, entityName}) => {
                 constantsDataV3 += createConstant(pool, entityName);
             });
             // now create the nested switch case
@@ -299,12 +307,12 @@ async function main() {
         let switchCaseContentMorpho = ``;
         lenderIdsMorphoBlue = lenderIdsMorphoBlue.sort((a, b) => (Number(a.entityId) < Number(b.entityId) ? -1 : 1));
         if (lenderIdsMorphoBlue.length === 1) {
-            const { pool, entityName } = lenderIdsMorphoBlue[0];
+            const {pool, entityName, entityId} = lenderIdsMorphoBlue[0];
             constantsDataMorpho += createConstant(pool, entityName);
-            switchCaseContentMorpho += createCaseSolo(entityName);
+            switchCaseContentMorpho += createCaseSolo(entityName, entityId);
         } else {
             switchCaseContentMorpho += multiSwitchCaseHead;
-            lenderIdsMorphoBlue.forEach(({ pool, entityName, entityId }) => {
+            lenderIdsMorphoBlue.forEach(({pool, entityName, entityId}) => {
                 constantsDataMorpho += createConstant(pool, entityName);
                 switchCaseContentMorpho += createCase(entityName, entityId);
             });
@@ -318,9 +326,9 @@ async function main() {
         let switchCaseContentBalancerV2Trigger = ``;
         poolIdsBalancerV2 = poolIdsBalancerV2.sort((a, b) => (Number(a.entityId) < Number(b.entityId) ? -1 : 1));
         if (poolIdsBalancerV2.length === 1) {
-            const { pool, entityName } = poolIdsBalancerV2[0];
+            const {pool, entityName, entityId} = poolIdsBalancerV2[0];
             constantsDataBalancerV2 += createConstant(pool, entityName);
-            switchCaseContentBalancerV2 += createCaseSolo(entityName);
+            switchCaseContentBalancerV2 += createCaseSolo(entityName, entityId);
             switchCaseContentBalancerV2Trigger += createCaseSoloTriggerBalancerV2(entityName);
         } else {
             switchCaseContentBalancerV2 += multiSwitchCaseHead;
@@ -330,7 +338,7 @@ async function main() {
                             switch and(UINT8_MASK, shr(104, slice))
 
                             `;
-            poolIdsBalancerV2.forEach(({ pool, entityName, entityId }) => {
+            poolIdsBalancerV2.forEach(({pool, entityName, entityId}) => {
                 constantsDataBalancerV2 += createConstant(pool, entityName);
                 switchCaseContentBalancerV2 += createCase(entityName, entityId);
                 switchCaseContentBalancerV2Trigger += createCaseTriggerBalancerV2(entityName, entityId);
@@ -342,7 +350,7 @@ async function main() {
         /** Write files */
 
         const flashLoanCallbackDir = `./contracts/1delta/composer/chains/${key}/flashLoan/callbacks/`;
-        fs.mkdirSync(flashLoanCallbackDir, { recursive: true });
+        fs.mkdirSync(flashLoanCallbackDir, {recursive: true});
 
         if (lenderIdsAaveV2.length > 0) {
             const filePathV2 = flashLoanCallbackDir + "AaveV2Callback.sol";

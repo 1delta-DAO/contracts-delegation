@@ -26,7 +26,7 @@ contract Permit2TransferTest is BaseTest, DeltaErrors {
     function setUp() public virtual {
         string memory chainName = Chains.BASE;
 
-        _init(chainName, forkBlock);
+        _init(chainName, forkBlock, true);
         blockTimestamp = vm.getBlockTimestamp();
         vm.warp(blockTimestamp);
 

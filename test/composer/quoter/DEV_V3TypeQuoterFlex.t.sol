@@ -39,7 +39,7 @@
 //     function setUp() public virtual {
 //         string memory chainName = Chains.TAIKO_ALETHIA;
 
-//         _init(chainName, forkBlock);
+//         _init(chainName, forkBlock, true);
 
 //         // WETH = chain.getTokenAddress(Tokens.WETH);
 //         // USDC = chain.getTokenAddress(Tokens.USDC);

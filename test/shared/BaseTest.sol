@@ -17,7 +17,7 @@ contract BaseTest is Test {
      * Some RPCs need to be hand-picked to allow forking older blocks,
      * add robust RPC urls in the constructor
      */
-    mapping(string => string) rpcOverrides;
+    mapping(string => string) internal rpcOverrides;
 
     constructor() Test() {
         rpcOverrides[Chains.ARBITRUM_ONE] = "https://arbitrum.drpc.org";
@@ -28,7 +28,7 @@ contract BaseTest is Test {
     /// @notice Initialize the chain for the test
     /// @dev The chainName must be a valid chain name in the Chains library
     /// @param chainName The name of the chain to initialize
-    function _init(string memory chainName, uint256 blockNumber) internal {
+    function _init(string memory chainName, uint256 blockNumber, bool fork) internal {
         chainFactory = new ChainFactory();
         chain = chainFactory.getChain(chainName);
 
@@ -44,11 +44,13 @@ contract BaseTest is Test {
         if (bytes(overrideRpc).length > 0) {
             rpcUrl = overrideRpc;
         }
-        if (blockNumber == 0) {
-            // this means the latest block
-            vm.createSelectFork(rpcUrl);
-        } else {
-            vm.createSelectFork(rpcUrl, blockNumber);
+        if (fork) {
+            if (blockNumber == 0) {
+                // this means the latest block
+                vm.createSelectFork(rpcUrl);
+            } else {
+                vm.createSelectFork(rpcUrl, blockNumber);
+            }
         }
     }
 

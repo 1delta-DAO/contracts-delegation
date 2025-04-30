@@ -34,8 +34,16 @@ contract AaveV2FlashLoanCallback is Masks, DeltaErrors {
             // validate caller
             // - extract id from params
             let firstWord := calldataload(calldataOffset)
-            if xor(caller(), AAVE_V2) {
-                mstore(0, INVALID_CALLER)
+
+            switch and(UINT8_MASK, shr(88, firstWord))
+            case 0 {
+                if xor(caller(), AAVE_V2) {
+                    mstore(0, INVALID_CALLER)
+                    revert(0, 0x4)
+                }
+            }
+            default {
+                mstore(0, INVALID_FLASH_LOAN)
                 revert(0, 0x4)
             }
             // We require to self-initiate

@@ -1,4 +1,4 @@
-import { Chain, CHAIN_INFO } from "@1delta/asset-registry";
+import {Chain, CHAIN_INFO} from "@1delta/asset-registry";
 
 export const CREATE_CHAIN_IDS = [
     Chain.ARBITRUM_ONE,
@@ -18,34 +18,24 @@ export const CREATE_CHAIN_IDS = [
     Chain.OP_MAINNET,
     Chain.SCROLL,
     Chain.LINEA,
-]
+];
 
 export function sortForks<T>(arr: T[], field: keyof T) {
+    let unis: T[] = [];
+    let sushis: T[] = [];
+    let pancakes: T[] = [];
+    let rest: T[] = [];
 
-    let unis: T[] = []
-    let sushis: T[] = []
-    let pancakes: T[] = []
-    let rest: T[] = []
-
-    arr.forEach(a => {
+    arr.forEach((a) => {
         if (String(a[field]).includes("UNISWAP")) {
-            unis.push(a)
-        } else
-            if (String(a[field]).includes("SUSHI")) {
-                sushis.push(a)
-            } else
-                if (String(a[field]).includes("PANCAKE")) {
-                    pancakes.push(a)
-                } else
-                    rest.push(a)
-
-    })
-    return [
-        ...unis,
-        ...sushis,
-        ...pancakes,
-        ...rest
-    ]
+            unis.push(a);
+        } else if (String(a[field]).includes("SUSHI")) {
+            sushis.push(a);
+        } else if (String(a[field]).includes("PANCAKE")) {
+            pancakes.push(a);
+        } else rest.push(a);
+    });
+    return [...unis, ...sushis, ...pancakes, ...rest];
 }
 
 export function toCamelCaseWithFirstUpper(str: string) {
@@ -53,4 +43,5 @@ export function toCamelCaseWithFirstUpper(str: string) {
     return camel.charAt(0).toUpperCase() + camel.slice(1);
 }
 
-export const getChainKey = (chainId: string) => CHAIN_INFO[chainId].key!
+export const getChainKey = (chainId: string) => CHAIN_INFO[chainId].key!;
+export const getChainEnum = (chainId: string) => CHAIN_INFO[chainId].enum!;

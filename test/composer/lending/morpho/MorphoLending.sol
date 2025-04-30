@@ -35,7 +35,7 @@ contract MorphoBlueTest is BaseTest {
     function setUp() public virtual {
         string memory chainName = Chains.BASE;
 
-        _init(chainName, forkBlock);
+        _init(chainName, forkBlock, true);
 
         oneD = ComposerPlugin.getComposer(chainName);
         // initialize the addresses

@@ -30,7 +30,7 @@ contract ERC4626Test is BaseTest {
         // initialize the chain
         string memory chainName = Chains.BASE;
 
-        _init(chainName, forkBlock);
+        _init(chainName, forkBlock, true);
 
         USDC = chain.getTokenAddress(Tokens.USDC);
 

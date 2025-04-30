@@ -33,8 +33,16 @@ contract AaveV3FlashLoanCallback is Masks, DeltaErrors {
             // validate caller
             // - extract id from params
             let firstWord := calldataload(196)
-            if xor(caller(), AAVE_V3) {
-                mstore(0, INVALID_CALLER)
+
+            switch and(UINT8_MASK, shr(88, firstWord))
+            case 0 {
+                if xor(caller(), AAVE_V3) {
+                    mstore(0, INVALID_CALLER)
+                    revert(0, 0x4)
+                }
+            }
+            default {
+                mstore(0, INVALID_FLASH_LOAN)
                 revert(0, 0x4)
             }
             // We require to self-initiate
@@ -42,7 +50,7 @@ contract AaveV3FlashLoanCallback is Masks, DeltaErrors {
             // but ONLY if the caller address is
             // an Aave V3 type lending pool
             if xor(address(), initiator) {
-                mstore(0, INVALID_CALLER)
+                mstore(0, INVALID_INITIATOR)
                 revert(0, 0x4)
             }
             // Slice the original caller off the beginnig of the calldata
