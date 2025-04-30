@@ -63,7 +63,7 @@ contract AaveV3FlashLoanCallbackTest is BaseTest, DeltaErrors {
 
     function test_wrongCaller_revert() public {
         for (uint256 i = 0; i < validPools.length; i++) {
-            bytes memory params = CalldataLib.encodeFlashLoan(USDC, 1e6, address(mockPool), uint8(2), uint8(0), "");
+            bytes memory params = CalldataLib.encodeFlashLoan(USDC, 1e6, address(mockPool), uint8(2), uint8(validPools[0].poolId), "");
 
             vm.prank(user);
             vm.expectRevert(DeltaErrors.INVALID_CALLER);

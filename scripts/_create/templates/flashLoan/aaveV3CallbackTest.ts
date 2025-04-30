@@ -88,7 +88,7 @@ ${tokenDeclarations}
         for (uint256 i = 0; i < validPools.length; i++) {
             bytes memory params = CalldataLib.encodeFlashLoan(${
                 uniqueTokens.values().next().value || "address(0)"
-            }, 1e6, address(mockPool), uint8(2), uint8(0), "");
+            }, 1e6, address(mockPool), uint8(2), uint8(validPools[0].poolId), "");
 
             vm.prank(user);
             vm.expectRevert(DeltaErrors.INVALID_CALLER);
