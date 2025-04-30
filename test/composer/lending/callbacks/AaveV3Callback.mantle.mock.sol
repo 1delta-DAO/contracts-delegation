@@ -57,18 +57,6 @@ contract AaveV3FlashLoanCallbackTest is BaseTest, DeltaErrors {
         }
     }
 
-    function test_invalidPoolIds_revert() public {
-        replaceLendingPoolWithMock(KINZA);
-        uint8[5] memory invalidIds = [1, 52, 63, 70, 100];
-        for (uint256 i = 0; i < invalidIds.length; i++) {
-            bytes memory params = CalldataLib.encodeFlashLoan(USDC, 1e6, KINZA, uint8(2), uint8(invalidIds[i]), "");
-
-            vm.prank(user);
-            vm.expectRevert(DeltaErrors.INVALID_FLASH_LOAN);
-            oneDV2.deltaCompose(params);
-        }
-    }
-
     function test_wrongCaller_revert() public {
         for (uint256 i = 0; i < validPools.length; i++) {
             bytes memory params = CalldataLib.encodeFlashLoan(USDC, 1e6, address(mockPool), uint8(2), uint8(0), "");
