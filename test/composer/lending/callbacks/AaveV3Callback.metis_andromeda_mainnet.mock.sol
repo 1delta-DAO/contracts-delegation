@@ -17,7 +17,7 @@ contract AaveV3FlashLoanCallbackTest is BaseTest, DeltaErrors {
 
     address private AAVE_V3;
 
-    address private USDC;
+    address private WETH;
 
     struct PoolCase {
         uint8 poolId;
@@ -59,7 +59,7 @@ contract AaveV3FlashLoanCallbackTest is BaseTest, DeltaErrors {
 
     function test_wrongCaller_revert() public {
         for (uint256 i = 0; i < validPools.length; i++) {
-            bytes memory params = CalldataLib.encodeFlashLoan(USDC, 1e6, address(mockPool), uint8(2), uint8(0), "");
+            bytes memory params = CalldataLib.encodeFlashLoan(WETH, 1e6, address(mockPool), uint8(2), uint8(0), "");
 
             vm.prank(user);
             vm.expectRevert(DeltaErrors.INVALID_CALLER);
@@ -75,7 +75,7 @@ contract AaveV3FlashLoanCallbackTest is BaseTest, DeltaErrors {
 
             vm.prank(user);
             vm.expectRevert(DeltaErrors.INVALID_INITIATOR);
-            IAavePool(pc.poolAddr).flashLoanSimple(address(oneDV2), USDC, 1e6, abi.encodePacked(address(user), pc.poolId), 0);
+            IAavePool(pc.poolAddr).flashLoanSimple(address(oneDV2), WETH, 1e6, abi.encodePacked(address(user), pc.poolId), 0);
         }
     }
 
@@ -85,7 +85,7 @@ contract AaveV3FlashLoanCallbackTest is BaseTest, DeltaErrors {
         for (uint256 i = 0; i < validPools.length; i++) {
             if (poolId == validPools[i].poolId) return;
         }
-        bytes memory params = CalldataLib.encodeFlashLoan(USDC, 1e6, AAVE_V3, uint8(2), uint8(poolId), "");
+        bytes memory params = CalldataLib.encodeFlashLoan(WETH, 1e6, AAVE_V3, uint8(2), uint8(poolId), "");
         vm.prank(user);
         vm.expectRevert(DeltaErrors.INVALID_FLASH_LOAN);
         oneDV2.deltaCompose(params);
@@ -96,15 +96,15 @@ contract AaveV3FlashLoanCallbackTest is BaseTest, DeltaErrors {
         AAVE_V3 = chain.getLendingController(Lenders.AAVE_V3);
 
         // Get token addresses
-        USDC = chain.getTokenAddress(Tokens.USDC);
+        WETH = chain.getTokenAddress(Tokens.WETH);
     }
 
     function populateValidPools() internal {
-        validPools.push(PoolCase({poolId: 0, poolAddr: AAVE_V3, asset: USDC}));
+        validPools.push(PoolCase({poolId: 0, poolAddr: AAVE_V3, asset: WETH}));
     }
 
     function mockERC20FunctionsForAllTokens() internal {
-        mockERC20Functions(USDC);
+        mockERC20Functions(WETH);
     }
 
     function mockERC20Functions(address token) internal {

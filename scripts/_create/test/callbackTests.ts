@@ -1,4 +1,4 @@
-import {AAVE_FORK_POOL_DATA, AAVE_V3_LENDERS} from "@1delta/asset-registry";
+import {AAVE_FORK_POOL_DATA, AAVE_V3_LENDERS, Chain} from "@1delta/asset-registry";
 import {FLASH_LOAN_IDS} from "@1delta/dex-registry";
 import * as fs from "fs";
 import {CREATE_CHAIN_IDS, getChainEnum} from "../config";
@@ -26,7 +26,7 @@ async function main() {
             Object.entries(maps).forEach(([chainId, e]) => {
                 if (chainId === chain) {
                     // Determine default asset type for this lender
-                    const assetType = determineDefaultAssetType(lender);
+                    const assetType = determineDefaultAssetType(lender, chainId);
 
                     if (AAVE_V3_LENDERS.includes(lender as any)) {
                         lendersAaveV3.push({
@@ -59,7 +59,7 @@ async function main() {
 }
 
 // Helper function to determine a default asset type based on the lender name
-function determineDefaultAssetType(lenderName: string): string {
+function determineDefaultAssetType(lenderName: string, chainId: string): string {
     // Default to USDC
     let defaultAsset = "USDC";
 
@@ -76,6 +76,14 @@ function determineDefaultAssetType(lenderName: string): string {
         defaultAsset = "LISTA";
     } else if (lenderName.includes("USDX")) {
         defaultAsset = "USDX";
+    }
+
+    if (chainId === Chain.METIS_ANDROMEDA_MAINNET) {
+        defaultAsset = "WETH";
+    } else if (chainId === Chain.HEMI_NETWORK) {
+        defaultAsset = "WBTC";
+    } else if (chainId === Chain.SONIC_MAINNET) {
+        defaultAsset = "WETH";
     }
 
     return defaultAsset;
