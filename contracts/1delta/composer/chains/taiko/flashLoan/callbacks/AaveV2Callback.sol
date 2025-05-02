@@ -62,7 +62,7 @@ contract AaveV2FlashLoanCallback is Masks, DeltaErrors {
             // but ONLY if the caller address is
             // an Aave V2 type lending pool
             if xor(address(), initiator) {
-                mstore(0, INVALID_CALLER)
+                mstore(0, INVALID_INITIATOR)
                 revert(0, 0x4)
             }
             // Slice the original caller off the beginnig of the calldata
