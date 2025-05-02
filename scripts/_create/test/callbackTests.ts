@@ -2,6 +2,7 @@ import {AAVE_FORK_POOL_DATA, AAVE_V3_LENDERS, Chain} from "@1delta/asset-registr
 import {FLASH_LOAN_IDS} from "@1delta/dex-registry";
 import * as fs from "fs";
 import {CREATE_CHAIN_IDS, getChainEnum} from "../config";
+import path from "path";
 import {templateAaveV3Test} from "../templates/flashLoan/aaveV3CallbackTest";
 
 interface LenderData {
@@ -49,7 +50,8 @@ async function main() {
 
         if (lendersAaveV3.length > 0) {
             const chainKeyForFile = key.toLowerCase();
-            const filePath = `${testDir}AaveV3Callback.${chainKeyForFile}.mock.sol`;
+            const filePath = path.join(testDir, "aaveV3", `AaveV3Callback.${chainKeyForFile}.mock.sol`);
+            fs.mkdirSync(path.join(testDir, "aaveV3"), {recursive: true});
             console.log(`Generating AaveV3 test file: ${filePath}`);
             fs.writeFileSync(filePath, templateAaveV3Test(key, lendersAaveV3));
         }
