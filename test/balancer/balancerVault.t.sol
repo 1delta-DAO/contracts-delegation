@@ -93,6 +93,7 @@ contract BalancerFlashLoanTest is Test {
         /**
          * 2) UNWRAP SO SO THAT WE CAN USE THE BASE ASSET
          * - convert vault to underlying
+         * - composer compatible operation as the shares amount is known off-chain
          */
         handlePulledFunds(WABASGHO, shares);
 
@@ -109,6 +110,7 @@ contract BalancerFlashLoanTest is Test {
         /**
          * 4) CREATE (STATA) VAULT SHARES
          * - simply create vault shares with `mint`
+         * - composer compatible operation as the shares amount is known off-chain
          */
         handleRepayFunds(WABASGHO, GHO, shares);
 
