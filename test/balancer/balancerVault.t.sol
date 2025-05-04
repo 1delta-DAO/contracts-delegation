@@ -67,15 +67,13 @@ contract BalancerFlashLoanTest is Test {
             aavePool.supply(WETH, 1 ether, address(this), 0);
             aavePool.borrow(GHO, ROUNDING_ERROR, 2, 0, address(this));
         }
-        IVault.BufferWrapOrUnwrapParams memory unwrapParams = IVault.BufferWrapOrUnwrapParams({
-            kind: IVault.SwapKind.EXACT_IN,
-            direction: IVault.WrappingDirection.UNWRAP,
-            wrappedToken: IERC4626(WABASGHO),
-            amountGivenRaw: amount,
-            limitRaw: 0 // todo: minimum limit, zero for now
-        });
 
-        bytes memory unlockData = abi.encodeWithSelector(this.unlockCallback.selector, unwrapParams);
+        bytes memory unlockData = abi.encodeWithSelector(
+            this.unlockCallback.selector,
+            // strategy: flash loan shares, then expect to withdraw amount
+            amount * 101 / 100, // Shares,
+            amount // amount
+        );
 
         bytes memory result = vault.unlock(unlockData);
         bool success = abi.decode(result, (bool));
@@ -83,45 +81,60 @@ contract BalancerFlashLoanTest is Test {
         assertTrue(success, "Unwrap operation failed");
     }
 
-    function unlockCallback(IVault.BufferWrapOrUnwrapParams memory params) external returns (bool) {
+    function unlockCallback(uint256 shares, uint256 amount) external returns (bool) {
         require(msg.sender == address(vault), "Unauthorized caller");
-        console.log("------------------------------------------------");
-        uint256 initialGhoBalance = ghoToken.balanceOf(address(vault));
-        // vault.sendTo(params.wrappedToken, address(this), params.amountGivenRaw);
-        console.log("Initial GHO balance:", initialGhoBalance);
-        uint256 initialWaBasGhoBalance = waBasGHOToken.balanceOf(address(vault));
-        console.log("Initial waBasGHO balance:", initialWaBasGhoBalance);
-        uint256 initialaBasGhoBalance = aBasGHOToken.balanceOf(address(vault));
-        console.log("Initial aBasGHO balance:", initialaBasGhoBalance);
-        console.log("------------------------------------------------");
+        /**
+         * 1) FLASH LOAN START
+         * - pull vault token
+         */
+        vault.sendTo(waBasGHOToken, address(this), shares);
 
-        console.log("waBasGHOToken.balanceOf(address(this)", waBasGHOToken.balanceOf(address(this)));
+        /**
+         * 2) UNWRAP SO SO THAT WE CAN USE THE BASE ASSET
+         * - convert vault to underlying
+         */
+        handlePulledFunds(WABASGHO, shares);
 
-        // Unwrap the tokens using balancer
-        (uint256 amountCalculated, uint256 amountIn, uint256 amountOut) = vault.erc4626BufferWrapOrUnwrap(params);
+        /**
+         * 3) DO WHATEVER - attention: this might need to refund a too high underlying amount to the caller
+         * - we do not know the exact amount of the underlying received
+         * - generally, we can use an  off-chain prediction based on the vault conversion rate
+         * - This can be done so that the dust is minimal (lowre than gas to be ignored)
+         * - also can be swept and refunded
+         */
+        uint256 amountToSettle = ghoToken.balanceOf(address(this)); // inalGhoBalance - initialGhoBalance; // the amount unwrapped
+        require(amountToSettle >= amount, "projected amount too low");
 
-        // take gho
-        vault.sendTo(ghoToken, address(this), amountOut);
+        /**
+         * 4) CREATE (STATA) VAULT SHARES
+         * - simply create vault shares with `mint`
+         */
+        handleRepayFunds(WABASGHO, GHO, shares);
 
-        uint256 amountToSettle = amountOut + ROUNDING_ERROR; // inalGhoBalance - initialGhoBalance; // the amount unwrapped
-
-        uint256 accountGhoBalanceBefore = ghoToken.balanceOf(address(this));
-        console.log("Account GHO balance before:", accountGhoBalanceBefore);
-
-        console.log("amountToSettle:", amountToSettle);
-
-        // settlement process
-        {
-            ghoToken.approve(AAVE_POOL, type(uint256).max);
-            aavePool.supply(GHO, amountToSettle, address(this), 0);
-            aBasGHOToken.approve(WABASGHO, type(uint256).max);
-            IStataVault(WABASGHO).depositATokens(amountToSettle, address(this));
-            waBasGHOToken.transfer(address(vault), amountIn);
-        }
-        // settle
-        vault.settle(waBasGHOToken, amountIn);
+        /**
+         * 5) SETTLE DEBT TO BALANCER
+         * - send funds to balancer
+         * - settle
+         */
+        waBasGHOToken.transfer(address(vault), shares);
+        vault.settle(waBasGHOToken, shares);
 
         return true;
+    }
+
+    /*
+     * Can be done by composer ops
+     */
+    function handlePulledFunds(address stataVault, uint256 shares) internal {
+        IStataVault(stataVault).redeem(shares, address(this), address(this));
+    }
+
+    /**
+     * Can be done by composer ops
+     */
+    function handleRepayFunds(address stataVault, address underlying, uint256 shares) internal {
+        IERC20(underlying).approve(stataVault, type(uint256).max);
+        IStataVault(stataVault).mint(shares, address(this));
     }
 }
 
@@ -158,6 +171,7 @@ interface IPool {
 
 interface IStataVault {
     function deposit(uint256 assets, address onBehalfOf) external;
+    function mint(uint256 assets, address onBehalfOf) external;
     function depositATokens(uint256 assets, address onBehalfOf) external;
     function redeem(uint256 shares, address receiver, address owner) external returns (uint256);
     function withdraw(uint256 assets, address receiver, address owner) external returns (uint256);
