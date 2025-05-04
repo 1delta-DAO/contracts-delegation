@@ -517,84 +517,14 @@ const config: HardhatUserConfig = {
         },
       },
       // composers
-      "contracts/1delta/modules/polygon/Composer.sol": {
+      "contracts/1delta/composer/chains/arbitrum-one/Composer.sol": {
         version: '0.8.28',
         settings: {
           optimizer: {
             enabled: true,
-            runs: 5_000,
+            runs: 2_500,
           },
           evmVersion: 'cancun',
-        },
-      },
-      "contracts/1delta/modules/arbitrum/Composer.sol": {
-        version: '0.8.28',
-        settings: {
-          optimizer: {
-            enabled: true,
-            runs: 500,
-          },
-          evmVersion: 'cancun',
-        },
-      },
-      "contracts/1delta/modules/hemi/Composer.sol": {
-        version: '0.8.28',
-        settings: {
-          optimizer: {
-            enabled: true,
-            runs: 1_000_000,
-          },
-          evmVersion: 'cancun',
-        },
-      },
-      "contracts/1delta/modules/optimism/Composer.sol": {
-        version: '0.8.28',
-        settings: {
-          optimizer: {
-            enabled: true,
-            runs: 7_500,
-          },
-          evmVersion: 'cancun',
-        },
-      },
-      "contracts/1delta/modules/base/Composer.sol": {
-        version: '0.8.28',
-        settings: {
-          optimizer: {
-            enabled: true,
-            runs: 750,
-          },
-          evmVersion: 'cancun',
-        },
-      },
-      "contracts/1delta/modules/ethereum/Composer.sol": {
-        version: '0.8.28',
-        settings: {
-          optimizer: {
-            enabled: true,
-            runs: 1_000,
-          },
-          evmVersion: 'cancun',
-        },
-      },
-      "contracts/1delta/modules/mantle/Composer.sol": {
-        version: '0.8.28',
-        settings: {
-          optimizer: {
-            enabled: true,
-            runs: 10_000,
-          },
-          evmVersion: 'shanghai',
-        },
-      },
-      "contracts/1delta/modules/taiko/Composer.sol": {
-        version: '0.8.28',
-        settings: {
-          optimizer: {
-            enabled: true,
-            runs: 1_000_000,
-          },
-          evmVersion: 'shanghai',
         },
       },
       "contracts/1delta/quoter/MoeJoeLens.sol": {
@@ -603,16 +533,6 @@ const config: HardhatUserConfig = {
           optimizer: {
             enabled: true,
             runs: 1_000_000,
-          },
-          evmVersion: 'paris',
-        },
-      },
-      "contracts/1delta/composer/quoter/QuoterLight.sol": {
-        version: '0.8.28',
-        settings: {
-          optimizer: {
-            enabled: true,
-            runs: 10_000_000,
           },
           evmVersion: 'paris',
         },

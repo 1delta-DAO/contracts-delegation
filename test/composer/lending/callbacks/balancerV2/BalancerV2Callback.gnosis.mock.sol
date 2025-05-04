@@ -43,22 +43,6 @@ contract BalancerV2FlashLoanCallbackTest is BaseTest, DeltaErrors, Slots {
         mockVault = new BalancerV2MockVault();
     }
 
-    function test_flash_loan_balancerV2_type_balancer_v2_pool_with_callbacks() public {
-        // mock implementation
-        replaceLendingPoolWithMock(BALANCER_V2);
-
-        bytes memory params = CalldataLib.encodeBalancerV2FlashLoan(USDC, 1e6, uint8(0), "");
-
-        // check gateway flag is 0
-        assertEq(uint256(vm.load(address(oneDV2), bytes32(uint256(FLASH_LOAN_GATEWAY_SLOT)))), 0);
-
-        vm.prank(user);
-        oneDV2.deltaCompose(params);
-
-        // Verify gateway flag is set to 1 after the callback
-        assertEq(uint256(vm.load(address(oneDV2), bytes32(uint256(FLASH_LOAN_GATEWAY_SLOT)))), 1);
-    }
-
     function test_flash_loan_balancerV2_type_wrongCaller_revert() public {
         replaceLendingPoolWithMock(validPools[0].poolAddr);
 

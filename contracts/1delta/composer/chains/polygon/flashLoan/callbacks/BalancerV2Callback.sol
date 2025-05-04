@@ -31,7 +31,6 @@ contract BalancerV2FlashLoanCallback is Slots, Masks, DeltaErrors {
         uint256 calldataLength;
         assembly {
             calldataOffset := params.offset
-            calldataLength := params.length
 
             // validate caller
             // - extract id from params
@@ -56,8 +55,8 @@ contract BalancerV2FlashLoanCallback is Slots, Masks, DeltaErrors {
                 revert(0, 0x4)
             }
 
-            // check that the entry flag is
-            if iszero(eq(2, sload(FLASH_LOAN_GATEWAY_SLOT))) {
+            // check that the flag is set correctly
+            if iszero(eq(1, tload(FLASH_LOAN_GATEWAY_SLOT))) {
                 mstore(0, INVALID_CALLER)
                 revert(0, 0x4)
             }
@@ -69,7 +68,7 @@ contract BalancerV2FlashLoanCallback is Slots, Masks, DeltaErrors {
             // reenter from an attacker contract - the gateway would then be open still
             // and the attacker could execute an arbitrary delta compose
             // locking the callback again here prevents this scenario
-            sstore(FLASH_LOAN_GATEWAY_SLOT, 1)
+            tstore(FLASH_LOAN_GATEWAY_SLOT, 0)
             // Slice the original caller off the beginnig of the calldata
             // From here on we have validated that the origCaller
             // was attached in the deltaCompose function
@@ -77,7 +76,7 @@ contract BalancerV2FlashLoanCallback is Slots, Masks, DeltaErrors {
             origCaller := shr(96, firstWord)
             // shift / slice params
             calldataOffset := add(calldataOffset, 21)
-            calldataLength := sub(calldataLength, 21)
+            calldataLength := sub(params.length, 21)
         }
         // within the flash loan, any compose operation
         // can be executed

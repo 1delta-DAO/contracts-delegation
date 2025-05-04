@@ -1,11 +1,12 @@
-import {AAVE_FORK_POOL_DATA, AAVE_V2_LENDERS, AAVE_V3_LENDERS, Chain} from "@1delta/asset-registry";
-import {BALANCER_V2_FORKS, FLASH_LOAN_IDS} from "@1delta/dex-registry";
+import { AAVE_FORK_POOL_DATA, AAVE_V2_LENDERS, AAVE_V3_LENDERS, Chain } from "@1delta/asset-registry";
+import { BALANCER_V2_FORKS, FLASH_LOAN_IDS } from "@1delta/dex-registry";
 import * as fs from "fs";
-import {CREATE_CHAIN_IDS, getChainEnum} from "../config";
+import { CREATE_CHAIN_IDS, getChainEnum } from "../config";
 import path from "path";
-import {templateAaveV3Test} from "../templates/test/templates/aaveV3CallbackTest";
-import {templateAaveV2Test} from "../templates/test/templates/aaveV2CallbackTest";
-import {templateBalancerV2Test} from "../templates/test/templates/balancerV2CallbackTest";
+import { templateAaveV3Test } from "../templates/test/templates/aaveV3CallbackTest";
+import { templateAaveV2Test } from "../templates/test/templates/aaveV2CallbackTest";
+import { templateBalancerV2Test } from "../templates/test/templates/balancerV2CallbackTest";
+import { CANCUN_OR_HIGHER } from "../chain/evmVersion";
 
 interface LenderData {
     entityName: string;
@@ -19,6 +20,7 @@ async function main() {
 
     for (let i = 0; i < chains.length; i++) {
         const chain = chains[i];
+        const isCancun = CANCUN_OR_HIGHER.includes(chain)
         console.log(`Generating test files for chain: ${chain}`);
         const key = getChainEnum(chain);
 
@@ -76,12 +78,12 @@ async function main() {
 
         // Create the test files directory
         const testDir = `./test/composer/lending/callbacks/`;
-        fs.mkdirSync(testDir, {recursive: true});
+        fs.mkdirSync(testDir, { recursive: true });
 
         if (lendersAaveV3.length > 0) {
             const chainKeyForFile = key.toLowerCase();
             const filePath = path.join(testDir, "aaveV3", `AaveV3Callback.${chainKeyForFile}.mock.sol`);
-            fs.mkdirSync(path.join(testDir, "aaveV3"), {recursive: true});
+            fs.mkdirSync(path.join(testDir, "aaveV3"), { recursive: true });
             console.log(`Generating AaveV3 test file: ${filePath}`);
             fs.writeFileSync(filePath, templateAaveV3Test(key, lendersAaveV3));
         }
@@ -89,7 +91,7 @@ async function main() {
         if (lendersAaveV2.length > 0) {
             const chainKeyForFile = key.toLowerCase();
             const filePath = path.join(testDir, "aaveV2", `AaveV2Callback.${chainKeyForFile}.mock.sol`);
-            fs.mkdirSync(path.join(testDir, "aaveV2"), {recursive: true});
+            fs.mkdirSync(path.join(testDir, "aaveV2"), { recursive: true });
             console.log(`Generating AaveV2 test file: ${filePath}`);
             fs.writeFileSync(filePath, templateAaveV2Test(key, lendersAaveV2));
         }
@@ -97,9 +99,9 @@ async function main() {
         if (poolsBalancerV2.length > 0) {
             const chainKeyForFile = key.toLowerCase();
             const filePath = path.join(testDir, "balancerV2", `BalancerV2Callback.${chainKeyForFile}.mock.sol`);
-            fs.mkdirSync(path.join(testDir, "balancerV2"), {recursive: true});
+            fs.mkdirSync(path.join(testDir, "balancerV2"), { recursive: true });
             console.log(`Generating BalancerV2 test file: ${filePath}`);
-            fs.writeFileSync(filePath, templateBalancerV2Test(key, poolsBalancerV2));
+            fs.writeFileSync(filePath, templateBalancerV2Test(key, poolsBalancerV2, isCancun));
         }
 
         console.log(`Generated test files for chain ${chain}`);
