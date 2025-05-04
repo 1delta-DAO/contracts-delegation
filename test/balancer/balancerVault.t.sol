@@ -15,6 +15,16 @@ contract BalancerFlashLoanTest is Test {
     address constant ABASGHO = 0x067ae75628177FD257c2B1e500993e1a0baBcBd1;
     address constant GHO = 0x6Bb7a212910682DCFdbd5BCBb3e28FB4E8da10Ee;
 
+    address constant WETH = 0x4200000000000000000000000000000000000006;
+
+    /**
+     * rounding error for the flash loan due to ERC4626 usage
+     * balancer adds a layer of deviation by 1
+     * the (stata) vault has also one on withdrawal, making 2
+     * then, once we have GHO, we add another one by creating the stata token, totalling to 3 at most
+     */
+    uint256 internal constant ROUNDING_ERROR = 3;
+
     IVault vault;
     IPool aavePool;
     IERC20 waBasGHOToken;
@@ -44,10 +54,19 @@ contract BalancerFlashLoanTest is Test {
         // uint256 reserves = vault.getReservesOf(waBasGHOToken);
         // console.log("waBasGHOToken reserves:", reserves);
 
-        amount = bound(amount, 1 ether, 100 ether);
+        amount = bound(amount, 100 ether, 1000 ether);
 
         console.log("Starting unwrap test with amount:", amount);
 
+        // note that this is to ensure that this
+        {
+            // deal(address(ghoToken), address(this), 10);
+            deal(WETH, address(this), 100 ether);
+
+            IERC20(WETH).approve(AAVE_POOL, type(uint256).max);
+            aavePool.supply(WETH, 1 ether, address(this), 0);
+            aavePool.borrow(GHO, ROUNDING_ERROR, 2, 0, address(this));
+        }
         IVault.BufferWrapOrUnwrapParams memory unwrapParams = IVault.BufferWrapOrUnwrapParams({
             kind: IVault.SwapKind.EXACT_IN,
             direction: IVault.WrappingDirection.UNWRAP,
@@ -68,6 +87,7 @@ contract BalancerFlashLoanTest is Test {
         require(msg.sender == address(vault), "Unauthorized caller");
         console.log("------------------------------------------------");
         uint256 initialGhoBalance = ghoToken.balanceOf(address(vault));
+        // vault.sendTo(params.wrappedToken, address(this), params.amountGivenRaw);
         console.log("Initial GHO balance:", initialGhoBalance);
         uint256 initialWaBasGhoBalance = waBasGHOToken.balanceOf(address(vault));
         console.log("Initial waBasGHO balance:", initialWaBasGhoBalance);
@@ -75,34 +95,31 @@ contract BalancerFlashLoanTest is Test {
         console.log("Initial aBasGHO balance:", initialaBasGhoBalance);
         console.log("------------------------------------------------");
 
-        // Unwrap the tokens
-        (uint256 amountCalculated, uint256 amountIn, uint256 amountOut) = vault.erc4626BufferWrapOrUnwrap(params);
-        console.log("Unwrap result");
-        console.log("calculated:", amountCalculated);
-        console.log("in:", amountIn);
-        console.log("out:", amountOut);
-        console.log("------------------------------------------------");
-        uint256 finalGhoBalance = ghoToken.balanceOf(address(vault));
-        console.log("Final GHO balance:", finalGhoBalance);
-        uint256 finalWaBasGhoBalance = waBasGHOToken.balanceOf(address(vault));
-        console.log("Final waBasGHO balance:", finalWaBasGhoBalance);
-        uint256 finalaBasGhoBalance = aBasGHOToken.balanceOf(address(vault));
-        console.log("Final aBasGHO balance:", finalaBasGhoBalance);
-        console.log("------------------------------------------------");
+        console.log("waBasGHOToken.balanceOf(address(this)", waBasGHOToken.balanceOf(address(this)));
 
-        uint256 amountToSettle = finalGhoBalance - initialGhoBalance; // the amount unwrapped
+        // Unwrap the tokens using balancer
+        (uint256 amountCalculated, uint256 amountIn, uint256 amountOut) = vault.erc4626BufferWrapOrUnwrap(params);
+
+        // take gho
+        vault.sendTo(ghoToken, address(this), amountOut);
+
+        uint256 amountToSettle = amountOut + ROUNDING_ERROR; // inalGhoBalance - initialGhoBalance; // the amount unwrapped
 
         uint256 accountGhoBalanceBefore = ghoToken.balanceOf(address(this));
         console.log("Account GHO balance before:", accountGhoBalanceBefore);
 
-        vault.sendTo(ghoToken, address(this), amountToSettle);
+        console.log("amountToSettle:", amountToSettle);
 
-        uint256 accountGhoBalanceAfter = ghoToken.balanceOf(address(this));
-        console.log("Account GHO balance after:", accountGhoBalanceAfter);
-        console.log("------------------------------------------------");
-
+        // settlement process
+        {
+            ghoToken.approve(AAVE_POOL, type(uint256).max);
+            aavePool.supply(GHO, amountToSettle, address(this), 0);
+            aBasGHOToken.approve(WABASGHO, type(uint256).max);
+            IStataVault(WABASGHO).depositATokens(amountToSettle, address(this));
+            waBasGHOToken.transfer(address(vault), amountIn);
+        }
         // settle
-        vault.settle(ghoToken, amountToSettle);
+        vault.settle(waBasGHOToken, amountIn);
 
         return true;
     }
@@ -135,7 +152,16 @@ struct ReserveConfigurationMap {
 interface IPool {
     function getReserveData(address asset) external view returns (ReserveData memory);
     function withdraw(address token, uint256 amount, address to) external returns (uint256);
-    function supply(address token, uint256 amount, address to, uint256 referralCode) external;
+    function supply(address asset, uint256 amount, address onBehalfOf, uint16 referralCode) external;
+    function borrow(address asset, uint256 amount, uint256 interestRateMode, uint16 referralCode, address onBehalfOf) external;
+}
+
+interface IStataVault {
+    function deposit(uint256 assets, address onBehalfOf) external;
+    function depositATokens(uint256 assets, address onBehalfOf) external;
+    function redeem(uint256 shares, address receiver, address owner) external returns (uint256);
+    function withdraw(uint256 assets, address receiver, address owner) external returns (uint256);
+    function redeemATokens(uint256 shares, address receiver, address owner) external returns (uint256);
 }
 
 interface IVault {
