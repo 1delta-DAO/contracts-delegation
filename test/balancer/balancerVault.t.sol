@@ -19,11 +19,10 @@ contract BalancerFlashLoanTest is Test {
 
     /**
      * rounding error for the flash loan due to ERC4626 usage
-     * balancer adds a layer of deviation by 1
-     * the (stata) vault has also one on withdrawal, making 2
-     * then, once we have GHO, we add another one by creating the stata token, totalling to 3 at most
+     * the (stata) vault has also one on withdrawal, add 1
+     * then, once we have GHO, we add another one by creating the stata token, totalling to 2 at most
      */
-    uint256 internal constant ROUNDING_ERROR = 3;
+    uint256 internal constant ROUNDING_ERROR = 2;
 
     IVault vault;
     IPool aavePool;
@@ -58,20 +57,22 @@ contract BalancerFlashLoanTest is Test {
 
         console.log("Starting unwrap test with amount:", amount);
 
-        // note that this is to ensure that this
+        // note that this is to ensure that this contracts
+        // has the rounding error as balance, otherwise it cannot repay
         {
-            // deal(address(ghoToken), address(this), 10);
             deal(WETH, address(this), 100 ether);
-
             IERC20(WETH).approve(AAVE_POOL, type(uint256).max);
             aavePool.supply(WETH, 1 ether, address(this), 0);
             aavePool.borrow(GHO, ROUNDING_ERROR, 2, 0, address(this));
         }
 
+        // we check how many shares we need to flash loan to execute operation with `amount`
+        uint256 shares = IStataVault(WABASGHO).previewRedeem(amount);
+
         bytes memory unlockData = abi.encodeWithSelector(
             this.unlockCallback.selector,
             // strategy: flash loan shares, then expect to withdraw amount
-            amount * 101 / 100, // Shares,
+            shares, // Shares,
             amount // amount
         );
 
@@ -176,6 +177,8 @@ interface IStataVault {
     function redeem(uint256 shares, address receiver, address owner) external returns (uint256);
     function withdraw(uint256 assets, address receiver, address owner) external returns (uint256);
     function redeemATokens(uint256 shares, address receiver, address owner) external returns (uint256);
+    function previewMint(uint256 assets) external view returns (uint256);
+    function previewRedeem(uint256 shares) external view returns (uint256);
 }
 
 interface IVault {
