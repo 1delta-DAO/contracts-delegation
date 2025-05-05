@@ -21,8 +21,6 @@ import "./SafeERC20.sol";
  * ProtocolFeesCollector contract.
  */
 abstract contract Fees {
-    using SafeERC20 for IERC20;
-
     uint256 flashFee;
 
     constructor() {}
@@ -38,9 +36,9 @@ abstract contract Fees {
         return (amount * flashFee) / 1e18;
     }
 
-    function _payFeeAmount(IERC20 token, uint256 amount) internal {
+    function _payFeeAmount(address token, uint256 amount) internal {
         if (amount > 0) {
-            token.safeTransfer(address(this), amount);
+            SafeERC20.safeTransfer(token, address(this), amount);
         }
     }
 }

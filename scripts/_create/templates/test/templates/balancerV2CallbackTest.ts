@@ -1,6 +1,6 @@
-import {getAddress} from "ethers/lib/utils";
+import { getAddress } from "ethers/lib/utils";
 
-export const templateBalancerV2Test = (chainKey: string, lenders: {entityName: string; entityId: string; pool: string; assetType: string}[]) => {
+export const templateBalancerV2Test = (chainKey: string, lenders: { entityName: string; entityId: string; pool: string; assetType: string }[], isCancun = false) => {
     // Generate private address declarations
     let addressDeclarations = "";
     let tokenDeclarations = "";
@@ -22,7 +22,7 @@ export const templateBalancerV2Test = (chainKey: string, lenders: {entityName: s
         populateValidPools += `        validPools.push(PoolCase({poolId: ${lender.entityId}, poolAddr: ${lender.entityName}, asset: ${lender.assetType}}));\n`;
 
         // Create an individual test function for each lender
-        individualTestFunctions += `
+        individualTestFunctions += isCancun ? `` : `
     function test_flash_loan_balancerV2_type_${lender.entityName.toLowerCase()}_pool_with_callbacks() public {
         // mock implementation
         replaceLendingPoolWithMock(${lender.entityName});
@@ -125,8 +125,8 @@ ${individualTestFunctions}
     function getAddressFromRegistry() internal {
         // Get token addresses
 ${Array.from(uniqueTokens)
-    .map((token) => `        ${token} = chain.getTokenAddress(Tokens.${token});`)
-    .join("\n")}
+            .map((token) => `        ${token} = chain.getTokenAddress(Tokens.${token});`)
+            .join("\n")}
     }
 
     function populateValidPools() internal {

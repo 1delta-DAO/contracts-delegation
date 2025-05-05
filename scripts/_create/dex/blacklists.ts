@@ -40,4 +40,7 @@ export const DEX_TO_CHAINS_EXCLUSIONS: { [dex: string]: string[] } = {
         Chain.BLAST,
         Chain.WORLD_CHAIN,
     ],
+    [DexProtocol.AXION_V2]: [
+        Chain.TAIKO_ALETHIA
+    ],
 }

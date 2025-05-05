@@ -1,5 +1,5 @@
 
-export const templateBalancerV2Trigger = (addressContants: string, switchCaseContent: string) => `
+export const templateBalancerV2Trigger = (addressContants: string, switchCaseContent: string, cancun = false) => `
 // SPDX-License-Identifier: BUSL-1.1
 
 pragma solidity 0.8.28;
@@ -51,7 +51,7 @@ abstract contract BalancerV2FlashLoans is Slots, Masks {
             mstore(add(ptr, 292), shl(96, callerAddress))
             calldatacopy(add(ptr, 312), currentOffset, calldataLength) // calldata
             // set entry flag
-            sstore(FLASH_LOAN_GATEWAY_SLOT, 2)
+            ${cancun ? "tstore(FLASH_LOAN_GATEWAY_SLOT, 1)" : "sstore(FLASH_LOAN_GATEWAY_SLOT, 2)"}
             if iszero(
                 call(
                     gas(),

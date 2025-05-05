@@ -11,10 +11,5 @@ import "./Fees.sol";
  * contract, which implements the `IFlashLoanRecipient` interface.
  */
 interface IBalancerFlashLoans {
-    function flashLoan(
-        IFlashLoanRecipient recipient,
-        IERC20[] memory tokens,
-        uint256[] memory amounts,
-        bytes memory userData
-    ) external;
+    function flashLoan(IFlashLoanRecipient recipient, address[] memory tokens, uint256[] memory amounts, bytes memory userData) external;
 }
