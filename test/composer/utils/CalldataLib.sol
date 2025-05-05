@@ -16,14 +16,14 @@ import {DexPayConfig, SweepType, DodoSelector} from "contracts/1delta/composer/e
  * - use if condition to revert (no require statements)
  */
 library CalldataLib {
-    // StargateV2 bridning
+    // StargateV2 bridging
     function encodeStargateV2Bridge(
-        address stargateAdapter,
         uint16 assetId,
         uint32 dstEid,
         address receiver,
         uint256 amount,
-        uint16 slippageBps,
+        uint256 minAmount,
+        uint256 fee,
         bool isBusMode,
         bytes memory composeMsg,
         bytes memory extraOptions
@@ -35,41 +35,41 @@ library CalldataLib {
         bytes memory bridgeData = abi.encodePacked(
             uint8(ForwarderCommands.BRIDGING),
             uint8(BridgeIds.STARGATE_V2),
-            stargateAdapter,
-            assetId,
-            dstEid,
-            receiver,
-            uint128(amount),
-            slippageBps,
-            uint8(isBusMode ? 1 : 0),
-            uint16(composeMsg.length),
-            uint16(extraOptions.length),
-            composeMsg,
-            extraOptions
+            assetId, // 2 bytes
+            dstEid, // 4 bytes
+            receiver, // 20 bytes
+            uint128(amount), // 16 bytes
+            uint128(minAmount), // 16 bytes
+            uint128(fee), // 16 bytes
+            uint8(isBusMode ? 1 : 0), // 1 byte
+            uint16(composeMsg.length), // 2 bytes
+            uint16(extraOptions.length), // 2 bytes
+            composeMsg, // variable
+            extraOptions // variable
         );
 
         return bridgeData;
     }
 
     function encodeStargateV2BridgeTaxi(
-        address stargateAdapter,
         uint16 assetId,
         uint32 dstEid,
         address receiver,
         uint256 amount,
-        uint16 slippageBps
+        uint256 minAmount,
+        uint256 fee
     )
         internal
         pure
         returns (bytes memory)
     {
         return encodeStargateV2Bridge(
-            stargateAdapter,
             assetId,
             dstEid,
             receiver,
             amount,
-            slippageBps,
+            minAmount,
+            fee,
             false, // taxi mode
             new bytes(0), // no compose message
             new bytes(0) // no extra options
@@ -77,58 +77,68 @@ library CalldataLib {
     }
 
     function encodeStargateV2BridgeBus(
-        address stargateAdapter,
         uint16 assetId,
         uint32 dstEid,
         address receiver,
         uint256 amount,
-        uint16 slippageBps
+        uint256 minAmount,
+        uint256 fee
     )
         internal
         pure
         returns (bytes memory)
     {
         return encodeStargateV2Bridge(
-            stargateAdapter,
             assetId,
             dstEid,
             receiver,
             amount,
-            slippageBps,
+            minAmount,
+            fee,
             true, // bus mode
             new bytes(0), // no compose message
             new bytes(0) // no extra options
         );
     }
 
-    function extCallStargateV2Bridge(
+    function extCallStargateV2BridgeToken(
         address callForwarder,
-        address stargateAdapter,
         uint16 assetId,
         uint32 dstEid,
         address receiver,
         uint256 amount,
-        uint16 slippageBps,
+        uint256 minAmount,
+        uint256 fee,
         bool isBusMode,
         bytes memory composeMsg,
         bytes memory extraOptions
     )
         internal
-        view
+        pure
         returns (bytes memory)
     {
-        bytes memory bridgeData =
-            encodeStargateV2Bridge(stargateAdapter, assetId, dstEid, receiver, amount, slippageBps, isBusMode, composeMsg, extraOptions);
+        bytes memory bridgeData = encodeStargateV2Bridge(assetId, dstEid, receiver, amount, minAmount, fee, isBusMode, composeMsg, extraOptions);
+        return abi.encodePacked(ForwarderCommands.EXT_CALL, callForwarder, uint112(fee), uint16(bridgeData.length), bridgeData);
+    }
 
-        // Format for EXT_CALL:
-        // ForwarderCommands.EXT_CALL + target + uint112(amount) + uint16(data.length) + data
-        return abi.encodePacked(
-            ForwarderCommands.EXT_CALL,
-            callForwarder,
-            uint112(amount), // Amount to send with the call
-            uint16(bridgeData.length),
-            bridgeData
-        );
+    function extCallStargateV2BridgeNative(
+        address callForwarder,
+        uint16 assetId,
+        uint32 dstEid,
+        address receiver,
+        uint256 amount,
+        uint256 minAmount,
+        uint256 fee,
+        bool isBusMode,
+        bytes memory composeMsg,
+        bytes memory extraOptions
+    )
+        internal
+        pure
+        returns (bytes memory)
+    {
+        bytes memory bridgeData = encodeStargateV2Bridge(assetId, dstEid, receiver, amount, minAmount, fee, isBusMode, composeMsg, extraOptions);
+        return abi.encodePacked(ForwarderCommands.EXT_CALL, callForwarder, uint112(fee + amount), uint16(bridgeData.length), bridgeData);
     }
     //
 

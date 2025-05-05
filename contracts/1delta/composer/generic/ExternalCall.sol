@@ -2,8 +2,7 @@
 
 pragma solidity ^0.8.28;
 
-import {Masks} from "../../shared/masks/Masks.sol";
-import {DeltaErrors} from "../../shared/errors/Errors.sol";
+import {BaseUtils} from "contracts/1delta/composer/generic/BaseUtils.sol";
 
 // solhint-disable max-line-length
 
@@ -11,9 +10,9 @@ import {DeltaErrors} from "../../shared/errors/Errors.sol";
  * @notice External call on call forwarder which can safely execute any calls
  * without comprimising this contract
  */
-abstract contract ExternalCall is Masks, DeltaErrors {
-    /// @notice selector for deltaComposeLevel2(bytes)
-    bytes32 private constant COMPOSER_LEVEL2_COMPOSE = 0xfd2eb88300000000000000000000000000000000000000000000000000000000;
+abstract contract ExternalCall is BaseUtils {
+    /// @notice selector for deltaForwardCompose(bytes)
+    bytes32 private constant DELTA_FORWARD_COMPOSE = 0x6a0c90ff00000000000000000000000000000000000000000000000000000000;
 
     /**
      * This is not a real external call, this one has a pre-determined selector
@@ -52,7 +51,7 @@ abstract contract ExternalCall is Masks, DeltaErrors {
             // increment offset to calldata start
             currentOffset := add(16, currentOffset)
 
-            mstore(ptr, COMPOSER_LEVEL2_COMPOSE)
+            mstore(ptr, DELTA_FORWARD_COMPOSE)
             mstore(add(ptr, 0x4), 0x20) // offset
             mstore(add(ptr, 0x24), dataLength) // length
 

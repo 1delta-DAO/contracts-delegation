@@ -2,16 +2,14 @@
 
 pragma solidity ^0.8.28;
 
-import {ERC20Selectors} from "../../shared/selectors/ERC20Selectors.sol";
-import {Masks} from "../../shared/masks/Masks.sol";
-import {DeltaErrors} from "../../shared/errors/Errors.sol";
+import {BaseUtils} from "contracts/1delta/composer/generic/BaseUtils.sol";
 
 // solhint-disable max-line-length
 
 /**
  * @notice External call on any target - prevents `transferFrom` selector
  */
-abstract contract ExternalCallsGeneric is ERC20Selectors, Masks, DeltaErrors {
+abstract contract ExternalCallsGeneric is BaseUtils {
     /// @dev mask for selector in calldata
     bytes32 private constant SELECTOR_MASK = 0xffffffff00000000000000000000000000000000000000000000000000000000;
 

@@ -11,6 +11,8 @@ abstract contract Masks {
     uint256 internal constant UINT16_MASK = 0xffff;
     /// @dev Mask of lower 3 bytes.
     uint256 internal constant UINT24_MASK = 0xffffff;
+    /// @dev Mask of lower 4 bytes.
+    uint256 internal constant UINT32_MASK = 0xffffffff;
     /// @dev Mask of lower 16 bytes.
     uint256 internal constant UINT128_MASK = 0x00000000000000000000000000000000ffffffffffffffffffffffffffffffff;
     /// @dev Mask of lower 15 bytes.

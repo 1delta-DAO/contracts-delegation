@@ -5,7 +5,7 @@ pragma solidity ^0.8.28;
 import {ForwarderCommands} from "../enums/ForwarderEnums.sol";
 import {Transfers} from "../transfers/Transfers.sol";
 import {ExternalCallsGeneric} from "../generic/ExternalCallsGeneric.sol";
-import {BridgeForwarder} from "../bridges/BridgeForwarder.sol";
+import {BridgeForwarder} from "./bridges/BridgeForwarder.sol";
 /**
  * @notice An arbitrary call contract
  * Does pull funds if desired
@@ -21,7 +21,7 @@ contract CallForwarder is Transfers, ExternalCallsGeneric, BridgeForwarder {
      * A selector different to the classic Composer
      * Should be called by a composer
      */
-    function deltaComposeLevel2(bytes calldata) external payable {
+    function deltaForwardCompose(bytes calldata) external payable {
         uint256 currentOffset;
         // data loop paramters
         uint256 maxIndex;
