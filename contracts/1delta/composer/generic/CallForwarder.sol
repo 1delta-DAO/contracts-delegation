@@ -5,14 +5,15 @@ pragma solidity ^0.8.28;
 import {ForwarderCommands} from "../enums/ForwarderEnums.sol";
 import {Transfers} from "../transfers/Transfers.sol";
 import {ExternalCallsGeneric} from "../generic/ExternalCallsGeneric.sol";
-
+import {BridgeForwarder} from "../bridges/BridgeForwarder.sol";
 /**
  * @notice An arbitrary call contract
  * Does pull funds if desired
  * One transfers funds to this contract and ooperates with them
  * Can generically call any target and checks if the selector for these calls is not `transferFrom`
  */
-contract CallForwarder is Transfers, ExternalCallsGeneric {
+
+contract CallForwarder is Transfers, ExternalCallsGeneric, BridgeForwarder {
     // base receive function
     receive() external payable {}
 
@@ -46,6 +47,8 @@ contract CallForwarder is Transfers, ExternalCallsGeneric {
                 currentOffset = _callExternal(currentOffset);
             } else if (operation == ForwarderCommands.ASSET_HANDLING) {
                 currentOffset = _transfers(currentOffset, callerAddress);
+            } else if (operation == ForwarderCommands.BRIDGING) {
+                currentOffset = _bridge(currentOffset, callerAddress);
             }
             // break criteria - we shifted to the end of the calldata
             if (currentOffset >= maxIndex) break;
