@@ -1,10 +1,12 @@
 
 import { ethers } from "hardhat";
 import {
+    DeployFactory__factory,
     TransparentUpgradeableProxy__factory,
 } from "../../types";
 import { getGasConfig } from "../_utils/getGasConfig";
-import { COMPOSER_LOGICS } from "./addresses";
+import { COMPOSER_LOGICS, DEPLOY_FACTORY } from "./addresses";
+import { keccak256 } from "ethers/lib/utils";
 
 /**
  * Universal gen2 deployer
