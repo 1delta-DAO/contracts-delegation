@@ -1322,16 +1322,16 @@ library CalldataLib {
     }
 
     /// @dev Mask for using the injected amount
-    uint256 private constant _PRE_PARAM = 1 << 127;
+    uint256 private constant BALANCE_FLAG = 1 << 127;
     /// @dev Mask for shares
-    uint256 private constant _SHARES_MASK = 1 << 126;
+    uint256 private constant USE_SHARES_FLAG = 1 << 126;
     /// @dev Mask for morpho using unsafe repay
-    uint256 internal constant _UNSAFE_AMOUNT = 1 << 125;
+    uint256 internal constant UNSAFE_AMOUNT_FLAG = 1 << 125;
 
     function generateAmountBitmap(uint128 amount, bool useShares, bool unsafe) internal pure returns (uint128 am) {
         am = amount;
-        if (useShares) am = uint128((am & ~_SHARES_MASK) | _SHARES_MASK); // sets the second bit to 1
-        if (unsafe) am = uint128((am & ~_UNSAFE_AMOUNT) | _UNSAFE_AMOUNT); // sets the third bit to 1
+        if (useShares) am = uint128((am & ~USE_SHARES_FLAG) | USE_SHARES_FLAG); // sets the second bit to 1
+        if (unsafe) am = uint128((am & ~UNSAFE_AMOUNT_FLAG) | UNSAFE_AMOUNT_FLAG); // sets the third bit to 1
         return am;
     }
 }

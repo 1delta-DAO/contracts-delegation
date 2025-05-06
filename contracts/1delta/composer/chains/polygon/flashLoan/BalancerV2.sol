@@ -56,7 +56,7 @@ abstract contract BalancerV2FlashLoans is Slots, Masks {
             mstore(add(ptr, 292), shl(96, callerAddress))
             calldatacopy(add(ptr, 312), currentOffset, calldataLength) // calldata
             // set entry flag
-            sstore(FLASH_LOAN_GATEWAY_SLOT, 2)
+            tstore(FLASH_LOAN_GATEWAY_SLOT, 1)
             if iszero(
                 call(
                     gas(),

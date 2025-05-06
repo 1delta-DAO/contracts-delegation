@@ -16,7 +16,7 @@ contract BridgeForwarder is StargateV2, Across {
         if (bridgeOperation == BridgeIds.STARGATE_V2) {
             return _bridgeStargateV2(currentOffset, callerAddress);
         } else if (bridgeOperation == BridgeIds.ACROSS) {
-            return _bridgeAccross(currentOffset, callerAddress);
+            return _bridgeAcross(currentOffset, callerAddress);
         } else {
             _invalidOperation();
         }

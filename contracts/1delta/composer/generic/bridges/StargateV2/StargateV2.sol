@@ -9,13 +9,6 @@ import "./IStargate.sol";
 contract StargateV2 is BaseUtils {
     // https://stargateprotocol.gitbook.io/stargate/v2-developer-docs/technical-reference/mainnet-contracts
     address internal constant TOKENMESSAGING = 0x19cFCE47eD54a88614648DC3f19A5980097007dD; // Arbitrum
-
-    error InvalidAssetId(uint16 assetId);
-    error InsufficientValue();
-    error TokenTransferFailed();
-    error SlippageTooHigh(uint256 expected, uint256 actual);
-
-    mapping(address => bool) internal approvals;
     /**
      * @notice Handles Stargate V2 bridging operations
      * @dev Decodes calldata and forwards the call to the appropriate Stargate adapter function

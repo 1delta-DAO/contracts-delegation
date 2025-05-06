@@ -1,6 +1,7 @@
 // // SPDX-License-Identifier: UNLICENSED
 // pragma solidity ^0.8.28;
 
+// import {console} from "forge-std/console.sol";
 // import "forge-std/Test.sol";
 // import "../../../contracts/1delta/composer//quoter/QuoterLight.sol";
 // import "../../shared/BaseTest.sol";
@@ -23,7 +24,7 @@
 // contract DEX______V3QuoterTest is BaseTest {
 //     using CalldataLib for bytes;
 
-//     uint256 internal constant forkBlock = 135045641;
+//     uint256 internal constant forkBlock = 1116504;
 
 //     address internal constant UNI_FACTORY = 0x33128a8fC17869897dcE68Ed026d694621f6FDfD;
 
@@ -36,24 +37,24 @@
 //     address internal WETH_USDC_500_POOL;
 
 //     function setUp() public virtual {
-//         string memory chainName = Chains.OP_MAINNET;
+//         string memory chainName = Chains.TAIKO_ALETHIA;
 
 //         _init(chainName, forkBlock, true);
 
-//         WETH = chain.getTokenAddress(Tokens.WETH);
-//         USDC = chain.getTokenAddress(Tokens.USDC);
+//         // WETH = chain.getTokenAddress(Tokens.WETH);
+//         // USDC = chain.getTokenAddress(Tokens.USDC);
 
 //         quoter = new QuoterLight();
-//         composer = ComposerPlugin.getComposer(chainName);
+//         // composer = ComposerPlugin.getComposer(chainName);
 
-//         deal(WETH, address(user), 10 ether);
-//         deal(USDC, address(user), 1000e6);
+//         // deal(WETH, address(user), 10 ether);
+//         // deal(USDC, address(user), 1000e6);
 
-//         // Approve composer
-//         vm.startPrank(user);
-//         IERC20(WETH).approve(address(composer), type(uint256).max);
-//         IERC20(USDC).approve(address(composer), type(uint256).max);
-//         vm.stopPrank();
+//         // // Approve composer
+//         // vm.startPrank(user);
+//         // IERC20(WETH).approve(address(composer), type(uint256).max);
+//         // IERC20(USDC).approve(address(composer), type(uint256).max);
+//         // vm.stopPrank();
 //     }
 
 //     /**
@@ -68,7 +69,7 @@
 
 //         // Use utility function to encode path
 //         bytes memory path =
-//             hex"4200000000000000000000000000000000000006020000004200000000000000000000000000000000000042000000000000000000000000000000000000000000fc1f3296458f9b2a27a0b91dd7681c4020e09d050001f400000000da10009cbd5d07dd0cecc66161fc93d7c9000da1000000000000000000000000000000000000000000ae2d9288be0587c2097ec46db7686ac2481f896e002710000000007f5c764cbc14f9669b88837ca1490cca17c31607000000000000000000000000000000000000000000100bdc1431a9b09c61c0efc5776814285f8fb2480001f40000";
+//             hex"a9d23408b9ba935c230493c40c73824df71a09750000a51894664a773981c6c112c43ce576f315d5b1b6000000000000000000000000000000000000000000622f6796aeb2447edc31e9f0cf599b65018f8d70140bb80000";
 //         // single swap branch (0,0)
 //         bytes memory swapBranch = (new bytes(0)).attachBranch(0, 0, ""); //(0,0)
 //         uint256 gas = gasleft();
@@ -80,30 +81,30 @@
 
 //         console.log("Quoted amount:", quotedAmountOut);
 
-//         // add quotedAmountOut as amountOutMin
-//         bytes memory swapHead = CalldataLib.swapHead(amountIn, quotedAmountOut, WETH);
-//         bytes memory swapCall = CalldataLib.encodeUniswapV3StyleSwap(
-//             abi.encodePacked(swapHead, swapBranch), USDC, user, 0, WETH_USDC_500_POOL, 500, DexPayConfig.CALLER_PAYS, ""
-//         );
+//         // // add quotedAmountOut as amountOutMin
+//         // bytes memory swapHead = CalldataLib.swapHead(amountIn, quotedAmountOut, WETH);
+//         // bytes memory swapCall = CalldataLib.encodeUniswapV3StyleSwap(
+//         //     abi.encodePacked(swapHead, swapBranch), USDC, user, 0, WETH_USDC_500_POOL, 500, DexPayConfig.CALLER_PAYS, ""
+//         // );
 
-//         // Get actual amount from a real swap
-//         uint256 balanceBefore = IERC20(USDC).balanceOf(address(user));
+//         // // Get actual amount from a real swap
+//         // uint256 balanceBefore = IERC20(USDC).balanceOf(address(user));
 
-//         gas = gasleft();
+//         // gas = gasleft();
 
-//         vm.prank(user);
-//         composer.deltaCompose(abi.encodePacked(swapCall));
+//         // vm.prank(user);
+//         // composer.deltaCompose(abi.encodePacked(swapCall));
 
-//         gas = gas - gasleft();
-//         console.log("gas", gas);
+//         // gas = gas - gasleft();
+//         // console.log("gas", gas);
 
-//         uint256 balanceAfter = IERC20(USDC).balanceOf(address(user));
-//         uint256 actualAmountOut = balanceAfter - balanceBefore;
+//         // uint256 balanceAfter = IERC20(USDC).balanceOf(address(user));
+//         // uint256 actualAmountOut = balanceAfter - balanceBefore;
 
-//         // Compare results
-//         assertApproxEqRel(quotedAmountOut, actualAmountOut, 1, "didn't work");
-//         console.log("Quote amount:", quotedAmountOut);
-//         console.log("Actual amount:", actualAmountOut);
+//         // // Compare results
+//         // assertApproxEqRel(quotedAmountOut, actualAmountOut, 1, "didn't work");
+//         // console.log("Quote amount:", quotedAmountOut);
+//         // console.log("Actual amount:", actualAmountOut);
 //     }
 
 //     function multiPath(address[] memory assets, uint16[] memory fees, address receiver) internal view returns (bytes memory data) {
