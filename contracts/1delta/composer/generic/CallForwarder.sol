@@ -6,6 +6,7 @@ import {ComposerCommands} from "../enums/DeltaEnums.sol";
 import {Transfers} from "../transfers/Transfers.sol";
 import {ExternalCallsGeneric} from "../generic/ExternalCallsGeneric.sol";
 import {BridgeForwarder} from "./bridges/BridgeForwarder.sol";
+import {ForwarderCommands} from "../enums/ForwarderEnums.sol";
 /**
  * @notice An arbitrary call contract to forward generic calls
  * Does pull funds if desired

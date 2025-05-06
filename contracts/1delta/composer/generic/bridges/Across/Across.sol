@@ -69,15 +69,22 @@ contract Across is BaseUtils {
             }
             requiredValue = amount;
         }
+
+        // Handle token approvals for non-native tokens
+        if (!isNative && !approvals[sendingAssetId]) {
+            SafeERC20.safeIncreaseAllowance(IERC20(sendingAssetId), SPOKE_POOL, type(uint256).max);
+            approvals[sendingAssetId] = true;
+        }
+
         assembly {
             // Get free memory pointer for constructing call data
             let ptr := mload(0x40)
 
-            // Store function selector for depositV3
-            mstore(ptr, 0x6c571313)
+            // Store function selector for depositV3: bytes4(keccak256("depositV3(address,address,address,address,uint256,uint256,uint256,address,uint32,uint32,uint32,bytes)"))
+            mstore(ptr, 0x7b939232)
 
-            // Store refundAddress (from calldata offset 96)
-            mstore(add(ptr, 0x04), shr(96, calldataload(add(currentOffset, 96))))
+            // Depositor
+            mstore(add(ptr, 0x04), address())
 
             // Store receiver (from calldata offset 76)
             mstore(add(ptr, 0x24), shr(96, calldataload(add(currentOffset, 76))))
@@ -123,7 +130,7 @@ contract Across is BaseUtils {
             case 1 {
                 calldatacopy(
                     add(messageOffset, 0x40), // destination in memory (after length)
-                    add(currentOffset, 150), // source in calldata
+                    add(currentOffset, 130), // source in calldata
                     messageLength // length to copy
                 )
 
@@ -139,32 +146,6 @@ contract Across is BaseUtils {
             }
 
             // Calculate total size of call data
-            let callSize := add(0x184, mul(div(add(messageLength, 31), 32), 32))
-
-            // Check if we need to handle token approvals for non-native tokens
-            // We'll do this outside the assembly block
-        }
-
-        // Check for insufficient value error
-        if (requiredValue == 0xFFFFFFFFFFFFFFFF) {
-            revert InsufficientValue();
-        }
-
-        // For non-native tokens with zero amount, get the token balance
-        if (!isNative && amount == 0) {
-            amount = IERC20(sendingAssetId).balanceOf(address(this));
-        }
-
-        // Handle token approvals for non-native tokens
-        if (!isNative && !approvals[sendingAssetId]) {
-            SafeERC20.safeIncreaseAllowance(IERC20(sendingAssetId), SPOKE_POOL, type(uint256).max);
-            approvals[sendingAssetId] = true;
-        }
-
-        // Continue with assembly to make the actual call
-        assembly {
-            // Get free memory pointer (restored from earlier)
-            let ptr := mload(0x40)
             let callSize := add(0x184, mul(div(add(messageLength, 31), 32), 32))
 
             // Make the call
