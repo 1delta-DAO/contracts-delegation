@@ -32,4 +32,6 @@ interface IAcrossSpokePool {
     )
         external
         payable;
+
+    function fillDeadlineBuffer() external returns (uint32);
 }

@@ -22,20 +22,18 @@ contract Across is BaseUtils {
      * | 0      | 20             | sendingAssetId               |
      * | 20     | 20             | receivingAssetId             |
      * | 40     | 16             | amount                       |
-     * | 56     | 16             | outputAmount                 |
-     * | 72     | 4              | destinationChainId           |
-     * | 76     | 20             | receiver                     |
-     * | 96     | 20             | exclusiveRelayer             |
-     * | 116    | 4              | quoteTimestamp               |
-     * | 120    | 4              | fillDeadline                 |
-     * | 124    | 4              | exclusivityDeadline          |
-     * | 128    | 2              | message.length: msgLen       |
-     * | 130    | msgLen         | message                      |
+     * | 56     | 16             | FixedFee                     |
+     * | 72     | 16             | FeePercentage                |
+     * | 88     | 4              | destinationChainId           |
+     * | 92     | 20             | receiver                     |
+     * | 112    | 2              | message.length: msgLen       |
+     * | 114    | msgLen         | message                      |
      */
     function _bridgeAcross(uint256 currentOffset, address callerAddress) internal returns (uint256) {
         // Local variables to store key data
         address sendingAssetId;
         uint256 amount;
+        uint256 outputAmount;
         uint16 messageLength;
         bool isNative;
         uint256 requiredValue;
@@ -51,8 +49,11 @@ contract Across is BaseUtils {
             // Load amount (16 bytes)
             amount := and(shr(128, calldataload(add(currentOffset, 40))), UINT128_MASK)
 
+            // let fixedFee := and(shr(128, calldataload(add(currentOffset, 72))), UINT16_MASK)
+            // let feePercentage := and(shr(128, calldataload(add(currentOffset, 88))), UINT16_MASK)
+
             // Load message length
-            messageLength := and(shr(240, calldataload(add(currentOffset, 128))), UINT16_MASK)
+            messageLength := and(shr(240, calldataload(add(currentOffset, 112))), UINT16_MASK)
         }
 
         if (amount == 0) {
@@ -128,7 +129,7 @@ contract Across is BaseUtils {
             // Copy message data if there's any
             switch gt(messageLength, 0)
             case 1 {
-                calldatacopy(add(messageOffset, 0x40), add(currentOffset, 130), messageLength)
+                calldatacopy(add(messageOffset, 0x40), add(currentOffset, 98), messageLength)
 
                 // Round up to multiple of 32 bytes
                 let paddedLength := mul(div(add(messageLength, 31), 32), 32)
@@ -177,6 +178,6 @@ contract Across is BaseUtils {
         }
 
         // Calculate new offset
-        return currentOffset + 130 + messageLength;
+        return currentOffset + 98 + messageLength;
     }
 }
