@@ -85,13 +85,15 @@ contract StargateV2 is BaseUtils {
             }
         }
 
-        _bridgeTokens(msg.value, callerAddress, params);
+        _bridgeTokens(callerAddress, params);
 
         // Calculate new offset
         return currentOffset + 79 + composeMsgLength + extraOptionsLength;
     }
 
-    function _bridgeTokens(uint256 _msgValue, address _caller, BridgeParams memory _params) internal {
+    function _bridgeTokens(address _caller, BridgeParams memory _params) internal {
+        uint256 currentBalance = address(this).balance;
+
         // Get the Stargate implementation for this asset
         address stargateAddr = ITokenMessaging(TOKENMESSAGING).stargateImpls(_params.assetId);
         if (stargateAddr == address(0)) revert InvalidAssetId(_params.assetId);
@@ -108,24 +110,24 @@ contract StargateV2 is BaseUtils {
         // if amount is 0, then use the balance of the contract
         if (_params.amount == 0) {
             if (isNative) {
-                _params.amount = uint128(address(this).balance - _params.fee);
-                requiredValue = address(this).balance;
+                _params.amount = uint128(currentBalance - _params.fee);
+                requiredValue = currentBalance;
             } else {
                 _params.amount = uint128(IERC20(tokenAddr).balanceOf(address(this)));
                 // check if fee is enough
-                if (_params.fee != _msgValue) revert InsufficientValue();
-                requiredValue = _msgValue;
+                if (_params.fee != currentBalance) revert InsufficientValue();
+                requiredValue = currentBalance;
             }
         } else {
             if (isNative) {
                 // check if enough founds are attached
-                if (_params.amount + _params.fee != _msgValue) {
+                if (_params.amount + _params.fee != currentBalance) {
                     revert InsufficientValue();
                 }
             } else {
-                if (_params.fee != _msgValue) revert InsufficientValue();
+                if (_params.fee != currentBalance) revert InsufficientValue();
             }
-            requiredValue = _msgValue;
+            requiredValue = currentBalance;
         }
 
         // Create the sendParam structure
@@ -139,11 +141,9 @@ contract StargateV2 is BaseUtils {
             oftCmd: _params.isBusMode ? new bytes(1) : new bytes(0) // Bus or taxi mode
         });
 
-        // Handle token transfers
-        if (!isNative && !approvals[tokenAddr]) {
-            SafeERC20.safeIncreaseAllowance(IERC20(tokenAddr), stargateAddr, type(uint256).max);
-            approvals[tokenAddr] = true;
-        }
+        // Handle token allowance
+        /// @notice if the token is not native, then there should be an approve command for call forwarder before this bridge call
+        /// to make sure that the stargate has enough allowance to get the token
 
         // Execute the bridge operation
         try stargate.sendToken{value: requiredValue}(
@@ -155,7 +155,7 @@ contract StargateV2 is BaseUtils {
             if (oftReceipt.amountReceivedLD < _params.minAmount) {
                 revert SlippageTooHigh(_params.minAmount, oftReceipt.amountReceivedLD);
             }
-        } catch (bytes memory reason) {
+        } catch {
             // Refund tokens if ERC20
             if (!isNative) {
                 SafeERC20.safeTransfer(IERC20(tokenAddr), _caller, _params.amount);
