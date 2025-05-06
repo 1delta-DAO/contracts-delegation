@@ -77,14 +77,20 @@ library Gen2025ActionIds {
 }
 
 /// @title Commands for OneDeltaComposer
-/// @notice Command Flags used to decode commands, these are provided in 4 blocks
 library ComposerCommands {
-    uint256 internal constant SWAPS = 0x20;
-    uint256 internal constant EXT_CALL = 0x40;
-    uint256 internal constant LENDING = 0x60;
-    uint256 internal constant TRANSFERS = 0x80;
-    uint256 internal constant PERMIT = 0xA0;
-    uint256 internal constant FLASH_LOAN = 0xC0;
-    uint256 internal constant ERC4626 = 0xE0;
-    uint256 internal constant GEN_2025_SINGELTONS = 0xE1;
+    uint256 internal constant SWAPS = 0x10;
+    uint256 internal constant EXT_CALL = 0x20;
+    uint256 internal constant LENDING = 0x30;
+    uint256 internal constant TRANSFERS = 0x40;
+    uint256 internal constant PERMIT = 0x50;
+    uint256 internal constant FLASH_LOAN = 0x60;
+    uint256 internal constant ERC4626 = 0x70;
+    uint256 internal constant GEN_2025_SINGELTONS = 0x80;
+    uint256 internal constant BRIDGING = 0x90;
+}
+
+/// @title Commands for Bridge
+library BridgeIds {
+    uint256 internal constant STARGATE_V2 = 0x00;
+    uint256 internal constant ACROSS = 0x0A;
 }
