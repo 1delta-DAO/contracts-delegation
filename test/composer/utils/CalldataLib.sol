@@ -140,7 +140,112 @@ library CalldataLib {
         bytes memory bridgeData = encodeStargateV2Bridge(assetId, dstEid, receiver, amount, minAmount, fee, isBusMode, composeMsg, extraOptions);
         return abi.encodePacked(ForwarderCommands.EXT_CALL, callForwarder, uint112(fee + amount), uint16(bridgeData.length), bridgeData);
     }
-    //
+
+    // AcrossV3
+
+    function encodeAcrossBridge(
+        address sendingAssetId,
+        address receivingAssetId,
+        uint256 amount,
+        uint256 outputAmount,
+        uint32 destinationChainId,
+        address receiver,
+        address exclusiveRelayer,
+        uint32 quoteTimestamp,
+        uint32 fillDeadline,
+        uint32 exclusivityDeadline,
+        bytes memory message
+    )
+        internal
+        pure
+        returns (bytes memory)
+    {
+        bytes memory bridgeData = abi.encodePacked(
+            uint8(ForwarderCommands.BRIDGING),
+            uint8(BridgeIds.ACROSS),
+            sendingAssetId, // 20 bytes
+            receivingAssetId, // 20 bytes
+            uint128(amount), // 16 bytes
+            uint128(outputAmount), // 16 bytes
+            destinationChainId, // 4 bytes
+            receiver, // 20 bytes
+            exclusiveRelayer, // 20 bytes
+            quoteTimestamp, // 4 bytes
+            fillDeadline, // 4 bytes
+            exclusivityDeadline, // 4 bytes
+            uint16(message.length), // 2 bytes
+            message // variable
+        );
+
+        return bridgeData;
+    }
+
+    function extCallAcrossBridgeToken(
+        address callForwarder,
+        address sendingAssetId,
+        address receivingAssetId,
+        uint256 amount,
+        uint256 outputAmount,
+        uint32 destinationChainId,
+        address receiver,
+        address exclusiveRelayer,
+        uint32 quoteTimestamp,
+        uint32 fillDeadline,
+        uint32 exclusivityDeadline,
+        bytes memory message
+    )
+        internal
+        pure
+        returns (bytes memory)
+    {
+        bytes memory bridgeData = encodeAcrossBridge(
+            sendingAssetId,
+            receivingAssetId,
+            amount,
+            outputAmount,
+            destinationChainId,
+            receiver,
+            exclusiveRelayer,
+            quoteTimestamp,
+            fillDeadline,
+            exclusivityDeadline,
+            message
+        );
+        return abi.encodePacked(ForwarderCommands.EXT_CALL, callForwarder, uint112(0), uint16(bridgeData.length), bridgeData);
+    }
+
+    function extCallAcrossBridgeNative(
+        address callForwarder,
+        address receivingAssetId,
+        uint256 amount,
+        uint256 outputAmount,
+        uint32 destinationChainId,
+        address receiver,
+        address exclusiveRelayer,
+        uint32 quoteTimestamp,
+        uint32 fillDeadline,
+        uint32 exclusivityDeadline,
+        bytes memory message
+    )
+        internal
+        pure
+        returns (bytes memory)
+    {
+        bytes memory bridgeData = encodeAcrossBridge(
+            address(0), // Sending asset is native token
+            receivingAssetId,
+            amount,
+            outputAmount,
+            destinationChainId,
+            receiver,
+            exclusiveRelayer,
+            quoteTimestamp,
+            fillDeadline,
+            exclusivityDeadline,
+            message
+        );
+        return abi.encodePacked(ForwarderCommands.EXT_CALL, callForwarder, uint112(amount), uint16(bridgeData.length), bridgeData);
+    }
 
     function encodePermit2TransferFrom(address token, address receiver, uint256 amount) internal pure returns (bytes memory) {
         return abi.encodePacked(uint8(ComposerCommands.TRANSFERS), uint8(TransferIds.PERMIT2_TRANSFER_FROM), token, receiver, uint128(amount));
