@@ -68,6 +68,8 @@ interface IStargate {
         external
         payable
         returns (MessagingReceipt memory, OFTReceipt memory);
+
+    function quoteSend(SendParam calldata _sendParam, bool _payInLzToken) external view returns (MessagingFee memory);
 }
 
 interface ITokenMessaging {
