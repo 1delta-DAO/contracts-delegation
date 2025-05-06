@@ -128,11 +128,7 @@ contract Across is BaseUtils {
             // Copy message data if there's any
             switch gt(messageLength, 0)
             case 1 {
-                calldatacopy(
-                    add(messageOffset, 0x40), // destination in memory (after length)
-                    add(currentOffset, 130), // source in calldata
-                    messageLength // length to copy
-                )
+                calldatacopy(add(messageOffset, 0x40), add(currentOffset, 130), messageLength)
 
                 // Round up to multiple of 32 bytes
                 let paddedLength := mul(div(add(messageLength, 31), 32), 32)
@@ -151,39 +147,25 @@ contract Across is BaseUtils {
             // Make the call
             success :=
                 call(
-                    gas(), // forward all gas
-                    SPOKE_POOL, // target contract
+                    gas(),
+                    SPOKE_POOL,
                     0, // todo: value (0 if not native token)
-                    ptr, // input data start
-                    callSize, // input data length
-                    0, // don't care about output
-                    0 // don't care about output length
+                    ptr,
+                    callSize,
+                    0,
+                    0
                 )
 
             // Handle refunds if the call failed
             if iszero(success) {
-                // For non-native tokens, we'll handle refund outside assembly
-
                 // Always refund native value if there's any
                 if and(gt(requiredValue, 0), isNative) {
-                    success :=
-                        call(
-                            gas(), // forward all gas
-                            callerAddress, // refund to caller
-                            requiredValue, // refund the value
-                            0, // no input data
-                            0, // no input data length
-                            0, // don't care about output
-                            0 // don't care about output length
-                        )
+                    success := call(gas(), callerAddress, requiredValue, 0, 0, 0, 0)
 
                     // Check if refund failed
                     if iszero(success) {
-                        mstore(0, 0x08c379a000000000000000000000000000000000000000000000000000000000) // Error signature
-                        mstore(4, 0x20) // String offset
-                        mstore(36, 0x0D) // String length (13)
-                        mstore(68, 0x526566756e64206661696c6564000000000000000000000000000000000000) // "Refund failed"
-                        revert(0, 100) // Revert with error message
+                        mstore(0, 0xf0c49d44)
+                        revert(0, 4)
                     }
                 }
             }

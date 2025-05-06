@@ -10,6 +10,7 @@ contract BaseUtils is ERC20Selectors, Masks, DeltaErrors {
     error InsufficientValue();
     error TokenTransferFailed();
     error SlippageTooHigh(uint256 expected, uint256 actual);
+    error RefundFailed();
 
     mapping(address => bool) internal approvals;
 }
