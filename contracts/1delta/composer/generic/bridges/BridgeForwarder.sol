@@ -3,7 +3,7 @@ pragma solidity ^0.8.28;
 
 import {StargateV2} from "./StargateV2/StargateV2.sol";
 import {Across} from "./Across/Across.sol";
-import {BridgeIds} from "contracts/1delta/composer/enums/ForwarderEnums.sol";
+import {BridgeIds} from "contracts/1delta/composer/enums/DeltaEnums.sol";
 
 contract BridgeForwarder is StargateV2, Across {
     function _bridge(uint256 currentOffset, address callerAddress) internal returns (uint256) {

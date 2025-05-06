@@ -2,7 +2,6 @@
 pragma solidity ^0.8.19;
 
 import "contracts/1delta/composer/enums/DeltaEnums.sol";
-import "contracts/1delta/composer/enums/ForwarderEnums.sol";
 import "contracts/1delta/composer/swappers/dex/DexTypeMappings.sol";
 import "contracts/1delta/composer/swappers/callbacks/DexForkMappings.sol";
 import {DexPayConfig, SweepType, DodoSelector} from "contracts/1delta/composer/enums/MiscEnums.sol";
@@ -16,7 +15,11 @@ import {DexPayConfig, SweepType, DodoSelector} from "contracts/1delta/composer/e
  * - use if condition to revert (no require statements)
  */
 library CalldataLib {
+    function encodeExternalCall(address target, uint256 value, bytes memory data) internal pure returns (bytes memory) {
+        return abi.encodePacked(ComposerCommands.EXT_CALL, target, uint112(value), uint16(data.length), data);
+    }
     // StargateV2 bridging
+
     function encodeStargateV2Bridge(
         uint16 assetId,
         uint32 dstEid,
@@ -33,7 +36,7 @@ library CalldataLib {
         returns (bytes memory)
     {
         bytes memory bridgeData = abi.encodePacked(
-            uint8(ForwarderCommands.BRIDGING),
+            uint8(ComposerCommands.BRIDGING),
             uint8(BridgeIds.STARGATE_V2),
             assetId, // 2 bytes
             dstEid, // 4 bytes
@@ -109,6 +112,7 @@ library CalldataLib {
         uint256 amount,
         uint256 minAmount,
         uint256 fee,
+        uint256 value,
         bool isBusMode,
         bytes memory composeMsg,
         bytes memory extraOptions
@@ -118,7 +122,7 @@ library CalldataLib {
         returns (bytes memory)
     {
         bytes memory bridgeData = encodeStargateV2Bridge(assetId, dstEid, receiver, amount, minAmount, fee, isBusMode, composeMsg, extraOptions);
-        return abi.encodePacked(ForwarderCommands.EXT_CALL, callForwarder, uint112(fee), uint16(bridgeData.length), bridgeData);
+        return encodeExternalCall(callForwarder, value, bridgeData);
     }
 
     function extCallStargateV2BridgeNative(
@@ -138,7 +142,7 @@ library CalldataLib {
         returns (bytes memory)
     {
         bytes memory bridgeData = encodeStargateV2Bridge(assetId, dstEid, receiver, amount, minAmount, fee, isBusMode, composeMsg, extraOptions);
-        return abi.encodePacked(ForwarderCommands.EXT_CALL, callForwarder, uint112(fee + amount), uint16(bridgeData.length), bridgeData);
+        return encodeExternalCall(callForwarder, fee + amount, bridgeData);
     }
 
     // AcrossV3
@@ -161,7 +165,7 @@ library CalldataLib {
         returns (bytes memory)
     {
         bytes memory bridgeData = abi.encodePacked(
-            uint8(ForwarderCommands.BRIDGING),
+            uint8(ComposerCommands.BRIDGING),
             uint8(BridgeIds.ACROSS),
             sendingAssetId, // 20 bytes
             receivingAssetId, // 20 bytes
@@ -211,7 +215,7 @@ library CalldataLib {
             exclusivityDeadline,
             message
         );
-        return abi.encodePacked(ForwarderCommands.EXT_CALL, callForwarder, uint112(0), uint16(bridgeData.length), bridgeData);
+        return encodeExternalCall(callForwarder, 0, bridgeData);
     }
 
     function extCallAcrossBridgeNative(
@@ -244,7 +248,7 @@ library CalldataLib {
             exclusivityDeadline,
             message
         );
-        return abi.encodePacked(ForwarderCommands.EXT_CALL, callForwarder, uint112(amount), uint16(bridgeData.length), bridgeData);
+        return abi.encodePacked(ComposerCommands.EXT_CALL, callForwarder, uint112(amount), uint16(bridgeData.length), bridgeData);
     }
 
     function encodePermit2TransferFrom(address token, address receiver, uint256 amount) internal pure returns (bytes memory) {

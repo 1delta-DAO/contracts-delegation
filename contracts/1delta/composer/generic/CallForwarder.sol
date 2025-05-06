@@ -6,7 +6,6 @@ import {ComposerCommands} from "../enums/DeltaEnums.sol";
 import {Transfers} from "../transfers/Transfers.sol";
 import {ExternalCallsGeneric} from "../generic/ExternalCallsGeneric.sol";
 import {BridgeForwarder} from "./bridges/BridgeForwarder.sol";
-import {ForwarderCommands} from "../enums/ForwarderEnums.sol";
 /**
  * @notice An arbitrary call contract to forward generic calls
  * Does pull funds if desired
@@ -51,7 +50,7 @@ contract CallForwarder is Transfers, ExternalCallsGeneric, BridgeForwarder {
                 currentOffset = _callExternal(currentOffset);
             } else if (operation == ComposerCommands.TRANSFERS) {
                 currentOffset = _transfers(currentOffset, callerAddress);
-            } else if (operation == ForwarderCommands.BRIDGING) {
+            } else if (operation == ComposerCommands.BRIDGING) {
                 currentOffset = _bridge(currentOffset, callerAddress);
             }
             // break criteria - we shifted to the end of the calldata
