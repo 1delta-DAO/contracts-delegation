@@ -35,6 +35,8 @@ contract Across is BaseUtils {
         uint256 amount;
         uint256 outputAmount;
         uint16 messageLength;
+        uint28 fixedFee;
+        uint28 feePercentage;
         bool isNative;
         uint256 requiredValue;
         bool success;
@@ -48,9 +50,9 @@ contract Across is BaseUtils {
 
             // Load amount (16 bytes)
             amount := and(shr(128, calldataload(add(currentOffset, 40))), UINT128_MASK)
-
-            // let fixedFee := and(shr(128, calldataload(add(currentOffset, 72))), UINT16_MASK)
-            // let feePercentage := and(shr(128, calldataload(add(currentOffset, 88))), UINT16_MASK)
+            // load fees
+            fixedFee := and(shr(128, calldataload(add(currentOffset, 56))), UINT28_MASK)
+            feePercentage := and(shr(128, calldataload(add(currentOffset, 72))), UINT28_MASK)
 
             // Load message length
             messageLength := and(shr(240, calldataload(add(currentOffset, 112))), UINT16_MASK)
@@ -63,119 +65,18 @@ contract Across is BaseUtils {
             } else {
                 amount = IERC20(sendingAssetId).balanceOf(address(this));
             }
-        } else if (isNative) {
-            // For native assets, make sure enough value is sent
-            if (amount != msg.value) {
-                revert InsufficientValue();
-            }
-            requiredValue = amount;
-        }
-
-        // Handle token approvals for non-native tokens
-        if (!isNative && !approvals[sendingAssetId]) {
-            SafeERC20.safeIncreaseAllowance(IERC20(sendingAssetId), SPOKE_POOL, type(uint256).max);
-            approvals[sendingAssetId] = true;
-        }
-
-        assembly {
-            // Get free memory pointer for constructing call data
-            let ptr := mload(0x40)
-
-            // Store function selector for depositV3: bytes4(keccak256("depositV3(address,address,address,address,uint256,uint256,uint256,address,uint32,uint32,uint32,bytes)"))
-            mstore(ptr, 0x7b939232)
-
-            // Depositor
-            mstore(add(ptr, 0x04), address())
-
-            // Store receiver (from calldata offset 76)
-            mstore(add(ptr, 0x24), shr(96, calldataload(add(currentOffset, 76))))
-
-            // Store sendingAssetId
-            mstore(add(ptr, 0x44), sendingAssetId)
-
-            // Store receivingAssetId (from calldata offset 20)
-            mstore(add(ptr, 0x64), shr(96, calldataload(add(currentOffset, 20))))
-
-            // Store amount
-            mstore(add(ptr, 0x84), amount)
-
-            // Store outputAmount (from calldata offset 56)
-            mstore(add(ptr, 0xA4), and(shr(128, calldataload(add(currentOffset, 56))), UINT128_MASK))
-
-            // Store destinationChainId (from calldata offset 72)
-            mstore(add(ptr, 0xC4), and(shr(224, calldataload(add(currentOffset, 72))), UINT32_MASK))
-
-            // Store exclusiveRelayer (from calldata offset 116)
-            mstore(add(ptr, 0xE4), shr(96, calldataload(add(currentOffset, 116))))
-
-            // Store quoteTimestamp (from calldata offset 136)
-            mstore(add(ptr, 0x104), and(shr(224, calldataload(add(currentOffset, 136))), UINT32_MASK))
-
-            // Store fillDeadline (from calldata offset 140)
-            mstore(add(ptr, 0x124), and(shr(224, calldataload(add(currentOffset, 140))), UINT32_MASK))
-
-            // Store exclusivityDeadline (from calldata offset 144)
-            mstore(add(ptr, 0x144), and(shr(224, calldataload(add(currentOffset, 144))), UINT32_MASK))
-
-            // Message data handling
-            let messageOffset := add(ptr, 0x164)
-
-            // Store message offset (point to the bytes array)
-            mstore(messageOffset, 0x20)
-
-            // Store message length
-            mstore(add(messageOffset, 0x20), messageLength)
-
-            // Copy message data if there's any
-            switch gt(messageLength, 0)
-            case 1 {
-                calldatacopy(add(messageOffset, 0x40), add(currentOffset, 98), messageLength)
-
-                // Round up to multiple of 32 bytes
-                let paddedLength := mul(div(add(messageLength, 31), 32), 32)
-
-                // Update free memory pointer
-                mstore(0x40, add(add(messageOffset, 0x40), paddedLength))
-            }
-            default {
-                // Update free memory pointer
-                mstore(0x40, add(messageOffset, 0x40))
-            }
-
-            // Calculate total size of call data
-            let callSize := add(0x184, mul(div(add(messageLength, 31), 32), 32))
-
-            // Make the call
-            success :=
-                call(
-                    gas(),
-                    SPOKE_POOL,
-                    0, // todo: value (0 if not native token)
-                    ptr,
-                    callSize,
-                    0,
-                    0
-                )
-
-            // Handle refunds if the call failed
-            if iszero(success) {
-                // Always refund native value if there's any
-                if and(gt(requiredValue, 0), isNative) {
-                    success := call(gas(), callerAddress, requiredValue, 0, 0, 0, 0)
-
-                    // Check if refund failed
-                    if iszero(success) {
-                        mstore(0, 0xf0c49d44)
-                        revert(0, 4)
-                    }
+        } else {
+            if (isNative) {
+                // For native assets, make sure enough value is sent
+                if (amount != address(this).balance) {
+                    revert InsufficientValue();
                 }
+                requiredValue = amount;
             }
+            // for erc20 ones we don't do anything we can check the balance though, but lets continue without checking the balance
         }
-
-        // Handle refunds for non-native tokens if the call failed
-        if (!success && !isNative) {
-            SafeERC20.safeTransfer(IERC20(sendingAssetId), callerAddress, amount);
-        }
+        // set the output amount
+        outputAmount = (amount * (1 - feePercentage)) - fixedFee;
 
         // Calculate new offset
         return currentOffset + 98 + messageLength;
