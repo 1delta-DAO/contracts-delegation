@@ -19,5 +19,5 @@ interface IAcrossSpokePool {
         external
         payable;
 
-    function fillDeadlineBuffer() external returns (uint32);
+    function fillDeadlineBuffer() external view returns (uint32);
 }

@@ -23,107 +23,97 @@ contract Across is BaseUtils {
      * | 20     | 20             | receivingAssetId             |
      * | 40     | 16             | amount                       |
      * | 56     | 16             | FixedFee                     |
-     * | 72     | 16             | FeePercentage                |
-     * | 88     | 4              | destinationChainId           |
-     * | 92     | 20             | receiver                     |
-     * | 112    | 2              | message.length: msgLen       |
-     * | 114    | msgLen         | message                      |
+     * | 72     | 4              | FeePercentage                |
+     * | 76     | 4              | destinationChainId           |
+     * | 80     | 20             | receiver                     |
+     * | 100    | 2              | message.length: msgLen       |
+     * | 102    | msgLen         | message                      |
      */
     function _bridgeAcross(uint256 currentOffset, address callerAddress) internal returns (uint256) {
-        // Local variables to store key data
-        address sendingAssetId;
-        address receivingAssetId;
-        uint32 destinationChainId;
-        uint256 amount;
-        address receiver;
-        uint256 outputAmount;
-        uint16 messageLength;
-        uint128 fixedFee;
-        uint128 feePercentage;
-        bool isNative;
-        uint256 requiredValue;
-        bool success;
-        uint32 fillDeadlineBuffer = IAcrossSpokePool(SPOKE_POOL).fillDeadlineBuffer();
-
+        uint256 fillDeadlineBuffer = IAcrossSpokePool(SPOKE_POOL).fillDeadlineBuffer();
+        uint256 messageLength;
         assembly {
-            // Load sendingAssetId (20 bytes)
-            sendingAssetId := shr(96, calldataload(currentOffset))
+            // Load key data from calldata
+            let sendingAssetId := shr(96, calldataload(currentOffset))
+            let isNative := iszero(sendingAssetId)
+            let amount := and(shr(128, calldataload(add(currentOffset, 40))), UINT128_MASK)
+            messageLength := and(shr(240, calldataload(add(currentOffset, 100))), UINT16_MASK)
+            let requiredValue := 0
+            let outputAmount := 0
 
-            // Load receivingAssetId (20 bytes)
-            receivingAssetId := shr(96, calldataload(add(currentOffset, 20)))
-
-            // Load destinationChainId (4 bytes)
-            destinationChainId := and(shr(248, calldataload(add(currentOffset, 88))), UINT32_MASK)
-
-            // Load receiver (20 bytes)
-            receiver := shr(96, calldataload(add(currentOffset, 92)))
-
-            // Calculate isNative
-            isNative := iszero(sendingAssetId)
-
-            // Load amount (16 bytes)
-            amount := and(shr(128, calldataload(add(currentOffset, 40))), UINT128_MASK)
-            // load fees
-            fixedFee := and(shr(128, calldataload(add(currentOffset, 56))), UINT128_MASK)
-            feePercentage := and(shr(128, calldataload(add(currentOffset, 72))), UINT128_MASK)
-
-            // Load message length
-            messageLength := and(shr(240, calldataload(add(currentOffset, 112))), UINT16_MASK)
-        }
-
-        if (amount == 0) {
-            if (isNative) {
-                amount = address(this).balance;
-                requiredValue = amount;
-            } else {
-                amount = IERC20(sendingAssetId).balanceOf(address(this));
-            }
-        } else {
-            if (isNative) {
-                // For native assets, make sure enough value is sent
-                if (amount != address(this).balance) {
-                    revert InsufficientValue();
+            // Check if amount is zero and handle accordingly
+            switch iszero(amount)
+            case 1 {
+                switch isNative
+                case 1 {
+                    amount := selfbalance()
+                    requiredValue := amount
                 }
-                requiredValue = amount;
+                default {
+                    // Get token balance
+                    mstore(0x00, 0x70a08231) // balanceOf(address) selector
+                    mstore(0x04, address()) // this address
+                    if iszero(staticcall(gas(), sendingAssetId, 0x00, 0x24, 0x00, 0x20)) { revert(0, 0) }
+                    amount := mload(0x00)
+                }
             }
-            // for erc20 ones we don't do anything we can check the balance though, but lets continue without checking the balance
-        }
-        // set the output amount
-        outputAmount = (amount * (1 - feePercentage)) - fixedFee;
+            default {
+                if isNative {
+                    // For native assets, check enough value was sent
+                    if iszero(eq(amount, selfbalance())) {
+                        // InsufficientValue error
+                        mstore(0x00, 0x53be45bf) // InsufficientValue() error selector
+                        revert(0x00, 0x04)
+                    }
+                    requiredValue := amount
+                }
+            }
 
-        // create the calldata for depositV3 function of Across protocol
-        bytes memory message;
-        if (messageLength > 0) {
-            message = new bytes(messageLength); // set the length of the message
-            assembly {
-                calldatacopy(
-                    add(message, 32), // Pointer to message data area
-                    add(currentOffset, 114),
-                    messageLength
-                )
+            outputAmount := div(mul(amount, sub(1000000000, and(shr(128, calldataload(add(currentOffset, 72))), UINT32_MASK))), 1000000000)
+
+            // Prepare call to SPOKE_POOL.depositV3
+            let ptr := mload(0x40)
+
+            // depositV3 function selector
+            mstore(ptr, 0x7b93923200000000000000000000000000000000000000000000000000000000)
+
+            // Pack parameters for depositV3
+            mstore(add(ptr, 0x04), callerAddress) // _depositor
+            mstore(add(ptr, 0x24), shr(96, calldataload(add(currentOffset, 80)))) // _recipient
+            mstore(add(ptr, 0x44), sendingAssetId) // _originToken
+            mstore(add(ptr, 0x64), shr(96, calldataload(add(currentOffset, 20)))) // _destinationToken
+            mstore(add(ptr, 0x84), amount) // _amount
+            mstore(add(ptr, 0xa4), outputAmount) // _destinationAmount
+            mstore(add(ptr, 0xc4), and(shr(248, calldataload(add(currentOffset, 76))), UINT32_MASK)) // _destinationChainId
+            mstore(add(ptr, 0xe4), 0) // _relayerFeePct (address(0))
+            mstore(add(ptr, 0x104), timestamp()) // _quoteTimestamp
+            mstore(add(ptr, 0x124), add(timestamp(), sub(fillDeadlineBuffer, 1))) // _fillDeadline
+            mstore(add(ptr, 0x144), 0) // _exclusivityDeadline
+
+            // Handle message
+            switch gt(messageLength, 0)
+            case 1 {
+                mstore(add(ptr, 0x164), add(ptr, 0x184))
+                mstore(add(ptr, 0x184), messageLength)
+
+                calldatacopy(add(ptr, 0x1a4), add(currentOffset, 102), messageLength)
+
+                let callSize := add(0x1a4, messageLength)
+
+                // Make the call
+                pop(call(gas(), SPOKE_POOL, requiredValue, ptr, callSize, 0x00, 0x00))
+            }
+            default {
+                // No message, simpler call
+                mstore(add(ptr, 0x164), add(ptr, 0x164))
+                mstore(add(ptr, 0x184), 0)
+                mstore(add(ptr, 0x1a4), 0)
+
+                // Make the call
+                pop(call(gas(), SPOKE_POOL, requiredValue, ptr, 0x1c4, 0x00, 0x00))
             }
         }
 
-        // Execute the bridge operation
-        (success,) = SPOKE_POOL.call{value: requiredValue}(
-            abi.encodeWithSelector(
-                IAcrossSpokePool.depositV3.selector,
-                callerAddress,
-                receiver,
-                sendingAssetId,
-                receivingAssetId,
-                amount,
-                outputAmount,
-                destinationChainId,
-                address(0),
-                uint32(block.timestamp),
-                uint32(block.timestamp) + fillDeadlineBuffer - 1,
-                0,
-                message
-            )
-        );
-
-        // Calculate new offset
-        return currentOffset + 114 + messageLength;
+        return currentOffset + 102 + messageLength;
     }
 }

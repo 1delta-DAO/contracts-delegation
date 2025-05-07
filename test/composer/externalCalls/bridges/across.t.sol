@@ -37,6 +37,8 @@ contract AcrossTest is BaseTest {
     uint128 public FEE_PERCENTAGE = 0; // 0%
 
     function setUp() public {
+        rpcOverrides[Chains.ARBITRUM_ONE] = "https://arbitrum.rpc.subquery.network/public";
+
         _init(Chains.ARBITRUM_ONE, 333862337, true);
 
         callForwarder = new CallForwarder();
