@@ -7,11 +7,7 @@ import {DeltaErrors} from "contracts/1delta/shared/errors/Errors.sol";
 
 contract BaseUtils is ERC20Selectors, Masks, DeltaErrors {
     error InvalidAssetId(uint16 assetId);
-    error InsufficientValue();
-    error TokenTransferFailed();
+    error InsufficientValue(); //0x1101129400000000000000000000000000000000000000000000000000000000
     error SlippageTooHigh(uint256 expected, uint256 actual);
-    error RefundFailed();
-    error BridgeFailed();
-
-    mapping(address => bool) internal approvals;
+    error ZeroBalance(); // 0x669567ea00000000000000000000000000000000000000000000000000000000
 }
