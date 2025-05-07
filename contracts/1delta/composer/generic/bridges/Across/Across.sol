@@ -79,6 +79,6 @@ contract Across is BaseUtils {
         outputAmount = (amount * (1 - feePercentage)) - fixedFee;
 
         // Calculate new offset
-        return currentOffset + 98 + messageLength;
+        return currentOffset + 114 + messageLength;
     }
 }
