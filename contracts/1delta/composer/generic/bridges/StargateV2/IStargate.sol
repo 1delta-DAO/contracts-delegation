@@ -6,7 +6,7 @@ struct BridgeParams {
     uint32 dstEid;
     address receiver;
     uint128 amount;
-    uint128 minAmount;
+    uint32 slippage;
     uint128 fee;
     bool isBusMode;
     bytes composeMsg;

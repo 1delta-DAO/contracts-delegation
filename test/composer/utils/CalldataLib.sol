@@ -25,7 +25,7 @@ library CalldataLib {
         uint32 dstEid,
         address receiver,
         uint256 amount,
-        uint256 minAmount,
+        uint32 slippage,
         uint256 fee,
         bool isBusMode,
         bytes memory composeMsg,
@@ -42,7 +42,7 @@ library CalldataLib {
             dstEid, // 4 bytes
             receiver, // 20 bytes
             uint128(amount), // 16 bytes
-            uint128(minAmount), // 16 bytes
+            slippage, // 4 bytes
             uint128(fee), // 16 bytes
             uint8(isBusMode ? 1 : 0), // 1 byte
             uint16(composeMsg.length), // 2 bytes
@@ -59,7 +59,7 @@ library CalldataLib {
         uint32 dstEid,
         address receiver,
         uint256 amount,
-        uint256 minAmount,
+        uint32 slippage,
         uint256 fee
     )
         internal
@@ -71,7 +71,7 @@ library CalldataLib {
             dstEid,
             receiver,
             amount,
-            minAmount,
+            slippage,
             fee,
             false, // taxi mode
             new bytes(0), // no compose message
@@ -84,7 +84,7 @@ library CalldataLib {
         uint32 dstEid,
         address receiver,
         uint256 amount,
-        uint256 minAmount,
+        uint32 slippage,
         uint256 fee
     )
         internal
@@ -96,7 +96,7 @@ library CalldataLib {
             dstEid,
             receiver,
             amount,
-            minAmount,
+            slippage,
             fee,
             true, // bus mode
             new bytes(0), // no compose message
@@ -110,7 +110,7 @@ library CalldataLib {
         uint32 dstEid,
         address receiver,
         uint256 amount,
-        uint256 minAmount,
+        uint32 slippage,
         uint256 fee,
         uint256 value,
         bool isBusMode,
@@ -121,7 +121,7 @@ library CalldataLib {
         pure
         returns (bytes memory)
     {
-        bytes memory bridgeData = encodeStargateV2Bridge(assetId, dstEid, receiver, amount, minAmount, fee, isBusMode, composeMsg, extraOptions);
+        bytes memory bridgeData = encodeStargateV2Bridge(assetId, dstEid, receiver, amount, slippage, fee, isBusMode, composeMsg, extraOptions);
         return encodeExternalCall(callForwarder, value, bridgeData);
     }
 
@@ -131,7 +131,7 @@ library CalldataLib {
         uint32 dstEid,
         address receiver,
         uint256 amount,
-        uint256 minAmount,
+        uint32 slippage,
         uint256 fee,
         bool isBusMode,
         bytes memory composeMsg,
@@ -141,7 +141,7 @@ library CalldataLib {
         pure
         returns (bytes memory)
     {
-        bytes memory bridgeData = encodeStargateV2Bridge(assetId, dstEid, receiver, amount, minAmount, fee, isBusMode, composeMsg, extraOptions);
+        bytes memory bridgeData = encodeStargateV2Bridge(assetId, dstEid, receiver, amount, slippage, fee, isBusMode, composeMsg, extraOptions);
         return encodeExternalCall(callForwarder, fee + amount, bridgeData);
     }
 

@@ -22,13 +22,13 @@ contract StargateV2 is BaseUtils {
      * | 2      | 4              | dstEid                       |
      * | 6      | 20             | receiver                     |
      * | 26     | 16             | amount                       |
-     * | 42     | 16             | minAmount                    |
-     * | 58     | 16             | fee                          |
-     * | 74     | 1              | isBusMode                    |
-     * | 75     | 2              | composeMsg.length: cl        |
-     * | 77     | 2              | extraOptions.length: el      |
-     * | 79     | cl             | composeMsg: cm               |
-     * | 79+cl  | el             | extraOptions: eo             |
+     * | 42     | 4              | slippage                     |
+     * | 46     | 16             | fee                          |
+     * | 62     | 1              | isBusMode                    |
+     * | 63     | 2              | composeMsg.length: cl        |
+     * | 65     | 2              | extraOptions.length: el      |
+     * | 67     | cl             | composeMsg: cm               |
+     * | 67+cl  | el             | extraOptions: eo             |
      */
 
     function _bridgeStargateV2(uint256 currentOffset, address callerAddress) internal returns (uint256) {
@@ -49,18 +49,18 @@ contract StargateV2 is BaseUtils {
             // Load amount (16 bytes)
             mstore(add(params, 96), and(shr(128, calldataload(add(currentOffset, 26))), UINT128_MASK))
 
-            // Load minAmount (16 bytes)
-            mstore(add(params, 128), and(shr(128, calldataload(add(currentOffset, 42))), UINT128_MASK))
+            // Load slippage (4 bytes)
+            mstore(add(params, 128), and(shr(224, calldataload(add(currentOffset, 42))), UINT32_MASK))
 
             // Load fee (16 bytes)
-            mstore(add(params, 160), and(shr(128, calldataload(add(currentOffset, 58))), UINT128_MASK))
+            mstore(add(params, 160), and(shr(128, calldataload(add(currentOffset, 46))), UINT128_MASK))
 
             // Load isBusMode (1 byte)
-            mstore(add(params, 192), and(shr(248, calldataload(add(currentOffset, 74))), 0xFF))
+            mstore(add(params, 192), and(shr(248, calldataload(add(currentOffset, 62))), 0xFF))
 
             // Load lengths
-            composeMsgLength := and(shr(240, calldataload(add(currentOffset, 75))), UINT16_MASK)
-            extraOptionsLength := and(shr(240, calldataload(add(currentOffset, 77))), UINT16_MASK)
+            composeMsgLength := and(shr(240, calldataload(add(currentOffset, 63))), UINT16_MASK)
+            extraOptionsLength := and(shr(240, calldataload(add(currentOffset, 65))), UINT16_MASK)
         }
 
         if (composeMsgLength > 0) {
@@ -68,7 +68,7 @@ contract StargateV2 is BaseUtils {
             assembly {
                 calldatacopy(
                     add(mload(add(params, 224)), 32), // Pointer to composeMsg data area
-                    add(currentOffset, 79),
+                    add(currentOffset, 67),
                     composeMsgLength
                 )
             }
@@ -79,7 +79,7 @@ contract StargateV2 is BaseUtils {
             assembly {
                 calldatacopy(
                     add(mload(add(params, 256)), 32), // Pointer to extraOptions data area
-                    add(add(currentOffset, 79), composeMsgLength),
+                    add(add(currentOffset, 67), composeMsgLength),
                     extraOptionsLength
                 )
             }
@@ -88,12 +88,10 @@ contract StargateV2 is BaseUtils {
         _bridgeTokens(callerAddress, params);
 
         // Calculate new offset
-        return currentOffset + 79 + composeMsgLength + extraOptionsLength;
+        return currentOffset + 67 + composeMsgLength + extraOptionsLength;
     }
 
     function _bridgeTokens(address _caller, BridgeParams memory _params) internal {
-        uint256 currentBalance = address(this).balance;
-
         // Get the Stargate implementation for this asset
         address stargateAddr = ITokenMessaging(TOKENMESSAGING).stargateImpls(_params.assetId);
         if (stargateAddr == address(0)) revert InvalidAssetId(_params.assetId);
@@ -110,32 +108,34 @@ contract StargateV2 is BaseUtils {
         // if amount is 0, then use the balance of the contract
         if (_params.amount == 0) {
             if (isNative) {
-                _params.amount = uint128(currentBalance - _params.fee);
-                requiredValue = currentBalance;
+                _params.amount = uint128(address(this).balance - _params.fee);
+                requiredValue = address(this).balance;
             } else {
                 _params.amount = uint128(IERC20(tokenAddr).balanceOf(address(this)));
                 // check if fee is enough
-                if (_params.fee != currentBalance) revert InsufficientValue();
-                requiredValue = currentBalance;
+                if (_params.fee != address(this).balance) revert InsufficientValue();
+                requiredValue = address(this).balance;
             }
         } else {
             if (isNative) {
                 // check if enough founds are attached
-                if (_params.amount + _params.fee != currentBalance) {
+                if (_params.amount + _params.fee != address(this).balance) {
                     revert InsufficientValue();
                 }
             } else {
-                if (_params.fee != currentBalance) revert InsufficientValue();
+                if (_params.fee != address(this).balance) revert InsufficientValue();
             }
-            requiredValue = currentBalance;
+            requiredValue = address(this).balance;
         }
+
+        uint256 minAmount = (_params.amount * (1e9 - _params.slippage)) / 1e9;
 
         // Create the sendParam structure
         IStargate.SendParam memory sendParam = IStargate.SendParam({
             dstEid: _params.dstEid,
             to: bytes32(uint256(uint160(_params.receiver))),
             amountLD: _params.amount,
-            minAmountLD: _params.minAmount,
+            minAmountLD: minAmount,
             extraOptions: _params.extraOptions,
             composeMsg: _params.composeMsg,
             oftCmd: _params.isBusMode ? new bytes(1) : new bytes(0) // Bus or taxi mode
@@ -159,8 +159,8 @@ contract StargateV2 is BaseUtils {
 
         // Check slippage
         (, IStargate.OFTReceipt memory oftReceipt,) = abi.decode(data, (IStargate.MessagingReceipt, IStargate.OFTReceipt, IStargate.Ticket));
-        if (oftReceipt.amountReceivedLD < _params.minAmount) {
-            revert SlippageTooHigh(_params.minAmount, oftReceipt.amountReceivedLD);
+        if (oftReceipt.amountReceivedLD < minAmount) {
+            revert SlippageTooHigh(minAmount, oftReceipt.amountReceivedLD);
         }
     }
 }

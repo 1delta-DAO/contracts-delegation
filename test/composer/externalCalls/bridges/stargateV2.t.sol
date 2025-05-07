@@ -55,6 +55,7 @@ contract StargateV2Test is BaseTest {
         (uint256 fee, int256 sgFee) = _quote(false);
 
         uint256 minAmountLD = uint256(int256(BRIDGE_AMOUNT) + sgFee); // sgFee is negative for fee and positive for rewards
+        uint32 slippage = uint32((BRIDGE_AMOUNT - minAmountLD) * 1e9 / BRIDGE_AMOUNT); // percentage
 
         deal(address(callForwarder), fee);
 
@@ -64,10 +65,11 @@ contract StargateV2Test is BaseTest {
         console.log("sgFee", sgFee);
         console.log("BRIDGE_AMOUNT", BRIDGE_AMOUNT);
         console.log("minAmountLD", minAmountLD);
+        console.log("slippage", slippage);
 
         bytes memory forwarderCalldata = abi.encodePacked(
             CalldataLib.encodeApprove(USDC, STARGATE_USDC),
-            CalldataLib.encodeStargateV2BridgeTaxi(USDC_ASSET_ID, POLYGON_EID, user, BRIDGE_AMOUNT, minAmountLD, fee),
+            CalldataLib.encodeStargateV2BridgeTaxi(USDC_ASSET_ID, POLYGON_EID, user, BRIDGE_AMOUNT, slippage, fee),
             CalldataLib.encodeSweep(address(0), user, 0, SweepType.VALIDATE), // sweep native
             CalldataLib.encodeSweep(USDC, user, 0, SweepType.VALIDATE) // sweep usdc
         );
@@ -91,6 +93,7 @@ contract StargateV2Test is BaseTest {
         (uint256 fee, int256 sgFee) = _quote(false);
 
         uint256 minAmountLD = uint256(int256(BRIDGE_AMOUNT) + sgFee); // sgFee is negative for fee and positive for rewards
+        uint32 slippage = uint32((BRIDGE_AMOUNT - minAmountLD) * 1e9 / BRIDGE_AMOUNT); // percentage
 
         deal(address(callForwarder), fee);
 
@@ -103,7 +106,7 @@ contract StargateV2Test is BaseTest {
 
         bytes memory forwarderCalldata = abi.encodePacked(
             CalldataLib.encodeApprove(USDC, STARGATE_USDC),
-            CalldataLib.encodeStargateV2BridgeTaxi(USDC_ASSET_ID, POLYGON_EID, user, BRIDGE_AMOUNT, minAmountLD + 1, fee),
+            CalldataLib.encodeStargateV2BridgeTaxi(USDC_ASSET_ID, POLYGON_EID, user, BRIDGE_AMOUNT, 0, fee),
             CalldataLib.encodeSweep(address(0), user, 0, SweepType.VALIDATE), // sweep native
             CalldataLib.encodeSweep(USDC, user, 0, SweepType.VALIDATE) // sweep usdc
         );
@@ -128,6 +131,7 @@ contract StargateV2Test is BaseTest {
         (uint256 fee, int256 sgFee) = _quote(true);
 
         uint256 minAmountLD = uint256(int256(BRIDGE_AMOUNT) + sgFee); // sgFee is negative for fee and positive for rewards
+        uint32 slippage = uint32((BRIDGE_AMOUNT - minAmountLD) * 1e9 / BRIDGE_AMOUNT); // percentage
 
         deal(address(callForwarder), fee);
 
@@ -140,7 +144,7 @@ contract StargateV2Test is BaseTest {
 
         bytes memory forwarderCalldata = abi.encodePacked(
             CalldataLib.encodeApprove(USDC, STARGATE_USDC),
-            CalldataLib.encodeStargateV2BridgeBus(USDC_ASSET_ID, POLYGON_EID, user, BRIDGE_AMOUNT, minAmountLD, fee),
+            CalldataLib.encodeStargateV2BridgeBus(USDC_ASSET_ID, POLYGON_EID, user, BRIDGE_AMOUNT, slippage, fee),
             CalldataLib.encodeSweep(address(0), user, 0, SweepType.VALIDATE), // sweep native
             CalldataLib.encodeSweep(USDC, user, 0, SweepType.VALIDATE) // sweep usdc
         );
