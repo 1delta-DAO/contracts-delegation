@@ -51,10 +51,13 @@ contract Across is BaseUtils {
                 }
                 default {
                     // Get token balance
-                    mstore(0x00, 0x70a08231) // balanceOf(address) selector
-                    mstore(0x04, address()) // this address
-                    if iszero(staticcall(gas(), sendingAssetId, 0x00, 0x24, 0x00, 0x20)) { revert(0, 0) }
-                    amount := mload(0x00)
+                    mstore(0x00, ERC20_BALANCE_OF)
+                    mstore(0x04, address())
+                    if iszero(staticcall(gas(), sendingAssetId, 0x00, 0x24, 0x00, 0x20)) {
+                        mstore(0x00, 0x669567ea00000000000000000000000000000000000000000000000000000000) // ZeroBalance()
+                        revert(0, 0x04)
+                    }
+                    amount := mload(0x00) // return value of the balanceOf call
                 }
             }
             default {
@@ -62,7 +65,7 @@ contract Across is BaseUtils {
                     // For native assets, check enough value was sent
                     if iszero(eq(amount, selfbalance())) {
                         // InsufficientValue error
-                        mstore(0x00, 0x53be45bf) // InsufficientValue() error selector
+                        mstore(0x00, 0x1101129400000000000000000000000000000000000000000000000000000000) // InsufficientValue()
                         revert(0x00, 0x04)
                     }
                     requiredValue := amount
@@ -104,13 +107,13 @@ contract Across is BaseUtils {
                 pop(call(gas(), SPOKE_POOL, requiredValue, ptr, callSize, 0x00, 0x00))
             }
             default {
-                // No message, simpler call
+                // No message
                 mstore(add(ptr, 0x164), add(ptr, 0x164))
                 mstore(add(ptr, 0x184), 0)
                 mstore(add(ptr, 0x1a4), 0)
 
                 // Make the call
-                pop(call(gas(), SPOKE_POOL, requiredValue, ptr, 0x1c4, 0x00, 0x00))
+                pop(call(gas(), SPOKE_POOL, requiredValue, ptr, 0x1c4, 0x00, 0x00)) // call size 0x1a4 + 0x20
             }
         }
 
