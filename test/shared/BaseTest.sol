@@ -130,4 +130,8 @@ contract BaseTest is Test {
     function _fundUserWithToken(address token, uint256 amount) internal {
         deal(token, user, amount);
     }
+
+    function _fundUserWithNative(uint256 amount) internal {
+        vm.deal(user, amount);
+    }
 }
