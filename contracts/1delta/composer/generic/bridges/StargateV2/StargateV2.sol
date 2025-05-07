@@ -155,18 +155,7 @@ contract StargateV2 is BaseUtils {
                 payable(_caller) // Refund to caller
             )
         );
-
-        if (!success) {
-            revert BridgeFailed();
-            // refund tokens
-            // Refund tokens if ERC20
-            if (!isNative) {
-                SafeERC20.safeTransfer(IERC20(tokenAddr), _caller, _params.amount);
-            }
-            // Always refund native value
-            (bool success,) = payable(_caller).call{value: requiredValue}("");
-            require(success, "Refund failed");
-        }
+        // we'll refund the tokens in another composer call
 
         // Check slippage
         (, IStargate.OFTReceipt memory oftReceipt,) = abi.decode(data, (IStargate.MessagingReceipt, IStargate.OFTReceipt, IStargate.Ticket));

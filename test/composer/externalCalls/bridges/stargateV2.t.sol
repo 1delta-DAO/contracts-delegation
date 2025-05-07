@@ -68,7 +68,8 @@ contract StargateV2Test is BaseTest {
         bytes memory forwarderCalldata = abi.encodePacked(
             CalldataLib.encodeApprove(USDC, STARGATE_USDC),
             CalldataLib.encodeStargateV2BridgeTaxi(USDC_ASSET_ID, POLYGON_EID, user, BRIDGE_AMOUNT, minAmountLD, fee),
-            CalldataLib.encodeSweep(address(0), user, 0, SweepType.VALIDATE) // sweep the remaining balance, if any
+            CalldataLib.encodeSweep(address(0), user, 0, SweepType.VALIDATE), // sweep native
+            CalldataLib.encodeSweep(USDC, user, 0, SweepType.VALIDATE) // sweep usdc
         );
 
         bytes memory composerCalldata = abi.encodePacked(
@@ -103,7 +104,8 @@ contract StargateV2Test is BaseTest {
         bytes memory forwarderCalldata = abi.encodePacked(
             CalldataLib.encodeApprove(USDC, STARGATE_USDC),
             CalldataLib.encodeStargateV2BridgeTaxi(USDC_ASSET_ID, POLYGON_EID, user, BRIDGE_AMOUNT, minAmountLD + 1, fee),
-            CalldataLib.encodeSweep(address(0), user, 0, SweepType.VALIDATE) // sweep the remaining balance, if any
+            CalldataLib.encodeSweep(address(0), user, 0, SweepType.VALIDATE), // sweep native
+            CalldataLib.encodeSweep(USDC, user, 0, SweepType.VALIDATE) // sweep usdc
         );
 
         bytes memory composerCalldata = abi.encodePacked(
@@ -139,7 +141,8 @@ contract StargateV2Test is BaseTest {
         bytes memory forwarderCalldata = abi.encodePacked(
             CalldataLib.encodeApprove(USDC, STARGATE_USDC),
             CalldataLib.encodeStargateV2BridgeBus(USDC_ASSET_ID, POLYGON_EID, user, BRIDGE_AMOUNT, minAmountLD, fee),
-            CalldataLib.encodeSweep(address(0), user, 0, SweepType.VALIDATE) // sweep the remaining balance, if any
+            CalldataLib.encodeSweep(address(0), user, 0, SweepType.VALIDATE), // sweep native
+            CalldataLib.encodeSweep(USDC, user, 0, SweepType.VALIDATE) // sweep usdc
         );
 
         bytes memory composerCalldata = abi.encodePacked(
