@@ -72,7 +72,7 @@ contract Across is BaseUtils {
                 }
             }
 
-            outputAmount := div(mul(amount, sub(1000000000, and(shr(128, calldataload(add(currentOffset, 72))), UINT32_MASK))), 1000000000)
+            outputAmount := div(mul(amount, sub(1000000000, and(shr(224, calldataload(add(currentOffset, 72))), UINT32_MASK))), 1000000000)
 
             // Prepare call to SPOKE_POOL.depositV3
             let ptr := mload(0x40)
@@ -87,7 +87,7 @@ contract Across is BaseUtils {
             mstore(add(ptr, 0x64), shr(96, calldataload(add(currentOffset, 20)))) // _destinationToken
             mstore(add(ptr, 0x84), amount) // _amount
             mstore(add(ptr, 0xa4), outputAmount) // _destinationAmount
-            mstore(add(ptr, 0xc4), and(shr(248, calldataload(add(currentOffset, 76))), UINT32_MASK)) // _destinationChainId
+            mstore(add(ptr, 0xc4), and(shr(224, calldataload(add(currentOffset, 76))), UINT32_MASK)) // _destinationChainId
             mstore(add(ptr, 0xe4), 0) // _relayerFeePct (address(0))
             mstore(add(ptr, 0x104), timestamp()) // _quoteTimestamp
             mstore(add(ptr, 0x124), add(timestamp(), sub(fillDeadlineBuffer, 1))) // _fillDeadline
@@ -105,15 +105,18 @@ contract Across is BaseUtils {
 
                 // Make the call
                 pop(call(gas(), SPOKE_POOL, requiredValue, ptr, callSize, 0x00, 0x00))
+
+                mstore(0x40, add(0x20, add(ptr, callSize))) // one word after the message
             }
             default {
                 // No message
-                mstore(add(ptr, 0x164), add(ptr, 0x164))
+                mstore(add(ptr, 0x164), add(ptr, 0x184))
                 mstore(add(ptr, 0x184), 0)
-                mstore(add(ptr, 0x1a4), 0)
 
                 // Make the call
-                pop(call(gas(), SPOKE_POOL, requiredValue, ptr, 0x1c4, 0x00, 0x00)) // call size 0x1a4 + 0x20
+                pop(call(gas(), SPOKE_POOL, requiredValue, ptr, 0x1a4, 0x00, 0x00))
+
+                mstore(0x40, add(0x20, 0x1a4)) // one word after the message
             }
         }
 

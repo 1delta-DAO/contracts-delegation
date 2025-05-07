@@ -146,12 +146,12 @@ library CalldataLib {
     }
 
     // Across
-    function encodeAcrossBridgeV2(
+    function encodeAcrossBridge(
         address sendingAssetId,
         address receivingAssetId,
         uint256 amount,
         uint128 fixedFee,
-        uint128 feePercentage,
+        uint32 feePercentage,
         uint32 destinationChainId,
         address receiver,
         bytes memory message
