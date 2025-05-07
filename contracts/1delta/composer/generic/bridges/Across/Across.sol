@@ -32,18 +32,31 @@ contract Across is BaseUtils {
     function _bridgeAcross(uint256 currentOffset, address callerAddress) internal returns (uint256) {
         // Local variables to store key data
         address sendingAssetId;
+        address receivingAssetId;
+        uint32 destinationChainId;
         uint256 amount;
+        address receiver;
         uint256 outputAmount;
         uint16 messageLength;
-        uint28 fixedFee;
-        uint28 feePercentage;
+        uint128 fixedFee;
+        uint128 feePercentage;
         bool isNative;
         uint256 requiredValue;
         bool success;
+        uint32 fillDeadlineBuffer = IAcrossSpokePool(SPOKE_POOL).fillDeadlineBuffer();
 
         assembly {
             // Load sendingAssetId (20 bytes)
             sendingAssetId := shr(96, calldataload(currentOffset))
+
+            // Load receivingAssetId (20 bytes)
+            receivingAssetId := shr(96, calldataload(add(currentOffset, 20)))
+
+            // Load destinationChainId (4 bytes)
+            destinationChainId := and(shr(248, calldataload(add(currentOffset, 88))), UINT32_MASK)
+
+            // Load receiver (20 bytes)
+            receiver := shr(96, calldataload(add(currentOffset, 92)))
 
             // Calculate isNative
             isNative := iszero(sendingAssetId)
@@ -51,8 +64,8 @@ contract Across is BaseUtils {
             // Load amount (16 bytes)
             amount := and(shr(128, calldataload(add(currentOffset, 40))), UINT128_MASK)
             // load fees
-            fixedFee := and(shr(128, calldataload(add(currentOffset, 56))), UINT28_MASK)
-            feePercentage := and(shr(128, calldataload(add(currentOffset, 72))), UINT28_MASK)
+            fixedFee := and(shr(128, calldataload(add(currentOffset, 56))), UINT128_MASK)
+            feePercentage := and(shr(128, calldataload(add(currentOffset, 72))), UINT128_MASK)
 
             // Load message length
             messageLength := and(shr(240, calldataload(add(currentOffset, 112))), UINT16_MASK)
@@ -77,6 +90,38 @@ contract Across is BaseUtils {
         }
         // set the output amount
         outputAmount = (amount * (1 - feePercentage)) - fixedFee;
+
+        // create the calldata for depositV3 function of Across protocol
+        bytes memory message;
+        if (messageLength > 0) {
+            message = new bytes(messageLength); // set the length of the message
+            assembly {
+                calldatacopy(
+                    add(message, 32), // Pointer to message data area
+                    add(currentOffset, 114),
+                    messageLength
+                )
+            }
+        }
+
+        // Execute the bridge operation
+        (success,) = SPOKE_POOL.call{value: requiredValue}(
+            abi.encodeWithSelector(
+                IAcrossSpokePool.depositV3.selector,
+                callerAddress,
+                receiver,
+                sendingAssetId,
+                receivingAssetId,
+                amount,
+                outputAmount,
+                destinationChainId,
+                address(0),
+                uint32(block.timestamp),
+                uint32(block.timestamp) + fillDeadlineBuffer - 1,
+                0,
+                message
+            )
+        );
 
         // Calculate new offset
         return currentOffset + 114 + messageLength;

@@ -1,20 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
-struct AcrossParams {
-    address sendingAssetId;
-    address receivingAssetId;
-    uint256 amount;
-    uint256 outputAmount;
-    uint32 destinationChainId;
-    address receiver;
-    address exclusiveRelayer;
-    uint32 quoteTimestamp;
-    uint32 fillDeadline;
-    uint32 exclusivityDeadline;
-    bytes message;
-}
-
 interface IAcrossSpokePool {
     function depositV3(
         address depositor,
