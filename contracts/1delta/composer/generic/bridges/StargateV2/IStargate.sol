@@ -34,6 +34,12 @@ interface IStargate {
         uint256 lzTokenFee; // Fee in LZ token
     }
 
+    struct MessagingReceipt {
+        bytes32 guid;
+        uint64 nonce;
+        MessagingFee fee;
+    }
+
     struct OFTLimit {
         uint256 minAmountLD; // Minimum amount for transfer
         uint256 maxAmountLD; // Maximum amount for transfer
@@ -79,10 +85,4 @@ interface IStargate {
 
 interface ITokenMessaging {
     function stargateImpls(uint16 assetId) external view returns (address);
-}
-
-struct MessagingReceipt {
-    uint64 guid; // Global unique identifier
-    uint256 nonce; // Message nonce
-    bytes32 layerZeroMessageId; // LayerZero message ID
 }

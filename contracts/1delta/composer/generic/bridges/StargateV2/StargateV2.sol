@@ -146,24 +146,32 @@ contract StargateV2 is BaseUtils {
         /// to make sure that the stargate has enough allowance to get the token
 
         // Execute the bridge operation
-        try stargate.sendToken{value: requiredValue}(
-            sendParam,
-            IStargate.MessagingFee({nativeFee: _params.fee, lzTokenFee: 0}),
-            payable(_caller) // Refund to caller
-        ) returns (MessagingReceipt memory, IStargate.OFTReceipt memory oftReceipt, IStargate.Ticket memory) {
-            // Check slippage
-            if (oftReceipt.amountReceivedLD < _params.minAmount) {
-                revert SlippageTooHigh(_params.minAmount, oftReceipt.amountReceivedLD);
-            }
-        } catch {
+
+        (bool success, bytes memory data) = address(stargate).call{value: requiredValue}(
+            abi.encodeWithSelector(
+                IStargate.sendToken.selector,
+                sendParam,
+                IStargate.MessagingFee({nativeFee: _params.fee, lzTokenFee: 0}),
+                payable(_caller) // Refund to caller
+            )
+        );
+
+        if (!success) {
+            revert BridgeFailed();
+            // refund tokens
             // Refund tokens if ERC20
             if (!isNative) {
                 SafeERC20.safeTransfer(IERC20(tokenAddr), _caller, _params.amount);
             }
-
             // Always refund native value
             (bool success,) = payable(_caller).call{value: requiredValue}("");
             require(success, "Refund failed");
+        }
+
+        // Check slippage
+        (, IStargate.OFTReceipt memory oftReceipt,) = abi.decode(data, (IStargate.MessagingReceipt, IStargate.OFTReceipt, IStargate.Ticket));
+        if (oftReceipt.amountReceivedLD < _params.minAmount) {
+            revert SlippageTooHigh(_params.minAmount, oftReceipt.amountReceivedLD);
         }
     }
 }
