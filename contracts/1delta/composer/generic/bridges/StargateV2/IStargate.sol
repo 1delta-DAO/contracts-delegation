@@ -70,6 +70,11 @@ interface IStargate {
         returns (MessagingReceipt memory, OFTReceipt memory);
 
     function quoteSend(SendParam calldata _sendParam, bool _payInLzToken) external view returns (MessagingFee memory);
+
+    function quoteOFT(SendParam calldata _sendParam)
+        external
+        view
+        returns (OFTLimit memory, OFTFeeDetail[] memory oftFeeDetails, OFTReceipt memory);
 }
 
 interface ITokenMessaging {
