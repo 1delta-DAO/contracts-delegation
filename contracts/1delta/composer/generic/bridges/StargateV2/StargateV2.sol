@@ -99,28 +99,43 @@ contract StargateV2 is BaseUtils {
         address tokenAddr = stargate.token();
         bool isNative = tokenAddr == address(0);
 
-        uint256 requiredValue = address(this).balance;
+        // get the native balance at the beginning
+        uint256 selfNativeBalance;
+        assembly {
+            selfNativeBalance := selfbalance()
+        }
+
+        // initialize the total callvalue to send
+        uint256 requiredValue;
 
         // if amount is 0, then use the balance of the contract
         if (_params.amount == 0) {
             if (isNative) {
-                _params.amount = uint128(address(this).balance - _params.fee);
+                // amount is the balance minus the fee
+                _params.amount = uint128(selfNativeBalance - _params.fee);
+                // and value to send is everything
+                requiredValue = selfNativeBalance;
             } else {
+                // use token balance
                 _params.amount = uint128(IERC20(tokenAddr).balanceOf(address(this)));
+                // value to send is just the fee
+                requiredValue = _params.fee;
                 // check if fee is enough
-                if (_params.fee != address(this).balance) revert InsufficientValue();
+                if (requiredValue > selfNativeBalance) revert InsufficientValue();
             }
         } else {
             if (isNative) {
-                // check if enough founds are attached
-                if (_params.amount + _params.fee != address(this).balance) {
-                    revert InsufficientValue();
-                }
+                // value to send is amount desired plus fee
+                requiredValue = _params.amount + _params.fee;
             } else {
-                if (_params.fee != address(this).balance) revert InsufficientValue();
+                // erc20 case: value is just the fee
+                requiredValue = _params.fee;
             }
+            // check if we have enough to pay the fee
+            if (requiredValue > selfNativeBalance) revert InsufficientValue();
         }
 
+        // use standard slippage adjustment for slippage
         uint256 minAmount = (_params.amount * (1e9 - _params.slippage)) / 1e9;
 
         // Create the sendParam structure
