@@ -21,10 +21,12 @@ library CalldataLib {
     // StargateV2 bridging
 
     function encodeStargateV2Bridge(
+        address asset,
         uint16 assetId,
         address stargatePool,
         uint32 dstEid,
-        address receiver,
+        bytes32 receiver,
+        address refundReceiver,
         uint256 amount,
         uint32 slippage,
         uint256 fee,
@@ -37,18 +39,24 @@ library CalldataLib {
         returns (bytes memory)
     {
         bytes memory bridgeData = abi.encodePacked(
-            uint8(ComposerCommands.BRIDGING),
-            uint8(BridgeIds.STARGATE_V2),
-            assetId,
-            stargatePool,
-            dstEid,
-            receiver,
             uint128(amount),
             slippage,
             uint128(fee),
             uint8(isBusMode ? 1 : 0),
             uint16(composeMsg.length),
-            uint16(extraOptions.length),
+            uint16(extraOptions.length) //
+        );
+
+        bridgeData = abi.encodePacked(
+            uint8(ComposerCommands.BRIDGING),
+            uint8(BridgeIds.STARGATE_V2),
+            asset,
+            assetId,
+            stargatePool,
+            dstEid,
+            receiver,
+            refundReceiver,
+            bridgeData,
             composeMsg,
             extraOptions
         );
@@ -57,10 +65,12 @@ library CalldataLib {
     }
 
     function encodeStargateV2BridgeSimpleTaxi(
+        address asset,
         uint16 assetId,
         address stargatePool,
         uint32 dstEid,
-        address receiver,
+        bytes32 receiver,
+        address refundReceiver,
         uint256 amount,
         uint32 slippage,
         uint256 fee
@@ -70,10 +80,12 @@ library CalldataLib {
         returns (bytes memory)
     {
         return encodeStargateV2Bridge(
+            asset,
             assetId,
             stargatePool,
             dstEid,
             receiver,
+            refundReceiver,
             amount,
             slippage,
             fee,
@@ -84,10 +96,12 @@ library CalldataLib {
     }
 
     function encodeStargateV2BridgeSimpleBus(
+        address asset,
         uint16 assetId,
         address stargatePool,
         uint32 dstEid,
-        address receiver,
+        bytes32 receiver,
+        address refundReceiver,
         uint256 amount,
         uint32 slippage,
         uint256 fee
@@ -97,10 +111,12 @@ library CalldataLib {
         returns (bytes memory)
     {
         return encodeStargateV2Bridge(
+            asset,
             assetId,
             stargatePool,
             dstEid,
             receiver,
+            refundReceiver,
             amount,
             slippage,
             fee,

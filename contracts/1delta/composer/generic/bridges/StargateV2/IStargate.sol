@@ -5,11 +5,12 @@ struct BridgeParams {
     uint256 assetId;
     address stargatePool;
     uint256 dstEid;
-    address receiver;
+    bytes32 receiver;
     uint256 amount;
     uint256 slippage;
     uint256 fee;
     bool isBusMode;
+    address refundAddress;
     bytes composeMsg;
     bytes extraOptions;
 }
