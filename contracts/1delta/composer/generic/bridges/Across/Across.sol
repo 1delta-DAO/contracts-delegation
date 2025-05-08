@@ -88,10 +88,10 @@ contract Across is BaseUtils {
             mstore(add(ptr, 0x124), add(timestamp(), 1800)) // fillDeadline (block timestamp + 30 minutes)
             mstore(add(ptr, 0x144), 0) // exclusivityDeadline (zero address)
 
+            mstore(add(ptr, 0x164), 180) // message offset
             // Handle message
             switch gt(messageLength, 0)
             case 1 {
-                mstore(add(ptr, 0x164), 180)
                 mstore(add(ptr, 0x184), messageLength)
 
                 calldatacopy(add(ptr, 0x1a4), add(currentOffset, 122), messageLength)
@@ -102,7 +102,6 @@ contract Across is BaseUtils {
             }
             default {
                 // No message
-                mstore(add(ptr, 0x164), 180)
                 mstore(add(ptr, 0x184), 0)
 
                 // Make the call
