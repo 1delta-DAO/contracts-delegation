@@ -48,13 +48,13 @@ contract StargateV2 is BaseUtils {
             mstore(add(params, 96), shr(96, calldataload(add(currentOffset, 26))))
 
             // Load amount (16 bytes)
-            mstore(add(params, 128), and(shr(128, calldataload(add(currentOffset, 46))), UINT128_MASK))
+            mstore(add(params, 128), shr(128, calldataload(add(currentOffset, 46))))
 
             // Load slippage (4 bytes)
             mstore(add(params, 160), and(shr(224, calldataload(add(currentOffset, 62))), UINT32_MASK))
 
             // Load fee (16 bytes)
-            mstore(add(params, 192), and(shr(128, calldataload(add(currentOffset, 66))), UINT128_MASK))
+            mstore(add(params, 192), shr(128, calldataload(add(currentOffset, 66))))
 
             // Load isBusMode (1 byte)
             mstore(add(params, 224), and(shr(248, calldataload(add(currentOffset, 82))), 0xFF))
@@ -160,7 +160,7 @@ contract StargateV2 is BaseUtils {
         );
 
         // forward the error if any
-        if (success) {
+        if (!success) {
             assembly {
                 revert(add(data, 32), mload(data))
             }
