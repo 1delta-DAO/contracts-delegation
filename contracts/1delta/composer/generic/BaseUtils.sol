@@ -12,5 +12,5 @@ contract BaseUtils is ERC20Selectors, Masks, DeltaErrors {
     error ZeroBalance(); // 0x669567ea00000000000000000000000000000000000000000000000000000000
     error BridgeFailed(); // 0xc3b9eede00000000000000000000000000000000000000000000000000000000
 
-    uint256 constant FEE_DENOMINATOR = 1e9;
+    uint256 internal constant FEE_DENOMINATOR = 1e9;
 }

@@ -32,51 +32,63 @@ contract Across is BaseUtils {
         assembly {
             // Load key data from calldata
             let inputTokenAddress := shr(96, calldataload(add(currentOffset, 20)))
-            let isNative
+
             let amount := and(shr(128, calldataload(add(currentOffset, 60))), UINT128_MASK)
-            switch iszero(and(NATIVE_FLAG, amount))
-            case 1 { isNative := 0 }
-            default { isNative := 1 }
 
-            amount := and(amount, not(NATIVE_FLAG)) // clear the native flag
+            // whether to use native is indicated by the flag
+            let isNative := and(NATIVE_FLAG, amount)
 
+            // clear the native flag
+            amount := and(amount, not(NATIVE_FLAG))
+
+            // get the length as uint16
             messageLength := and(shr(240, calldataload(add(currentOffset, 120))), UINT16_MASK)
-            let requiredValue := 0
-            let outputAmount := 0
+
+            let requiredNativeValue := 0
 
             // Check if amount is zero and handle accordingly
+            // zero means self balance
             switch iszero(amount)
             case 1 {
                 switch isNative
-                case 1 {
-                    amount := selfbalance()
-                    requiredValue := amount
-                }
-                default {
+                case 0 {
                     // Get token balance
                     mstore(0x00, ERC20_BALANCE_OF)
                     mstore(0x04, address())
-                    if iszero(staticcall(gas(), inputTokenAddress, 0x00, 0x24, 0x00, 0x20)) {
-                        mstore(0x00, 0x669567ea00000000000000000000000000000000000000000000000000000000) // ZeroBalance()
-                        revert(0, 0x04)
-                    }
+                    // unsafe call of balanceOf
+                    pop(staticcall(gas(), inputTokenAddress, 0x00, 0x24, 0x00, 0x20))
                     amount := mload(0x00) // return value of the balanceOf call
+                }
+                default {
+                    // get native balance
+                    amount := selfbalance()
+                    requiredNativeValue := amount
                 }
             }
             // non zero amount
             default {
                 if isNative {
-                    // For native assets, check enough value was sent
-                    if iszero(eq(amount, selfbalance())) {
+                    // For native assets, check that hte contract holds enough
+                    if gt(amount, selfbalance()) {
                         // InsufficientValue error
                         mstore(0x00, 0x1101129400000000000000000000000000000000000000000000000000000000) // InsufficientValue()
                         revert(0x00, 0x04)
                     }
-                    requiredValue := amount
+                    requiredNativeValue := amount
                 }
             }
 
-            outputAmount := div(mul(amount, sub(1000000000, and(shr(224, calldataload(add(currentOffset, 92))), UINT32_MASK))), 1000000000)
+            let outputAmount :=
+                div(
+                    mul(
+                        amount,
+                        sub(
+                            FEE_DENOMINATOR,
+                            and(shr(224, calldataload(add(currentOffset, 92))), UINT32_MASK) // extract the fee from calldata
+                        )
+                    ),
+                    FEE_DENOMINATOR
+                )
 
             let ptr := mload(0x40)
 
@@ -93,25 +105,49 @@ contract Across is BaseUtils {
             mstore(add(ptr, 0x104), timestamp()) // quoteTimestamp (block timestamp)
             mstore(add(ptr, 0x124), add(timestamp(), 1800)) // fillDeadline (block timestamp + 30 minutes)
             mstore(add(ptr, 0x144), 0) // exclusivityDeadline (zero address)
-
             mstore(add(ptr, 0x164), 0x180) // message offset
+            mstore(add(ptr, 0x184), messageLength) // message length
+
             // Handle message
             switch gt(messageLength, 0)
             case 1 {
-                mstore(add(ptr, 0x184), messageLength)
-
+                // add the message from the calldata
                 calldatacopy(add(ptr, 0x1a4), add(currentOffset, 122), messageLength)
 
-                pop(call(gas(), shr(96, calldataload(currentOffset)), requiredValue, ptr, add(0x1a4, messageLength), 0x00, 0x00))
+                // call and forward error
+                if iszero(
+                    call(
+                        gas(),
+                        shr(96, calldataload(currentOffset)), // spoke pool address
+                        requiredNativeValue,
+                        ptr,
+                        add(0x1a4, messageLength), // add length of variable data
+                        0x00,
+                        0x00
+                    )
+                ) {
+                    returndatacopy(0, 0, returndatasize())
+                    revert(0, returndatasize())
+                }
 
                 mstore(0x40, add(ptr, add(0x1c4, messageLength))) // one word after the message
             }
             default {
-                // No message
-                mstore(add(ptr, 0x184), 0)
-
-                // Make the call
-                pop(call(gas(), shr(96, calldataload(currentOffset)), requiredValue, ptr, 0x1a4, 0x00, 0x00))
+                // call and forward error
+                if iszero(
+                    call(
+                        gas(),
+                        shr(96, calldataload(currentOffset)), // spoke pool address
+                        requiredNativeValue,
+                        ptr,
+                        0x1a4,
+                        0x00,
+                        0x00
+                    )
+                ) {
+                    returndatacopy(0, 0, returndatasize())
+                    revert(0, returndatasize())
+                }
 
                 mstore(0x40, add(ptr, 0x1a4)) // one word after the message
             }
