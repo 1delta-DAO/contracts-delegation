@@ -28,19 +28,19 @@ contract AcrossTest is BaseTest {
     address public constant POLYGON_USDC = 0x3c499c542cEF5E3811e1192ce70d8cC03d5c3359;
     address public USDC;
     address public WETH = 0x7ceB23fD6bC0adD59E62ac25578270cFf1b9f619; // on polygon
+    address public WETH9_arb = 0x82aF49447D8a07e3bd95BD0d56f35241523fBab1;
 
     // Test amounts
     uint256 public BRIDGE_AMOUNT = 1000 * 1e6; // 1000 USDC
-    uint256 public BRIDGE_AMOUNT_ETH = 0.1 ether;
 
     // Fee parameters
     uint128 public FIXED_FEE = 5 * 1e5; // 0.5 USDC
-    uint32 public FEE_PERCENTAGE = 1e7; // 1% (100% is 1e9)
+    uint32 public FEE_PERCENTAGE = 10e7; // 10% (100% is 1e9)
 
     function setUp() public {
         rpcOverrides[Chains.ARBITRUM_ONE] = "https://arbitrum.rpc.subquery.network/public";
 
-        _init(Chains.ARBITRUM_ONE, 333862337, true);
+        _init(Chains.ARBITRUM_ONE, 0, true);
 
         callForwarder = new CallForwarder();
 
@@ -49,15 +49,15 @@ contract AcrossTest is BaseTest {
         USDC = chain.getTokenAddress(Tokens.USDC);
 
         _fundUserWithToken(USDC, BRIDGE_AMOUNT);
-        _fundUserWithNative(BRIDGE_AMOUNT_ETH);
 
         vm.label(address(callForwarder), "CallForwarder");
         vm.label(address(composer), "Composer");
         vm.label(SPOKE_POOL, "AcrossSpokePool");
         vm.label(USDC, "Arbitrum USDC");
-        vm.label(WETH, "Arbitrum WETH");
+        vm.label(WETH, "Polygon WETH");
         vm.label(user, "User");
         vm.label(POLYGON_USDC, "Polygon USDC");
+        vm.label(WETH9_arb, "Arbitrum WETH9");
     }
 
     function test_across_bridge_token() public {
@@ -65,7 +65,7 @@ contract AcrossTest is BaseTest {
 
         bytes memory forwarderCalldata = abi.encodePacked(
             CalldataLib.encodeApprove(USDC, SPOKE_POOL),
-            CalldataLib.encodeAcrossBridge(SPOKE_POOL, USDC, POLYGON_USDC, BRIDGE_AMOUNT, FIXED_FEE, FEE_PERCENTAGE, POLYGON_CHAIN_ID, user, message),
+            CalldataLib.encodeAcrossBridge(SPOKE_POOL, USDC, POLYGON_USDC, 0, FIXED_FEE, FEE_PERCENTAGE, POLYGON_CHAIN_ID, user, message),
             CalldataLib.encodeSweep(USDC, user, 0, SweepType.VALIDATE)
         );
 
@@ -85,20 +85,26 @@ contract AcrossTest is BaseTest {
     }
 
     function test_across_bridge_native() public {
+        uint256 eth_amount = 1 ether;
+        uint128 fee = 0.001 ether;
+
         bytes memory message = new bytes(0);
 
+        deal(address(composer), eth_amount + fee);
+
         bytes memory forwarderCalldata = abi.encodePacked(
-            CalldataLib.encodeAcrossBridge(
-                SPOKE_POOL, address(0), WETH, BRIDGE_AMOUNT_ETH, uint128(0.001 ether), FEE_PERCENTAGE, POLYGON_CHAIN_ID, user, message
-            ),
+            CalldataLib.encodeAcrossBridge(SPOKE_POOL, WETH9_arb, WETH, 0, fee, FEE_PERCENTAGE, POLYGON_CHAIN_ID, user, message),
             CalldataLib.encodeSweep(address(0), user, 0, SweepType.VALIDATE) // sweep any remaining ETH
         );
 
-        bytes memory composerCalldata = abi.encodePacked(CalldataLib.encodeExternalCall(address(callForwarder), BRIDGE_AMOUNT_ETH, forwarderCalldata));
+        bytes memory composerCalldata = abi.encodePacked(
+            CalldataLib.encodeSweep(address(0), address(callForwarder), 0, SweepType.VALIDATE), // transfer all eth to call forwarder
+            CalldataLib.encodeExternalCall(address(callForwarder), 0, forwarderCalldata)
+        );
 
         vm.startPrank(user);
 
-        composer.deltaCompose{value: BRIDGE_AMOUNT_ETH}(composerCalldata);
+        composer.deltaCompose(composerCalldata);
 
         vm.stopPrank();
     }

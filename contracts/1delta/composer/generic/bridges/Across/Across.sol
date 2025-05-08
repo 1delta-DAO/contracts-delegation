@@ -17,7 +17,7 @@ contract Across is BaseUtils {
      * | Offset | Length (bytes) | Description                  |
      * |--------|----------------|------------------------------|
      * | 0      | 20             | spokePool                    |
-     * | 20     | 20             | inputTokenAddress               |
+     * | 20     | 20             | inputTokenAddress            |
      * | 40     | 20             | receivingAssetId             |
      * | 60     | 16             | amount                       |
      * | 76     | 16             | FixedFee                     |
@@ -70,7 +70,7 @@ contract Across is BaseUtils {
                 }
             }
 
-            outputAmount := div(mul(amount, sub(1000000000, and(shr(224, calldataload(add(currentOffset, 72))), UINT32_MASK))), 1000000000)
+            outputAmount := div(mul(amount, sub(1000000000, and(shr(224, calldataload(add(currentOffset, 92))), UINT32_MASK))), 1000000000)
 
             let ptr := mload(0x40)
 
@@ -88,7 +88,7 @@ contract Across is BaseUtils {
             mstore(add(ptr, 0x124), add(timestamp(), 1800)) // fillDeadline (block timestamp + 30 minutes)
             mstore(add(ptr, 0x144), 0) // exclusivityDeadline (zero address)
 
-            mstore(add(ptr, 0x164), 180) // message offset
+            mstore(add(ptr, 0x164), 0x180) // message offset
             // Handle message
             switch gt(messageLength, 0)
             case 1 {
