@@ -38,7 +38,7 @@ contract AcrossTest is BaseTest {
     uint32 public FEE_PERCENTAGE = 10e7; // 10% (100% is 1e9)
 
     function setUp() public {
-        rpcOverrides[Chains.ARBITRUM_ONE] = "https://api.zan.top/arb-one";
+        rpcOverrides[Chains.ARBITRUM_ONE] = "https://1rpc.io/arb";
 
         _init(Chains.ARBITRUM_ONE, 0, true);
 
@@ -162,5 +162,58 @@ contract AcrossTest is BaseTest {
         composer.deltaCompose(composerCalldata);
 
         vm.stopPrank();
+    }
+
+    function test_across_bridge_message() public {
+        mockSpokePool spokePool = new mockSpokePool();
+        uint256 eth_amount = 1 ether;
+        uint128 fee = 0.001 ether;
+
+        bytes memory message = hex"1de17a0000abcdef0000";
+
+        deal(address(composer), eth_amount);
+
+        bytes memory forwarderCalldata = abi.encodePacked(
+            CalldataLib.encodeAcrossBridgeNative(
+                address(spokePool), WETH9_arb, WETH, eth_amount, fee, FEE_PERCENTAGE, POLYGON_CHAIN_ID, user, message
+            ),
+            CalldataLib.encodeSweep(address(0), user, 0, SweepType.VALIDATE) // sweep any remaining ETH
+        );
+
+        bytes memory composerCalldata = abi.encodePacked(
+            CalldataLib.encodeSweep(address(0), address(callForwarder), 0, SweepType.VALIDATE), // transfer all eth to call forwarder
+            CalldataLib.encodeExternalCall(address(callForwarder), 0, forwarderCalldata)
+        );
+        vm.startPrank(user);
+
+        vm.expectRevert(abi.encodeWithSelector(mockSpokePool.m.selector, message));
+        composer.deltaCompose(composerCalldata);
+
+        vm.stopPrank();
+    }
+}
+
+contract mockSpokePool {
+    error m(bytes message);
+
+    function depositV3(
+        address depositor,
+        address recipient,
+        address inputToken,
+        address outputToken,
+        uint256 inputAmount,
+        uint256 outputAmount,
+        uint256 destinationChainId,
+        address exclusiveRelayer,
+        uint32 quoteTimestamp,
+        uint32 fillDeadline,
+        uint32 exclusivityDeadline,
+        bytes memory message
+    )
+        external
+        payable
+        returns (bytes memory)
+    {
+        revert m(message);
     }
 }
