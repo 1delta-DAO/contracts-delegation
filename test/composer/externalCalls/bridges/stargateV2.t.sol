@@ -50,7 +50,35 @@ contract StargateV2Test is BaseTest {
         vm.label(user, "User");
     }
 
-    function test_stargate_v2_bridge_taxi() public {
+    function test_stargate_v2_bridge_taxi_native_balance() public {
+        uint32 baseId = 30184;
+        address nativePool = 0xA45B5130f36CDcA45667738e2a258AB09f4A5f7F;
+        // 1. quote the fee
+        (uint256 fee, int256 sgFee) = _quote(false);
+        uint256 eth_amount = 1 ether;
+
+        deal(address(composer), fee + eth_amount);
+
+        bytes memory forwarderCalldata = abi.encodePacked(
+            CalldataLib.encodeStargateV2BridgeSimpleTaxi(13, nativePool, baseId, user, 0, 100000000, fee),
+            CalldataLib.encodeSweep(address(0), user, 0, SweepType.VALIDATE) // sweep native
+        );
+
+        bytes memory composerCalldata = abi.encodePacked(
+            CalldataLib.encodeSweep(address(0), address(callForwarder), 0, SweepType.VALIDATE),
+            CalldataLib.encodeExternalCall(address(callForwarder), 0, forwarderCalldata)
+        );
+
+        vm.startPrank(user);
+        // Approve USDC to the CallForwarder
+        IERC20(USDC).approve(address(composer), BRIDGE_AMOUNT);
+
+        composer.deltaCompose(composerCalldata);
+
+        vm.stopPrank();
+    }
+
+    function test_stargate_v2_bridge_taxi_token_amount() public {
         // 1. quote the fee
         (uint256 fee, int256 sgFee) = _quote(false);
 
@@ -70,6 +98,44 @@ contract StargateV2Test is BaseTest {
         bytes memory forwarderCalldata = abi.encodePacked(
             CalldataLib.encodeApprove(USDC, STARGATE_USDC),
             CalldataLib.encodeStargateV2BridgeSimpleTaxi(USDC_ASSET_ID, STARGATE_USDC, POLYGON_EID, user, BRIDGE_AMOUNT, slippage, fee),
+            CalldataLib.encodeSweep(address(0), user, 0, SweepType.VALIDATE), // sweep native
+            CalldataLib.encodeSweep(USDC, user, 0, SweepType.VALIDATE) // sweep usdc
+        );
+
+        bytes memory composerCalldata = abi.encodePacked(
+            CalldataLib.encodeTransferIn(USDC, address(callForwarder), BRIDGE_AMOUNT),
+            CalldataLib.encodeExternalCall(address(callForwarder), 0, forwarderCalldata)
+        );
+
+        vm.startPrank(user);
+        // Approve USDC to the CallForwarder
+        IERC20(USDC).approve(address(composer), BRIDGE_AMOUNT);
+
+        composer.deltaCompose(composerCalldata);
+
+        vm.stopPrank();
+    }
+
+    function test_stargate_v2_bridge_taxi_token_balance() public {
+        // 1. quote the fee
+        (uint256 fee, int256 sgFee) = _quote(false);
+
+        uint256 minAmountLD = uint256(int256(BRIDGE_AMOUNT) + sgFee); // sgFee is negative for fee and positive for rewards
+        uint32 slippage = uint32((BRIDGE_AMOUNT - minAmountLD) * 1e9 / BRIDGE_AMOUNT); // percentage
+
+        deal(address(callForwarder), fee);
+
+        // 2. compose call data
+
+        console.log("lzFee", fee);
+        console.log("sgFee", sgFee);
+        console.log("BRIDGE_AMOUNT", BRIDGE_AMOUNT);
+        console.log("minAmountLD", minAmountLD);
+        console.log("slippage", slippage);
+
+        bytes memory forwarderCalldata = abi.encodePacked(
+            CalldataLib.encodeApprove(USDC, STARGATE_USDC),
+            CalldataLib.encodeStargateV2BridgeSimpleTaxi(USDC_ASSET_ID, STARGATE_USDC, POLYGON_EID, user, 0, slippage, fee),
             CalldataLib.encodeSweep(address(0), user, 0, SweepType.VALIDATE), // sweep native
             CalldataLib.encodeSweep(USDC, user, 0, SweepType.VALIDATE) // sweep usdc
         );
@@ -126,7 +192,7 @@ contract StargateV2Test is BaseTest {
         vm.stopPrank();
     }
 
-    function test_stargate_v2_bridge_bus() public {
+    function test_stargate_v2_bridge_bus_token_amount() public {
         // 1. quote the fee
         (uint256 fee, int256 sgFee) = _quote(true);
 
@@ -145,6 +211,43 @@ contract StargateV2Test is BaseTest {
         bytes memory forwarderCalldata = abi.encodePacked(
             CalldataLib.encodeApprove(USDC, STARGATE_USDC),
             CalldataLib.encodeStargateV2BridgeSimpleBus(USDC_ASSET_ID, STARGATE_USDC, POLYGON_EID, user, BRIDGE_AMOUNT, slippage, fee),
+            CalldataLib.encodeSweep(address(0), user, 0, SweepType.VALIDATE), // sweep native
+            CalldataLib.encodeSweep(USDC, user, 0, SweepType.VALIDATE) // sweep usdc
+        );
+
+        bytes memory composerCalldata = abi.encodePacked(
+            CalldataLib.encodeTransferIn(USDC, address(callForwarder), BRIDGE_AMOUNT),
+            CalldataLib.encodeExternalCall(address(callForwarder), 0, forwarderCalldata)
+        );
+
+        vm.startPrank(user);
+        // Approve USDC to the CallForwarder
+        IERC20(USDC).approve(address(composer), BRIDGE_AMOUNT);
+
+        composer.deltaCompose(composerCalldata);
+
+        vm.stopPrank();
+    }
+
+    function test_stargate_v2_bridge_bus_token_balance() public {
+        // 1. quote the fee
+        (uint256 fee, int256 sgFee) = _quote(true);
+
+        uint256 minAmountLD = uint256(int256(BRIDGE_AMOUNT) + sgFee); // sgFee is negative for fee and positive for rewards
+        uint32 slippage = uint32((BRIDGE_AMOUNT - minAmountLD) * 1e9 / BRIDGE_AMOUNT); // percentage
+
+        deal(address(callForwarder), fee);
+
+        // 2. compose call data
+
+        console.log("lzFee", fee);
+        console.log("sgFee", sgFee);
+        console.log("BRIDGE_AMOUNT", BRIDGE_AMOUNT);
+        console.log("minAmountLD", minAmountLD);
+
+        bytes memory forwarderCalldata = abi.encodePacked(
+            CalldataLib.encodeApprove(USDC, STARGATE_USDC),
+            CalldataLib.encodeStargateV2BridgeSimpleBus(USDC_ASSET_ID, STARGATE_USDC, POLYGON_EID, user, 0, slippage, fee),
             CalldataLib.encodeSweep(address(0), user, 0, SweepType.VALIDATE), // sweep native
             CalldataLib.encodeSweep(USDC, user, 0, SweepType.VALIDATE) // sweep usdc
         );
