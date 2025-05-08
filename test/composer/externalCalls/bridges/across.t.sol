@@ -108,6 +108,9 @@ contract AcrossTest is BaseTest {
 
         composer.deltaCompose(composerCalldata);
 
+        uint256 balance = IERC20(USDC).balanceOf(address(callForwarder));
+        console.log("balance", balance);
+
         vm.stopPrank();
     }
 
@@ -142,7 +145,7 @@ contract AcrossTest is BaseTest {
 
         bytes memory message = new bytes(0);
 
-        deal(address(composer), eth_amount + fee);
+        deal(address(composer), eth_amount);
 
         bytes memory forwarderCalldata = abi.encodePacked(
             CalldataLib.encodeAcrossBridgeNative(SPOKE_POOL, WETH9_arb, WETH, eth_amount, fee, FEE_PERCENTAGE, POLYGON_CHAIN_ID, user, message),
