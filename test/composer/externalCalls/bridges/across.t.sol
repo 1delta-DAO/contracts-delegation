@@ -60,7 +60,7 @@ contract AcrossTest is BaseTest {
         vm.label(WETH9_arb, "Arbitrum WETH9");
     }
 
-    function test_across_bridge_token() public {
+    function test_across_bridge_token_balance() public {
         bytes memory message = new bytes(0);
 
         bytes memory forwarderCalldata = abi.encodePacked(
@@ -84,7 +84,34 @@ contract AcrossTest is BaseTest {
         vm.stopPrank();
     }
 
-    function test_across_bridge_native() public {
+    function test_across_bridge_token_amount() public {
+        bytes memory message = hex"abababff";
+
+        bytes memory forwarderCalldata = abi.encodePacked(
+            CalldataLib.encodeApprove(USDC, SPOKE_POOL),
+            CalldataLib.encodeAcrossBridgeToken(
+                SPOKE_POOL, USDC, POLYGON_USDC, BRIDGE_AMOUNT - 100e6, FIXED_FEE, FEE_PERCENTAGE, POLYGON_CHAIN_ID, user, message
+            ),
+            //CalldataLib.encodeApprove(WETH9_arb, SPOKE_POOL),
+            CalldataLib.encodeSweep(USDC, user, 0, SweepType.VALIDATE)
+        );
+
+        bytes memory composerCalldata = abi.encodePacked(
+            CalldataLib.encodeTransferIn(USDC, address(callForwarder), BRIDGE_AMOUNT),
+            CalldataLib.encodeExternalCall(address(callForwarder), 0, forwarderCalldata)
+        );
+
+        vm.startPrank(user);
+
+        // Approve USDC to the CallForwarder
+        IERC20(USDC).approve(address(composer), BRIDGE_AMOUNT);
+
+        composer.deltaCompose(composerCalldata);
+
+        vm.stopPrank();
+    }
+
+    function test_across_bridge_native_balance() public {
         uint256 eth_amount = 1 ether;
         uint128 fee = 0.001 ether;
 
@@ -94,6 +121,31 @@ contract AcrossTest is BaseTest {
 
         bytes memory forwarderCalldata = abi.encodePacked(
             CalldataLib.encodeAcrossBridgeNative(SPOKE_POOL, WETH9_arb, WETH, 0, fee, FEE_PERCENTAGE, POLYGON_CHAIN_ID, user, message),
+            CalldataLib.encodeSweep(address(0), user, 0, SweepType.VALIDATE) // sweep any remaining ETH
+        );
+
+        bytes memory composerCalldata = abi.encodePacked(
+            CalldataLib.encodeSweep(address(0), address(callForwarder), 0, SweepType.VALIDATE), // transfer all eth to call forwarder
+            CalldataLib.encodeExternalCall(address(callForwarder), 0, forwarderCalldata)
+        );
+
+        vm.startPrank(user);
+
+        composer.deltaCompose(composerCalldata);
+
+        vm.stopPrank();
+    }
+
+    function test_across_bridge_native_amount() public {
+        uint256 eth_amount = 1 ether;
+        uint128 fee = 0.001 ether;
+
+        bytes memory message = new bytes(0);
+
+        deal(address(composer), eth_amount + fee);
+
+        bytes memory forwarderCalldata = abi.encodePacked(
+            CalldataLib.encodeAcrossBridgeNative(SPOKE_POOL, WETH9_arb, WETH, eth_amount, fee, FEE_PERCENTAGE, POLYGON_CHAIN_ID, user, message),
             CalldataLib.encodeSweep(address(0), user, 0, SweepType.VALIDATE) // sweep any remaining ETH
         );
 

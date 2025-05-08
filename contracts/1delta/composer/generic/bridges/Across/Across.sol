@@ -115,8 +115,9 @@ contract Across is BaseUtils {
 
                 mstore(0x40, add(ptr, 0x1a4)) // one word after the message
             }
+            currentOffset := add(currentOffset, add(122, messageLength))
         }
 
-        return currentOffset + 122 + messageLength;
+        return currentOffset;
     }
 }
