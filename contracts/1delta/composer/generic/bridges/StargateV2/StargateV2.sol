@@ -149,6 +149,7 @@ contract StargateV2 is BaseUtils {
             oftCmd: _params.isBusMode ? new bytes(1) : new bytes(0) // Bus or taxi mode
         });
 
+        // call stargate
         (bool success, bytes memory data) = address(stargate).call{value: requiredValue}(
             abi.encodeWithSelector(
                 IStargate.sendToken.selector,
@@ -158,11 +159,11 @@ contract StargateV2 is BaseUtils {
             )
         );
 
-        if (!success) revert BridgeFailed();
-
-        (, IStargate.OFTReceipt memory oftReceipt,) = abi.decode(data, (IStargate.MessagingReceipt, IStargate.OFTReceipt, IStargate.Ticket));
-        if (oftReceipt.amountReceivedLD < minAmount) {
-            revert SlippageTooHigh(minAmount, oftReceipt.amountReceivedLD);
+        // forward the error if any
+        if (success) {
+            assembly {
+                revert(add(data, 32), mload(data))
+            }
         }
     }
 }
