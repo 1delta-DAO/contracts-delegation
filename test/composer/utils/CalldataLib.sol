@@ -112,6 +112,7 @@ library CalldataLib {
 
     // Across
     function encodeAcrossBridge(
+        address spokePool,
         address sendingAssetId,
         address receivingAssetId,
         uint256 amount,
@@ -128,6 +129,7 @@ library CalldataLib {
         bytes memory bridgeData = abi.encodePacked(
             uint8(ComposerCommands.BRIDGING),
             uint8(BridgeIds.ACROSS),
+            spokePool,
             sendingAssetId,
             receivingAssetId,
             uint128(amount),

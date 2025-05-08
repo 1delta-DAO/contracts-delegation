@@ -65,7 +65,7 @@ contract AcrossTest is BaseTest {
 
         bytes memory forwarderCalldata = abi.encodePacked(
             CalldataLib.encodeApprove(USDC, SPOKE_POOL),
-            CalldataLib.encodeAcrossBridge(USDC, POLYGON_USDC, BRIDGE_AMOUNT, FIXED_FEE, FEE_PERCENTAGE, POLYGON_CHAIN_ID, user, message),
+            CalldataLib.encodeAcrossBridge(SPOKE_POOL, USDC, POLYGON_USDC, BRIDGE_AMOUNT, FIXED_FEE, FEE_PERCENTAGE, POLYGON_CHAIN_ID, user, message),
             CalldataLib.encodeSweep(USDC, user, 0, SweepType.VALIDATE)
         );
 
@@ -88,7 +88,9 @@ contract AcrossTest is BaseTest {
         bytes memory message = new bytes(0);
 
         bytes memory forwarderCalldata = abi.encodePacked(
-            CalldataLib.encodeAcrossBridge(address(0), WETH, BRIDGE_AMOUNT_ETH, uint128(0.001 ether), FEE_PERCENTAGE, POLYGON_CHAIN_ID, user, message),
+            CalldataLib.encodeAcrossBridge(
+                SPOKE_POOL, address(0), WETH, BRIDGE_AMOUNT_ETH, uint128(0.001 ether), FEE_PERCENTAGE, POLYGON_CHAIN_ID, user, message
+            ),
             CalldataLib.encodeSweep(address(0), user, 0, SweepType.VALIDATE) // sweep any remaining ETH
         );
 
