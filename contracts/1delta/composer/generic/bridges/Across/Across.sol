@@ -32,8 +32,14 @@ contract Across is BaseUtils {
         assembly {
             // Load key data from calldata
             let inputTokenAddress := shr(96, calldataload(add(currentOffset, 20)))
-            let isNative := iszero(inputTokenAddress)
+            let isNative
             let amount := and(shr(128, calldataload(add(currentOffset, 60))), UINT128_MASK)
+            switch iszero(and(NATIVE_FLAG, amount))
+            case 1 { isNative := 0 }
+            default { isNative := 1 }
+
+            amount := and(amount, not(NATIVE_FLAG)) // clear the native flag
+
             messageLength := and(shr(240, calldataload(add(currentOffset, 120))), UINT16_MASK)
             let requiredValue := 0
             let outputAmount := 0

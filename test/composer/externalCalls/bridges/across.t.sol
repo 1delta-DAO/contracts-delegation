@@ -38,7 +38,7 @@ contract AcrossTest is BaseTest {
     uint32 public FEE_PERCENTAGE = 10e7; // 10% (100% is 1e9)
 
     function setUp() public {
-        rpcOverrides[Chains.ARBITRUM_ONE] = "https://arbitrum.rpc.subquery.network/public";
+        rpcOverrides[Chains.ARBITRUM_ONE] = "https://api.zan.top/arb-one";
 
         _init(Chains.ARBITRUM_ONE, 0, true);
 
@@ -65,7 +65,7 @@ contract AcrossTest is BaseTest {
 
         bytes memory forwarderCalldata = abi.encodePacked(
             CalldataLib.encodeApprove(USDC, SPOKE_POOL),
-            CalldataLib.encodeAcrossBridge(SPOKE_POOL, USDC, POLYGON_USDC, 0, FIXED_FEE, FEE_PERCENTAGE, POLYGON_CHAIN_ID, user, message),
+            CalldataLib.encodeAcrossBridgeToken(SPOKE_POOL, USDC, POLYGON_USDC, 0, FIXED_FEE, FEE_PERCENTAGE, POLYGON_CHAIN_ID, user, message),
             CalldataLib.encodeSweep(USDC, user, 0, SweepType.VALIDATE)
         );
 
@@ -93,7 +93,7 @@ contract AcrossTest is BaseTest {
         deal(address(composer), eth_amount + fee);
 
         bytes memory forwarderCalldata = abi.encodePacked(
-            CalldataLib.encodeAcrossBridge(SPOKE_POOL, WETH9_arb, WETH, 0, fee, FEE_PERCENTAGE, POLYGON_CHAIN_ID, user, message),
+            CalldataLib.encodeAcrossBridgeNative(SPOKE_POOL, WETH9_arb, WETH, 0, fee, FEE_PERCENTAGE, POLYGON_CHAIN_ID, user, message),
             CalldataLib.encodeSweep(address(0), user, 0, SweepType.VALIDATE) // sweep any remaining ETH
         );
 

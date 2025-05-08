@@ -30,8 +30,8 @@ abstract contract Masks {
     ///      add 2 amounts (2xuint112) into 32bytes, as such we use this mask for extracting those
     uint256 internal constant UINT112_MASK = 0x000000000000000000000000000000000000ffffffffffffffffffffffffffff;
 
-    /// @dev Mask for using the injected amount
-    uint256 internal constant BALANCE_FLAG = 1 << 127;
+    /// @dev Mask for Is Native
+    uint256 internal constant NATIVE_FLAG = 1 << 127;
     /// @dev Mask for shares
     uint256 internal constant USE_SHARES_FLAG = 1 << 126;
     /// @dev Mask for morpho using unsafe repay
