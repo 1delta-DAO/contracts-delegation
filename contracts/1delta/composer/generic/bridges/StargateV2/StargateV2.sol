@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
-import {console} from "forge-std/console.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {BaseUtils} from "contracts/1delta/composer/generic/BaseUtils.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
@@ -112,7 +111,6 @@ contract StargateV2 is BaseUtils {
         // initialize the total callvalue to send
         uint256 requiredValue;
 
-        console.log("_params.amount:", _params.amount, _caller);
         // if amount is 0, then use the balance of the contract
         if (_params.amount == 0) {
             if (isNative) {
@@ -139,10 +137,6 @@ contract StargateV2 is BaseUtils {
             // check if we have enough to pay the fee
             if (requiredValue > selfNativeBalance) revert InsufficientValue();
         }
-
-        console.log("_params.amount:", _params.amount);
-
-        console.log("requiredValue:", requiredValue);
 
         // Create the sendParam structure
         IStargate.SendParam memory sendParam = IStargate.SendParam({
