@@ -11,7 +11,6 @@ contract StargateV2 is BaseUtils {
      * @notice Handles Stargate V2 bridging operations
      * @dev Decodes calldata and forwards the call to the appropriate Stargate adapter function
      * @param currentOffset Current position in the calldata
-     * @param callerAddress Original caller's address (for possible access control)
      * @return Updated calldata offset after processing
      *
      * | Offset | Length (bytes) | Description                  |
@@ -31,7 +30,7 @@ contract StargateV2 is BaseUtils {
      * | 139    | cl             | composeMsg: cm               |
      * | 139+cl | el             | extraOptions: eo             |
      */
-    function _bridgeStargateV2(uint256 currentOffset, address callerAddress) internal returns (uint256) {
+    function _bridgeStargateV2(uint256 currentOffset) internal returns (uint256) {
         BridgeParams memory params;
         uint16 composeMsgLength;
         uint16 extraOptionsLength;
@@ -92,13 +91,13 @@ contract StargateV2 is BaseUtils {
             }
         }
 
-        _bridgeTokens(callerAddress, asset, params);
+        _bridgeTokens(asset, params);
 
         // Calculate new offset
         return currentOffset + 139 + composeMsgLength + extraOptionsLength;
     }
 
-    function _bridgeTokens(address _caller, address tokenAddr, BridgeParams memory _params) internal {
+    function _bridgeTokens(address tokenAddr, BridgeParams memory _params) internal {
         // Check if the token is native or ERC20
         bool isNative = tokenAddr == address(0);
 

@@ -14,7 +14,7 @@ contract BridgeForwarder is StargateV2, Across {
             currentOffset := add(currentOffset, 1)
         }
         if (bridgeOperation == BridgeIds.STARGATE_V2) {
-            return _bridgeStargateV2(currentOffset, callerAddress);
+            return _bridgeStargateV2(currentOffset);
         } else if (bridgeOperation == BridgeIds.ACROSS) {
             return _bridgeAcross(currentOffset, callerAddress);
         } else {
