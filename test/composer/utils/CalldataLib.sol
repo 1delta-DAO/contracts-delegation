@@ -22,6 +22,7 @@ library CalldataLib {
 
     function encodeStargateV2Bridge(
         uint16 assetId,
+        address stargatePool,
         uint32 dstEid,
         address receiver,
         uint256 amount,
@@ -38,24 +39,26 @@ library CalldataLib {
         bytes memory bridgeData = abi.encodePacked(
             uint8(ComposerCommands.BRIDGING),
             uint8(BridgeIds.STARGATE_V2),
-            assetId, // 2 bytes
-            dstEid, // 4 bytes
-            receiver, // 20 bytes
-            uint128(amount), // 16 bytes
-            slippage, // 4 bytes
-            uint128(fee), // 16 bytes
-            uint8(isBusMode ? 1 : 0), // 1 byte
-            uint16(composeMsg.length), // 2 bytes
-            uint16(extraOptions.length), // 2 bytes
-            composeMsg, // variable
-            extraOptions // variable
+            assetId,
+            stargatePool,
+            dstEid,
+            receiver,
+            uint128(amount),
+            slippage,
+            uint128(fee),
+            uint8(isBusMode ? 1 : 0),
+            uint16(composeMsg.length),
+            uint16(extraOptions.length),
+            composeMsg,
+            extraOptions
         );
 
         return bridgeData;
     }
 
-    function encodeStargateV2BridgeTaxi(
+    function encodeStargateV2BridgeSimpleTaxi(
         uint16 assetId,
+        address stargatePool,
         uint32 dstEid,
         address receiver,
         uint256 amount,
@@ -68,6 +71,7 @@ library CalldataLib {
     {
         return encodeStargateV2Bridge(
             assetId,
+            stargatePool,
             dstEid,
             receiver,
             amount,
@@ -79,8 +83,9 @@ library CalldataLib {
         );
     }
 
-    function encodeStargateV2BridgeBus(
+    function encodeStargateV2BridgeSimpleBus(
         uint16 assetId,
+        address stargatePool,
         uint32 dstEid,
         address receiver,
         uint256 amount,
@@ -93,6 +98,7 @@ library CalldataLib {
     {
         return encodeStargateV2Bridge(
             assetId,
+            stargatePool,
             dstEid,
             receiver,
             amount,
@@ -102,47 +108,6 @@ library CalldataLib {
             new bytes(0), // no compose message
             new bytes(0) // no extra options
         );
-    }
-
-    function extCallStargateV2BridgeToken(
-        address callForwarder,
-        uint16 assetId,
-        uint32 dstEid,
-        address receiver,
-        uint256 amount,
-        uint32 slippage,
-        uint256 fee,
-        uint256 value,
-        bool isBusMode,
-        bytes memory composeMsg,
-        bytes memory extraOptions
-    )
-        internal
-        pure
-        returns (bytes memory)
-    {
-        bytes memory bridgeData = encodeStargateV2Bridge(assetId, dstEid, receiver, amount, slippage, fee, isBusMode, composeMsg, extraOptions);
-        return encodeExternalCall(callForwarder, value, bridgeData);
-    }
-
-    function extCallStargateV2BridgeNative(
-        address callForwarder,
-        uint16 assetId,
-        uint32 dstEid,
-        address receiver,
-        uint256 amount,
-        uint32 slippage,
-        uint256 fee,
-        bool isBusMode,
-        bytes memory composeMsg,
-        bytes memory extraOptions
-    )
-        internal
-        pure
-        returns (bytes memory)
-    {
-        bytes memory bridgeData = encodeStargateV2Bridge(assetId, dstEid, receiver, amount, slippage, fee, isBusMode, composeMsg, extraOptions);
-        return encodeExternalCall(callForwarder, fee + amount, bridgeData);
     }
 
     // Across

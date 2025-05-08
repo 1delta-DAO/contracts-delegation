@@ -3,6 +3,7 @@ pragma solidity ^0.8.28;
 
 struct BridgeParams {
     uint16 assetId;
+    address stargatePool;
     uint32 dstEid;
     address receiver;
     uint128 amount;
