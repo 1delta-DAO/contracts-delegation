@@ -91,7 +91,7 @@ contract Across is BaseUtils {
             // Handle message
             switch gt(messageLength, 0)
             case 1 {
-                mstore(add(ptr, 0x164), add(ptr, 0x184))
+                mstore(add(ptr, 0x164), 180)
                 mstore(add(ptr, 0x184), messageLength)
 
                 calldatacopy(add(ptr, 0x1a4), add(currentOffset, 122), messageLength)
@@ -102,7 +102,7 @@ contract Across is BaseUtils {
             }
             default {
                 // No message
-                mstore(add(ptr, 0x164), add(ptr, 0x184))
+                mstore(add(ptr, 0x164), 180)
                 mstore(add(ptr, 0x184), 0)
 
                 // Make the call
