@@ -136,11 +136,11 @@ contract StargateV2 is BaseUtils {
         }
 
         // use standard slippage adjustment for slippage
-        uint256 minAmount = (_params.amount * (1e9 - _params.slippage)) / 1e9;
+        uint256 minAmount = (_params.amount * (FEE_DENOMINATOR - _params.slippage)) / FEE_DENOMINATOR;
 
         // Create the sendParam structure
         IStargate.SendParam memory sendParam = IStargate.SendParam({
-            dstEid: _params.dstEid,
+            dstEid: uint32(_params.dstEid),
             to: bytes32(uint256(uint160(_params.receiver))),
             amountLD: _params.amount,
             minAmountLD: minAmount,

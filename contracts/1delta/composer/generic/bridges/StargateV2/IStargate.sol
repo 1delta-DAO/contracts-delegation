@@ -2,13 +2,13 @@
 pragma solidity ^0.8.28;
 
 struct BridgeParams {
-    uint16 assetId;
+    uint256 assetId;
     address stargatePool;
-    uint32 dstEid;
+    uint256 dstEid;
     address receiver;
-    uint128 amount;
-    uint32 slippage;
-    uint128 fee;
+    uint256 amount;
+    uint256 slippage;
+    uint256 fee;
     bool isBusMode;
     bytes composeMsg;
     bytes extraOptions;
