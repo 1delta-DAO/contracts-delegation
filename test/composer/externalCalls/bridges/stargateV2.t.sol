@@ -29,7 +29,6 @@ contract StargateV2Test is BaseTest {
     MockStargate public STARGATE_MOCK; // USDC Stargate
 
     // Test parameters
-    uint16 public constant USDC_ASSET_ID = 1;
     uint32 public constant POLYGON_EID = 30109;
     address public USDC;
 
@@ -83,7 +82,6 @@ contract StargateV2Test is BaseTest {
         bytes memory forwarderCalldata = abi.encodePacked(
             CalldataLib.encodeStargateV2BridgeSimpleTaxi(
                 address(0),
-                13, // assetId
                 nativePool,
                 baseId, // dst id
                 toReceiver(user), // receiver
@@ -137,7 +135,6 @@ contract StargateV2Test is BaseTest {
         console.log("slippage", slippage);
         bytes memory totalCalldata = CalldataLib.encodeStargateV2BridgeSimpleTaxi(
             USDC,
-            USDC_ASSET_ID,
             STARGATE_USDC,
             POLYGON_EID,
             toReceiver(user), //
@@ -195,7 +192,6 @@ contract StargateV2Test is BaseTest {
         console.log("slippage", slippage);
         bytes memory totalCalldata = CalldataLib.encodeStargateV2BridgeSimpleTaxi(
             USDC,
-            USDC_ASSET_ID,
             STARGATE_USDC,
             POLYGON_EID,
             toReceiver(user), // receiver
@@ -259,7 +255,6 @@ contract StargateV2Test is BaseTest {
                 CalldataLib.encodeApprove(USDC, STARGATE_USDC),
                 CalldataLib.encodeStargateV2BridgeSimpleTaxi(
                     USDC,
-                    USDC_ASSET_ID,
                     STARGATE_USDC,
                     POLYGON_EID,
                     toReceiver(user), //
@@ -318,7 +313,6 @@ contract StargateV2Test is BaseTest {
         }
         bytes memory totalCalldata = CalldataLib.encodeStargateV2BridgeSimpleBus(
             USDC,
-            USDC_ASSET_ID,
             STARGATE_USDC,
             POLYGON_EID,
             toReceiver(user), //
@@ -375,7 +369,6 @@ contract StargateV2Test is BaseTest {
         console.log("minAmountLD", minAmountLD);
         bytes memory totalCalldata = CalldataLib.encodeStargateV2BridgeSimpleBus(
             USDC,
-            USDC_ASSET_ID,
             STARGATE_USDC,
             POLYGON_EID,
             toReceiver(user), //

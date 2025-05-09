@@ -51,11 +51,11 @@ contract StargateV2 is BaseUtils {
             let minAmountLD
 
             asset := shr(96, calldataload(currentOffset))
-            fee := shr(128, calldataload(add(currentOffset, 116)))
+            fee := and(shr(128, calldataload(add(currentOffset, 116))), UINT128_MASK)
 
             composeMsgLength := and(shr(240, calldataload(add(currentOffset, 133))), UINT16_MASK)
             extraOptionsLength := and(shr(240, calldataload(add(currentOffset, 135))), UINT16_MASK)
-            amount := and(shr(128, calldataload(add(currentOffset, 60))), UINT128_MASK)
+            amount := and(shr(128, calldataload(add(currentOffset, 96))), UINT128_MASK)
             isNative := and(NATIVE_FLAG, amount)
             // clear the native flag
             amount := and(amount, not(NATIVE_FLAG))
@@ -95,29 +95,70 @@ contract StargateV2 is BaseUtils {
 
             minAmountLD := div(mul(amount, sub(FEE_DENOMINATOR, and(shr(224, calldataload(add(currentOffset, 112))), UINT32_MASK))), FEE_DENOMINATOR)
 
+            // Set up function call memory
             let ptr := mload(0x40)
-            mstore(ptr, 0xcbef2aa900000000000000000000000000000000000000000000000000000000) // sendToken selector
-            mstore(add(ptr, 0x04), and(shr(224, calldataload(add(currentOffset, 40))), UINT32_MASK)) // dstEid
-            mstore(add(ptr, 0x24), calldataload(add(currentOffset, 44))) // to
-            mstore(add(ptr, 0x44), amount) // amountLD
-            mstore(add(ptr, 0x64), minAmountLD) // minAmountLD
-            mstore(add(ptr, 0x84), 0x160) // extraOptions offset
-            mstore(add(ptr, 0xa4), add(0x160, add(extraOptionsLength, 0x20))) // composeMsg offset
-            mstore(add(ptr, 0xc4), add(add(0x160, add(extraOptionsLength, 0x20)), add(composeMsgLength, 0x20))) // oftCmd offset
-            mstore(add(ptr, 0xe4), fee) // nativeFee
-            mstore(add(ptr, 0x104), 0) // lzFee
-            mstore(add(ptr, 0x124), shr(96, calldataload(add(currentOffset, 76)))) // refundAddress
-            mstore(add(ptr, 0x144), extraOptionsLength) // extraOptions length
-            calldatacopy(add(ptr, 0x164), add(currentOffset, 137), extraOptionsLength) // extraOptions
-            mstore(add(add(ptr, 0x164), extraOptionsLength), composeMsgLength) // composeMsg length
-            calldatacopy(add(add(ptr, 0x184), extraOptionsLength), add(add(currentOffset, 137), extraOptionsLength), composeMsgLength) // composeMsg
-            mstore(add(add(add(ptr, 0x184), extraOptionsLength), composeMsgLength), 1) // oftCmd length
-            mstore(add(add(add(ptr, 0x1a4), extraOptionsLength), composeMsgLength), and(shr(248, calldataload(add(currentOffset, 132))), UINT8_MASK)) // is bus mode
-            // update free pointer
-            mstore(0x40, add(add(add(ptr, 0x1e4), extraOptionsLength), composeMsgLength)) // add 1 word offset
+            // sendToken selector: 0xcbef2aa9
+            mstore(ptr, 0xcbef2aa900000000000000000000000000000000000000000000000000000000)
 
-            // call stargate
-            if iszero(call(gas(), shr(96, calldataload(add(currentOffset, 20))), requiredValue, ptr, 0x1c4, 0, 0)) {
+            // sendParam struct
+            mstore(add(ptr, 0x04), 0x60)
+            let sendParamSize := add(add(352, extraOptionsLength), composeMsgLength) // the oftCmd is considered in the 352
+
+            // MessagingFee struct
+            mstore(add(ptr, 0x24), add(0x60, sendParamSize))
+
+            // refund address
+            mstore(add(ptr, 0x44), shr(96, calldataload(add(currentOffset, 76))))
+
+            // sendParam struct
+            mstore(add(ptr, 0x64), and(shr(224, calldataload(add(currentOffset, 40))), UINT32_MASK))
+            mstore(add(ptr, 0x84), calldataload(add(currentOffset, 44)))
+            mstore(add(ptr, 0xA4), amount)
+            mstore(add(ptr, 0xC4), minAmountLD)
+
+            let sendParamRelativeOffset := 0xE0
+
+            // extraOptions offset (relative to struct start)
+            mstore(add(ptr, 0xE4), sendParamRelativeOffset)
+            sendParamRelativeOffset := add(sendParamRelativeOffset, add(extraOptionsLength, 0x20)) // add 1 word for extraOptions length
+
+            // composeMsg offset (relative to struct start)
+            mstore(add(ptr, 0x104), sendParamRelativeOffset)
+            sendParamRelativeOffset := add(sendParamRelativeOffset, add(composeMsgLength, 0x20)) // add 1 word for composeMsg length
+
+            // oftCmd offset (relative to struct start)
+            mstore(add(ptr, 0x124), sendParamRelativeOffset)
+
+            // extraOptions
+            let extraOptionsPtr := add(ptr, 0x144)
+            mstore(extraOptionsPtr, extraOptionsLength)
+            if gt(extraOptionsLength, 0) {
+                calldatacopy(add(extraOptionsPtr, 0x20), add(add(currentOffset, 137), composeMsgLength), extraOptionsLength)
+            }
+
+            // composeMsg
+            let composeMsgPtr := add(add(extraOptionsPtr, 0x20), extraOptionsLength)
+            mstore(composeMsgPtr, composeMsgLength)
+            if gt(composeMsgLength, 0) { calldatacopy(add(composeMsgPtr, 0x20), add(currentOffset, 137), composeMsgLength) }
+
+            // oftCmd
+            let oftCmdPtr := add(add(composeMsgPtr, 0x20), composeMsgLength)
+            mstore(oftCmdPtr, 0x20)
+            mstore(add(oftCmdPtr, 0x20), and(shr(248, calldataload(add(currentOffset, 132))), UINT8_MASK))
+
+            // MessagingFee struct
+            let messagingFeePtr := add(oftCmdPtr, 0x40)
+            // nativeFee
+            mstore(messagingFeePtr, fee)
+            // lzTokenFee
+            mstore(add(messagingFeePtr, 0x20), 0)
+
+            let callSize := sub(add(messagingFeePtr, 0x40), ptr)
+
+            // Update free memory pointer
+            mstore(0x40, add(ptr, callSize))
+
+            if iszero(call(gas(), shr(96, calldataload(add(currentOffset, 20))), requiredValue, ptr, callSize, 0, 0)) {
                 returndatacopy(0, 0, returndatasize())
                 revert(0, returndatasize())
             }

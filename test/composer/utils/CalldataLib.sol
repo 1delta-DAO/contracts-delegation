@@ -22,7 +22,6 @@ library CalldataLib {
 
     function encodeStargateV2Bridge(
         address asset,
-        uint16 assetId,
         address stargatePool,
         uint32 dstEid,
         bytes32 receiver,
@@ -51,7 +50,6 @@ library CalldataLib {
             uint8(ComposerCommands.BRIDGING),
             uint8(BridgeIds.STARGATE_V2),
             asset,
-            assetId,
             stargatePool,
             dstEid,
             receiver,
@@ -66,7 +64,6 @@ library CalldataLib {
 
     function encodeStargateV2BridgeSimpleTaxi(
         address asset,
-        uint16 assetId,
         address stargatePool,
         uint32 dstEid,
         bytes32 receiver,
@@ -81,7 +78,6 @@ library CalldataLib {
     {
         return encodeStargateV2Bridge(
             asset,
-            assetId,
             stargatePool,
             dstEid,
             receiver,
@@ -97,7 +93,6 @@ library CalldataLib {
 
     function encodeStargateV2BridgeSimpleBus(
         address asset,
-        uint16 assetId,
         address stargatePool,
         uint32 dstEid,
         bytes32 receiver,
@@ -112,7 +107,6 @@ library CalldataLib {
     {
         return encodeStargateV2Bridge(
             asset,
-            assetId,
             stargatePool,
             dstEid,
             receiver,
