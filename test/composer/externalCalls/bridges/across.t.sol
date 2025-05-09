@@ -65,7 +65,7 @@ contract AcrossTest is BaseTest {
 
         bytes memory forwarderCalldata = abi.encodePacked(
             CalldataLib.encodeApprove(USDC, SPOKE_POOL),
-            CalldataLib.encodeAcrossBridgeToken(SPOKE_POOL, USDC, POLYGON_USDC, 0, FIXED_FEE, FEE_PERCENTAGE, POLYGON_CHAIN_ID, user, message),
+            CalldataLib.encodeAcrossBridgeToken(SPOKE_POOL, user, USDC, POLYGON_USDC, 0, FIXED_FEE, FEE_PERCENTAGE, POLYGON_CHAIN_ID, user, message),
             CalldataLib.encodeSweep(USDC, user, 0, SweepType.VALIDATE)
         );
 
@@ -90,7 +90,7 @@ contract AcrossTest is BaseTest {
         bytes memory forwarderCalldata = abi.encodePacked(
             CalldataLib.encodeApprove(USDC, SPOKE_POOL),
             CalldataLib.encodeAcrossBridgeToken(
-                SPOKE_POOL, USDC, POLYGON_USDC, BRIDGE_AMOUNT - 100e6, FIXED_FEE, FEE_PERCENTAGE, POLYGON_CHAIN_ID, user, message
+                SPOKE_POOL, user, USDC, POLYGON_USDC, BRIDGE_AMOUNT - 100e6, FIXED_FEE, FEE_PERCENTAGE, POLYGON_CHAIN_ID, user, message
             ),
             //CalldataLib.encodeApprove(WETH9_arb, SPOKE_POOL),
             CalldataLib.encodeSweep(USDC, user, 0, SweepType.VALIDATE)
@@ -123,7 +123,7 @@ contract AcrossTest is BaseTest {
         deal(address(composer), eth_amount + fee);
 
         bytes memory forwarderCalldata = abi.encodePacked(
-            CalldataLib.encodeAcrossBridgeNative(SPOKE_POOL, WETH9_arb, WETH, 0, fee, FEE_PERCENTAGE, POLYGON_CHAIN_ID, user, message),
+            CalldataLib.encodeAcrossBridgeNative(SPOKE_POOL, user, WETH9_arb, WETH, 0, fee, FEE_PERCENTAGE, POLYGON_CHAIN_ID, user, message),
             CalldataLib.encodeSweep(address(0), user, 0, SweepType.VALIDATE) // sweep any remaining ETH
         );
 
@@ -148,7 +148,7 @@ contract AcrossTest is BaseTest {
         deal(address(composer), eth_amount);
 
         bytes memory forwarderCalldata = abi.encodePacked(
-            CalldataLib.encodeAcrossBridgeNative(SPOKE_POOL, WETH9_arb, WETH, eth_amount, fee, FEE_PERCENTAGE, POLYGON_CHAIN_ID, user, message),
+            CalldataLib.encodeAcrossBridgeNative(SPOKE_POOL, user, WETH9_arb, WETH, eth_amount, fee, FEE_PERCENTAGE, POLYGON_CHAIN_ID, user, message),
             CalldataLib.encodeSweep(address(0), user, 0, SweepType.VALIDATE) // sweep any remaining ETH
         );
 
@@ -175,7 +175,7 @@ contract AcrossTest is BaseTest {
 
         bytes memory forwarderCalldata = abi.encodePacked(
             CalldataLib.encodeAcrossBridgeNative(
-                address(spokePool), WETH9_arb, WETH, eth_amount, fee, FEE_PERCENTAGE, POLYGON_CHAIN_ID, user, message
+                address(spokePool), user, WETH9_arb, WETH, eth_amount, fee, FEE_PERCENTAGE, POLYGON_CHAIN_ID, user, message
             ),
             CalldataLib.encodeSweep(address(0), user, 0, SweepType.VALIDATE) // sweep any remaining ETH
         );
@@ -196,15 +196,15 @@ contract AcrossTest is BaseTest {
 contract mockSpokePool {
     error m(bytes message);
 
-    function depositV3(
-        address depositor,
-        address recipient,
-        address inputToken,
-        address outputToken,
+    function deposit(
+        bytes32 depositor,
+        bytes32 recipient,
+        bytes32 inputToken,
+        bytes32 outputToken,
         uint256 inputAmount,
         uint256 outputAmount,
         uint256 destinationChainId,
-        address exclusiveRelayer,
+        bytes32 exclusiveRelayer,
         uint32 quoteTimestamp,
         uint32 fillDeadline,
         uint32 exclusivityDeadline,
