@@ -164,14 +164,22 @@ contract AcrossTest is BaseTest {
         vm.stopPrank();
     }
 
-    function test_across_bridge_message() public {
-        mockSpokePool spokePool = new mockSpokePool();
+    function test_across_bridge_validate_params() public {
         uint256 eth_amount = 1 ether;
         uint128 fee = 0.001 ether;
 
         bytes memory message = hex"1de17a0000abcdef0000";
 
         deal(address(composer), eth_amount);
+        mockSpokePool spokePool = new mockSpokePool(
+            bytes32(uint256(uint160(user))),
+            bytes32(uint256(uint160(user))),
+            bytes32(uint256(uint160(WETH9_arb))),
+            bytes32(uint256(uint160(WETH))),
+            eth_amount,
+            POLYGON_CHAIN_ID,
+            message
+        );
 
         bytes memory forwarderCalldata = abi.encodePacked(
             CalldataLib.encodeAcrossBridgeNative(
@@ -184,9 +192,9 @@ contract AcrossTest is BaseTest {
             CalldataLib.encodeSweep(address(0), address(callForwarder), 0, SweepType.VALIDATE), // transfer all eth to call forwarder
             CalldataLib.encodeExternalCall(address(callForwarder), 0, forwarderCalldata)
         );
+
         vm.startPrank(user);
 
-        vm.expectRevert(abi.encodeWithSelector(mockSpokePool.m.selector, message));
         composer.deltaCompose(composerCalldata);
 
         vm.stopPrank();
@@ -194,26 +202,57 @@ contract AcrossTest is BaseTest {
 }
 
 contract mockSpokePool {
-    error m(bytes message);
+    constructor(
+        bytes32 _depositor,
+        bytes32 _recipient,
+        bytes32 _inputToken,
+        bytes32 _outputToken,
+        uint256 _inputAmount,
+        uint256 _destinationChainId,
+        bytes memory _message
+    ) {
+        depositor = _depositor;
+        recipient = _recipient;
+        inputToken = _inputToken;
+        outputToken = _outputToken;
+        inputAmount = _inputAmount;
+        destinationChainId = _destinationChainId;
+        message = keccak256(_message);
+    }
+
+    bytes32 public depositor;
+    bytes32 public recipient;
+    bytes32 public inputToken;
+    bytes32 public outputToken;
+    uint256 public inputAmount;
+    uint256 public destinationChainId;
+    bytes32 public message;
 
     function deposit(
-        bytes32 depositor,
-        bytes32 recipient,
-        bytes32 inputToken,
-        bytes32 outputToken,
-        uint256 inputAmount,
-        uint256 outputAmount,
-        uint256 destinationChainId,
-        bytes32 exclusiveRelayer,
-        uint32 quoteTimestamp,
-        uint32 fillDeadline,
-        uint32 exclusivityDeadline,
-        bytes memory message
+        bytes32 _depositor,
+        bytes32 _recipient,
+        bytes32 _inputToken,
+        bytes32 _outputToken,
+        uint256 _inputAmount,
+        uint256 _outputAmount,
+        uint256 _destinationChainId,
+        bytes32 _exclusiveRelayer,
+        uint32 _quoteTimestamp,
+        uint32 _fillDeadline,
+        uint32 _exclusivityDeadline,
+        bytes memory _message
     )
         external
         payable
         returns (bytes memory)
     {
-        revert m(message);
+        require(_depositor == depositor, "depositor mismatch");
+        require(_recipient == recipient, "recipient mismatch");
+        require(_inputToken == inputToken, "inputToken mismatch");
+        require(_outputToken == outputToken, "outputToken mismatch");
+        require(_inputAmount == inputAmount, "inputAmount mismatch");
+        require(_destinationChainId == destinationChainId, "destinationChainId mismatch");
+        require(message == keccak256(_message), "message mismatch");
+        return new bytes(0);
     }
 }
