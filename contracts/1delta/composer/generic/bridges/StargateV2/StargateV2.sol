@@ -28,8 +28,6 @@ contract StargateV2 is BaseUtils {
      * | 137+cl       | el             | extraOptions                 |
      */
     function _bridgeStargateV2(uint256 currentOffset) internal returns (uint256) {
-        BridgeParams memory params;
-
         assembly {
             function revertWith(code) {
                 mstore(0, code)
@@ -46,18 +44,19 @@ contract StargateV2 is BaseUtils {
             let asset
             let composeMsgLength
             let extraOptionsLength
-            let oftCmdLength
             let amount
             let requiredValue
             let fee
+            let isNative
+            let minAmountLD
 
-            asset := shr(96, calldataload(add(currentOffset)))
+            asset := shr(96, calldataload(currentOffset))
             fee := shr(128, calldataload(add(currentOffset, 116)))
 
             composeMsgLength := and(shr(240, calldataload(add(currentOffset, 133))), UINT16_MASK)
             extraOptionsLength := and(shr(240, calldataload(add(currentOffset, 135))), UINT16_MASK)
             amount := and(shr(128, calldataload(add(currentOffset, 60))), UINT128_MASK)
-            let isNative := and(NATIVE_FLAG, amount)
+            isNative := and(NATIVE_FLAG, amount)
             // clear the native flag
             amount := and(amount, not(NATIVE_FLAG))
 
@@ -94,9 +93,7 @@ contract StargateV2 is BaseUtils {
                 if gt(requiredValue, selfbalance()) { revertWith(INSUFFICIENT_VALUE) }
             }
 
-            let minAmountLD :=
-                div(mul(amount, sub(FEE_DENOMINATOR, and(shr(224, calldataload(add(currentOffset, 112))), UINT32_MASK))), FEE_DENOMINATOR)
-            let compose
+            minAmountLD := div(mul(amount, sub(FEE_DENOMINATOR, and(shr(224, calldataload(add(currentOffset, 112))), UINT32_MASK))), FEE_DENOMINATOR)
 
             let ptr := mload(0x40)
             mstore(ptr, 0xcbef2aa900000000000000000000000000000000000000000000000000000000) // sendToken selector
@@ -116,11 +113,18 @@ contract StargateV2 is BaseUtils {
             calldatacopy(add(add(ptr, 0x184), extraOptionsLength), add(add(currentOffset, 137), extraOptionsLength), composeMsgLength) // composeMsg
             mstore(add(add(add(ptr, 0x184), extraOptionsLength), composeMsgLength), 1) // oftCmd length
             mstore(add(add(add(ptr, 0x1a4), extraOptionsLength), composeMsgLength), and(shr(248, calldataload(add(currentOffset, 132))), UINT8_MASK)) // is bus mode
-            // call stargate
+            // update free pointer
+            mstore(0x40, add(add(add(ptr, 0x1e4), extraOptionsLength), composeMsgLength)) // add 1 word offset
 
-            if iszero(call(gas(), shr(96, calldataload(add(currentOffset, 20))), requiredValue, ptr, 0x1c4, 0, xxxx)) { revert(0, xxxx) }
+            // call stargate
+            if iszero(call(gas(), shr(96, calldataload(add(currentOffset, 20))), requiredValue, ptr, 0x1c4, 0, 0)) {
+                returndatacopy(0, 0, returndatasize())
+                revert(0, returndatasize())
+            }
+
+            currentOffset := add(add(add(currentOffset, 137), composeMsgLength), extraOptionsLength)
         }
 
-        return currentOffset + 139 + composeMsgLength + extraOptionsLength;
+        return currentOffset;
     }
 }
