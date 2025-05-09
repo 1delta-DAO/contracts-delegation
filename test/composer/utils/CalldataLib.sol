@@ -123,6 +123,7 @@ library CalldataLib {
     // Across
     function encodeAcrossBridgeToken(
         address spokePool,
+        address depositor,
         address sendingAssetId,
         address receivingAssetId,
         uint256 amount,
@@ -140,6 +141,7 @@ library CalldataLib {
             uint8(ComposerCommands.BRIDGING),
             uint8(BridgeIds.ACROSS),
             spokePool,
+            depositor,
             sendingAssetId,
             receivingAssetId,
             generateAmountBitmap(uint128(amount), false, false, false),
@@ -156,6 +158,7 @@ library CalldataLib {
 
     function encodeAcrossBridgeNative(
         address spokePool,
+        address depositor,
         address sendingAssetId,
         address receivingAssetId,
         uint256 amount,
@@ -173,6 +176,7 @@ library CalldataLib {
             uint8(ComposerCommands.BRIDGING),
             uint8(BridgeIds.ACROSS),
             spokePool,
+            depositor,
             sendingAssetId,
             receivingAssetId,
             generateAmountBitmap(uint128(amount), false, false, true),
