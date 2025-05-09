@@ -1,20 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
-struct BridgeParams {
-    uint256 assetId;
-    address stargatePool;
-    uint256 dstEid;
-    bytes32 receiver;
-    uint256 amount;
-    uint256 slippage;
-    uint256 fee;
-    bool isBusMode;
-    address refundAddress;
-    bytes composeMsg;
-    bytes extraOptions;
-}
-
 interface IStargate {
     struct SendParam {
         uint32 dstEid;
