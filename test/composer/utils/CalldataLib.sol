@@ -38,23 +38,17 @@ library CalldataLib {
         pure
         returns (bytes memory)
     {
+        bytes memory partialData = encodeStargateV2BridgePartial(
+            amount,
+            slippage, //
+            fee,
+            isBusMode,
+            isNative,
+            composeMsg,
+            extraOptions
+        );
         return abi.encodePacked(
-            uint8(ComposerCommands.BRIDGING),
-            uint8(BridgeIds.STARGATE_V2),
-            asset,
-            stargatePool,
-            dstEid,
-            receiver,
-            refundReceiver,
-            encodeStargateV2BridgePartial(
-                amount,
-                slippage, //
-                fee,
-                isBusMode,
-                isNative,
-                composeMsg,
-                extraOptions
-            )
+            uint8(ComposerCommands.BRIDGING), uint8(BridgeIds.STARGATE_V2), asset, stargatePool, dstEid, receiver, refundReceiver, partialData
         );
     }
 
