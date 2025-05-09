@@ -88,6 +88,7 @@ contract StargateV2Test is BaseTest {
                 toReceiver(user), // receiver
                 user, // refund receiver
                 0, // amount = balance
+                true,
                 100000000, // slippage 10%
                 fee
             ),
@@ -142,6 +143,7 @@ contract StargateV2Test is BaseTest {
             user,
             // refund receiver
             BRIDGE_AMOUNT,
+            false,
             slippage,
             fee
         );
@@ -198,6 +200,7 @@ contract StargateV2Test is BaseTest {
             toReceiver(user), // receiver
             user, // refund receiver
             0,
+            false,
             slippage,
             fee
         );
@@ -262,6 +265,7 @@ contract StargateV2Test is BaseTest {
                     user,
                     // refund receiver
                     BRIDGE_AMOUNT,
+                    false,
                     slippage,
                     fee
                 ),
@@ -335,6 +339,7 @@ contract StargateV2Test is BaseTest {
             slippage,
             fee,
             true,
+            false,
             hex"c0c0c0c0c0c0c0c0c0c0cddd",
             hex"e7a0fffffff01111111eee"
         );
@@ -391,6 +396,7 @@ contract StargateV2Test is BaseTest {
             user,
             // refund receiver
             0,
+            false,
             slippage,
             fee
         );

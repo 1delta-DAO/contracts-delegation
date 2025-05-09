@@ -59,22 +59,19 @@ contract StargateV2 is BaseUtils {
             composeMsgLength := shr(240, calldataload(add(currentOffset, 133)))
             extraOptionsLength := shr(240, calldataload(add(currentOffset, 135)))
 
-            // get amount, already masked by shr
             amount := shr(128, calldataload(add(currentOffset, 96)))
+            // native flag is high bit
+            let isNative := and(NATIVE_FLAG, amount)
+            // clear the native flag
+            amount := and(amount, not(NATIVE_FLAG))
 
             let slfBal := selfbalance()
             // check if amount is 0
             switch iszero(amount)
             case 1 {
                 // native is asset = 0
-                switch iszero(asset)
-                case 1 {
-                    // amount is the balance minus the fee
-                    amount := sub(slfBal, fee)
-                    // and value to send is everything
-                    requiredValue := slfBal
-                }
-                default {
+                switch isNative
+                case 0 {
                     // use token balance
                     amount := getBalance(asset)
                     // value to send is just the fee
@@ -82,17 +79,23 @@ contract StargateV2 is BaseUtils {
                     // check if fee is enough
                     if gt(requiredValue, slfBal) { revertWith(INSUFFICIENT_VALUE) }
                 }
+                default {
+                    // amount is the balance minus the fee
+                    amount := sub(slfBal, fee)
+                    // and value to send is everything
+                    requiredValue := slfBal
+                }
             }
             default {
                 // native is asset = 0
-                switch iszero(asset)
-                case 1 {
-                    // value to send is amount desired plus fee
-                    requiredValue := add(amount, fee)
-                }
-                default {
+                switch isNative
+                case 0 {
                     // erc20 case: value is just the fee
                     requiredValue := fee
+                }
+                default {
+                    // value to send is amount desired plus fee
+                    requiredValue := add(amount, fee)
                 }
                 // check if we have enough to pay the fee
                 if gt(requiredValue, slfBal) { revertWith(INSUFFICIENT_VALUE) }

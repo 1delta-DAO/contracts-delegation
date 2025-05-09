@@ -30,6 +30,7 @@ library CalldataLib {
         uint32 slippage,
         uint256 fee,
         bool isBusMode,
+        bool isNative,
         bytes memory composeMsg,
         bytes memory extraOptions
     )
@@ -38,7 +39,7 @@ library CalldataLib {
         returns (bytes memory)
     {
         bytes memory bridgeData = abi.encodePacked(
-            uint128(amount),
+            generateAmountBitmap(uint128(amount), false, false, isNative),
             slippage,
             uint128(fee),
             uint8(isBusMode ? 1 : 0),
@@ -69,6 +70,7 @@ library CalldataLib {
         bytes32 receiver,
         address refundReceiver,
         uint256 amount,
+        bool isNative,
         uint32 slippage,
         uint256 fee
     )
@@ -86,6 +88,7 @@ library CalldataLib {
             slippage,
             fee,
             false, // taxi mode
+            isNative,
             new bytes(0), // no compose message
             new bytes(0) // no extra options
         );
@@ -98,6 +101,7 @@ library CalldataLib {
         bytes32 receiver,
         address refundReceiver,
         uint256 amount,
+        bool isNative,
         uint32 slippage,
         uint256 fee
     )
@@ -115,6 +119,7 @@ library CalldataLib {
             slippage,
             fee,
             true, // bus mode
+            isNative,
             new bytes(0), // no compose message
             new bytes(0) // no extra options
         );
