@@ -47,28 +47,32 @@ contract StargateV2 is BaseUtils {
             let amount
             let requiredValue
             let fee
-            let isNative
             let minAmountLD
 
+            // underlying (=0 means native)
             asset := shr(96, calldataload(currentOffset))
-            fee := and(shr(128, calldataload(add(currentOffset, 116))), UINT128_MASK)
 
-            composeMsgLength := and(shr(240, calldataload(add(currentOffset, 133))), UINT16_MASK)
-            extraOptionsLength := and(shr(240, calldataload(add(currentOffset, 135))), UINT16_MASK)
-            amount := and(shr(128, calldataload(add(currentOffset, 96))), UINT128_MASK)
-            isNative := and(NATIVE_FLAG, amount)
-            // clear the native flag
-            amount := and(amount, not(NATIVE_FLAG))
+            // native fee
+            fee := shr(128, calldataload(add(currentOffset, 116)))
 
+            // get bytes lenght
+            composeMsgLength := shr(240, calldataload(add(currentOffset, 133)))
+            extraOptionsLength := shr(240, calldataload(add(currentOffset, 135)))
+
+            // get amount, already masked by shr
+            amount := shr(128, calldataload(add(currentOffset, 96)))
+
+            let slfBal := selfbalance()
             // check if amount is 0
             switch iszero(amount)
             case 1 {
-                switch isNative
+                // native is asset = 0
+                switch iszero(asset)
                 case 1 {
                     // amount is the balance minus the fee
-                    amount := sub(selfbalance(), fee)
+                    amount := sub(slfBal, fee)
                     // and value to send is everything
-                    requiredValue := selfbalance()
+                    requiredValue := slfBal
                 }
                 default {
                     // use token balance
@@ -76,11 +80,12 @@ contract StargateV2 is BaseUtils {
                     // value to send is just the fee
                     requiredValue := fee
                     // check if fee is enough
-                    if gt(requiredValue, selfbalance()) { revertWith(INSUFFICIENT_VALUE) }
+                    if gt(requiredValue, slfBal) { revertWith(INSUFFICIENT_VALUE) }
                 }
             }
             default {
-                switch isNative
+                // native is asset = 0
+                switch iszero(asset)
                 case 1 {
                     // value to send is amount desired plus fee
                     requiredValue := add(amount, fee)
@@ -90,16 +95,17 @@ contract StargateV2 is BaseUtils {
                     requiredValue := fee
                 }
                 // check if we have enough to pay the fee
-                if gt(requiredValue, selfbalance()) { revertWith(INSUFFICIENT_VALUE) }
+                if gt(requiredValue, slfBal) { revertWith(INSUFFICIENT_VALUE) }
             }
 
+            // amount adjusted for slippage
             minAmountLD :=
                 div(
                     mul(
                         amount,
                         sub(
                             FEE_DENOMINATOR,
-                            and(shr(224, calldataload(add(currentOffset, 112))), UINT32_MASK) // fee
+                            shr(224, calldataload(add(currentOffset, 112))) // slippage (assured to not overflow)
                         )
                     ),
                     FEE_DENOMINATOR
@@ -123,7 +129,7 @@ contract StargateV2 is BaseUtils {
             mstore(add(ptr, 0x64), shr(96, calldataload(add(currentOffset, 76))))
 
             // sendParam struct
-            mstore(add(ptr, 0x84), and(shr(224, calldataload(add(currentOffset, 40))), UINT32_MASK))
+            mstore(add(ptr, 0x84), shr(224, calldataload(add(currentOffset, 40))))
             mstore(add(ptr, 0xa4), calldataload(add(currentOffset, 44)))
             mstore(add(ptr, 0xc4), amount)
             mstore(add(ptr, 0xe4), minAmountLD)
@@ -180,7 +186,9 @@ contract StargateV2 is BaseUtils {
 
             // oftCmd
             let oftCmdPtr := add(oftCmdOffset, add(ptr, 0x84))
-            switch iszero(and(shr(248, calldataload(add(currentOffset, 132))), UINT8_MASK))
+            switch iszero(
+                shr(248, calldataload(add(currentOffset, 132))) // isTaxiMode flag (already masked)
+            )
             case 1 {
                 mstore(oftCmdPtr, 0x0)
                 callSize := sub(add(oftCmdPtr, 0x20), ptr) // add only length word
