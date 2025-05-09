@@ -38,16 +38,7 @@ library CalldataLib {
         pure
         returns (bytes memory)
     {
-        bytes memory bridgeData = abi.encodePacked(
-            generateAmountBitmap(uint128(amount), false, false, isNative),
-            slippage,
-            uint128(fee),
-            uint8(isBusMode ? 1 : 0),
-            uint16(composeMsg.length),
-            uint16(extraOptions.length) //
-        );
-
-        bridgeData = abi.encodePacked(
+        return abi.encodePacked(
             uint8(ComposerCommands.BRIDGING),
             uint8(BridgeIds.STARGATE_V2),
             asset,
@@ -55,12 +46,41 @@ library CalldataLib {
             dstEid,
             receiver,
             refundReceiver,
-            bridgeData,
+            encodeStargateV2BridgePartial(
+                amount,
+                slippage, //
+                fee,
+                isBusMode,
+                isNative,
+                composeMsg,
+                extraOptions
+            )
+        );
+    }
+
+    function encodeStargateV2BridgePartial(
+        uint256 amount,
+        uint32 slippage,
+        uint256 fee,
+        bool isBusMode,
+        bool isNative,
+        bytes memory composeMsg,
+        bytes memory extraOptions
+    )
+        private
+        pure
+        returns (bytes memory)
+    {
+        return abi.encodePacked(
+            generateAmountBitmap(uint128(amount), false, false, isNative),
+            slippage,
+            uint128(fee),
+            uint8(isBusMode ? 1 : 0),
+            uint16(composeMsg.length),
+            uint16(extraOptions.length), //
             composeMsg,
             extraOptions
         );
-
-        return bridgeData;
     }
 
     function encodeStargateV2BridgeSimpleTaxi(
