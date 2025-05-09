@@ -101,59 +101,86 @@ contract StargateV2 is BaseUtils {
             mstore(ptr, 0xcbef2aa900000000000000000000000000000000000000000000000000000000)
 
             // sendParam struct
-            mstore(add(ptr, 0x04), 0x60)
-            let sendParamSize := add(add(352, extraOptionsLength), composeMsgLength) // the oftCmd is considered in the 352
+            mstore(add(ptr, 0x04), 128)
 
-            // MessagingFee struct
-            mstore(add(ptr, 0x24), add(0x60, sendParamSize))
+            // nativeFee
+            mstore(add(ptr, 0x24), fee)
+
+            // lzTokenFee
+            mstore(add(ptr, 0x44), 0)
 
             // refund address
-            mstore(add(ptr, 0x44), shr(96, calldataload(add(currentOffset, 76))))
+            mstore(add(ptr, 0x64), shr(96, calldataload(add(currentOffset, 76))))
 
             // sendParam struct
-            mstore(add(ptr, 0x64), and(shr(224, calldataload(add(currentOffset, 40))), UINT32_MASK))
-            mstore(add(ptr, 0x84), calldataload(add(currentOffset, 44)))
-            mstore(add(ptr, 0xA4), amount)
-            mstore(add(ptr, 0xC4), minAmountLD)
+            mstore(add(ptr, 0x84), and(shr(224, calldataload(add(currentOffset, 40))), UINT32_MASK))
+            mstore(add(ptr, 0xa4), calldataload(add(currentOffset, 44)))
+            mstore(add(ptr, 0xc4), amount)
+            mstore(add(ptr, 0xe4), minAmountLD)
 
-            let sendParamRelativeOffset := 0xE0
+            // byte offsets
+            // extraOptions offset
+            mstore(add(ptr, 0x104), 0xe0) // this one is fixed
 
-            // extraOptions offset (relative to struct start)
-            mstore(add(ptr, 0xE4), sendParamRelativeOffset)
-            sendParamRelativeOffset := add(sendParamRelativeOffset, add(extraOptionsLength, 0x20)) // add 1 word for extraOptions length
+            // composeMsg offset
+            let composeMsgOffset
+            switch iszero(extraOptionsLength)
+            case 1 { composeMsgOffset := 0x120 }
+            case 0 {
+                let divResult := div(extraOptionsLength, 32)
+                let modResult := mod(extraOptionsLength, 32)
+                let numWords
+                switch gt(modResult, 0)
+                case 1 { numWords := add(divResult, 1) }
+                default { numWords := divResult }
 
-            // composeMsg offset (relative to struct start)
-            mstore(add(ptr, 0x104), sendParamRelativeOffset)
-            sendParamRelativeOffset := add(sendParamRelativeOffset, add(composeMsgLength, 0x20)) // add 1 word for composeMsg length
+                composeMsgOffset := add(0xe0, mul(0x20, add(numWords, 1))) // +1 for the extraOptions's length
+            }
+            mstore(add(ptr, 0x124), composeMsgOffset)
 
-            // oftCmd offset (relative to struct start)
-            mstore(add(ptr, 0x124), sendParamRelativeOffset)
+            // oftCmd offset
+            let oftCmdOffset
+            switch iszero(composeMsgLength)
+            case 1 { oftCmdOffset := add(composeMsgOffset, 0x20) }
+            default {
+                let divResult := div(composeMsgLength, 32)
+                let modResult := mod(composeMsgLength, 32)
+                let numWords
+                switch gt(modResult, 0)
+                case 1 { numWords := add(divResult, 1) }
+                default { numWords := divResult }
+
+                oftCmdOffset := add(composeMsgOffset, mul(0x20, add(numWords, 1))) // +1 for the composeMsg's length
+            }
+            mstore(add(ptr, 0x144), oftCmdOffset)
 
             // extraOptions
-            let extraOptionsPtr := add(ptr, 0x144)
+            let extraOptionsPtr := add(ptr, 0x164) // fixed one, relative to ptr
             mstore(extraOptionsPtr, extraOptionsLength)
             if gt(extraOptionsLength, 0) {
                 calldatacopy(add(extraOptionsPtr, 0x20), add(add(currentOffset, 137), composeMsgLength), extraOptionsLength)
             }
 
             // composeMsg
-            let composeMsgPtr := add(add(extraOptionsPtr, 0x20), extraOptionsLength)
+            let composeMsgPtr := add(composeMsgOffset, add(ptr, 0x84))
             mstore(composeMsgPtr, composeMsgLength)
             if gt(composeMsgLength, 0) { calldatacopy(add(composeMsgPtr, 0x20), add(currentOffset, 137), composeMsgLength) }
 
+            let callSize // callsize for calling stargate
+
             // oftCmd
-            let oftCmdPtr := add(add(composeMsgPtr, 0x20), composeMsgLength)
-            mstore(oftCmdPtr, 0x20)
-            mstore(add(oftCmdPtr, 0x20), and(shr(248, calldataload(add(currentOffset, 132))), UINT8_MASK))
+            let oftCmdPtr := add(oftCmdOffset, add(ptr, 0x84))
+            switch iszero(and(shr(248, calldataload(add(currentOffset, 132))), UINT8_MASK))
+            case 1 {
+                mstore(oftCmdPtr, 0x0)
+                callSize := sub(add(oftCmdPtr, 0x20), ptr) // add only length word
+            }
+            default {
+                mstore(oftCmdPtr, 0x20)
+                mstore(add(oftCmdPtr, 0x20), 0)
 
-            // MessagingFee struct
-            let messagingFeePtr := add(oftCmdPtr, 0x40)
-            // nativeFee
-            mstore(messagingFeePtr, fee)
-            // lzTokenFee
-            mstore(add(messagingFeePtr, 0x20), 0)
-
-            let callSize := sub(add(messagingFeePtr, 0x40), ptr)
+                callSize := sub(add(oftCmdPtr, 0x40), ptr) // add length and busMode flag
+            }
 
             // Update free memory pointer
             mstore(0x40, add(ptr, callSize))

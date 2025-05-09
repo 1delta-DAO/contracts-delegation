@@ -36,6 +36,7 @@ contract StargateV2Test is BaseTest {
     uint256 public BRIDGE_AMOUNT = 1000 * 1e6;
 
     function setUp() public {
+        rpcOverrides[Chains.ARBITRUM_ONE] = "https://arbitrum.blockpi.network/v1/rpc/public";
         _init(Chains.ARBITRUM_ONE, 333862337, true);
 
         callForwarder = new CallForwarder();
@@ -300,6 +301,10 @@ contract StargateV2Test is BaseTest {
 
             // set expecteds
             sendParam.minAmountLD = minAmountLD;
+            sendParam.extraOptions = hex"e7a0fffffff01111111eee";
+            sendParam.composeMsg = hex"c0c0c0c0c0c0c0c0c0c0cddd";
+            sendParam.oftCmd = hex"0000000000000000000000000000000000000000000000000000000000000000";
+
             STARGATE_MOCK.setExpectedParams(sendParam, param, user);
 
             deal(address(callForwarder), fee);
@@ -311,7 +316,15 @@ contract StargateV2Test is BaseTest {
             console.log("BRIDGE_AMOUNT", BRIDGE_AMOUNT);
             console.log("minAmountLD", minAmountLD);
         }
-        bytes memory totalCalldata = CalldataLib.encodeStargateV2BridgeSimpleBus(
+
+        {
+            // log params
+            console.log("sendParam");
+            console.logBytes(abi.encodeWithSelector(MockStargate.sendToken.selector, sendParam, param, user));
+            console.log("///////////////////");
+        }
+
+        bytes memory totalCalldata = CalldataLib.encodeStargateV2Bridge(
             USDC,
             STARGATE_USDC,
             POLYGON_EID,
@@ -320,7 +333,10 @@ contract StargateV2Test is BaseTest {
             // refund receiver
             BRIDGE_AMOUNT,
             slippage,
-            fee
+            fee,
+            true,
+            hex"c0c0c0c0c0c0c0c0c0c0cddd",
+            hex"e7a0fffffff01111111eee"
         );
         totalCalldata = abi.encodePacked(
             CalldataLib.encodeApprove(USDC, STARGATE_USDC),

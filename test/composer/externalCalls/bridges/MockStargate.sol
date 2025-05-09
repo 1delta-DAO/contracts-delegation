@@ -33,6 +33,8 @@ contract MockStargate is IStargate {
     {
         require(!shouldFail, "Mock failure triggered");
 
+        console.log("--------- received Calldata -------");
+        console.logBytes(abi.encodeWithSelector(MockStargate.sendToken.selector, _sendParam, _fee, _refundAddress));
         console.log("------------- expected -----------");
         console.log("dstEid:", expectedSendParam.dstEid);
         console.logBytes32(expectedSendParam.to);
@@ -54,7 +56,18 @@ contract MockStargate is IStargate {
         console.log("refundAddress", _refundAddress);
 
         // Validate parameters match expected
-        require(keccak256(abi.encode(_sendParam)) == keccak256(abi.encode(expectedSendParam)), "SendParam mismatch");
+        require(_sendParam.dstEid == expectedSendParam.dstEid, "dstEid mismatch");
+        require(_sendParam.to == expectedSendParam.to, "to mismatch");
+        require(_sendParam.amountLD == expectedSendParam.amountLD, "amountLD mismatch");
+        require(_sendParam.minAmountLD == expectedSendParam.minAmountLD, "minAmountLD mismatch");
+        require(keccak256(_sendParam.extraOptions) == keccak256(expectedSendParam.extraOptions), "extraOptions mismatch");
+        require(keccak256(_sendParam.composeMsg) == keccak256(expectedSendParam.composeMsg), "composeMsg mismatch");
+        if (expectedSendParam.oftCmd.length > 0) {
+            require(_sendParam.oftCmd.length > 0, "oftCmd mismatch");
+        } else {
+            require(_sendParam.oftCmd.length == 0, "oftCmd mismatch");
+        }
+
         require(keccak256(abi.encode(_fee)) == keccak256(abi.encode(expectedFee)), "Fee mismatch");
         require(_refundAddress == expectedRefundAddress, "Refund address mismatch");
 
