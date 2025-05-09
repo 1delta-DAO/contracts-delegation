@@ -421,6 +421,58 @@ contract StargateV2Test is BaseTest {
         vm.stopPrank();
     }
 
+    function test_stargate_v2_fork_bridge_taxi_balance() public {
+        // 1. quote the fee
+        (uint256 fee, int256 sgFee,,) = _quote(false, 1);
+
+        uint256 minAmountLD = uint256(int256(BRIDGE_AMOUNT) + sgFee);
+        uint32 slippage = uint32((BRIDGE_AMOUNT - minAmountLD) * 1e9 / BRIDGE_AMOUNT); // percentage
+
+        deal(address(callForwarder), fee);
+
+        // 2. compose call data
+
+        console.log("lzFee", fee);
+        console.log("sgFee", sgFee);
+        console.log("BRIDGE_AMOUNT", BRIDGE_AMOUNT);
+        console.log("minAmountLD", minAmountLD);
+        console.log("slippage", slippage);
+
+        bytes memory forwarderCalldata = abi.encodePacked(
+            CalldataLib.encodeApprove(USDC, STARGATE_USDC_REAL),
+            CalldataLib.encodeStargateV2Bridge(
+                USDC,
+                STARGATE_USDC_REAL,
+                POLYGON_EID,
+                toReceiver(user), //
+                user,
+                // refund receiver
+                BRIDGE_AMOUNT,
+                slippage,
+                fee,
+                true,
+                false,
+                hex"c0c0c0c0c0c0c0c0c0c0cddd",
+                hex"e7a0fffffff01111111eee"
+            ),
+            CalldataLib.encodeSweep(address(0), user, 0, SweepType.VALIDATE), // sweep native
+            CalldataLib.encodeSweep(USDC, user, 0, SweepType.VALIDATE) // sweep usdc
+        );
+
+        bytes memory composerCalldata = abi.encodePacked(
+            CalldataLib.encodeTransferIn(USDC, address(callForwarder), BRIDGE_AMOUNT),
+            CalldataLib.encodeExternalCall(address(callForwarder), 0, forwarderCalldata)
+        );
+
+        vm.startPrank(user);
+        // Approve USDC to the CallForwarder
+        IERC20(USDC).approve(address(composer), BRIDGE_AMOUNT);
+
+        composer.deltaCompose(composerCalldata);
+
+        vm.stopPrank();
+    }
+
     // helper functions
 
     function _quote(
