@@ -93,7 +93,17 @@ contract StargateV2 is BaseUtils {
                 if gt(requiredValue, selfbalance()) { revertWith(INSUFFICIENT_VALUE) }
             }
 
-            minAmountLD := div(mul(amount, sub(FEE_DENOMINATOR, and(shr(224, calldataload(add(currentOffset, 112))), UINT32_MASK))), FEE_DENOMINATOR)
+            minAmountLD :=
+                div(
+                    mul(
+                        amount,
+                        sub(
+                            FEE_DENOMINATOR,
+                            and(shr(224, calldataload(add(currentOffset, 112))), UINT32_MASK) // fee
+                        )
+                    ),
+                    FEE_DENOMINATOR
+                )
 
             // Set up function call memory
             let ptr := mload(0x40)
