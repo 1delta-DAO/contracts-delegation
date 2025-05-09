@@ -6,7 +6,7 @@ import {Across} from "./Across/Across.sol";
 import {BridgeIds} from "contracts/1delta/composer/enums/DeltaEnums.sol";
 
 contract BridgeForwarder is StargateV2, Across {
-    function _bridge(uint256 currentOffset, address callerAddress) internal returns (uint256) {
+    function _bridge(uint256 currentOffset) internal returns (uint256) {
         uint256 bridgeOperation;
         assembly {
             let firstSlice := calldataload(currentOffset)
@@ -16,7 +16,7 @@ contract BridgeForwarder is StargateV2, Across {
         if (bridgeOperation == BridgeIds.STARGATE_V2) {
             return _bridgeStargateV2(currentOffset);
         } else if (bridgeOperation == BridgeIds.ACROSS) {
-            return _bridgeAcross(currentOffset, callerAddress);
+            return _bridgeAcross(currentOffset);
         } else {
             _invalidOperation();
         }

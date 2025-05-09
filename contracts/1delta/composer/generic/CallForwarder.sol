@@ -51,7 +51,7 @@ contract CallForwarder is Transfers, ExternalCallsGeneric, BridgeForwarder {
             } else if (operation == ComposerCommands.TRANSFERS) {
                 currentOffset = _transfers(currentOffset, callerAddress);
             } else if (operation == ComposerCommands.BRIDGING) {
-                currentOffset = _bridge(currentOffset, callerAddress);
+                currentOffset = _bridge(currentOffset);
             }
             // break criteria - we shifted to the end of the calldata
             if (currentOffset >= maxIndex) break;

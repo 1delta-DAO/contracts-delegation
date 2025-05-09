@@ -11,7 +11,6 @@ contract Across is BaseUtils {
      * @notice Handles Across bridging operations
      * @dev Decodes calldata and directly executes the bridge operation using assembly
      * @param currentOffset Current position in the calldata
-     * @param callerAddress Original caller's address (for possible access control)
      * @return Updated calldata offset after processing
      *
      * | Offset | Length (bytes) | Description                  |
@@ -28,8 +27,7 @@ contract Across is BaseUtils {
      * | 140    | 2              | message.length: msgLen       |
      * | 142    | msgLen         | message                      |
      */
-    function _bridgeAcross(uint256 currentOffset, address callerAddress) internal returns (uint256) {
-        uint256 messageLength;
+    function _bridgeAcross(uint256 currentOffset) internal returns (uint256) {
         assembly {
             // Load key data from calldata
             let inputTokenAddress := shr(96, calldataload(add(currentOffset, 40)))
@@ -43,7 +41,7 @@ contract Across is BaseUtils {
             amount := and(amount, not(NATIVE_FLAG))
 
             // get the length as uint16
-            messageLength := and(shr(240, calldataload(add(currentOffset, 140))), UINT16_MASK)
+            let messageLength := and(shr(240, calldataload(add(currentOffset, 140))), UINT16_MASK)
 
             let requiredNativeValue := 0
 
