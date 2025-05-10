@@ -263,8 +263,8 @@ abstract contract CurveSwapper is ERC20Selectors, Masks {
             default { revert(0, 0) }
 
             if iszero(success) {
-                returndatacopy(ptr, 0, returndatasize())
-                revert(ptr, returndatasize())
+                returndatacopy(0, 0, returndatasize())
+                revert(0, returndatasize())
             }
 
             amountOut := mload(ptr)
@@ -279,16 +279,7 @@ abstract contract CurveSwapper is ERC20Selectors, Masks {
                 mstore(ptr, ERC20_TRANSFER)
                 mstore(add(ptr, 0x04), receiver)
                 mstore(add(ptr, 0x24), amountOut)
-                success :=
-                    call(
-                        gas(),
-                        tokenOut, // tokenIn, pool + 5x uint8 (i,j,s,a)
-                        0,
-                        ptr,
-                        0x44,
-                        0,
-                        32
-                    )
+                success := call(gas(), tokenOut, 0, ptr, 0x44, 0, 32)
 
                 let rdsize := returndatasize()
 

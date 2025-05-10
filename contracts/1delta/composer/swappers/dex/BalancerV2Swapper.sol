@@ -118,8 +118,8 @@ abstract contract BalancerV2Swapper is ERC20Selectors, Masks {
                     0x20 // we use the return amount
                 )
             ) {
-                returndatacopy(ptr, 0, returndatasize())
-                revert(ptr, returndatasize())
+                returndatacopy(0, 0, returndatasize())
+                revert(0, returndatasize())
             }
 
             amountOut := mload(0x0)

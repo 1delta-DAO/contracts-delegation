@@ -70,8 +70,8 @@ abstract contract LBSwapper is ERC20Selectors, Masks {
                         )
                     )
                 ) {
-                    returndatacopy(ptr, 0, rdsize)
-                    revert(ptr, rdsize)
+                    returndatacopy(0, 0, rdsize)
+                    revert(0, rdsize)
                 }
             }
 

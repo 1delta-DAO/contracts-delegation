@@ -6,8 +6,6 @@ import {ERC20Selectors} from "../../../shared/selectors/ERC20Selectors.sol";
 import {Masks} from "../../../shared/masks/Masks.sol";
 
 abstract contract V2TypeQuoter is ERC20Selectors, Masks {
-    uint256 internal constant SCALE_18 = 1e18;
-
     /*
      * | Offset | Length (bytes) | Description          |
      * |--------|----------------|----------------------|

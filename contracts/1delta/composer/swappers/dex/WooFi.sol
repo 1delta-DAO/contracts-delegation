@@ -109,8 +109,8 @@ abstract contract WooFiSwapper is ERC20Selectors, Masks {
                     0x20 // output is just uint
                 )
             ) {
-                returndatacopy(ptr, 0, returndatasize())
-                revert(ptr, returndatasize())
+                returndatacopy(0, 0, returndatasize())
+                revert(0, returndatasize())
             }
             // map amountOut to var
             poolThenAmountOut := mload(0x0)

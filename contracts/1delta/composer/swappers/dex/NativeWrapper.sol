@@ -16,7 +16,8 @@ abstract contract NativeWrapper is ERC20Selectors, Masks {
     // WrapFailed()
     bytes4 private constant WRAP = 0xc30d93ce;
 
-    // InvalidDex()
+    // Wraps  or unwraps
+    // Note that the wrap call is a plain native transfer
     /**
      * This one is for overring the DEX implementation
      * | Offset | Length (bytes) | Description         |

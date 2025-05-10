@@ -12,9 +12,6 @@ import {Masks} from "../../../shared/masks/Masks.sol";
  * @notice We do everything UniV2 here, incl Solidly, FoT, exactIn and -Out
  */
 abstract contract V2TypeGeneric is ERC20Selectors, Masks {
-    /// @dev used for some of the denominators in solidly calculations
-    uint256 private constant SCALE_18 = 1.0e18;
-
     ////////////////////////////////////////////////////
     // Uni V2 type selctors
     ////////////////////////////////////////////////////
@@ -269,8 +266,8 @@ abstract contract V2TypeGeneric is ERC20Selectors, Masks {
                     )
                 ) {
                     // Forward the error
-                    returndatacopy(ptr, 0, returndatasize())
-                    revert(ptr, returndatasize())
+                    returndatacopy(0, 0, returndatasize())
+                    revert(0, returndatasize())
                 }
                 // update clLength as new offset
                 clLength := add(currentOffset, 25)
@@ -418,8 +415,8 @@ abstract contract V2TypeGeneric is ERC20Selectors, Masks {
                     )
                 ) {
                     // Forward the error
-                    returndatacopy(ptr, 0, returndatasize())
-                    revert(ptr, returndatasize())
+                    returndatacopy(0, 0, returndatasize())
+                    revert(0, returndatasize())
                 }
             }
             // update clLength as new offset

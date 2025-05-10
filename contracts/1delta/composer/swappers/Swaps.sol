@@ -7,9 +7,10 @@ import {BaseSwapper} from "./BaseSwapper.sol";
 // solhint-disable max-line-length
 
 /**
- * @notice External call on whitelisted targets
- * This needs a whitelisting functions that stores the addresses in the correct slots
- * Do NOT whitlist lending contracts or tokens!
+ * @notice entrypoint for swaps
+ * - supports a broad variety of DEXs
+ * - this also is the entrypoint for flash-swaps, one only needs to
+ *   add calldata to the respective call to trigger it
  */
 abstract contract Swaps is BaseSwapper {
     function _swap(uint256 currentOffset, address callerAddress) internal returns (uint256) {
@@ -45,16 +46,7 @@ abstract contract Swaps is BaseSwapper {
                 // add this address as parameter
                 mstore(0x04, address())
                 // call to token
-                pop(
-                    staticcall(
-                        gas(),
-                        tokenIn, // collateral token
-                        0x0,
-                        0x24,
-                        0x0,
-                        0x20
-                    )
-                )
+                pop(staticcall(gas(), tokenIn, 0x0, 0x24, 0x0, 0x20))
                 // load the retrieved balance
                 amountIn := mload(0x0)
             }

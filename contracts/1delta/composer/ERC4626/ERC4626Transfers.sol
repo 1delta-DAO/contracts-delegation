@@ -24,7 +24,7 @@ abstract contract ERC4626Transfers is ERC20Selectors, Masks, DeltaErrors {
     /// @dev  redeem(...)
     bytes32 private constant ERC4626_REDEEM = 0xba08765200000000000000000000000000000000000000000000000000000000;
 
-    /// @notice Deposit to (morpho) vault
+    /// @notice Deposit to (e.g. morpho) vault
     function _encodeErc4646Deposit(uint256 currentOffset) internal returns (uint256) {
         assembly {
             let ptr := mload(0x40)
@@ -58,16 +58,7 @@ abstract contract ERC4626Transfers is ERC20Selectors, Masks, DeltaErrors {
                     // add this address as parameter
                     mstore(0x04, address())
                     // call to asset
-                    pop(
-                        staticcall(
-                            gas(),
-                            asset, // collateral asset
-                            0x0,
-                            0x24,
-                            0x0,
-                            0x20
-                        )
-                    )
+                    pop(staticcall(gas(), asset, 0x0, 0x24, 0x0, 0x20))
                     // load the retrieved balance
                     amountToDeposit := mload(0x0)
                 }
@@ -77,27 +68,16 @@ abstract contract ERC4626Transfers is ERC20Selectors, Masks, DeltaErrors {
             mstore(add(ptr, 0x4), amountToDeposit) // shares or assets
             mstore(add(ptr, 0x24), shr(96, calldataload(currentOffset))) // receiver
 
-            if iszero(
-                call(
-                    gas(),
-                    vaultContract,
-                    0x0,
-                    ptr,
-                    0x44, // = 2 * 32 + 4
-                    0x0,
-                    0x0 //
-                )
-            ) {
-                let rdlen := returndatasize()
-                returndatacopy(0, 0, rdlen)
-                revert(0x0, rdlen)
+            if iszero(call(gas(), vaultContract, 0x0, ptr, 0x44, 0x0, 0x0)) {
+                returndatacopy(0, 0, returndatasize())
+                revert(0x0, returndatasize())
             }
             currentOffset := add(currentOffset, 20)
         }
         return currentOffset;
     }
 
-    /// @notice withdraw from (morpho) vault
+    /// @notice withdraw from (e.g. morpho) vault
     function _encodeErc4646Withdraw(uint256 currentOffset, address callerAddress) internal returns (uint256) {
         assembly {
             let ptr := mload(0x40)
@@ -130,20 +110,9 @@ abstract contract ERC4626Transfers is ERC20Selectors, Masks, DeltaErrors {
             currentOffset := add(currentOffset, 20)
             mstore(add(ptr, 0x44), callerAddress) // owner
 
-            if iszero(
-                call(
-                    gas(),
-                    vaultContract,
-                    0x0,
-                    ptr,
-                    0x64, // = 10 * 32 + 4
-                    0x0,
-                    0x0 //
-                )
-            ) {
-                let rdlen := returndatasize()
-                returndatacopy(0, 0, rdlen)
-                revert(0x0, rdlen)
+            if iszero(call(gas(), vaultContract, 0x0, ptr, 0x64, 0x0, 0x0)) {
+                returndatacopy(0, 0, returndatasize())
+                revert(0x0, returndatasize())
             }
             currentOffset := add(currentOffset, 20)
         }

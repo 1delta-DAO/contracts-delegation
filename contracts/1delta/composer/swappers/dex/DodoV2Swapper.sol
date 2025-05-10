@@ -73,8 +73,8 @@ abstract contract DodoV2Swapper is ERC20Selectors, Masks {
                         )
                     )
                 ) {
-                    returndatacopy(ptr, 0, rdsize)
-                    revert(ptr, rdsize)
+                    returndatacopy(0, 0, rdsize)
+                    revert(0, rdsize)
                 }
                 // determine selector
                 switch and(UINT8_MASK, shr(88, dodoData))
@@ -89,8 +89,8 @@ abstract contract DodoV2Swapper is ERC20Selectors, Masks {
                 mstore(0x4, receiver)
                 // call swap, revert if invalid/undefined pair
                 if iszero(call(gas(), pool, 0x0, 0x0, 0x24, 0x0, 0x20)) {
-                    returndatacopy(ptr, 0, returndatasize())
-                    revert(ptr, returndatasize())
+                    returndatacopy(0, 0, returndatasize())
+                    revert(0, returndatasize())
                 }
                 // the swap call returns the output amount directly
                 dodoData := mload(0x0)
@@ -178,8 +178,8 @@ abstract contract DodoV2Swapper is ERC20Selectors, Masks {
                             0x20
                         )
                     ) {
-                        returndatacopy(ptr, 0, returndatasize())
-                        revert(ptr, returndatasize())
+                        returndatacopy(0, 0, returndatasize())
+                        revert(0, returndatasize())
                     }
                     amountOut := mload(0)
                     // sell base -> input is base
@@ -263,8 +263,8 @@ abstract contract DodoV2Swapper is ERC20Selectors, Masks {
                             )
                         )
                     ) {
-                        returndatacopy(ptr, 0, rdsize)
-                        revert(ptr, rdsize)
+                        returndatacopy(0, 0, rdsize)
+                        revert(0, rdsize)
                     }
                 }
 

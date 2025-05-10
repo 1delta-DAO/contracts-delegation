@@ -49,11 +49,11 @@ abstract contract BaseComposer is
     }
 
     /**
-     * Execute a set op packed operations
+     * Execute a set of packed operations
      * @param callerAddress the address of the EOA/contract that
      *                      initially triggered the `deltaCompose`
      *                      - this is called within flash & swap callbacks
-     *                      - strict validations need to be made in these to
+     *                      - strict validations need to be made in these cases to
      *                        prevent an entity to call this with a non-matching callerAddress
      * @param currentOffset offset packed ops array
      * @param calldataLength length of packed ops array
