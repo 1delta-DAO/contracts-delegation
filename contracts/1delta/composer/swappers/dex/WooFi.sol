@@ -105,7 +105,7 @@ abstract contract WooFiSwapper is ERC20Selectors, Masks {
                     0x0, // no native transfer
                     ptr,
                     0xC4, // input length 196
-                    0x0, // store output here
+                    ptr, // store output here
                     0x20 // output is just uint
                 )
             ) {
@@ -113,7 +113,7 @@ abstract contract WooFiSwapper is ERC20Selectors, Masks {
                 revert(0, returndatasize())
             }
             // map amountOut to var
-            poolThenAmountOut := mload(0x0)
+            poolThenAmountOut := mload(ptr)
 
             // skip 21 bytes
             payFlagCurrentOffset := add(currentOffset, 21)
