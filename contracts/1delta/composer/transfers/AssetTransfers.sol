@@ -24,7 +24,7 @@ contract AssetTransfers is BaseUtils {
      * | 20     | 20             | receiver            |
      * | 40     | 16             | amount              |
      */
-    function _encodePermit2TransferFrom(uint256 currentOffset, address callerAddress) internal returns (uint256) {
+    function _permit2TransferFrom(uint256 currentOffset, address callerAddress) internal returns (uint256) {
         ////////////////////////////////////////////////////
         // Transfers tokens from caller to this address
         // zero amount flags that the entire balance is sent
@@ -65,7 +65,7 @@ contract AssetTransfers is BaseUtils {
                 returndatacopy(0, 0, returndatasize())
                 revert(0, returndatasize())
             }
-            currentOffset := add(currentOffset, 54)
+            currentOffset := add(currentOffset, 56)
         }
         return currentOffset;
     }

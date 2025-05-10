@@ -41,7 +41,7 @@ abstract contract GMXQuoter {
                 )
             )
             amountOut := mload(0x0)
-            currentOffset := add(currentOffset, 20)
+            currentOffset := add(currentOffset, 21) // skip pool plus flag
         }
         return (amountOut, currentOffset);
     }

@@ -14,9 +14,9 @@ contract MorphoFlashLoans is Masks {
      * |--------|----------------|---------------------------------|
      * | 0      | 20             | asset                           |
      * | 20     | 20             | pool                            | <-- we allow ANY morpho style pool here
-     * | 20     | 16             | amount                          |
-     * | 36     | 2              | paramsLength                    |
-     * | 38     | paramsLength   | params                          |
+     * | 40     | 16             | amount                          |
+     * | 56     | 2              | paramsLength                    |
+     * | 58     | paramsLength   | params                          |
      */
     function morphoFlashLoan(uint256 currentOffset, address callerAddress) internal returns (uint256) {
         assembly {
@@ -58,9 +58,8 @@ contract MorphoFlashLoans is Masks {
                     0x0 //
                 )
             ) {
-                let rdlen := returndatasize()
-                returndatacopy(0, 0, rdlen)
-                revert(0x0, rdlen)
+                returndatacopy(0, 0, returndatasize())
+                revert(0x0, returndatasize())
             }
             // increment offset
             currentOffset := add(currentOffset, calldataLength)

@@ -14,6 +14,8 @@ import {IStargate} from "contracts/1delta/composer/generic/bridges/StargateV2/IS
 import {SweepType} from "contracts/1delta/composer/enums/MiscEnums.sol";
 import {MockStargate} from "./MockStargate.sol";
 
+// solhint-disable max-line-length
+
 contract StargateV2Test is BaseTest {
     using CalldataLib for bytes;
 

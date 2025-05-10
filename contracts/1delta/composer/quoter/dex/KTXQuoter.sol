@@ -136,7 +136,7 @@ abstract contract KTXQuoter {
             // vault must have enough liquidity
             if lt(mload(0x0), amountOut) { revert(0, 0) }
 
-            currentOffset := add(currentOffset, 20)
+            currentOffset := add(currentOffset, 21) // skip pool plus flag
         }
         return (amountOut, currentOffset);
     }

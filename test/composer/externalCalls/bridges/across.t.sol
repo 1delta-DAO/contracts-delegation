@@ -13,6 +13,8 @@ import {ComposerPlugin, IComposerLike} from "plugins/ComposerPlugin.sol";
 import {IAcrossSpokePool} from "contracts/1delta/composer/generic/bridges/Across/IAcross.sol";
 import {SweepType} from "contracts/1delta/composer/enums/MiscEnums.sol";
 
+// solhint-disable max-line-length
+
 contract AcrossTest is BaseTest {
     using CalldataLib for bytes;
 

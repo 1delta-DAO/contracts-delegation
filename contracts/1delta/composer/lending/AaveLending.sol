@@ -8,7 +8,7 @@ import {Masks} from "../../shared/masks/Masks.sol";
 // solhint-disable max-line-length
 
 /**
- * @notice Lending base contract that wraps multiple lender types.
+ * @notice Lending base contract that wraps multiple Aave lender types (V2, V3, non-ir mode based).
  */
 abstract contract AaveLending is ERC20Selectors, Masks {
     // BadLender()

@@ -6,6 +6,8 @@ import "contracts/1delta/composer/swappers/dex/DexTypeMappings.sol";
 import "contracts/1delta/composer/swappers/callbacks/DexForkMappings.sol";
 import {DexPayConfig, SweepType, DodoSelector} from "contracts/1delta/composer/enums/MiscEnums.sol";
 
+// solhint-disable max-line-length
+
 /**
  * Calldatalib do and don't:
  * - Don't nest abi.encodePacked calls, create a helper function to encode the inner encode call
@@ -16,7 +18,7 @@ import {DexPayConfig, SweepType, DodoSelector} from "contracts/1delta/composer/e
  */
 library CalldataLib {
     function encodeExternalCall(address target, uint256 value, bytes memory data) internal pure returns (bytes memory) {
-        return abi.encodePacked(ComposerCommands.EXT_CALL, target, uint112(value), uint16(data.length), data);
+        return abi.encodePacked(uint8(ComposerCommands.EXT_CALL), target, uint112(value), uint16(data.length), data);
     }
     // StargateV2 bridging
 
@@ -438,7 +440,7 @@ library CalldataLib {
             uint8(DexTypeMappings.LB_ID),
             pool,
             uint8(swapForY ? 1 : 0),
-            uint16(uint256(cfg)) // cll length <- user pays
+            uint8(uint256(cfg)) // cll length <- user pays
         );
     }
 
@@ -613,7 +615,7 @@ library CalldataLib {
             receiver,
             uint8(DexTypeMappings.GMX_ID),
             pool,
-            uint16(uint256(cfg)) //
+            uint8(uint256(cfg)) //
         );
     }
 
@@ -635,7 +637,7 @@ library CalldataLib {
             receiver,
             uint8(DexTypeMappings.KTX_ID),
             pool,
-            uint16(uint256(cfg)) //
+            uint8(uint256(cfg)) //
         );
     }
 

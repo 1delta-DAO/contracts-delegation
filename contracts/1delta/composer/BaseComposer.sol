@@ -103,6 +103,8 @@ abstract contract BaseComposer is
                     currentOffset = _lendingOperations(callerAddress, currentOffset);
                 } else if (operation == ComposerCommands.TRANSFERS) {
                     currentOffset = _transfers(currentOffset, callerAddress);
+                } else {
+                    _invalidOperation();
                 }
             } else {
                 if (operation == ComposerCommands.PERMIT) {
