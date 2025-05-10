@@ -2,7 +2,6 @@
 pragma solidity ^0.8.28;
 
 import {BaseUtils} from "contracts/1delta/composer/generic/BaseUtils.sol";
-import "./IStargate.sol";
 
 contract StargateV2 is BaseUtils {
     /**
