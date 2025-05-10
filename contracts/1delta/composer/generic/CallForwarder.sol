@@ -6,6 +6,7 @@ import {ComposerCommands} from "../enums/DeltaEnums.sol";
 import {Transfers} from "../transfers/Transfers.sol";
 import {ExternalCallsGeneric} from "../generic/ExternalCallsGeneric.sol";
 import {BridgeForwarder} from "./bridges/BridgeForwarder.sol";
+
 /**
  * @notice An arbitrary call contract to forward generic calls
  * Does pull funds if desired
@@ -14,7 +15,6 @@ import {BridgeForwarder} from "./bridges/BridgeForwarder.sol";
  * Can generically call any target and checks if the selector for these calls is not `transferFrom`
  * We assume that this contract is never an approve target!
  */
-
 contract CallForwarder is Transfers, ExternalCallsGeneric, BridgeForwarder {
     // base receive function
     receive() external payable {}
