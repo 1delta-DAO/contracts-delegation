@@ -10,6 +10,8 @@ import {IERC20All} from "test/shared/interfaces/IERC20All.sol";
 import {Chains, Tokens, Lenders} from "test/data/LenderRegistry.sol";
 import {ComposerPlugin, IComposerLike} from "plugins/ComposerPlugin.sol";
 
+// solhint-disable max-line-length
+
 contract Permit2TransferTest is BaseTest, DeltaErrors {
     using CalldataLib for bytes;
 

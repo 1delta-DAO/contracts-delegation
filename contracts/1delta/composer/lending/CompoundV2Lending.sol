@@ -8,7 +8,8 @@ import {Masks} from "../../shared/masks/Masks.sol";
 // solhint-disable max-line-length
 
 /**
- * @notice Lending base contract that wraps multiple lender types.
+ * @notice Lending base contract that wraps multiple Compound V2 lender types.
+ * Most effective for Venus
  */
 abstract contract CompoundV2Lending is ERC20Selectors, Masks {
     // BadLender()

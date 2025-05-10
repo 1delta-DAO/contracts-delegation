@@ -11,6 +11,8 @@ import "./utils/CalldataLib.sol";
 import {SweepType} from "contracts/1delta/composer/enums/MiscEnums.sol";
 import {ComposerPlugin, IComposerLike} from "plugins/ComposerPlugin.sol";
 
+// solhint-disable max-line-length
+
 interface IF {
     function getPool(address tokenA, address tokenB, uint24 fee) external view returns (address);
 
@@ -60,7 +62,7 @@ contract ExternalCallsTest is BaseTest {
         );
 
         data = abi.encodePacked(
-            ComposerCommands.EXT_CALL,
+            uint8(ComposerCommands.EXT_CALL),
             address(cf),
             uint112(amount),
             uint16(data.length),

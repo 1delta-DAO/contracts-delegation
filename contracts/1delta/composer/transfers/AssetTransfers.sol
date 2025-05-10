@@ -2,14 +2,12 @@
 
 pragma solidity 0.8.28;
 
-import {ERC20Selectors} from "../../shared/selectors/ERC20Selectors.sol";
-import {Masks} from "../../shared/masks/Masks.sol";
-import {DeltaErrors} from "../../shared/errors/Errors.sol";
+import {BaseUtils} from "contracts/1delta/composer/generic/BaseUtils.sol";
 
 /**
  * @title Token transfer contract - should work across all EVMs - use Uniswap style Permit2
  */
-contract AssetTransfers is ERC20Selectors, Masks, DeltaErrors {
+contract AssetTransfers is BaseUtils {
     // approval slot
     bytes32 private constant CALL_MANAGEMENT_APPROVALS = 0x1aae13105d9b6581c36534caba5708726e5ea1e03175e823c989a5756966d1f3;
 
@@ -26,7 +24,7 @@ contract AssetTransfers is ERC20Selectors, Masks, DeltaErrors {
      * | 20     | 20             | receiver            |
      * | 40     | 16             | amount              |
      */
-    function _encodePermit2TransferFrom(uint256 currentOffset, address callerAddress) internal returns (uint256) {
+    function _permit2TransferFrom(uint256 currentOffset, address callerAddress) internal returns (uint256) {
         ////////////////////////////////////////////////////
         // Transfers tokens from caller to this address
         // zero amount flags that the entire balance is sent
@@ -67,7 +65,7 @@ contract AssetTransfers is ERC20Selectors, Masks, DeltaErrors {
                 returndatacopy(0, 0, returndatasize())
                 revert(0, returndatasize())
             }
-            currentOffset := add(currentOffset, 54)
+            currentOffset := add(currentOffset, 56)
         }
         return currentOffset;
     }

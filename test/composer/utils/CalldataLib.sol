@@ -6,6 +6,8 @@ import "contracts/1delta/composer/swappers/dex/DexTypeMappings.sol";
 import "contracts/1delta/composer/swappers/callbacks/DexForkMappings.sol";
 import {DexPayConfig, SweepType, DodoSelector} from "contracts/1delta/composer/enums/MiscEnums.sol";
 
+// solhint-disable max-line-length
+
 /**
  * Calldatalib do and don't:
  * - Don't nest abi.encodePacked calls, create a helper function to encode the inner encode call
@@ -15,6 +17,202 @@ import {DexPayConfig, SweepType, DodoSelector} from "contracts/1delta/composer/e
  * - use if condition to revert (no require statements)
  */
 library CalldataLib {
+    function encodeExternalCall(address target, uint256 value, bytes memory data) internal pure returns (bytes memory) {
+        return abi.encodePacked(uint8(ComposerCommands.EXT_CALL), target, uint112(value), uint16(data.length), data);
+    }
+    // StargateV2 bridging
+
+    function encodeStargateV2Bridge(
+        address asset,
+        address stargatePool,
+        uint32 dstEid,
+        bytes32 receiver,
+        address refundReceiver,
+        uint256 amount,
+        uint32 slippage,
+        uint256 fee,
+        bool isBusMode,
+        bool isNative,
+        bytes memory composeMsg,
+        bytes memory extraOptions
+    )
+        internal
+        pure
+        returns (bytes memory)
+    {
+        bytes memory partialData = encodeStargateV2BridgePartial(
+            amount,
+            slippage, //
+            fee,
+            isBusMode,
+            isNative,
+            composeMsg,
+            extraOptions
+        );
+        return abi.encodePacked(
+            uint8(ComposerCommands.BRIDGING), uint8(BridgeIds.STARGATE_V2), asset, stargatePool, dstEid, receiver, refundReceiver, partialData
+        );
+    }
+
+    function encodeStargateV2BridgePartial(
+        uint256 amount,
+        uint32 slippage,
+        uint256 fee,
+        bool isBusMode,
+        bool isNative,
+        bytes memory composeMsg,
+        bytes memory extraOptions
+    )
+        private
+        pure
+        returns (bytes memory)
+    {
+        return abi.encodePacked(
+            generateAmountBitmap(uint128(amount), false, false, isNative),
+            slippage,
+            uint128(fee),
+            uint8(isBusMode ? 1 : 0),
+            uint16(composeMsg.length),
+            uint16(extraOptions.length), //
+            composeMsg,
+            extraOptions
+        );
+    }
+
+    function encodeStargateV2BridgeSimpleTaxi(
+        address asset,
+        address stargatePool,
+        uint32 dstEid,
+        bytes32 receiver,
+        address refundReceiver,
+        uint256 amount,
+        bool isNative,
+        uint32 slippage,
+        uint256 fee
+    )
+        internal
+        pure
+        returns (bytes memory)
+    {
+        return encodeStargateV2Bridge(
+            asset,
+            stargatePool,
+            dstEid,
+            receiver,
+            refundReceiver,
+            amount,
+            slippage,
+            fee,
+            false, // taxi mode
+            isNative,
+            new bytes(0), // no compose message
+            new bytes(0) // no extra options
+        );
+    }
+
+    function encodeStargateV2BridgeSimpleBus(
+        address asset,
+        address stargatePool,
+        uint32 dstEid,
+        bytes32 receiver,
+        address refundReceiver,
+        uint256 amount,
+        bool isNative,
+        uint32 slippage,
+        uint256 fee
+    )
+        internal
+        pure
+        returns (bytes memory)
+    {
+        return encodeStargateV2Bridge(
+            asset,
+            stargatePool,
+            dstEid,
+            receiver,
+            refundReceiver,
+            amount,
+            slippage,
+            fee,
+            true, // bus mode
+            isNative,
+            new bytes(0), // no compose message
+            new bytes(0) // no extra options
+        );
+    }
+
+    // Across
+    function encodeAcrossBridgeToken(
+        address spokePool,
+        address depositor,
+        address sendingAssetId,
+        address receivingAssetId,
+        uint256 amount,
+        uint128 fixedFee,
+        uint32 feePercentage,
+        uint32 destinationChainId,
+        address receiver,
+        bytes memory message
+    )
+        internal
+        pure
+        returns (bytes memory)
+    {
+        bytes memory bridgeData = abi.encodePacked(
+            uint8(ComposerCommands.BRIDGING),
+            uint8(BridgeIds.ACROSS),
+            spokePool,
+            depositor,
+            sendingAssetId,
+            receivingAssetId,
+            generateAmountBitmap(uint128(amount), false, false, false),
+            fixedFee,
+            feePercentage,
+            destinationChainId,
+            receiver,
+            uint16(message.length),
+            message
+        );
+
+        return bridgeData;
+    }
+
+    function encodeAcrossBridgeNative(
+        address spokePool,
+        address depositor,
+        address sendingAssetId,
+        address receivingAssetId,
+        uint256 amount,
+        uint128 fixedFee,
+        uint32 feePercentage,
+        uint32 destinationChainId,
+        address receiver,
+        bytes memory message
+    )
+        internal
+        pure
+        returns (bytes memory)
+    {
+        bytes memory bridgeData = abi.encodePacked(
+            uint8(ComposerCommands.BRIDGING),
+            uint8(BridgeIds.ACROSS),
+            spokePool,
+            depositor,
+            sendingAssetId,
+            receivingAssetId,
+            generateAmountBitmap(uint128(amount), false, false, true),
+            fixedFee,
+            feePercentage,
+            destinationChainId,
+            receiver,
+            uint16(message.length),
+            message
+        );
+
+        return bridgeData;
+    }
+
+    //
     function encodePermit2TransferFrom(address token, address receiver, uint256 amount) internal pure returns (bytes memory) {
         return abi.encodePacked(uint8(ComposerCommands.TRANSFERS), uint8(TransferIds.PERMIT2_TRANSFER_FROM), token, receiver, uint128(amount));
     }
@@ -124,7 +322,7 @@ library CalldataLib {
     function swapHead(uint256 amount, uint256 amountOutMin, address assetIn) internal pure returns (bytes memory) {
         return abi.encodePacked(
             uint8(ComposerCommands.SWAPS),
-            generateAmountBitmap(uint128(amount), false, false),
+            generateAmountBitmap(uint128(amount), false, false, false),
             uint128(amountOutMin),
             assetIn //
         );
@@ -242,7 +440,7 @@ library CalldataLib {
             uint8(DexTypeMappings.LB_ID),
             pool,
             uint8(swapForY ? 1 : 0),
-            uint16(uint256(cfg)) // cll length <- user pays
+            uint8(uint256(cfg)) // cll length <- user pays
         );
     }
 
@@ -417,7 +615,7 @@ library CalldataLib {
             receiver,
             uint8(DexTypeMappings.GMX_ID),
             pool,
-            uint16(uint256(cfg)) //
+            uint8(uint256(cfg)) //
         );
     }
 
@@ -439,7 +637,7 @@ library CalldataLib {
             receiver,
             uint8(DexTypeMappings.KTX_ID),
             pool,
-            uint16(uint256(cfg)) //
+            uint8(uint256(cfg)) //
         );
     }
 
@@ -676,7 +874,7 @@ library CalldataLib {
             uint8(LenderOps.DEPOSIT_LENDING_TOKEN), // 1
             uint16(LenderIds.UP_TO_MORPHO), // 2
             market, // 4 * 20 + 16
-            generateAmountBitmap(uint128(assets), isShares, false),
+            generateAmountBitmap(uint128(assets), isShares, false, false),
             receiver,
             morphoB,
             uint16(data.length > 0 ? data.length + 1 : 0), // 2 @ 1 + 4*20
@@ -701,7 +899,7 @@ library CalldataLib {
             uint8(0), // 1
             asset, // 20
             vault, // 20
-            generateAmountBitmap(uint128(assets), isShares, false),
+            generateAmountBitmap(uint128(assets), isShares, false, false),
             receiver // 20
         );
     }
@@ -720,7 +918,7 @@ library CalldataLib {
             uint8(ComposerCommands.ERC4626), // 1
             uint8(1), // 1
             vault, // 20
-            generateAmountBitmap(uint128(assets), isShares, false),
+            generateAmountBitmap(uint128(assets), isShares, false, false),
             receiver // 20
         );
     }
@@ -741,7 +939,7 @@ library CalldataLib {
             uint8(LenderOps.WITHDRAW_LENDING_TOKEN), // 1
             uint16(LenderIds.UP_TO_MORPHO), // 2
             market, // 4 * 20 + 16
-            generateAmountBitmap(uint128(assets), isShares, false),
+            generateAmountBitmap(uint128(assets), isShares, false, false),
             receiver, // 20
             morphoB
         );
@@ -784,7 +982,7 @@ library CalldataLib {
             uint8(LenderOps.BORROW), // 1
             uint16(LenderIds.UP_TO_MORPHO), // 2
             market, // 4 * 20 + 16
-            generateAmountBitmap(uint128(assets), isShares, false),
+            generateAmountBitmap(uint128(assets), isShares, false, false),
             receiver,
             morphoB
         );
@@ -810,7 +1008,7 @@ library CalldataLib {
             uint8(LenderOps.REPAY), // 1
             uint16(LenderIds.UP_TO_MORPHO), // 2
             market, // 4 * 20 + 16
-            generateAmountBitmap(uint128(assets), isShares, unsafe),
+            generateAmountBitmap(uint128(assets), isShares, unsafe, false),
             receiver,
             morphoB,
             uint16(data.length > 0 ? data.length + 1 : 0), // 2 @ 1 + 4*20
@@ -1090,14 +1288,15 @@ library CalldataLib {
     }
 
     /// @dev Mask for using the injected amount
-    uint256 private constant BALANCE_FLAG = 1 << 127;
+    uint256 private constant NATIVE_FLAG = 1 << 127;
     /// @dev Mask for shares
     uint256 private constant USE_SHARES_FLAG = 1 << 126;
     /// @dev Mask for morpho using unsafe repay
     uint256 internal constant UNSAFE_AMOUNT_FLAG = 1 << 125;
 
-    function generateAmountBitmap(uint128 amount, bool useShares, bool unsafe) internal pure returns (uint128 am) {
+    function generateAmountBitmap(uint128 amount, bool useShares, bool unsafe, bool native) internal pure returns (uint128 am) {
         am = amount;
+        if (native) am = uint128((am & ~NATIVE_FLAG) | NATIVE_FLAG); // sets the first bit to 1
         if (useShares) am = uint128((am & ~USE_SHARES_FLAG) | USE_SHARES_FLAG); // sets the second bit to 1
         if (unsafe) am = uint128((am & ~UNSAFE_AMOUNT_FLAG) | UNSAFE_AMOUNT_FLAG); // sets the third bit to 1
         return am;

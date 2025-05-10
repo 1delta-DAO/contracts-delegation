@@ -98,8 +98,8 @@ contract QuoterLight is
     }
 
     /**
-     * We use the `receiver`
-     *
+     * We use the `receiver` as an additional addres needed for quoting
+     * for DEXs like GMX and KTX
      */
     function _quoteSingleSwap(
         uint256 amountIn,

@@ -38,7 +38,7 @@ contract AaveV3FlashLoans is Masks {
             let ptr := mload(0x40)
             // flashLoanSimple(...)
             mstore(ptr, 0x42b0b77c00000000000000000000000000000000000000000000000000000000)
-            mstore(add(ptr, 4), address())
+            mstore(add(ptr, 4), address()) // receiver is self
             mstore(add(ptr, 36), token) // asset
             mstore(add(ptr, 68), amount) // amount
             mstore(add(ptr, 100), 0xa0) // offset calldata
@@ -58,9 +58,8 @@ contract AaveV3FlashLoans is Masks {
                     0x0 //
                 )
             ) {
-                let rdlen := returndatasize()
-                returndatacopy(0, 0, rdlen)
-                revert(0x0, rdlen)
+                returndatacopy(0, 0, returndatasize())
+                revert(0x0, returndatasize())
             }
 
             // increment offset

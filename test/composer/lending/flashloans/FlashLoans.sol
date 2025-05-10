@@ -12,6 +12,8 @@ import "test/composer/utils/CalldataLib.sol";
 import {SweepType} from "contracts/1delta/composer/enums/MiscEnums.sol";
 import {ComposerPlugin, IComposerLike} from "plugins/ComposerPlugin.sol";
 
+// solhint-disable max-line-length
+
 contract FlashLoanLightTest is BaseTest {
     using MorphoMathLib for uint256;
 

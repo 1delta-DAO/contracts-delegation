@@ -15,7 +15,7 @@ abstract contract LBSwapper is ERC20Selectors, Masks {
      * |--------|----------------|----------------------|
      * | 0      | 20             | pool                 |
      * | 20     | 1              | swapForY             |
-     * | 20     | 1              | pay flag             | <- 0: caller pays; 1: contract pays; greater: pre-funded
+     * | 21     | 1              | pay flag             | <- 0: caller pays; 1: contract pays; greater: pre-funded
      */
     function _swapLBexactIn(
         uint256 fromAmount,

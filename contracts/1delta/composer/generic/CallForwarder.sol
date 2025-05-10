@@ -5,6 +5,7 @@ pragma solidity ^0.8.28;
 import {ComposerCommands} from "../enums/DeltaEnums.sol";
 import {Transfers} from "../transfers/Transfers.sol";
 import {ExternalCallsGeneric} from "../generic/ExternalCallsGeneric.sol";
+import {BridgeForwarder} from "./bridges/BridgeForwarder.sol";
 
 /**
  * @notice An arbitrary call contract to forward generic calls
@@ -14,16 +15,16 @@ import {ExternalCallsGeneric} from "../generic/ExternalCallsGeneric.sol";
  * Can generically call any target and checks if the selector for these calls is not `transferFrom`
  * We assume that this contract is never an approve target!
  */
-contract CallForwarder is Transfers, ExternalCallsGeneric {
+contract CallForwarder is Transfers, ExternalCallsGeneric, BridgeForwarder {
     // base receive function
     receive() external payable {}
 
     /**
      * A selector different to the classic Composer
-     * Should be called by a more generalized composer
-     * That cannot call arbitrary selectors.
+     * Should be called by a more universal composer
+     * that cannot call arbitrary selectors.
      */
-    function deltaComposeLevel2(bytes calldata) external payable {
+    function deltaForwardCompose(bytes calldata) external payable {
         uint256 currentOffset;
         // data loop paramters
         uint256 maxIndex;
@@ -49,6 +50,10 @@ contract CallForwarder is Transfers, ExternalCallsGeneric {
                 currentOffset = _callExternal(currentOffset);
             } else if (operation == ComposerCommands.TRANSFERS) {
                 currentOffset = _transfers(currentOffset, callerAddress);
+            } else if (operation == ComposerCommands.BRIDGING) {
+                currentOffset = _bridge(currentOffset);
+            } else {
+                _invalidOperation();
             }
             // break criteria - we shifted to the end of the calldata
             if (currentOffset >= maxIndex) break;

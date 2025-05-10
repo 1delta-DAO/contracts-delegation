@@ -23,7 +23,7 @@ contract Transfers is AssetTransfers {
         } else if (transferOperation == TransferIds.UNWRAP_WNATIVE) {
             return _unwrap(currentOffset);
         } else if (transferOperation == TransferIds.PERMIT2_TRANSFER_FROM) {
-            return _encodePermit2TransferFrom(currentOffset, callerAddress);
+            return _permit2TransferFrom(currentOffset, callerAddress);
         } else if (transferOperation == TransferIds.APPROVE) {
             return _approve(currentOffset);
         } else {

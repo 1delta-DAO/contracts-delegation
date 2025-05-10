@@ -11,6 +11,8 @@ abstract contract Masks {
     uint256 internal constant UINT16_MASK = 0xffff;
     /// @dev Mask of lower 3 bytes.
     uint256 internal constant UINT24_MASK = 0xffffff;
+    /// @dev Mask of lower 4 bytes.
+    uint256 internal constant UINT32_MASK = 0xffffffff;
     /// @dev Mask of lower 16 bytes.
     uint256 internal constant UINT128_MASK = 0x00000000000000000000000000000000ffffffffffffffffffffffffffffffff;
     /// @dev Mask of lower 15 bytes.
@@ -28,8 +30,8 @@ abstract contract Masks {
     ///      add 2 amounts (2xuint112) into 32bytes, as such we use this mask for extracting those
     uint256 internal constant UINT112_MASK = 0x000000000000000000000000000000000000ffffffffffffffffffffffffffff;
 
-    /// @dev Mask for using the injected amount
-    uint256 internal constant BALANCE_FLAG = 1 << 127;
+    /// @dev Mask for Is Native
+    uint256 internal constant NATIVE_FLAG = 1 << 127;
     /// @dev Mask for shares
     uint256 internal constant USE_SHARES_FLAG = 1 << 126;
     /// @dev Mask for morpho using unsafe repay

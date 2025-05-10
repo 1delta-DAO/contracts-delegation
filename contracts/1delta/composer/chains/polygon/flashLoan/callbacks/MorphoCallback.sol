@@ -70,7 +70,7 @@ contract MorphoFlashLoanCallback is Masks, DeltaErrors {
         // can be executed
         _deltaComposeInternal(
             origCaller,
-            120, // offset is constant
+            121, // offset is constant (100 native + 21)
             calldataLength
         );
     }
