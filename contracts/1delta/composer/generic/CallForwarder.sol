@@ -21,8 +21,8 @@ contract CallForwarder is Transfers, ExternalCallsGeneric, BridgeForwarder {
 
     /**
      * A selector different to the classic Composer
-     * Should be called by a more generalized composer
-     * That cannot call arbitrary selectors.
+     * Should be called by a more universal composer
+     * that cannot call arbitrary selectors.
      */
     function deltaForwardCompose(bytes calldata) external payable {
         uint256 currentOffset;
