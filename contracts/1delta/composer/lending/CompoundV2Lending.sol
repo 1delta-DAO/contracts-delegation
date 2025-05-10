@@ -61,8 +61,8 @@ abstract contract CompoundV2Lending is ERC20Selectors, Masks {
                     0x0 // output size = zero
                 )
             ) {
-                returndatacopy(ptr, 0, returndatasize())
-                revert(ptr, returndatasize())
+                returndatacopy(0, 0, returndatasize())
+                revert(0, returndatasize())
             }
             if xor(address(), receiver) {
                 switch underlying
@@ -96,8 +96,8 @@ abstract contract CompoundV2Lending is ERC20Selectors, Masks {
                         )
 
                     if iszero(success) {
-                        returndatacopy(ptr, 0, rdsize)
-                        revert(ptr, rdsize)
+                        returndatacopy(0, 0, rdsize)
+                        revert(0, rdsize)
                     }
                 }
             }
@@ -361,8 +361,8 @@ abstract contract CompoundV2Lending is ERC20Selectors, Masks {
                             )
                         )
                     ) {
-                        returndatacopy(ptr, 0, rdsize)
-                        revert(ptr, rdsize)
+                        returndatacopy(0, 0, rdsize)
+                        revert(0, rdsize)
                     }
                 }
             }
@@ -400,8 +400,8 @@ abstract contract CompoundV2Lending is ERC20Selectors, Masks {
                 mstore(add(ptr, 0x24), amount)
 
                 if iszero(call(gas(), cToken, 0x0, ptr, 0x44, 0x0, 0x0)) {
-                    returndatacopy(ptr, 0, returndatasize())
-                    revert(ptr, returndatasize())
+                    returndatacopy(0, 0, returndatasize())
+                    revert(0, returndatasize())
                 }
             }
         }

@@ -209,7 +209,7 @@ abstract contract BalancerV3Swapper is ERC20Selectors, Masks {
                         gas(),
                         vault,
                         0x0, // no native
-                        ptr, //
+                        ptr,
                         68,
                         // selector, offset, length, data
                         0x0, // output = empty

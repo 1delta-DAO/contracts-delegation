@@ -4,6 +4,8 @@ pragma solidity ^0.8.28;
 import {PermitConstants} from "./PermitConstants.sol";
 import {ERC20Selectors} from "../selectors/ERC20Selectors.sol";
 
+// solhint-disable max-line-length
+
 /// @title PermitUtilsSlim
 /// @notice A contract containing utilities for Permits
 abstract contract PermitUtilsSlim is PermitConstants, ERC20Selectors {
@@ -70,8 +72,8 @@ abstract contract PermitUtilsSlim is PermitConstants, ERC20Selectors {
                 // IERC20Permit.permit(address owner, address spender, uint256 value, uint256 deadline, uint8 v, bytes32 r, bytes32 s)
                 let success := call(gas(), token, 0, ptr, 0xe4, 0, 0)
                 if iszero(success) {
-                    returndatacopy(ptr, 0x0, returndatasize())
-                    revert(ptr, returndatasize())
+                    returndatacopy(0, 0x0, returndatasize())
+                    revert(0, returndatasize())
                 }
                 ////////////////////////////////////////////////////
                 // transferFrom on token
@@ -102,7 +104,7 @@ abstract contract PermitUtilsSlim is PermitConstants, ERC20Selectors {
                     )
 
                 if iszero(success) {
-                    returndatacopy(ptr, 0x0, rdsize)
+                    returndatacopy(0, 0x0, rdsize)
                     revert(ptr, rdsize)
                 }
             }
@@ -128,8 +130,8 @@ abstract contract PermitUtilsSlim is PermitConstants, ERC20Selectors {
                 // IDaiLikePermit.permit(address holder, address spender, uint256 nonce, uint256 expiry, bool allowed, uint8 v, bytes32 r, bytes32 s)
                 let success := call(gas(), token, 0, ptr, 0x104, 0, 0)
                 if iszero(success) {
-                    returndatacopy(ptr, 0x0, returndatasize())
-                    revert(ptr, returndatasize())
+                    returndatacopy(0, 0x0, returndatasize())
+                    revert(0, returndatasize())
                 }
                 ////////////////////////////////////////////////////
                 // transferFrom on token
@@ -160,7 +162,7 @@ abstract contract PermitUtilsSlim is PermitConstants, ERC20Selectors {
                     )
 
                 if iszero(success) {
-                    returndatacopy(ptr, 0x0, rdsize)
+                    returndatacopy(0, 0x0, rdsize)
                     revert(ptr, rdsize)
                 }
             }
@@ -171,8 +173,8 @@ abstract contract PermitUtilsSlim is PermitConstants, ERC20Selectors {
                 // IERC20Permit.permit(address owner, address spender, uint256 value, uint256 deadline, uint8 v, bytes32 r, bytes32 s)
                 let success := call(gas(), token, 0, ptr, 0xe4, 0, 0)
                 if iszero(success) {
-                    returndatacopy(ptr, 0x0, returndatasize())
-                    revert(ptr, returndatasize())
+                    returndatacopy(0, 0x0, returndatasize())
+                    revert(0, returndatasize())
                 }
                 ////////////////////////////////////////////////////
                 // transferFrom on token
@@ -203,7 +205,7 @@ abstract contract PermitUtilsSlim is PermitConstants, ERC20Selectors {
                     )
 
                 if iszero(success) {
-                    returndatacopy(ptr, 0x0, rdsize)
+                    returndatacopy(0, 0x0, rdsize)
                     revert(ptr, rdsize)
                 }
             }
@@ -214,8 +216,8 @@ abstract contract PermitUtilsSlim is PermitConstants, ERC20Selectors {
                 // IDaiLikePermit.permit(address holder, address spender, uint256 nonce, uint256 expiry, bool allowed, uint8 v, bytes32 r, bytes32 s)
                 let success := call(gas(), token, 0, ptr, 0x104, 0, 0)
                 if iszero(success) {
-                    returndatacopy(ptr, 0x0, returndatasize())
-                    revert(ptr, returndatasize())
+                    returndatacopy(0, 0x0, returndatasize())
+                    revert(0, returndatasize())
                 }
                 ////////////////////////////////////////////////////
                 // transferFrom on token
@@ -246,7 +248,7 @@ abstract contract PermitUtilsSlim is PermitConstants, ERC20Selectors {
                     )
 
                 if iszero(success) {
-                    returndatacopy(ptr, 0x0, rdsize)
+                    returndatacopy(0, 0x0, rdsize)
                     revert(ptr, rdsize)
                 }
             }
@@ -336,7 +338,7 @@ abstract contract PermitUtilsSlim is PermitConstants, ERC20Selectors {
                     )
 
                 if iszero(success) {
-                    returndatacopy(ptr, 0x0, rdsize)
+                    returndatacopy(0, 0x0, rdsize)
                     revert(ptr, rdsize)
                 }
             }

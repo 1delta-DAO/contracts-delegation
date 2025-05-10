@@ -92,7 +92,7 @@ abstract contract LBSwapper is ERC20Selectors, Masks {
             }
             // the swap call returns both amounts encoded into a single bytes32 as (amountX,amountY)
             switch swapForY
-            case 0 { amountOut := and(mload(ptr), 0xffffffffffffffffffffffffffffffff) }
+            case 0 { amountOut := and(mload(ptr), UINT128_MASK) }
             default { amountOut := shr(128, mload(ptr)) }
             // skip 22 bytes
             currentOffset := add(currentOffset, 22)

@@ -19,7 +19,7 @@ abstract contract BalancerV2Swapper is ERC20Selectors, Masks {
      * |--------|----------------|----------------------|
      * | 0      | 32             | pool                 |
      * | 32     | 20             | vault                |
-     * | 21     | 1              | pay flag             | <- 0: caller pays; 1: contract pays; greater: pre-funded
+     * | 52     | 1              | pay flag             | <- 0: caller pays; 1: contract pays; greater: pre-funded
      */
     function _swapBalancerV2ExactIn(
         address tokenIn,
@@ -61,8 +61,8 @@ abstract contract BalancerV2Swapper is ERC20Selectors, Masks {
                         )
                     )
                 ) {
-                    returndatacopy(ptr, 0, rdsize)
-                    revert(ptr, rdsize)
+                    returndatacopy(0, 0, rdsize)
+                    revert(0, rdsize)
                 }
             }
 

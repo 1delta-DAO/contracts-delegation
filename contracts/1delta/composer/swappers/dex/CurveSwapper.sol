@@ -129,7 +129,7 @@ abstract contract CurveSwapper is ERC20Selectors, Masks {
                         )
                     )
                 ) {
-                    returndatacopy(ptr, 0, rdsize)
+                    returndatacopy(0, 0, rdsize)
                     revert(0, rdsize)
                 }
             }
@@ -299,8 +299,8 @@ abstract contract CurveSwapper is ERC20Selectors, Masks {
                     )
 
                 if iszero(success) {
-                    returndatacopy(ptr, 0, rdsize)
-                    revert(ptr, rdsize)
+                    returndatacopy(0, 0, rdsize)
+                    revert(0, rdsize)
                 }
             }
             curveData := add(currentOffset, 25)
@@ -445,8 +445,8 @@ abstract contract CurveSwapper is ERC20Selectors, Masks {
                     )
 
                 if iszero(success) {
-                    returndatacopy(ptr, 0, rdsize)
-                    revert(ptr, rdsize)
+                    returndatacopy(0, 0, rdsize)
+                    revert(0, rdsize)
                 }
             }
             curveData := add(currentOffset, 25)
@@ -524,7 +524,7 @@ abstract contract CurveSwapper is ERC20Selectors, Masks {
                         )
                     )
                 ) {
-                    returndatacopy(ptr, 0, rdsize)
+                    returndatacopy(0, 0, rdsize)
                     revert(0, rdsize)
                 }
             }

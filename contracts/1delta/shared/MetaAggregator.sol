@@ -5,6 +5,8 @@ pragma solidity ^0.8.28;
 import {PermitUtilsSlim} from "./permit/PermitUtilsSlim.sol";
 import {DeadLogger} from "./logs/DeadLogger.sol";
 
+// solhint-disable max-line-length
+
 ////////////////////////////////////////////////////
 // Minimal meta swap aggregation contract
 // - Allows simulation to validate receiver amount
@@ -380,8 +382,8 @@ contract DeltaMetaAggregator is PermitUtilsSlim, DeadLogger {
                             )
 
                         if iszero(success) {
-                            returndatacopy(ptr, 0, rdsize)
-                            revert(ptr, rdsize)
+                            returndatacopy(0, 0, rdsize)
+                            revert(0, rdsize)
                         }
                     }
                 }
@@ -462,8 +464,8 @@ contract DeltaMetaAggregator is PermitUtilsSlim, DeadLogger {
                             )
 
                         if iszero(success) {
-                            returndatacopy(ptr, 0, rdsize)
-                            revert(ptr, rdsize)
+                            returndatacopy(0, 0, rdsize)
+                            revert(0, rdsize)
                         }
                     }
                 }

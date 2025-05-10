@@ -219,8 +219,8 @@ abstract contract V2TypeGeneric is ERC20Selectors, Masks {
                             )
                         )
                     ) {
-                        returndatacopy(ptr, 0, rdsize)
-                        revert(ptr, rdsize)
+                        returndatacopy(0, 0, rdsize)
+                        revert(0, rdsize)
                     }
                 }
                 // transfer plain
@@ -245,8 +245,8 @@ abstract contract V2TypeGeneric is ERC20Selectors, Masks {
                             )
                         )
                     ) {
-                        returndatacopy(ptr, 0, rdsize)
-                        revert(ptr, rdsize)
+                        returndatacopy(0, 0, rdsize)
+                        revert(0, rdsize)
                     }
                 }
                 ////////////////////////////////////////////////////
@@ -254,17 +254,7 @@ abstract contract V2TypeGeneric is ERC20Selectors, Masks {
                 // and directly trigger the swap
                 ////////////////////////////////////////////////////
                 mstore(add(ptr, 0x84), 0) // bytes length
-                if iszero(
-                    call(
-                        gas(),
-                        pool,
-                        0x0,
-                        ptr, // input selector
-                        0xA4, // input size = 164 (selector (4bytes) plus 5*32bytes)
-                        0, // output = 0
-                        0 // output size = 0
-                    )
-                ) {
+                if iszero(call(gas(), pool, 0x0, ptr, 0xA4, 0, 0)) {
                     // Forward the error
                     returndatacopy(0, 0, returndatasize())
                     revert(0, returndatasize())
@@ -330,8 +320,8 @@ abstract contract V2TypeGeneric is ERC20Selectors, Masks {
                         )
                     )
                 ) {
-                    returndatacopy(ptr, 0, rdsize)
-                    revert(ptr, rdsize)
+                    returndatacopy(0, 0, rdsize)
+                    revert(0, rdsize)
                 }
             }
             default { revert(0, 0) }
@@ -403,17 +393,7 @@ abstract contract V2TypeGeneric is ERC20Selectors, Masks {
                 // and directly trigger the swap
                 ////////////////////////////////////////////////////
                 mstore(add(ptr, 0x84), 0) // bytes length
-                if iszero(
-                    call(
-                        gas(),
-                        pair,
-                        0x0,
-                        ptr, // input selector
-                        0xA4, // input size = 164 (selector (4bytes) plus 5*32bytes)
-                        0, // output = 0
-                        0 // output size = 0
-                    )
-                ) {
+                if iszero(call(gas(), pair, 0x0, ptr, 0xA4, 0, 0)) {
                     // Forward the error
                     returndatacopy(0, 0, returndatasize())
                     revert(0, returndatasize())
