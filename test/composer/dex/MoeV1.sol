@@ -8,6 +8,8 @@ import {Chains, Tokens, Lenders} from "../../data/LenderRegistry.sol";
 import "../utils/CalldataLib.sol";
 import {ComposerPlugin, IComposerLike} from "plugins/ComposerPlugin.sol";
 
+// solhint-disable max-line-length
+
 interface IF {
     function getPool(address tokenA, address tokenB, uint24 fee) external view returns (address);
     function getPool(address tokenA, address tokenB, int24 fee) external view returns (address);

@@ -10,7 +10,7 @@ import {V2TypeGeneric} from "./dex/V2Type.sol";
 import {WooFiSwapper} from "./dex/WooFi.sol";
 import {DodoV2Swapper} from "./dex/DodoV2Swapper.sol";
 import {LBSwapper} from "./dex/LBSwapper.sol";
-import {NativeWrapper} from "./dex/NativeWrapper.sol";
+import {Wrapper} from "./dex/Wrapper.sol";
 import {GMXSwapper} from "./dex/GMXSwapper.sol";
 import {SyncSwapper} from "./dex/SyncSwapper.sol";
 import {CurveSwapper} from "./dex/CurveSwapper.sol";
@@ -68,7 +68,7 @@ import {BalancerV3Swapper} from "./dex/BalancerV3Swapper.sol";
  *             Solidly:121 - 130
  */
 abstract contract BaseSwapper is
-    NativeWrapper,
+    Wrapper,
     V4TypeGeneric,
     V3TypeGeneric,
     V2TypeGeneric,
@@ -372,8 +372,8 @@ abstract contract BaseSwapper is
             }
         }
         // Rest: Rare wrap/unwrap operations
-        else if (dexTypeId == DexTypeMappings.NATIVE_WRAP_ID) {
-            return _wrapOrUnwrapSimple(amountIn, currentOffset);
+        else if (dexTypeId == DexTypeMappings.ASSET_WRAP_ID) {
+            return _wrapperOperation(tokenIn, tokenOut, amountIn, receiver, payer, currentOffset);
         }
 
         // If no match was found, revert

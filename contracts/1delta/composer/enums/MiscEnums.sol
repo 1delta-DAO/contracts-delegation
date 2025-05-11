@@ -18,3 +18,9 @@ enum DodoSelector {
     SELL_BASE,
     SELL_QUOTE
 }
+
+enum WrapOperation {
+    NATIVE,
+    ERC4626_DEPOSIT,
+    ERC4626_REDEEM
+}

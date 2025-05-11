@@ -4,7 +4,7 @@ pragma solidity ^0.8.19;
 import "contracts/1delta/composer/enums/DeltaEnums.sol";
 import "contracts/1delta/composer/swappers/dex/DexTypeMappings.sol";
 import "contracts/1delta/composer/swappers/callbacks/DexForkMappings.sol";
-import {DexPayConfig, SweepType, DodoSelector} from "contracts/1delta/composer/enums/MiscEnums.sol";
+import {DexPayConfig, SweepType, DodoSelector, WrapOperation} from "contracts/1delta/composer/enums/MiscEnums.sol";
 
 // solhint-disable max-line-length
 
@@ -693,6 +693,28 @@ library CalldataLib {
             uint8(selectorId), // fee tier to validate pool
             uint16(uint256(cfg)) //
         );
+    }
+
+    // wapper operation for swaps
+    function encodeWrapperSwap(
+        bytes memory currentData,
+        address assetOut,
+        address receiver,
+        WrapOperation operation,
+        DexPayConfig cfg
+    )
+        internal
+        pure
+        returns (bytes memory)
+    {
+        return abi.encodePacked(
+            currentData,
+            assetOut,
+            receiver,
+            uint8(DexTypeMappings.ASSET_WRAP_ID),
+            uint8(uint256(operation)),
+            uint8(uint256(cfg)) //
+        ); // 14 bytes
     }
 
     function encodeNextGenDexSettle(address singleton, uint256 nativeAmount) internal pure returns (bytes memory) {
