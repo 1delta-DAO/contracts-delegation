@@ -1,12 +1,10 @@
 
 import { ethers } from "hardhat";
 import {
-    DeployFactory__factory,
     TransparentUpgradeableProxy__factory,
 } from "../../types";
 import { getGasConfig } from "../_utils/getGasConfig";
-import { COMPOSER_LOGICS, DEPLOY_FACTORY } from "./addresses";
-import { keccak256 } from "ethers/lib/utils";
+import { COMPOSER_LOGICS } from "./addresses";
 
 /**
  * Universal gen2 deployer
@@ -23,11 +21,15 @@ async function main() {
     let config = await getGasConfig(operator, 10, true)
     // config.gasLimit = 10_000_000
 
+    // @ts-ignore
+    if (!COMPOSER_LOGICS[chainId]) throw new Error("No Logic provided")
+
     // deploy module config
     const proxy = await new TransparentUpgradeableProxy__factory(operator).deploy(
         // @ts-ignore
         COMPOSER_LOGICS[chainId],
         operator.address,
+        "0x",
         { ...config, nonce: nonce++ })
     await proxy.deployed()
 

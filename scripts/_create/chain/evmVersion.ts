@@ -9,4 +9,5 @@ export const CANCUN_OR_HIGHER = [
     Chain.OP_MAINNET,
     Chain.GNOSIS,
     Chain.BASE,
+    Chain.HEMI_NETWORK,
 ]

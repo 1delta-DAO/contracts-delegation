@@ -1,7 +1,6 @@
 // hardhat.config.ts
 
 import 'dotenv/config';
-import '@nomiclabs/hardhat-etherscan';
 import '@nomiclabs/hardhat-solhint';
 import '@nomiclabs/hardhat-waffle';
 import 'hardhat-abi-exporter';
@@ -13,6 +12,7 @@ import '@typechain/hardhat';
 import 'hardhat-watcher';
 import 'solidity-coverage';
 import "hardhat-contract-sizer";
+import "@nomicfoundation/hardhat-verify";
 // import '@openzeppelin/hardhat-upgrades';
 // import {accounts} from './utils/networks';
 
@@ -25,35 +25,6 @@ import { HardhatUserConfig } from 'hardhat/types';
 import { removeConsoleLog } from 'hardhat-preprocessor';
 
 
-
-const LOW_OPTIMIZER_COMPILER_SETTINGS = {
-  version: '0.8.17',
-  settings: {
-    optimizer: {
-      enabled: true,
-      runs: 1_500,
-    },
-    metadata: {
-      bytecodeHash: 'none',
-    },
-  },
-}
-
-const LOWEST_OPTIMIZER_COMPILER_SETTINGS = {
-  version: '0.8.17',
-  settings: {
-    viaIR: true,
-    optimizer: {
-      enabled: true,
-      runs: 1_000,
-    },
-    metadata: {
-      bytecodeHash: 'none',
-    },
-  },
-}
-
-
 const pk1: string = process.env.PK_1 || '';
 const pk2: string = process.env.PK_2 || '';
 const pk3: string = process.env.PK_3 || '';
@@ -64,13 +35,6 @@ const pk6: string = process.env.PK_6 || '';
 const accounts = [pk1, pk5, pk3, pk6]
 
 const config: HardhatUserConfig = {
-  abiExporter: {
-    path: './abi',
-    clear: false,
-    flat: true,
-    // only: [],
-    // except: []
-  },
   defaultNetwork: 'hardhat',
   etherscan: {
     customChains: [
@@ -277,7 +241,7 @@ const config: HardhatUserConfig = {
       live: true,
     },
     matic: {
-      url: 'https://rpc.ankr.com/polygon',
+      url: 'https://polygon-rpc.com',
       accounts,
       chainId: 137,
     },
@@ -334,7 +298,7 @@ const config: HardhatUserConfig = {
       live: true,
     },
     arbitrum: {
-      url: 'https://arbitrum.drpc.org',
+      url: 'https://arb1.arbitrum.io/rpc',
       chainId: 42161,
       live: true,
       blockGasLimit: 700000,
@@ -382,6 +346,11 @@ const config: HardhatUserConfig = {
     imports: 'imports',
     sources: 'contracts',
     tests: 'test/1delta',
+  },
+  sourcify: {
+    // Disabled by default
+    // Doesn't need an API key
+    enabled: true
   },
   preprocess: {
     eachLine: removeConsoleLog(
@@ -587,14 +556,6 @@ const config: HardhatUserConfig = {
           evmVersion: 'paris',
         },
       },
-      // periphery
-      'contracts/external-protocols/algebra/periphery/NonfungiblePositionManager.sol': LOW_OPTIMIZER_COMPILER_SETTINGS,
-      'contracts/external-protocols/algebra/periphery/LimitOrderManager.sol': LOW_OPTIMIZER_COMPILER_SETTINGS,
-      'contracts/external-protocols/algebra/periphery/test/MockTimeNonfungiblePositionManager.sol': LOW_OPTIMIZER_COMPILER_SETTINGS,
-      'contracts/external-protocols/algebra/periphery/test/NFTDescriptorTest.sol': LOWEST_OPTIMIZER_COMPILER_SETTINGS,
-      'contracts/external-protocols/algebra/periphery/NonfungibleTokenPositionDescriptor.sol': LOWEST_OPTIMIZER_COMPILER_SETTINGS,
-      'contracts/external-protocols/algebra/periphery/libraries/NFTDescriptor.sol': LOWEST_OPTIMIZER_COMPILER_SETTINGS,
-      'contracts/external-protocols/algebra/periphery/libraries/NFTSVG.sol': LOWEST_OPTIMIZER_COMPILER_SETTINGS,
     }
   },
   spdxLicenseIdentifier: {
