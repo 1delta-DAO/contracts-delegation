@@ -15,8 +15,12 @@ import {LBQuoter} from "./dex/LBQuoter.sol";
 import {KTXQuoter} from "./dex/KTXQuoter.sol";
 import {GMXQuoter} from "./dex/GMXV1Quoter.sol";
 import {BalancerV2Quoter} from "./dex/BalancerV2Quoter.sol";
+import {WrapperQuoter} from "./dex/WrapperQuoter.sol";
+
+// solhint-disable max-line-length
 
 contract QuoterLight is
+    WrapperQuoter,
     BalancerV3Quoter,
     V4TypeQuoter,
     V3TypeQuoter,
@@ -175,10 +179,9 @@ contract QuoterLight is
         }
         // sync swap style
         else if (dexTypeId == DexTypeMappings.SYNC_SWAP_ID) {
-            return _getSyncSwapAmoutnOut(tokenIn, amountIn, currentOffset);
-        } else if (dexTypeId == DexTypeMappings.NATIVE_WRAP_ID) {
-            // wrapping has no effect
-            return (amountIn, currentOffset + 21);
+            return _quoteSyncSwapExactIn(tokenIn, amountIn, currentOffset);
+        } else if (dexTypeId == DexTypeMappings.ASSET_WRAP_ID) {
+            return _quoteWrapperExactIn(tokenIn, tokenOut, amountIn, currentOffset);
         } else {
             revert InvalidDexId();
         }

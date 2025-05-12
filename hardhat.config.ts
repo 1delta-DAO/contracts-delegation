@@ -483,17 +483,6 @@ const config: HardhatUserConfig = {
       }
     ],
     overrides: {
-      // proxy
-      "contracts/1delta/proxy/DeltaBrokerGen2.sol": {
-        version: '0.8.28',
-        settings: {
-          optimizer: {
-            enabled: true,
-            runs: 1_000_000,
-          },
-          evmVersion: 'cancun',
-        },
-      },
       // deploy factory
       "contracts/1delta/contracts/1delta/shared/DeployFactory.sol": {
         version: '0.8.28',
@@ -516,8 +505,40 @@ const config: HardhatUserConfig = {
           evmVersion: 'paris',
         },
       },
+      // forwarder
+      "contracts/1delta/composer/generic/CallForwarder.sol": {
+        version: '0.8.28',
+        settings: {
+          optimizer: {
+            enabled: true,
+            runs: 1_000_000,
+          },
+          evmVersion: 'paris',
+        },
+      },// proxy
+      "contracts/external-protocols/openzeppelin/proxy/transparent/TransparentUpgradeableProxy.sol": {
+        version: '0.8.28',
+        settings: {
+          optimizer: {
+            enabled: true,
+            runs: 1_000_000,
+          },
+          evmVersion: 'paris',
+        },
+      },
       // composers
       "contracts/1delta/composer/chains/arbitrum-one/Composer.sol": {
+        version: '0.8.28',
+        settings: {
+          optimizer: {
+            enabled: true,
+            runs: 2_500,
+          },
+          evmVersion: 'cancun',
+        },
+      },
+      // composers
+      "contracts/1delta/composer/chains/optimism/Composer.sol": {
         version: '0.8.28',
         settings: {
           optimizer: {

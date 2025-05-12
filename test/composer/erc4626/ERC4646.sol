@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.19;
 
+import {console} from "forge-std/console.sol";
 import {MorphoMathLib} from "test/composer/lending/utils/MathLib.sol";
 import {MarketParams, IMorphoEverything} from "test/composer/lending/utils/Morpho.sol";
 
@@ -15,6 +16,7 @@ import {ComposerPlugin, IComposerLike} from "plugins/ComposerPlugin.sol";
  * - supply, supplyCollateral, borrow, repay, encodeErc4646Deposit, encodeErc4646Withdraw
  */
 contract ERC4626Test is BaseTest {
+    using CalldataLib for bytes;
     using MorphoMathLib for uint256;
 
     IComposerLike oneD;
@@ -22,9 +24,13 @@ contract ERC4626Test is BaseTest {
     uint256 internal constant forkBlock = 26696865;
 
     address internal USDC;
+    address internal WETH;
     address internal constant META_MORPHO_USDC = 0x7BfA7C4f149E7415b73bdeDfe609237e29CBF34A;
 
     address internal constant MORPHO = 0xBBBBBbbBBb9cC5e90e3b3Af64bdAF62C37EEFFCb;
+
+    address internal constant USDM = 0x59D9356E565Ab3A36dD77763Fc0d87fEaf85508C;
+    address internal constant WUSDM = 0x57F5E098CaD7A3D1Eed53991D4d66C45C9AF7812;
 
     function setUp() public virtual {
         // initialize the chain
@@ -33,6 +39,7 @@ contract ERC4626Test is BaseTest {
         _init(chainName, forkBlock, true);
 
         USDC = chain.getTokenAddress(Tokens.USDC);
+        WETH = chain.getTokenAddress(Tokens.WETH);
 
         oneD = ComposerPlugin.getComposer(chainName);
     }
@@ -185,5 +192,187 @@ contract ERC4626Test is BaseTest {
         oneD.deltaCompose(withdrawCall);
 
         assertApproxEqAbs(IERC20All(vault).balanceOf(user), userShares / 2, 1);
+    }
+
+    function wrapSwapWUSDM(address receiver, uint256 amount) internal view returns (bytes memory data) {
+        // create head config
+        data = CalldataLib.swapHead(
+            amount,
+            amount * 105 / 100, // amountOut min
+            WUSDM
+        );
+        // no branching
+        data = data.attachBranch(0, 0, hex"");
+        data = data.encodeWrapperSwap(
+            USDM,
+            receiver,
+            WrapOperation.ERC4626_REDEEM,
+            DexPayConfig.CALLER_PAYS //
+        );
+    }
+
+    function wrapSwapUSDM(address receiver, uint256 amount) internal view returns (bytes memory data) {
+        // create head config
+        data = CalldataLib.swapHead(
+            amount,
+            amount * 8 / 10, // amountOut min
+            USDM
+        );
+        // no branching
+        data = data.attachBranch(0, 0, hex"");
+        data = data.encodeWrapperSwap(
+            WUSDM,
+            receiver,
+            WrapOperation.ERC4626_DEPOSIT,
+            DexPayConfig.CALLER_PAYS //
+        );
+    }
+
+    function test_light_wrap_redeem_single() external {
+        vm.assume(user != address(0));
+
+        address tokenIn = WUSDM;
+        address tokenOut = USDM;
+        uint256 amount = 1.0e18;
+        uint256 approxOut = 1.0e18;
+        deal(tokenIn, user, amount);
+
+        vm.prank(user);
+        IERC20All(tokenIn).approve(address(oneD), type(uint256).max);
+
+        bytes memory swap = wrapSwapWUSDM(
+            user,
+            amount //
+        );
+
+        uint256 balBefore = IERC20All(tokenOut).balanceOf(user);
+        vm.prank(user);
+        oneD.deltaCompose(swap);
+
+        uint256 balAfter = IERC20All(tokenOut).balanceOf(user);
+        console.log("received", balAfter - balBefore);
+        assertApproxEqAbs(balAfter - balBefore, approxOut, (approxOut * 10) / 100);
+    }
+
+    // this one is a bit weird as we
+    // forge cannot mint USDM, only WUSDM
+    function test_light_wrap_deposit_single() external {
+        vm.assume(user != address(0));
+
+        address tokenIn = WUSDM;
+        address tokenOut = USDM;
+        uint256 amount = 1.0e18;
+        uint256 approxOut = 1.0e18;
+        deal(tokenIn, user, amount);
+
+        vm.prank(user);
+        IERC20All(tokenIn).approve(address(oneD), type(uint256).max);
+
+        bytes memory swap = wrapSwapWUSDM(
+            user,
+            amount //
+        );
+
+        vm.prank(user);
+        oneD.deltaCompose(swap);
+
+        swap = wrapSwapUSDM(
+            user,
+            amount //
+        );
+
+        tokenIn = USDM;
+        tokenOut = WUSDM;
+        vm.prank(user);
+        IERC20All(tokenIn).approve(address(oneD), type(uint256).max);
+
+        uint256 balBefore = IERC20All(tokenOut).balanceOf(user);
+        vm.prank(user);
+        oneD.deltaCompose(swap);
+
+        uint256 balAfter = IERC20All(tokenOut).balanceOf(user);
+        console.log("received", balAfter - balBefore);
+        assertApproxEqAbs(balAfter - balBefore, approxOut, (approxOut * 10) / 100);
+    }
+
+    function wrapSwapNative(address receiver, uint256 amount) internal view returns (bytes memory data) {
+        // create head config
+        data = CalldataLib.swapHead(
+            amount,
+            1, // amountOut min
+            address(0)
+        );
+        // no branching
+        data = data.attachBranch(0, 0, hex"");
+        data = data.encodeWrapperSwap(
+            WETH,
+            receiver,
+            WrapOperation.NATIVE,
+            DexPayConfig.PRE_FUND //
+        );
+    }
+
+    function test_light_wrap_native_single() external {
+        vm.assume(user != address(0));
+
+        address tokenOut = WETH;
+        uint256 amount = 1.0e18;
+        uint256 approxOut = 1.0e18;
+        deal(user, amount);
+
+        bytes memory swap = wrapSwapNative(
+            user,
+            amount //
+        );
+
+        uint256 balBefore = IERC20All(tokenOut).balanceOf(user);
+        vm.prank(user);
+        oneD.deltaCompose{value: amount}(swap);
+
+        uint256 balAfter = IERC20All(tokenOut).balanceOf(user);
+        console.log("received", balAfter - balBefore);
+        assertApproxEqAbs(balAfter - balBefore, approxOut, (approxOut * 10) / 100);
+    }
+
+    function wrapSwapWNative(address receiver, uint256 amount) internal view returns (bytes memory data) {
+        // create head config
+        data = CalldataLib.swapHead(
+            amount,
+            1, // amountOut min
+            WETH
+        );
+        // no branching
+        data = data.attachBranch(0, 0, hex"");
+        data = data.encodeWrapperSwap(
+            address(0),
+            receiver,
+            WrapOperation.NATIVE,
+            DexPayConfig.CALLER_PAYS //
+        );
+    }
+
+    function test_light_wrap_wnative_single() external {
+        vm.assume(user != address(0));
+
+        address tokenIn = WETH;
+        uint256 amount = 1.0e18;
+        uint256 approxOut = 1.0e18;
+        deal(tokenIn, user, amount);
+
+        vm.prank(user);
+        IERC20All(tokenIn).approve(address(oneD), type(uint256).max);
+
+        bytes memory swap = wrapSwapWNative(
+            user,
+            amount //
+        );
+
+        uint256 balBefore = user.balance;
+        vm.prank(user);
+        oneD.deltaCompose(swap);
+
+        uint256 balAfter = user.balance;
+        console.log("received", balAfter - balBefore);
+        assertApproxEqAbs(balAfter - balBefore, approxOut, (approxOut * 10) / 100);
     }
 }

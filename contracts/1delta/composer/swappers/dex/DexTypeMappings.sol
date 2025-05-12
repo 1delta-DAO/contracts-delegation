@@ -48,5 +48,5 @@ library DexTypeMappings {
      */
     // wrappers
     uint256 internal constant ERC4626_ID = 253;
-    uint256 internal constant NATIVE_WRAP_ID = 254;
+    uint256 internal constant ASSET_WRAP_ID = 254;
 }
