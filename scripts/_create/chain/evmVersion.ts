@@ -8,4 +8,5 @@ export const CANCUN_OR_HIGHER = [
     Chain.ARBITRUM_ONE,
     Chain.OP_MAINNET,
     Chain.GNOSIS,
+    Chain.BASE,
 ]
