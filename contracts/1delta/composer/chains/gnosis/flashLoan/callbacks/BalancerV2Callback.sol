@@ -31,8 +31,7 @@ contract BalancerV2FlashLoanCallback is Slots, Masks, DeltaErrors {
         assembly {
             calldataOffset := params.offset
 
-            // validate caller
-            // - extract id from params
+            // validate caller via provided poolId
             let firstWord := calldataload(calldataOffset)
 
             switch and(UINT8_MASK, shr(88, firstWord))
@@ -53,14 +52,15 @@ contract BalancerV2FlashLoanCallback is Slots, Masks, DeltaErrors {
             }
 
             // Close the gateway slot afterwards!
-            // This prevents a double_entry though 2 acccepted
+            // This prevents a double entry though 2 acccepted
             // Balancer V2 forks where one would use the first
             // through this contract, pass the validation, then use the second to
-            // reenter from an attacker contract - the gateway would then be open still
-            // and the attacker could execute an arbitrary delta compose
-            // locking the callback again here prevents this scenario
+            // reenter from an attacker contract - the gateway would then be open
+            // and the attacker could execute an arbitrary delta compose.
+            // Locking the callback again here (instead of after the flashLoan call)
+            // prevents this scenario!
             tstore(FLASH_LOAN_GATEWAY_SLOT, 0)
-            // Slice the original caller off the beginnig of the calldata
+            // Get the original caller from the beginnig of the calldata
             // From here on we have validated that the origCaller
             // was attached in the deltaCompose function
             // Otherwise, this would be a vulnerability
