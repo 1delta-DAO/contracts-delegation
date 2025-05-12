@@ -178,7 +178,7 @@ abstract contract PermitUtils is PermitConstants {
             case 100 {
                 let allowedAndNonce := calldataload(permitOffset) // load [allowed nonce] 2 single bits and number
                 // mopho blue and CompoundV3 are similarly parametrized
-                // if the second high bit is set
+                // if the second high bit is set, use Morpho
                 switch and(SECOND_HIGH_BIT, allowedAndNonce)
                 case 0 { mstore(ptr, COMPOUND_V3_CREDIT_PERMIT) }
                 // store selector

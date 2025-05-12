@@ -4,10 +4,6 @@ pragma solidity ^0.8.25;
 /// @title PermitConstants
 /// @notice A contract containing constants used for Permit2 & ERC20 type permits
 abstract contract PermitConstants {
-    /*//////////////////////////////////////////////////////////////
-                                CONSTANTS
-    //////////////////////////////////////////////////////////////*/
-
     /// @dev default Permit2 address
     address internal constant PERMIT2 = 0x000000000022D473030F116dDEE9F6B43aC78BA3; // solhint-disable-line var-name-mixedcase
 
