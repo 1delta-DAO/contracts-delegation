@@ -63,7 +63,7 @@ library CalldataLib {
         bytes memory composeMsg,
         bytes memory extraOptions
     )
-        private
+        internal
         pure
         returns (bytes memory)
     {
