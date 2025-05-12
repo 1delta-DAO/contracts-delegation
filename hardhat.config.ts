@@ -532,13 +532,13 @@ const config: HardhatUserConfig = {
         settings: {
           optimizer: {
             enabled: true,
-            runs: 2_500,
+            runs: 1_500,
           },
           evmVersion: 'cancun',
         },
       },
       // composers
-      "contracts/1delta/composer/chains/optimism/Composer.sol": {
+      "contracts/1delta/composer/chains/op/Composer.sol": {
         version: '0.8.28',
         settings: {
           optimizer: {
@@ -546,6 +546,17 @@ const config: HardhatUserConfig = {
             runs: 2_500,
           },
           evmVersion: 'cancun',
+        },
+      },
+      // composers
+      "contracts/1delta/composer/chains/taiko/Composer.sol": {
+        version: '0.8.28',
+        settings: {
+          optimizer: {
+            enabled: true,
+            runs: 5_000,
+          },
+          evmVersion: 'shanghai',
         },
       },
       "contracts/1delta/quoter/MoeJoeLens.sol": {
