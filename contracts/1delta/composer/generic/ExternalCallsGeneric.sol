@@ -51,11 +51,6 @@ abstract contract ExternalCallsGeneric is BaseUtils {
             // free memo ptr for populating the tx
             let ptr := mload(0x40)
 
-            ////////////////////////////////////////////////////
-            // If the token is zero, we assume that it is a native
-            // transfer / swap and the approval check is skipped
-            ////////////////////////////////////////////////////
-
             // increment offset to calldata start
             currentOffset := add(36, currentOffset)
 
