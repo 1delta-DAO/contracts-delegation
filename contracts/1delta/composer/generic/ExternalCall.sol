@@ -40,9 +40,9 @@ abstract contract ExternalCall is BaseUtils {
             let dataLength := shr(240, calldataload(currentOffset))
             currentOffset := add(2, currentOffset)
 
-            switch iszero(and(NATIVE_FLAG, callValue))
-            case 1 { callValue := and(callValue, UINT112_MASK) }
-            case 0 { callValue := selfbalance() }
+            switch and(NATIVE_FLAG, callValue)
+            case 0 { callValue := and(callValue, UINT112_MASK) }
+            case 1 { callValue := selfbalance() }
 
             // free memo ptr for populating the tx
             let ptr := mload(0x40)
