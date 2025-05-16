@@ -80,6 +80,7 @@ library Gen2025ActionIds {
 library ComposerCommands {
     uint256 internal constant SWAPS = 0x10;
     uint256 internal constant EXT_CALL = 0x20;
+    uint256 internal constant EXT_Try_CALL = 0x21;
     uint256 internal constant LENDING = 0x30;
     uint256 internal constant TRANSFERS = 0x40;
     uint256 internal constant PERMIT = 0x50;
