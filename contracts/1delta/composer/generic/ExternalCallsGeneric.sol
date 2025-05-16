@@ -88,12 +88,12 @@ abstract contract ExternalCallsGeneric is BaseUtils {
          * | Offset | Length (bytes) | Description          |
          * |--------|----------------|----------------------|
          * | 0      | 20             | target               |
-         * | 20     | 14             | nativeValue          |
-         * | 34     | 2              | calldataLength:  cl  |
-         * | 36     | cl             | calldata             |
-         * | 36+cl  | 1              | catchHandling        | <- 0: revert, 1:
-         * | 37+cl  | 2              | catchDataLength: dl  |
-         * | 39+cl  | dl             | catchData            |
+         * | 20     | 16             | nativeValue          |
+         * | 36     | 2              | calldataLength:  cl  |
+         * | 38     | cl             | calldata             |
+         * | 38+cl  | 1              | catchHandling        | <- 0: revert, 1:
+         * | 39+cl  | 2              | catchDataLength: dl  |
+         * | 41+cl  | dl             | catchData            |
          */
         bool success;
         uint256 catchHandling;
@@ -108,12 +108,16 @@ abstract contract ExternalCallsGeneric is BaseUtils {
             }
 
             currentOffset := add(20, currentOffset)
-            // get msg.value for call
-            let callValue := calldataload(currentOffset)
-            let dataLength := and(UINT16_MASK, shr(128, callValue))
-            callValue := shr(144, callValue) // shr will already mask correctly
 
-            if iszero(callValue) { callValue := selfbalance() }
+            let callValue := shr(128, calldataload(currentOffset))
+            currentOffset := add(16, currentOffset)
+
+            let dataLength := shr(240, calldataload(currentOffset))
+            currentOffset := add(2, currentOffset)
+
+            switch and(NATIVE_FLAG, callValue)
+            case 0 { callValue := and(callValue, UINT112_MASK) }
+            case 1 { callValue := selfbalance() }
 
             // free memo ptr for populating the tx
             let ptr := mload(0x40)
