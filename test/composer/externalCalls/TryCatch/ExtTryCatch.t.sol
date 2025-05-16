@@ -38,7 +38,8 @@ contract ExtTryCatch is BaseTest {
         mockContract.reset();
 
         // catch calldata, should not be called in this test
-        bytes memory composerCalldata = abi.encodeWithSelector(MockContract.catchBlock.selector);
+        bytes memory composerCalldata =
+            CalldataLib.encodeExternalCall(address(mockContract), uint256(0), false, abi.encodeWithSelector(MockContract.catchBlock.selector));
 
         // forwarder calldata
         composerCalldata = CalldataLib.encodeTryExternalCall(
@@ -57,6 +58,64 @@ contract ExtTryCatch is BaseTest {
 
         // Verify assertions
         assertFalse(mockContract.called());
+        assertFalse(mockContract.catchCalled());
+    }
+
+    function test_externalCall_catch_executes_if_not_successful() public {
+        // Configure mock to fail
+        mockContract.setShouldFail(true);
+        mockContract.reset();
+
+        // catch calldata, should be called in this test
+        bytes memory composerCalldata =
+            CalldataLib.encodeExternalCall(address(mockContract), uint256(0), false, abi.encodeWithSelector(MockContract.catchBlock.selector));
+
+        // forwarder calldata
+        composerCalldata = CalldataLib.encodeTryExternalCall(
+            address(mockContract), uint256(0), false, false, abi.encodeWithSelector(MockContract.testCall.selector), composerCalldata
+        );
+
+        // composer calldata
+        composerCalldata = CalldataLib.encodeExternalCall(address(callForwarder), uint256(0), false, composerCalldata);
+
+        vm.startPrank(user);
+
+        // should not revert
+        composer.deltaCompose(composerCalldata);
+
+        vm.stopPrank();
+
+        // Verify assertions
+        assertFalse(mockContract.called());
+        assertTrue(mockContract.catchCalled());
+    }
+
+    function test_externalCall_catch_does_not_execute_if_successful() public {
+        // Configure mock to fail
+        mockContract.setShouldFail(false);
+        mockContract.reset();
+
+        // catch calldata, should not be called in this test
+        bytes memory composerCalldata =
+            CalldataLib.encodeExternalCall(address(mockContract), uint256(0), false, abi.encodeWithSelector(MockContract.catchBlock.selector));
+
+        // forwarder calldata
+        composerCalldata = CalldataLib.encodeTryExternalCall(
+            address(mockContract), uint256(0), false, false, abi.encodeWithSelector(MockContract.testCall.selector), composerCalldata
+        );
+
+        // composer calldata
+        composerCalldata = CalldataLib.encodeExternalCall(address(callForwarder), uint256(0), false, composerCalldata);
+
+        vm.startPrank(user);
+
+        // should not revert
+        composer.deltaCompose(composerCalldata);
+
+        vm.stopPrank();
+
+        // Verify assertions
+        assertTrue(mockContract.called());
         assertFalse(mockContract.catchCalled());
     }
 }
