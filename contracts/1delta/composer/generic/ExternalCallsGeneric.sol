@@ -21,9 +21,9 @@ abstract contract ExternalCallsGeneric is BaseUtils {
          * | Offset | Length (bytes) | Description          |
          * |--------|----------------|----------------------|
          * | 0      | 20             | target               |
-         * | 20     | 14             | nativeValue          |
-         * | 34     | 2              | calldataLength:  cl  |
-         * | 36     | cl             | calldata             |
+         * | 20     | 16             | nativeValue          |
+         * | 36     | 2              | calldataLength:  cl  |
+         * | 38     | cl             | calldata             |
          */
         assembly {
             // get first three addresses
@@ -35,11 +35,17 @@ abstract contract ExternalCallsGeneric is BaseUtils {
                 revert(0x0, 0x4)
             }
 
-            // get msg.value for call
-            let callValue := calldataload(add(currentOffset, 20))
-            let dataLength := and(UINT16_MASK, shr(128, callValue))
-            callValue := shr(144, callValue) // shr will already mask correctly
-            if iszero(callValue) { callValue := selfbalance() }
+            currentOffset := add(20, currentOffset)
+
+            let callValue := shr(128, calldataload(currentOffset))
+            currentOffset := add(16, currentOffset)
+
+            let dataLength := shr(240, calldataload(currentOffset))
+            currentOffset := add(2, currentOffset)
+
+            switch and(NATIVE_FLAG, callValue)
+            case 0 { callValue := and(callValue, UINT112_MASK) }
+            case 1 { callValue := selfbalance() }
 
             // free memo ptr for populating the tx
             let ptr := mload(0x40)
