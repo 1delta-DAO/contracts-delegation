@@ -17,9 +17,9 @@ import {DexPayConfig, SweepType, DodoSelector, WrapOperation} from "contracts/1d
  * - use if condition to revert (no require statements)
  */
 library CalldataLib {
-    function encodeExternalCall(address target, uint256 value, bytes memory data) internal pure returns (bytes memory) {
+    function encodeExternalCall(address target, uint256 value, bool useSelfBalance, bytes memory data) internal pure returns (bytes memory) {
         return abi.encodePacked(
-            uint8(ComposerCommands.EXT_CALL), target, generateAmountBitmap(uint128(value), false, false, true), uint16(data.length), data
+            uint8(ComposerCommands.EXT_CALL), target, generateAmountBitmap(uint128(value), false, false, useSelfBalance), uint16(data.length), data
         );
     }
     // StargateV2 bridging
