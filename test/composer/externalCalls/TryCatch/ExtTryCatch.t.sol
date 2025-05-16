@@ -32,7 +32,7 @@ contract ExtTryCatch is BaseTest {
         vm.label(address(user), "User");
     }
 
-    function test_externalCall_reverts_if_not_successful() public {
+    function test_externalTryCall_reverts_if_not_successful() public {
         // Configure mock to fail
         mockContract.setShouldFail(true);
         mockContract.reset();
@@ -61,7 +61,7 @@ contract ExtTryCatch is BaseTest {
         assertFalse(mockContract.catchCalled());
     }
 
-    function test_externalCall_catch_executes_if_not_successful() public {
+    function test_externalTryCall_catch_executes_if_not_successful() public {
         // Configure mock to fail
         mockContract.setShouldFail(true);
         mockContract.reset();
@@ -90,7 +90,7 @@ contract ExtTryCatch is BaseTest {
         assertTrue(mockContract.catchCalled());
     }
 
-    function test_externalCall_catch_does_not_execute_if_successful() public {
+    function test_externalTryCall_catch_does_not_execute_if_successful() public {
         // Configure mock to fail
         mockContract.setShouldFail(false);
         mockContract.reset();
