@@ -26,19 +26,23 @@ abstract contract ExternalCall is BaseUtils {
          * | Offset | Length (bytes) | Description          |
          * |--------|----------------|----------------------|
          * | 0      | 20             | target               |
-         * | 20     | 14             | nativeValue          |
-         * | 41     | 2              | calldataLength       |
-         * | 42     | calldataLength | calldata             |
+         * | 20     | 16             | nativeValue          |
+         * | 36     | 2              | calldataLength       |
+         * | 38     | calldataLength | calldata             |
          */
         assembly {
             let target := shr(96, calldataload(currentOffset))
             currentOffset := add(20, currentOffset)
-            // get msg.value for call
-            let callValue := calldataload(currentOffset)
-            let dataLength := and(UINT16_MASK, shr(128, callValue))
-            callValue := shr(144, callValue) // shr will already mask correctly
 
-            if iszero(callValue) { callValue := selfbalance() }
+            let callValue := shr(128, calldataload(currentOffset))
+            currentOffset := add(16, currentOffset)
+
+            let dataLength := shr(240, calldataload(currentOffset))
+            currentOffset := add(2, currentOffset)
+
+            switch iszero(and(NATIVE_FLAG, callValue))
+            case 1 { callValue := and(callValue, UINT112_MASK) }
+            case 0 { callValue := selfbalance() }
 
             // free memo ptr for populating the tx
             let ptr := mload(0x40)

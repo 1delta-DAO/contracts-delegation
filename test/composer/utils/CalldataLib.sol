@@ -18,7 +18,9 @@ import {DexPayConfig, SweepType, DodoSelector, WrapOperation} from "contracts/1d
  */
 library CalldataLib {
     function encodeExternalCall(address target, uint256 value, bytes memory data) internal pure returns (bytes memory) {
-        return abi.encodePacked(uint8(ComposerCommands.EXT_CALL), target, uint112(value), uint16(data.length), data);
+        return abi.encodePacked(
+            uint8(ComposerCommands.EXT_CALL), target, generateAmountBitmap(uint128(value), false, false, true), uint16(data.length), data
+        );
     }
     // StargateV2 bridging
 
