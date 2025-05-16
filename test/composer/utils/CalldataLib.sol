@@ -36,7 +36,7 @@ library CalldataLib {
         returns (bytes memory)
     {
         return abi.encodePacked(
-            uint8(ComposerCommands.EXT_Try_CALL),
+            uint8(ComposerCommands.EXT_TRY_CALL),
             target,
             generateAmountBitmap(uint128(value), false, false, useSelfBalance),
             uint16(data.length),

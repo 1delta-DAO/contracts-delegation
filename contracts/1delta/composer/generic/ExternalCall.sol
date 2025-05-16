@@ -7,7 +7,7 @@ import {BaseUtils} from "contracts/1delta/composer/generic/BaseUtils.sol";
 // solhint-disable max-line-length
 
 /**
- * @notice External call on call forwarder which can safely execute any calls
+ * @notice External call on call forwarder which can safely execute any calls for a specific selector
  * without comprimising this contract
  */
 abstract contract ExternalCall is BaseUtils {
@@ -40,9 +40,11 @@ abstract contract ExternalCall is BaseUtils {
             let dataLength := shr(240, calldataload(currentOffset))
             currentOffset := add(2, currentOffset)
 
+            // this is a slightly different behavior as, unlike for ERC20, the
+            // 0-value is a commonly used one, as such, a flag is used for this
             switch and(NATIVE_FLAG, callValue)
-            case 0 { callValue := and(callValue, UINT112_MASK) }
-            case 1 { callValue := selfbalance() }
+            case 0 { callValue := and(callValue, UINT120_MASK) }
+            default { callValue := selfbalance() }
 
             // free memo ptr for populating the tx
             let ptr := mload(0x40)

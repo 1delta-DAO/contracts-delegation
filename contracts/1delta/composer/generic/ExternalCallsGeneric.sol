@@ -7,7 +7,7 @@ import {BaseUtils} from "contracts/1delta/composer/generic/BaseUtils.sol";
 // solhint-disable max-line-length
 
 /**
- * @notice External call on any target - prevents `transferFrom` selector
+ * @notice External call on any target - prevents `transferFrom` selector & call on Permit2
  */
 abstract contract ExternalCallsGeneric is BaseUtils {
     /// @dev mask for selector in calldata
@@ -44,8 +44,8 @@ abstract contract ExternalCallsGeneric is BaseUtils {
             currentOffset := add(2, currentOffset)
 
             switch and(NATIVE_FLAG, callValue)
-            case 0 { callValue := and(callValue, UINT112_MASK) }
-            case 1 { callValue := selfbalance() }
+            case 0 { callValue := and(callValue, UINT120_MASK) }
+            default { callValue := selfbalance() }
 
             // free memo ptr for populating the tx
             let ptr := mload(0x40)
@@ -88,7 +88,7 @@ abstract contract ExternalCallsGeneric is BaseUtils {
          * | 20     | 16             | nativeValue          |
          * | 36     | 2              | calldataLength:  cl  |
          * | 38     | cl             | calldata             |
-         * | 38+cl  | 1              | catchHandling        | <- 0: revert, 1:
+         * | 38+cl  | 1              | catchHandling        | <- 0: revert; 1: exit in catch if revert; else continue after catch
          * | 39+cl  | 2              | catchDataLength: dl  |
          * | 41+cl  | dl             | catchData            |
          */
@@ -113,8 +113,8 @@ abstract contract ExternalCallsGeneric is BaseUtils {
             currentOffset := add(2, currentOffset)
 
             switch and(NATIVE_FLAG, callValue)
-            case 0 { callValue := and(callValue, UINT112_MASK) }
-            case 1 { callValue := selfbalance() }
+            case 0 { callValue := and(callValue, UINT120_MASK) }
+            default { callValue := selfbalance() }
 
             // free memo ptr for populating the tx
             let ptr := mload(0x40)
