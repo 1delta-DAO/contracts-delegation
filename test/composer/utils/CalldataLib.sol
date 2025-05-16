@@ -22,6 +22,30 @@ library CalldataLib {
             uint8(ComposerCommands.EXT_CALL), target, generateAmountBitmap(uint128(value), false, false, useSelfBalance), uint16(data.length), data
         );
     }
+
+    function encodeTryExternalCall(
+        address target,
+        uint256 value,
+        bool useSelfBalance,
+        bool revertOnFailure,
+        bytes memory data,
+        bytes memory catchData
+    )
+        internal
+        pure
+        returns (bytes memory)
+    {
+        return abi.encodePacked(
+            uint8(ComposerCommands.EXT_Try_CALL),
+            target,
+            generateAmountBitmap(uint128(value), false, false, useSelfBalance),
+            uint16(data.length),
+            data,
+            uint8(revertOnFailure ? 0 : 1),
+            uint16(catchData.length),
+            catchData
+        );
+    }
     // StargateV2 bridging
 
     function encodeStargateV2Bridge(
