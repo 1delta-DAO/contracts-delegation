@@ -50,9 +50,6 @@ abstract contract ExternalCallsGeneric is BaseUtils {
             // free memo ptr for populating the tx
             let ptr := mload(0x40)
 
-            // increment offset to calldata start
-            currentOffset := add(36, currentOffset)
-
             // extract the selector from the calldata
             // and check if it is `transferFrom`
             if eq(and(SELECTOR_MASK, calldataload(currentOffset)), ERC20_TRANSFER_FROM) {
@@ -122,9 +119,6 @@ abstract contract ExternalCallsGeneric is BaseUtils {
             // free memo ptr for populating the tx
             let ptr := mload(0x40)
 
-            // increment offset to calldata start
-            currentOffset := add(16, currentOffset)
-
             // extract the selector from the calldata
             // and check if it is `transferFrom`
             if eq(and(SELECTOR_MASK, calldataload(currentOffset)), ERC20_TRANSFER_FROM) {
@@ -153,14 +147,12 @@ abstract contract ExternalCallsGeneric is BaseUtils {
             // top byte of next slice
             catchHandling := shr(248, nexstSlice)
             // case: 0 revert if not successful
-            if iszero(catchHandling) {
-                if iszero(success) {
-                    returndatacopy(0, 0, returndatasize())
-                    revert(0, returndatasize())
-                }
+            if and(iszero(catchHandling), iszero(success)) {
+                returndatacopy(0, 0, returndatasize())
+                revert(0, returndatasize())
             }
 
-            catchCalldataLength := and(UINT16_MASK, shr(236, nexstSlice))
+            catchCalldataLength := and(UINT16_MASK, shr(232, nexstSlice))
             currentOffset := add(currentOffset, 3)
         }
 
