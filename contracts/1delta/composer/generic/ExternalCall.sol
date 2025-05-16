@@ -47,9 +47,6 @@ abstract contract ExternalCall is BaseUtils {
             // free memo ptr for populating the tx
             let ptr := mload(0x40)
 
-            // increment offset to calldata start
-            currentOffset := add(16, currentOffset)
-
             mstore(ptr, DELTA_FORWARD_COMPOSE)
             mstore(add(ptr, 0x4), 0x20) // offset
             mstore(add(ptr, 0x24), dataLength) // length
