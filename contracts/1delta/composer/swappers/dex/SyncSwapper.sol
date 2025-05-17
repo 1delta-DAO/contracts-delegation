@@ -19,7 +19,7 @@ abstract contract SyncSwapper is ERC20Selectors, Masks {
      * | Offset | Length (bytes) | Description          |
      * |--------|----------------|----------------------|
      * | 0      | 20             | pool                 |
-     * | 20     | 2              | pay flag             | <- 0: caller pays; 1: contract pays; greater: pre-funded
+     * | 20     | 1              | pay flag             | <- 0: caller pays; 1: contract pays; greater: pre-funded
      */
     function _swapSyncExactIn(
         uint256 fromAmount,
@@ -112,7 +112,7 @@ abstract contract SyncSwapper is ERC20Selectors, Masks {
                 revert(0, returndatasize())
             }
             buyAmount := mload(add(ptr, 0x20))
-            currentOffset := add(currentOffset, 22)
+            currentOffset := add(currentOffset, 21)
         }
         return (buyAmount, currentOffset);
     }

@@ -10,7 +10,7 @@ import {Masks} from "../../../shared/masks/Masks.sol";
  */
 abstract contract BalancerV2Quoter is Masks {
     /**
-     * Call queryBatchSwap on the Balancer V2 vault.
+     *  Call queryBatchSwap on the Balancer V2 vault.
      *  Should be avoided if possible as it executes (but reverts) state changes in the balancer vault
      *  Executes `call` and therefore is non-view
      *  Will allow to save a refund transfer since we calculate the exact amount
@@ -47,8 +47,8 @@ abstract contract BalancerV2Quoter is Masks {
             mstore(add(ptr, 0xE4), 1)
             mstore(add(ptr, 0x104), 0x20) // SingleSwap struct
             mstore(add(ptr, 0x124), calldataload(currentOffset)) // poolId
-            mstore(add(ptr, 0x144), 0) // userDataLength
-            mstore(add(ptr, 0x164), 0) // swapKind = GIVEN_IN
+            mstore(add(ptr, 0x144), 1) // assetInIndex
+            mstore(add(ptr, 0x164), 0) // assetOutIndex
             mstore(add(ptr, 0x184), amountIn) // amount
             mstore(add(ptr, 0x1A4), 0xa0)
             mstore(add(ptr, 0x1C4), 0)
@@ -64,7 +64,7 @@ abstract contract BalancerV2Quoter is Masks {
                     ptr,
                     0x244,
                     ptr,
-                    0x60 // return is always array of two, we want the first value
+                    0x80 // return is always array of two, we want the first value
                 )
             ) {
                 returndatacopy(0, 0, returndatasize())

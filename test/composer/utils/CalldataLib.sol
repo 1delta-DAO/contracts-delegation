@@ -416,7 +416,7 @@ library CalldataLib {
             uint8(DexTypeMappings.BALANCER_V2_ID),
             poolId,
             balancerVault,
-            uint16(uint256(cfg)) // cll length <- user pays
+            uint8(uint256(cfg)) // cll length <- user pays
         );
     }
 
@@ -462,7 +462,7 @@ library CalldataLib {
             receiver,
             uint8(DexTypeMappings.SYNC_SWAP_ID),
             pool,
-            uint16(uint256(cfg)) // cll length <- user pays
+            uint8(uint256(cfg)) // cll length <- user pays
         );
     }
 
