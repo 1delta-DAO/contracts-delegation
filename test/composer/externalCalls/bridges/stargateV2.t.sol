@@ -99,7 +99,7 @@ contract StargateV2Test is BaseTest {
 
         bytes memory composerCalldata = abi.encodePacked(
             CalldataLib.encodeSweep(address(0), address(callForwarder), 0, SweepType.VALIDATE),
-            CalldataLib.encodeExternalCall(address(callForwarder), 0, forwarderCalldata)
+            CalldataLib.encodeExternalCall(address(callForwarder), 0, false, forwarderCalldata)
         );
 
         vm.startPrank(user);
@@ -158,7 +158,7 @@ contract StargateV2Test is BaseTest {
 
         totalCalldata = abi.encodePacked(
             CalldataLib.encodeTransferIn(USDC, address(callForwarder), BRIDGE_AMOUNT),
-            CalldataLib.encodeExternalCall(address(callForwarder), 0, totalCalldata)
+            CalldataLib.encodeExternalCall(address(callForwarder), 0, false, totalCalldata)
         );
 
         vm.startPrank(user);
@@ -215,7 +215,7 @@ contract StargateV2Test is BaseTest {
 
         totalCalldata = abi.encodePacked(
             CalldataLib.encodeTransferIn(USDC, address(callForwarder), BRIDGE_AMOUNT),
-            CalldataLib.encodeExternalCall(address(callForwarder), 0, totalCalldata)
+            CalldataLib.encodeExternalCall(address(callForwarder), 0, false, totalCalldata)
         );
 
         vm.startPrank(user);
@@ -278,7 +278,7 @@ contract StargateV2Test is BaseTest {
 
         totalCalldata = abi.encodePacked(
             CalldataLib.encodeTransferIn(USDC, address(callForwarder), BRIDGE_AMOUNT),
-            CalldataLib.encodeExternalCall(address(callForwarder), 0, totalCalldata)
+            CalldataLib.encodeExternalCall(address(callForwarder), 0, false, totalCalldata)
         );
 
         vm.startPrank(user);
@@ -354,7 +354,7 @@ contract StargateV2Test is BaseTest {
 
         totalCalldata = abi.encodePacked(
             CalldataLib.encodeTransferIn(USDC, address(callForwarder), BRIDGE_AMOUNT),
-            CalldataLib.encodeExternalCall(address(callForwarder), 0, totalCalldata)
+            CalldataLib.encodeExternalCall(address(callForwarder), 0, false, totalCalldata)
         );
 
         vm.startPrank(user);
@@ -411,7 +411,7 @@ contract StargateV2Test is BaseTest {
 
         totalCalldata = abi.encodePacked(
             CalldataLib.encodeTransferIn(USDC, address(callForwarder), BRIDGE_AMOUNT),
-            CalldataLib.encodeExternalCall(address(callForwarder), 0, totalCalldata)
+            CalldataLib.encodeExternalCall(address(callForwarder), 0, false, totalCalldata)
         );
 
         vm.startPrank(user);
@@ -463,7 +463,7 @@ contract StargateV2Test is BaseTest {
 
         bytes memory composerCalldata = abi.encodePacked(
             CalldataLib.encodeTransferIn(USDC, address(callForwarder), BRIDGE_AMOUNT),
-            CalldataLib.encodeExternalCall(address(callForwarder), 0, forwarderCalldata)
+            CalldataLib.encodeExternalCall(address(callForwarder), 0, false, forwarderCalldata)
         );
 
         vm.startPrank(user);

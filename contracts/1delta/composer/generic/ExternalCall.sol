@@ -7,7 +7,7 @@ import {BaseUtils} from "contracts/1delta/composer/generic/BaseUtils.sol";
 // solhint-disable max-line-length
 
 /**
- * @notice External call on call forwarder which can safely execute any calls
+ * @notice External call on call forwarder which can safely execute any calls for a specific selector
  * without comprimising this contract
  */
 abstract contract ExternalCall is BaseUtils {
@@ -26,30 +26,28 @@ abstract contract ExternalCall is BaseUtils {
          * | Offset | Length (bytes) | Description          |
          * |--------|----------------|----------------------|
          * | 0      | 20             | target               |
-         * | 20     | 14             | nativeValue          |
-         * | 41     | 2              | calldataLength       |
-         * | 42     | calldataLength | calldata             |
+         * | 20     | 16             | nativeValue          |
+         * | 36     | 2              | calldataLength       |
+         * | 38     | calldataLength | calldata             |
          */
         assembly {
             let target := shr(96, calldataload(currentOffset))
             currentOffset := add(20, currentOffset)
-            // get msg.value for call
-            let callValue := calldataload(currentOffset)
-            let dataLength := and(UINT16_MASK, shr(128, callValue))
-            callValue := shr(144, callValue) // shr will already mask correctly
 
-            if iszero(callValue) { callValue := selfbalance() }
+            let callValue := shr(128, calldataload(currentOffset))
+            currentOffset := add(16, currentOffset)
+
+            let dataLength := shr(240, calldataload(currentOffset))
+            currentOffset := add(2, currentOffset)
+
+            // this is a slightly different behavior as, unlike for ERC20, the
+            // 0-value is a commonly used one, as such, a flag is used for this
+            switch and(NATIVE_FLAG, callValue)
+            case 0 { callValue := and(callValue, UINT120_MASK) }
+            default { callValue := selfbalance() }
 
             // free memo ptr for populating the tx
             let ptr := mload(0x40)
-
-            ////////////////////////////////////////////////////
-            // If the token is zero, we assume that it is a native
-            // transfer / swap and the approval check is skipped
-            ////////////////////////////////////////////////////
-
-            // increment offset to calldata start
-            currentOffset := add(16, currentOffset)
 
             mstore(ptr, DELTA_FORWARD_COMPOSE)
             mstore(add(ptr, 0x4), 0x20) // offset

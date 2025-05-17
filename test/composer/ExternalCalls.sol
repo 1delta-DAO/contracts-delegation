@@ -7,9 +7,9 @@ import {IERC20All} from "../shared/interfaces/IERC20All.sol";
 import {BaseTest} from "../shared/BaseTest.sol";
 import {Chains, Tokens, Lenders} from "../data/LenderRegistry.sol";
 import "../../contracts/1delta/test/TrivialMockRouter.sol";
-import "./utils/CalldataLib.sol";
 import {SweepType} from "contracts/1delta/composer/enums/MiscEnums.sol";
 import {ComposerPlugin, IComposerLike} from "plugins/ComposerPlugin.sol";
+import {CalldataLib} from "./utils/CalldataLib.sol";
 
 // solhint-disable max-line-length
 
@@ -61,13 +61,7 @@ contract ExternalCallsTest is BaseTest {
             SweepType.AMOUNT
         );
 
-        data = abi.encodePacked(
-            uint8(ComposerCommands.EXT_CALL),
-            address(cf),
-            uint112(amount),
-            uint16(data.length),
-            data //
-        );
+        data = CalldataLib.encodeExternalCall(address(cf), amount, false, data);
     }
 
     function test_light_ext_call() external {

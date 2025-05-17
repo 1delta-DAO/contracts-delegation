@@ -35,6 +35,18 @@ contract CallForwarder is Transfers, ExternalCallsGeneric, BridgeForwarder {
             callerAddress := caller()
         }
 
+        _deltaComposeInternal(callerAddress, currentOffset, maxIndex);
+    }
+
+    function _deltaComposeInternal(
+        address callerAddress,
+        uint256 currentOffset,
+        uint256 calldataLength //
+    )
+        internal
+        virtual
+        override(ExternalCallsGeneric)
+    {
         ////////////////////////////////////////////////////
         // Same as composer
         ////////////////////////////////////////////////////
@@ -48,6 +60,8 @@ contract CallForwarder is Transfers, ExternalCallsGeneric, BridgeForwarder {
             }
             if (operation == ComposerCommands.EXT_CALL) {
                 currentOffset = _callExternal(currentOffset);
+            } else if (operation == ComposerCommands.EXT_TRY_CALL) {
+                currentOffset = _tryCallExternal(currentOffset, callerAddress);
             } else if (operation == ComposerCommands.TRANSFERS) {
                 currentOffset = _transfers(currentOffset, callerAddress);
             } else if (operation == ComposerCommands.BRIDGING) {
@@ -56,7 +70,7 @@ contract CallForwarder is Transfers, ExternalCallsGeneric, BridgeForwarder {
                 _invalidOperation();
             }
             // break criteria - we shifted to the end of the calldata
-            if (currentOffset >= maxIndex) break;
+            if (currentOffset >= calldataLength) break;
         }
     }
 }
