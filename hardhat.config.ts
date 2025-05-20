@@ -506,6 +506,16 @@ const config: HardhatUserConfig = {
           evmVersion: 'cancun',
         },
       },
+      "contracts/1delta/composer/chains/sonic/Composer.sol": {
+        version: '0.8.28',
+        settings: {
+          optimizer: {
+            enabled: true,
+            runs: 1_500,
+          },
+          evmVersion: 'cancun',
+        },
+      },
       "contracts/1delta/composer/chains/polygon/Composer.sol": {
         version: '0.8.28',
         settings: {
