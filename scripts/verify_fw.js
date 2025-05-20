@@ -2,7 +2,7 @@
 // npx hardhat verify --network arbitrum 0xfca11Db2b5DE60DF9a2C81233333a449983B4101 --contract contracts/1delta/composer/generic/CallForwarder.sol:CallForwarder 
 
 module.exports = [
-    "0x3375B2EF9C4D2c6434d39BBE5234c5101218500d", // impl
+    "0x816EBC5cb8A5651C902Cb06659907A93E574Db0B", // impl
     '0x999999833d965c275A2C102a4Ebf222ca938546f', // owner
     "0x", // data
 ];
@@ -22,3 +22,7 @@ module.exports = [
 
 // npx hardhat verify --network base 0xB7ea94340e65CC68d1274aE483dfBE593fD6f21e --contract contracts/external-protocols/openzeppelin/proxy/transparent/TransparentUpgradeableProxy.sol:TransparentUpgradeableProxy  --constructor-args scripts/verify_fw.js
 // npx hardhat verify --network base 0x3375B2EF9C4D2c6434d39BBE5234c5101218500d --contract contracts/1delta/composer/chains/base/Composer.sol:OneDeltaComposerBase
+
+
+// npx hardhat verify --network sonic 0x8E24CfC19c6C00c524353CB8816f5f1c2F33c201 --contract contracts/external-protocols/openzeppelin/proxy/transparent/TransparentUpgradeableProxy.sol:TransparentUpgradeableProxy  --constructor-args scripts/verify_fw.js
+// npx hardhat verify --network sonic 0x816EBC5cb8A5651C902Cb06659907A93E574Db0B --contract contracts/1delta/composer/chains/sonic/Composer.sol:OneDeltaComposerSonic

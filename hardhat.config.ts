@@ -511,7 +511,7 @@ const config: HardhatUserConfig = {
         settings: {
           optimizer: {
             enabled: true,
-            runs: 1_500,
+            runs: 5000,
           },
           evmVersion: 'cancun',
         },
