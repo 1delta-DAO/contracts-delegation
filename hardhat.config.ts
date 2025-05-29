@@ -495,6 +495,16 @@ const config: HardhatUserConfig = {
           evmVersion: 'paris',
         },
       },
+      "contracts/external-protocols/openzeppelin/proxy/transparent/ProxyAdmin.sol": {
+        version: '0.8.28',
+        settings: {
+          optimizer: {
+            enabled: true,
+            runs: 1_000_000,
+          },
+          evmVersion: 'paris',
+        },
+      },
       // composers
       "contracts/1delta/composer/chains/arbitrum-one/Composer.sol": {
         version: '0.8.28',

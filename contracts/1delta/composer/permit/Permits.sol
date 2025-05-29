@@ -29,7 +29,7 @@ abstract contract Permits is Masks, PermitUtils, DeltaErrors {
             // calldata length
             permitLength := and(UINT16_MASK, shr(72, firstSlice))
             // increment offset
-            permitOffset := add(currentOffset, 22)
+            permitOffset := add(currentOffset, 23)
             // increment offset
             currentOffset := add(permitOffset, permitLength)
         }

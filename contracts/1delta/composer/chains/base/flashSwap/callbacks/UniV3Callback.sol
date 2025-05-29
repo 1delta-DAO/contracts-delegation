@@ -44,10 +44,10 @@ abstract contract UniV3Callbacks is V3Callbacker, Masks, DeltaErrors {
     bytes32 private constant DACKIESWAP_V3_FF_FACTORY = 0xff4f205D69834f9B101b9289F7AFFAc9B77B3fF9b70000000000000000000000;
     bytes32 private constant DACKIESWAP_V3_CODE_HASH = 0xe34f199b19b2b4f47f68442619d555527d244f78a3297ea89325f843f87b8b54;
 
-    bytes32 private constant SWAP_BASED_FF_FACTORY = 0xffe4DFd4ad723B5DB11aa41D53603dB03B117eC6900000000000000000000000;
+    bytes32 private constant SWAP_BASED_FF_FACTORY = 0xffe4DFd4ad723B5DB11aa41D53603dB03B117eC690ffffffffffffffffffffff;
     bytes32 private constant SWAP_BASED_CODE_HASH = 0xbce37a54eab2fcd71913a0d40723e04238970e7fc1159bfd58ad5b79531697e7;
 
-    bytes32 private constant SYNTHSWAP_FF_FACTORY = 0xffBA97f8AEe67BaE3105fB4335760B103F24998a920000000000000000000000;
+    bytes32 private constant SYNTHSWAP_FF_FACTORY = 0xffBA97f8AEe67BaE3105fB4335760B103F24998a92ffffffffffffffffffffff;
     bytes32 private constant SYNTHSWAP_CODE_HASH = 0xbce37a54eab2fcd71913a0d40723e04238970e7fc1159bfd58ad5b79531697e7;
 
     bytes32 private constant IZUMI_FF_FACTORY = 0xff8c7d3063579BdB0b90997e18A770eaE32E1eBb080000000000000000000000;
@@ -173,9 +173,17 @@ abstract contract UniV3Callbacks is V3Callbacker, Masks, DeltaErrors {
                     mstore(p, tokenIn)
                     mstore(add(p, 32), tokenOut)
                 }
-                // this stores the fee
-                mstore(add(p, 64), and(UINT16_MASK, shr(72, tokenOutAndFee)))
-                mstore(p, keccak256(p, 96))
+
+                switch and(FF_ADDRESS_COMPLEMENT, ffFactoryAddress)
+                case 0 {
+                    // cases with fee
+                    mstore(add(p, 64), and(UINT16_MASK, shr(72, tokenOutAndFee)))
+                    mstore(p, keccak256(p, 96))
+                }
+                default {
+                    // cases without fee, e.g. algebra case
+                    mstore(p, keccak256(p, 64))
+                }
                 p := add(p, 32)
                 mstore(p, codeHash)
 

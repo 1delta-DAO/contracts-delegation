@@ -29,10 +29,10 @@ abstract contract UniV3Callbacks is V3Callbacker, Masks, DeltaErrors {
     bytes32 private constant NILE_CL_FF_FACTORY = 0xffAAA32926fcE6bE95ea2c51cB4Fcb60836D320C420000000000000000000000;
     bytes32 private constant NILE_CL_CODE_HASH = 0x1565b129f2d1790f12d45301b9b084335626f0c92410bc43130763b69971135d;
 
-    bytes32 private constant LYNEX_FF_FACTORY = 0xff9A89490F1056A7BC607EC53F93b921fE666A2C480000000000000000000000;
+    bytes32 private constant LYNEX_FF_FACTORY = 0xff9A89490F1056A7BC607EC53F93b921fE666A2C48ffffffffffffffffffffff;
     bytes32 private constant LYNEX_CODE_HASH = 0xc65e01e65f37c1ec2735556a24a9c10e4c33b2613ad486dd8209d465524bc3f4;
 
-    bytes32 private constant HORIZON_FF_FACTORY = 0xffA76990a229961280200165c4e08c96Ea67304C3e0000000000000000000000;
+    bytes32 private constant HORIZON_FF_FACTORY = 0xffA76990a229961280200165c4e08c96Ea67304C3effffffffffffffffffffff;
     bytes32 private constant HORIZON_CODE_HASH = 0xf96d2474815c32e070cd63233f06af5413efc5dcb430aee4ff18cc29007c562d;
 
     bytes32 private constant IZUMI_FF_FACTORY = 0xff45e5F26451CDB01B0fA1f8582E0aAD9A6F27C2180000000000000000000000;
@@ -140,9 +140,17 @@ abstract contract UniV3Callbacks is V3Callbacker, Masks, DeltaErrors {
                     mstore(p, tokenIn)
                     mstore(add(p, 32), tokenOut)
                 }
-                // this stores the fee
-                mstore(add(p, 64), and(UINT16_MASK, shr(72, tokenOutAndFee)))
-                mstore(p, keccak256(p, 96))
+
+                switch and(FF_ADDRESS_COMPLEMENT, ffFactoryAddress)
+                case 0 {
+                    // cases with fee
+                    mstore(add(p, 64), and(UINT16_MASK, shr(72, tokenOutAndFee)))
+                    mstore(p, keccak256(p, 96))
+                }
+                default {
+                    // cases without fee, e.g. algebra case
+                    mstore(p, keccak256(p, 64))
+                }
                 p := add(p, 32)
                 mstore(p, codeHash)
 

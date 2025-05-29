@@ -80,6 +80,10 @@ library CalldataLib {
         );
     }
 
+    function encodePermit(uint256 permitId, address target, bytes memory data) internal pure returns (bytes memory) {
+        return abi.encodePacked(uint8(ComposerCommands.PERMIT), uint8(permitId), target, uint16(data.length), data);
+    }
+
     function encodeStargateV2BridgePartial(
         uint256 amount,
         uint32 slippage,

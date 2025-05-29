@@ -26,10 +26,10 @@ abstract contract UniV3Callbacks is V3Callbacker, Masks, DeltaErrors {
     bytes32 private constant PANCAKESWAP_V3_FF_FACTORY = 0xff41ff9AA7e16B8B1a8a8dc4f0eFacd93D02d071c90000000000000000000000;
     bytes32 private constant PANCAKESWAP_V3_CODE_HASH = 0x6ce8eb472fa82df5469c6ab6d485f17c3ad13c8cd7af59b3d4a8026c5ce0f7e2;
 
-    bytes32 private constant THENA_FF_FACTORY = 0xffc89F69Baa3ff17a842AB2DE89E5Fc8a8e2cc73580000000000000000000000;
+    bytes32 private constant THENA_FF_FACTORY = 0xffc89F69Baa3ff17a842AB2DE89E5Fc8a8e2cc7358ffffffffffffffffffffff;
     bytes32 private constant THENA_CODE_HASH = 0xd61302e7691f3169f5ebeca3a0a4ab8f7f998c01e55ec944e62cfb1109fd2736;
 
-    bytes32 private constant LITX_FF_FACTORY = 0xff9cF85CaAC177Fb2296dcc68004e1C82A757F95ed0000000000000000000000;
+    bytes32 private constant LITX_FF_FACTORY = 0xff9cF85CaAC177Fb2296dcc68004e1C82A757F95edffffffffffffffffffffff;
     bytes32 private constant LITX_CODE_HASH = 0x6ec6c9c8091d160c0aa74b2b14ba9c1717e95093bd3ac085cee99a49aab294a4;
 
     bytes32 private constant SQUADSWAP_V3_FF_FACTORY = 0xff127AA917Ace4a3880fa5E193947F2190829144A40000000000000000000000;
@@ -157,9 +157,17 @@ abstract contract UniV3Callbacks is V3Callbacker, Masks, DeltaErrors {
                     mstore(p, tokenIn)
                     mstore(add(p, 32), tokenOut)
                 }
-                // this stores the fee
-                mstore(add(p, 64), and(UINT16_MASK, shr(72, tokenOutAndFee)))
-                mstore(p, keccak256(p, 96))
+
+                switch and(FF_ADDRESS_COMPLEMENT, ffFactoryAddress)
+                case 0 {
+                    // cases with fee
+                    mstore(add(p, 64), and(UINT16_MASK, shr(72, tokenOutAndFee)))
+                    mstore(p, keccak256(p, 96))
+                }
+                default {
+                    // cases without fee, e.g. algebra case
+                    mstore(p, keccak256(p, 64))
+                }
                 p := add(p, 32)
                 mstore(p, codeHash)
 
