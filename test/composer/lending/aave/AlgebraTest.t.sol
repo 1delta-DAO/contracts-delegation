@@ -17,6 +17,8 @@ contract AlgebraTest is BaseTest, Masks {
 
     address USDC;
     address WETH;
+    address WBTC;
+    address ARB;
 
     IComposerLike oneDV2;
 
@@ -26,6 +28,8 @@ contract AlgebraTest is BaseTest, Masks {
 
         USDC = chain.getTokenAddress(Tokens.USDC);
         WETH = chain.getTokenAddress(Tokens.WETH);
+        WBTC = chain.getTokenAddress(Tokens.WBTC);
+        ARB = chain.getTokenAddress(Tokens.ARB);
 
         oneDV2 = ComposerPlugin.getComposer(chainName);
     }
@@ -35,11 +39,75 @@ contract AlgebraTest is BaseTest, Masks {
         _testSwap(pool, USDC, WETH, user, 1000e6);
     }
 
+    function test_valid_camelot_pool_reverse() public {
+        address pool = _getPool(WETH, USDC);
+        _testSwap(pool, WETH, USDC, user, 1e18);
+    }
+
+    function test_valid_camelot_pool_different_tokens() public {
+        address pool = _getPool(WETH, ARB);
+        _testSwap(pool, WETH, ARB, user, 0.1e18);
+    }
+
+    function test_zero_amount_swap() public {
+        address pool = _getPool(USDC, WETH);
+
+        vm.startPrank(user);
+        vm.expectRevert();
+        oneDV2.deltaCompose(_createSwapData(pool, USDC, WETH, user, 0));
+        vm.stopPrank();
+    }
+
+    function test_insufficient_allowance() public {
+        address pool = _getPool(USDC, WETH);
+        uint256 amount = 1000e6;
+
+        deal(USDC, user, amount);
+        vm.startPrank(user);
+
+        vm.expectRevert();
+        oneDV2.deltaCompose(_createSwapData(pool, USDC, WETH, user, amount));
+        vm.stopPrank();
+    }
+
+    function test_insufficient_balance() public {
+        address pool = _getPool(USDC, WETH);
+        uint256 amount = 1000e6;
+
+        vm.startPrank(user);
+        IERC20All(USDC).approve(address(oneDV2), amount);
+
+        vm.expectRevert();
+        oneDV2.deltaCompose(_createSwapData(pool, USDC, WETH, user, amount));
+        vm.stopPrank();
+    }
+
+    function test_contract_pays_config() public {
+        address pool = _getPool(USDC, WETH);
+        uint256 amount = 1000e6;
+
+        deal(USDC, address(oneDV2), amount);
+
+        vm.startPrank(user);
+
+        bytes memory swapData = _createSwapDataWithConfig(pool, USDC, WETH, user, amount, DexPayConfig.CONTRACT_PAYS);
+
+        uint256 balanceBefore = IERC20All(WETH).balanceOf(user);
+        oneDV2.deltaCompose(swapData);
+        uint256 balanceAfter = IERC20All(WETH).balanceOf(user);
+
+        assertGt(balanceAfter, balanceBefore, "CONTRACT_PAYS swap should work");
+        vm.stopPrank();
+    }
+
     // utils
     function _getPool(address tokenIn, address tokenOut) internal returns (address) {
         (bool success, bytes memory data) = CAMELOT_FACTORY.call(abi.encodeWithSelector(bytes4(0xd9a641e1), tokenIn, tokenOut));
         if (success) {
-            return abi.decode(data, (address));
+            address pool = abi.decode(data, (address));
+            if (pool != address(0)) {
+                return pool;
+            }
         }
         revert("Failed to get pool");
     }
@@ -59,10 +127,25 @@ contract AlgebraTest is BaseTest, Masks {
         view
         returns (bytes memory)
     {
+        return _createSwapDataWithConfig(pool, tokenIn, tokenOut, receiver, amount, DexPayConfig.CALLER_PAYS);
+    }
+
+    function _createSwapDataWithConfig(
+        address pool,
+        address tokenIn,
+        address tokenOut,
+        address receiver,
+        uint256 amount,
+        DexPayConfig config
+    )
+        internal
+        view
+        returns (bytes memory)
+    {
         bytes memory swapCalldata = CalldataLib.swapHead(amount, 0, tokenIn);
         swapCalldata = CalldataLib.attachBranch(swapCalldata, 0, 0, new bytes(0));
 
-        return CalldataLib.encodeUniswapV3StyleSwap(swapCalldata, tokenOut, receiver, 3, pool, 3000, DexPayConfig.CALLER_PAYS, new bytes(0));
+        return CalldataLib.encodeUniswapV3StyleSwap(swapCalldata, tokenOut, receiver, 3, pool, 3000, config, new bytes(0));
     }
 
     function _testSwap(address pool, address tokenIn, address tokenOut, address receiver, uint256 amount) internal {
