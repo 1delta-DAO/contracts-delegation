@@ -11,9 +11,6 @@ import {Masks} from "../../shared/masks/Masks.sol";
  * @notice Lending base contract that wraps Cmpound V3 markets
  */
 abstract contract CompoundV3Lending is ERC20Selectors, Masks {
-    // BadLender()
-    bytes4 private constant BAD_LENDER = 0x603b7f3e;
-
     /*
      * | Offset | Length (bytes) | Description                     |
      * |--------|----------------|---------------------------------|

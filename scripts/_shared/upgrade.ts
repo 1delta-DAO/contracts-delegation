@@ -1,9 +1,9 @@
 
 import { ethers } from "hardhat";
 import {
-    TransparentUpgradeableProxy__factory,
+    ProxyAdmin__factory,
 } from "../../types";
-import { COMPOSER_LOGICS, COMPOSER_PROXIES } from "./addresses";
+import { COMPOSER_LOGICS, COMPOSER_PROXIES, PROXY_ADMINS } from "./addresses";
 
 /**
  * Universal gen2 deployer
@@ -14,14 +14,30 @@ async function main() {
     const chainId = await operator.getChainId();
     console.log("operator", operator.address, "on", chainId)
 
-    const proxy = await new TransparentUpgradeableProxy__factory(operator).attach(
+    const proxy = await new ProxyAdmin__factory(operator).attach(
         // @ts-ignore
-        COMPOSER_PROXIES[chainId]
+        PROXY_ADMINS[chainId]
     )
 
-    await proxy.upgradeTo(
+    const owner = await proxy.owner()
+
+    console.log("owner", owner)
+
+    const gl = await proxy.estimateGas.upgradeAndCall(
         // @ts-ignore
-        COMPOSER_LOGICS[chainId]
+        COMPOSER_PROXIES[chainId],
+        // @ts-ignore
+        COMPOSER_LOGICS[chainId],
+        "0x"
+    )
+
+    await proxy.upgradeAndCall(
+        // @ts-ignore
+        COMPOSER_PROXIES[chainId],
+        // @ts-ignore
+        COMPOSER_LOGICS[chainId],
+        "0x",
+        { gasLimit: gl }
     )
 
     console.log("upgraded")

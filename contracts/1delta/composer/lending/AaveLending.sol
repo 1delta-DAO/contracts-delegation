@@ -11,9 +11,6 @@ import {Masks} from "../../shared/masks/Masks.sol";
  * @notice Lending base contract that wraps multiple Aave lender types (V2, V3, non-ir mode based).
  */
 abstract contract AaveLending is ERC20Selectors, Masks {
-    // BadLender()
-    bytes4 private constant BAD_LENDER = 0x603b7f3e;
-
     /*
      * | Offset | Length (bytes) | Description                     |
      * |--------|----------------|---------------------------------|
@@ -418,7 +415,7 @@ abstract contract AaveLending is ERC20Selectors, Masks {
 
             let ptr := mload(0x40)
 
-            // some Aaves dropped the IR mode, mode=0 is these ones
+            // some Aaves dropped the IR mode, mode=0 is using their selector
             switch mode
             case 0 {
                 // selector repay(address,uint256,address)
