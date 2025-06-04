@@ -267,10 +267,6 @@ abstract contract CompoundV3Lending is ERC20Selectors, Masks {
             case 0xffffffffffffffffffffffffffff { amount := MAX_UINT256 }
 
             let ptr := mload(0x40)
-
-            // skip pool (end of data)
-            currentOffset := add(currentOffset, 20)
-
             // selector supplyTo(address,address,uint256)
             mstore(ptr, 0x4232cd6300000000000000000000000000000000000000000000000000000000)
             mstore(add(ptr, 0x04), receiver)
