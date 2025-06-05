@@ -6,6 +6,7 @@ import {BaseTest} from "test/shared/BaseTest.sol";
 import {Chains, Tokens, Lenders} from "test/data/LenderRegistry.sol";
 import "test/composer/utils/CalldataLib.sol";
 import {ComposerPlugin, IComposerLike} from "plugins/ComposerPlugin.sol";
+import {SweepType} from "contracts/1delta/composer/enums/MiscEnums.sol";
 
 /**
  * We test all morpho blue operations
@@ -30,10 +31,13 @@ contract CompoundV3ComposerLightTest is BaseTest {
         _init(chainName, forkBlock, true);
         lender = Lenders.COMPOUND_V3_USDC;
         USDC = chain.getTokenAddress(Tokens.USDC);
+        vm.label(USDC, "USDC");
         COMPOUND_V3_USDC_COMET = chain.getLendingController(lender);
+        vm.label(COMPOUND_V3_USDC_COMET, "comet");
         WETH = chain.getTokenAddress(Tokens.WETH);
-
+        vm.label(WETH, "WETH");
         oneDV2 = ComposerPlugin.getComposer(chainName);
+        vm.label(address(oneDV2), "composer");
     }
 
     function test_light_lending_compoundV3_deposit() external {
@@ -118,7 +122,8 @@ contract CompoundV3ComposerLightTest is BaseTest {
         approveWithdrawalDelegation(user, token, address(oneDV2), lender);
 
         uint256 amountToWithdraw = 10.0e6;
-        bytes memory d = CalldataLib.encodeCompoundV3Withdraw(token, amountToWithdraw, user, comet, token == chain.getCometToBase(lender));
+        bool isBaseToken = token == chain.getCometToBase(lender);
+        bytes memory d = CalldataLib.encodeCompoundV3Withdraw(token, amountToWithdraw, user, comet, isBaseToken);
 
         // Check balances before withdrawal
         uint256 collateralBefore = chain.getCollateralBalance(user, token, lender);
@@ -180,6 +185,57 @@ contract CompoundV3ComposerLightTest is BaseTest {
         assertApproxEqAbs(debtBefore - debtAfter, amountToRepay, 1, "1");
         // Assert token balance decreased by repaid amount
         assertApproxEqAbs(tokenBefore - tokenAfter, amountToRepay, 1, "3");
+    }
+
+    function test_light_lending_compoundV3_full_compose() external {
+        uint256 collateralAmount = 1.0e18;
+        uint256 borrowAmount = 500.0e6;
+        uint256 repayAmount = 200.0e6;
+        uint256 withdrawAmount = 0.3e18;
+
+        deal(WETH, user, collateralAmount);
+        deal(USDC, user, repayAmount);
+
+        vm.startPrank(user);
+        // approve composer
+        IERC20All(WETH).approve(address(oneDV2), type(uint256).max);
+        IERC20All(USDC).approve(address(oneDV2), type(uint256).max);
+        IERC20All(COMPOUND_V3_USDC_COMET).allow(address(oneDV2), true);
+        // call composer
+        oneDV2.deltaCompose(_createComposedCalldata(collateralAmount, borrowAmount, repayAmount, withdrawAmount));
+        vm.stopPrank();
+    }
+
+    function _createComposedCalldata(
+        uint256 collateralAmount,
+        uint256 borrowAmount,
+        uint256 repayAmount,
+        uint256 withdrawAmount
+    )
+        internal
+        returns (bytes memory composedCalldata)
+    {
+        // approve comet
+        composedCalldata =
+            abi.encodePacked(CalldataLib.encodeApprove(WETH, COMPOUND_V3_USDC_COMET), CalldataLib.encodeApprove(USDC, COMPOUND_V3_USDC_COMET));
+        // transfer collateral to composer
+        composedCalldata = abi.encodePacked(composedCalldata, CalldataLib.encodeTransferIn(WETH, address(oneDV2), collateralAmount));
+        // deposit collateral
+        composedCalldata =
+            abi.encodePacked(composedCalldata, CalldataLib.encodeCompoundV3Deposit(WETH, collateralAmount, user, COMPOUND_V3_USDC_COMET));
+        // borrow
+        composedCalldata = abi.encodePacked(composedCalldata, CalldataLib.encodeCompoundV3Borrow(USDC, borrowAmount, user, COMPOUND_V3_USDC_COMET));
+        // transfer repay amount to composer
+        composedCalldata = abi.encodePacked(composedCalldata, CalldataLib.encodeTransferIn(USDC, address(oneDV2), repayAmount));
+        // repay
+        composedCalldata = abi.encodePacked(composedCalldata, CalldataLib.encodeCompoundV3Repay(USDC, repayAmount, user, COMPOUND_V3_USDC_COMET));
+        // withdraw to composer
+        composedCalldata = abi.encodePacked(
+            composedCalldata,
+            CalldataLib.encodeCompoundV3Withdraw(WETH, withdrawAmount, address(oneDV2), COMPOUND_V3_USDC_COMET, WETH == chain.getCometToBase(lender))
+        );
+        // sweep to receiver
+        composedCalldata = abi.encodePacked(composedCalldata, CalldataLib.encodeSweep(WETH, user, 0, SweepType.VALIDATE));
     }
 
     function depositToCompoundV3(address token, address userAddress, uint256 amount, address comet) internal {

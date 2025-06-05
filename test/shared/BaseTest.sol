@@ -37,6 +37,7 @@ contract BaseTest is Test {
         userPrivateKey = 0x1de17a;
         user = vm.addr(userPrivateKey);
         vm.deal(user, 100 ether);
+        vm.label(user, "user");
 
         // Create a fork
         string memory rpcUrl = chain.getRpcUrl();

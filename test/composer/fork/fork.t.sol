@@ -58,8 +58,15 @@ contract ForkTest is BaseTest {
         vm.label(chain.getTokenAddress(Tokens.OP), Tokens.OP);
         vm.label(chain.getTokenAddress(Tokens.WETH), Tokens.WETH);
         vm.label(chain.getTokenAddress(Tokens.USDC), Tokens.USDC);
+        vm.label(chain.getTokenAddress(Tokens.USDC_E), Tokens.USDC_E);
+
         vm.label(chain.getTokenAddress(Tokens.USDT), Tokens.USDT);
+        vm.label(chain.getTokenAddress(Tokens.WSTETH), Tokens.WSTETH);
+        vm.label(0x6131B5fae19EA4f9D964eAc0408E4408b66337b5, "KyberswapRouter");
+        vm.label(0xE36A30D249f7761327fd973001A32010b521b6Fd, "cWETHv3");
+
         vm.label(0x0000000000000000000000000000000000000000, "ZeroAddress");
+        vm.label(0xce95AfbB8EA029495c66020883F87aaE8864AF92, "Morpho");
     }
 
     function test_fork_raw() external {
