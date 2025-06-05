@@ -9,7 +9,7 @@ module.exports = [
 
 
 // npx hardhat verify --network optimism 0xCDef0A216fcEF809258aA4f341dB1A5aB296ea72 --contract contracts/external-protocols/openzeppelin/proxy/transparent/TransparentUpgradeableProxy.sol:TransparentUpgradeableProxy  --constructor-args scripts/verify_fw.js
-// npx hardhat verify --network optimism 0x86AA31d845eb7d46BBa200183b080F6049321dE0 --contract contracts/1delta/composer/chains/op/Composer.sol:OneDeltaComposerOp
+// npx hardhat verify --network optimism 0xFc107f469A92c0de7B3105B802584CD6c7D710C2 --contract contracts/1delta/composer/chains/op/Composer.sol:OneDeltaComposerOp
 
 
 // npx hardhat verify --network arbitrum 0x05f3f58716a88A52493Be45aA0871c55b3748f18 --contract contracts/external-protocols/openzeppelin/proxy/transparent/TransparentUpgradeableProxy.sol:TransparentUpgradeableProxy  --constructor-args scripts/verify_fw.js
