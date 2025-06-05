@@ -2,6 +2,7 @@
 
 pragma solidity 0.8.28;
 
+import {MorphoFlashLoans} from "../../../flashLoan/Morpho.sol";
 import {AaveV3FlashLoans} from "../../../flashLoan/AaveV3.sol";
 import {AaveV2FlashLoans} from "../../../flashLoan/AaveV2.sol";
 import {BalancerV2FlashLoans} from "./BalancerV2.sol";
@@ -15,6 +16,7 @@ import {DeltaErrors} from "../../../../shared/errors/Errors.sol";
  * @author 1delta Labs AG
  */
 contract UniversalFlashLoan is
+    MorphoFlashLoans,
     AaveV3FlashLoans,
     AaveV2FlashLoans,
     BalancerV2FlashLoans,
@@ -30,7 +32,9 @@ contract UniversalFlashLoan is
             currentOffset := add(currentOffset, 1)
         }
 
-        if (flashLoanType == FlashLoanIds.AAVE_V3) {
+        if (flashLoanType == FlashLoanIds.MORPHO) {
+            return morphoFlashLoan(currentOffset, callerAddress);
+        } else if (flashLoanType == FlashLoanIds.AAVE_V3) {
             return aaveV3FlashLoan(currentOffset, callerAddress);
         } else if (flashLoanType == FlashLoanIds.AAVE_V2) {
             return aaveV2FlashLoan(currentOffset, callerAddress);

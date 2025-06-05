@@ -23,6 +23,12 @@ abstract contract UniV3Callbacks is V3Callbacker, Masks, DeltaErrors {
     bytes32 private constant DTX_FF_FACTORY = 0xfffCA1AEf282A99390B62Ca8416a68F5747716260c0000000000000000000000;
     bytes32 private constant DTX_CODE_HASH = 0xe34f199b19b2b4f47f68442619d555527d244f78a3297ea89325f843f87b8b54;
 
+    bytes32 private constant UNAGI_V3_FF_FACTORY = 0xff78172691DD3B8ADa7aEbd9bFfB487FB11D735DB20000000000000000000000;
+    bytes32 private constant UNAGI_V3_CODE_HASH = 0x5ccd5621c1bb9e44ce98cef8b90d31eb2423dec3793b6239232cefae976936ea;
+
+    bytes32 private constant AXION_V3_FF_FACTORY = 0xff34a9F4a8F3A8d57Ec3B5ab823442572ae740C92f0000000000000000000000;
+    bytes32 private constant AXION_V3_CODE_HASH = 0xe34f199b19b2b4f47f68442619d555527d244f78a3297ea89325f843f87b8b54;
+
     bytes32 private constant SWAPSICLE_FF_FACTORY = 0xffb68b27a1c93A52d698EecA5a759E2E4469432C09ffffffffffffffffffffff;
     bytes32 private constant SWAPSICLE_CODE_HASH = 0xf96d2474815c32e070cd63233f06af5413efc5dcb430aee4ff18cc29007c562d;
 
@@ -60,7 +66,20 @@ abstract contract UniV3Callbacks is V3Callbacker, Masks, DeltaErrors {
                     ffFactoryAddress := DTX_FF_FACTORY
                     codeHash := DTX_CODE_HASH
                 }
+                case 20 {
+                    ffFactoryAddress := UNAGI_V3_FF_FACTORY
+                    codeHash := UNAGI_V3_CODE_HASH
+                }
                 default { revert(0, 0) }
+                let _amount1 := calldataload(36)
+                switch sgt(_amount1, 0)
+                case 1 { amountToPay := _amount1 }
+                default { amountToPay := calldataload(4) }
+            }
+            case 0x0102795e00000000000000000000000000000000000000000000000000000000 {
+                ffFactoryAddress := AXION_V3_FF_FACTORY
+                codeHash := AXION_V3_CODE_HASH
+
                 let _amount1 := calldataload(36)
                 switch sgt(_amount1, 0)
                 case 1 { amountToPay := _amount1 }
