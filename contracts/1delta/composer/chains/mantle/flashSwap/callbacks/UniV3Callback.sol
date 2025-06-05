@@ -29,6 +29,9 @@ abstract contract UniV3Callbacks is V3Callbacker, Masks, DeltaErrors {
     bytes32 private constant AGNI_FF_FACTORY = 0xffe9827B4EBeB9AE41FC57efDdDd79EDddC2EA4d030000000000000000000000;
     bytes32 private constant AGNI_CODE_HASH = 0x1bce652aaa6528355d7a339037433a20cd28410e3967635ba8d2ddb037440dbf;
 
+    bytes32 private constant FUSIONX_V3_FF_FACTORY = 0xff7DD105453D0AEf177743F5461d7472cC779e63f70000000000000000000000;
+    bytes32 private constant FUSIONX_V3_CODE_HASH = 0x1bce652aaa6528355d7a339037433a20cd28410e3967635ba8d2ddb037440dbf;
+
     bytes32 private constant BUTTER_FF_FACTORY = 0xffEECa0a86431A7B42ca2Ee5F479832c3D4a4c26440000000000000000000000;
     bytes32 private constant BUTTER_CODE_HASH = 0xc7d06444331e4f63b0764bb53c88788882395aa31961eed3c2768cc9568323ee;
 
@@ -37,9 +40,6 @@ abstract contract UniV3Callbacks is V3Callbacker, Masks, DeltaErrors {
 
     bytes32 private constant CLEOPATRA_FF_FACTORY = 0xffAAA32926fcE6bE95ea2c51cB4Fcb60836D320C420000000000000000000000;
     bytes32 private constant CLEOPATRA_CODE_HASH = 0x1565b129f2d1790f12d45301b9b084335626f0c92410bc43130763b69971135d;
-
-    bytes32 private constant FUSIONX_V3_FF_FACTORY = 0xff7DD105453D0AEf177743F5461d7472cC779e63f70000000000000000000000;
-    bytes32 private constant FUSIONX_V3_CODE_HASH = 0x1bce652aaa6528355d7a339037433a20cd28410e3967635ba8d2ddb037440dbf;
 
     bytes32 private constant IZUMI_FF_FACTORY = 0xff45e5F26451CDB01B0fA1f8582E0aAD9A6F27C2180000000000000000000000;
     bytes32 private constant IZUMI_CODE_HASH = 0xbe0bfe068cdd78cafa3ddd44e214cfa4e412c15d7148e932f8043fe883865e40;
@@ -88,6 +88,15 @@ abstract contract UniV3Callbacks is V3Callbacker, Masks, DeltaErrors {
                 case 1 { amountToPay := _amount1 }
                 default { amountToPay := calldataload(4) }
             }
+            case 0xae067e0f00000000000000000000000000000000000000000000000000000000 {
+                ffFactoryAddress := FUSIONX_V3_FF_FACTORY
+                codeHash := FUSIONX_V3_CODE_HASH
+
+                let _amount1 := calldataload(36)
+                switch sgt(_amount1, 0)
+                case 1 { amountToPay := _amount1 }
+                default { amountToPay := calldataload(4) }
+            }
             case 0xe5f6c0f800000000000000000000000000000000000000000000000000000000 {
                 ffFactoryAddress := BUTTER_FF_FACTORY
                 codeHash := BUTTER_CODE_HASH
@@ -109,15 +118,6 @@ abstract contract UniV3Callbacks is V3Callbacker, Masks, DeltaErrors {
             case 0x654b648700000000000000000000000000000000000000000000000000000000 {
                 ffFactoryAddress := CLEOPATRA_FF_FACTORY
                 codeHash := CLEOPATRA_CODE_HASH
-
-                let _amount1 := calldataload(36)
-                switch sgt(_amount1, 0)
-                case 1 { amountToPay := _amount1 }
-                default { amountToPay := calldataload(4) }
-            }
-            case 0xae067e0f00000000000000000000000000000000000000000000000000000000 {
-                ffFactoryAddress := FUSIONX_V3_FF_FACTORY
-                codeHash := FUSIONX_V3_CODE_HASH
 
                 let _amount1 := calldataload(36)
                 switch sgt(_amount1, 0)
