@@ -120,7 +120,8 @@ abstract contract BaseComposer is
                 }
             }
             // break criteria - we shifted to the end of the calldata
-            if (currentOffset >= maxIndex) break;
+            if (currentOffset == maxIndex) break;
+            if (currentOffset > maxIndex) revert InvalidCalldata();
         }
     }
 
