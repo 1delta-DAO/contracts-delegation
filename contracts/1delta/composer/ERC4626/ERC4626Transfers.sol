@@ -114,7 +114,6 @@ abstract contract ERC4626Transfers is ERC20Selectors, Masks, DeltaErrors {
                 returndatacopy(0, 0, returndatasize())
                 revert(0x0, returndatasize())
             }
-            currentOffset := add(currentOffset, 20)
         }
         return currentOffset;
     }

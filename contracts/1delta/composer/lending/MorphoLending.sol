@@ -138,19 +138,19 @@ abstract contract MorphoLending is ERC20Selectors, Masks {
             // market data
             mstore(add(ptr, 4), token) // MarketParams.loanToken
             currentOffset := add(currentOffset, 20)
+
             mstore(add(ptr, 36), shr(96, calldataload(currentOffset))) // MarketParams.collateralToken
             currentOffset := add(currentOffset, 20)
+
             mstore(add(ptr, 68), shr(96, calldataload(currentOffset))) // MarketParams.oracle
             currentOffset := add(currentOffset, 20)
+
             mstore(add(ptr, 100), shr(96, calldataload(currentOffset))) // MarketParams.irm
-
             currentOffset := add(currentOffset, 20)
+
             let lltvAndAmount := calldataload(currentOffset)
-
             mstore(add(ptr, 132), shr(128, lltvAndAmount)) // MarketParams.lltv
-
             let amountToDeposit := and(UINT112_MASK, lltvAndAmount)
-
             // increment for the amounts
             currentOffset := add(currentOffset, 32)
 
@@ -198,7 +198,9 @@ abstract contract MorphoLending is ERC20Selectors, Masks {
             currentOffset := add(currentOffset, 20)
 
             // get calldatalength
-            let calldataLength := and(UINT16_MASK, shr(240, calldataload(currentOffset)))
+            let inputCalldataLength := and(UINT16_MASK, shr(240, calldataload(currentOffset)))
+            let calldataLength := inputCalldataLength
+
             currentOffset := add(currentOffset, 2)
 
             // leftover params
@@ -208,8 +210,8 @@ abstract contract MorphoLending is ERC20Selectors, Masks {
             if xor(0, calldataLength) {
                 calldataLength := add(calldataLength, 20)
                 mstore(add(ptr, 324), shl(96, callerAddress)) // caller
-                calldatacopy(add(ptr, 344), currentOffset, calldataLength) // calldata
-                currentOffset := add(currentOffset, calldataLength)
+                calldatacopy(add(ptr, 344), currentOffset, inputCalldataLength) // calldata
+                currentOffset := add(currentOffset, inputCalldataLength)
             }
 
             mstore(add(ptr, 292), calldataLength) // calldatalength
@@ -310,15 +312,16 @@ abstract contract MorphoLending is ERC20Selectors, Masks {
             currentOffset := add(currentOffset, 20)
 
             // get calldatalength
-            let calldataLength := and(UINT16_MASK, shr(240, calldataload(currentOffset)))
+            let inputCalldataLength := and(UINT16_MASK, shr(240, calldataload(currentOffset)))
+            let calldataLength := inputCalldataLength
             currentOffset := add(currentOffset, 2)
 
             // add calldata if needed
             if xor(0, calldataLength) {
                 calldataLength := add(calldataLength, 20)
                 mstore(add(ptr, 292), shl(96, callerAddress)) // caller
-                calldatacopy(add(ptr, 312), currentOffset, calldataLength) // calldata
-                currentOffset := add(currentOffset, calldataLength)
+                calldatacopy(add(ptr, 312), currentOffset, inputCalldataLength) // calldata
+                currentOffset := add(currentOffset, inputCalldataLength)
             }
 
             mstore(add(ptr, 260), calldataLength) // calldatalength
@@ -642,15 +645,16 @@ abstract contract MorphoLending is ERC20Selectors, Masks {
             mstore(add(ptr, 260), 0x120) // offset
 
             // get calldatalength
-            let calldataLength := and(UINT16_MASK, shr(240, calldataload(currentOffset)))
+            let inputCalldataLength := and(UINT16_MASK, shr(240, calldataload(currentOffset)))
+            let calldataLength := inputCalldataLength
             currentOffset := add(currentOffset, 2)
 
             // add calldata if needed
             if xor(0, calldataLength) {
                 calldataLength := add(calldataLength, 20)
                 mstore(add(ptr, 324), shl(96, callerAddress)) // caller
-                calldatacopy(add(ptr, 344), currentOffset, calldataLength) // calldata
-                currentOffset := add(currentOffset, calldataLength)
+                calldatacopy(add(ptr, 344), currentOffset, inputCalldataLength) // calldata
+                currentOffset := add(currentOffset, inputCalldataLength)
             }
 
             // repay(...)
