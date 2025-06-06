@@ -22,6 +22,7 @@ abstract contract DeltaErrors {
     error InvalidOperation();
     error InvalidCaller();
     error InvalidInitiator();
+    error InvalidCalldata();
     error Target();
     error InvalidDexId();
 
@@ -43,6 +44,8 @@ abstract contract DeltaErrors {
     bytes4 internal constant INVALID_CALLER = 0x48f5c3ed;
     // InvalidInitiator()
     bytes4 internal constant INVALID_INITIATOR = 0xbfda1f28;
+    // InvalidCalldata()
+    bytes4 internal constant INVALID_CALLDATA = 0x8129bbcd;
     // Target()
     bytes4 internal constant INVALID_TARGET = 0x4fe6f55f;
     // InvalidDexId()

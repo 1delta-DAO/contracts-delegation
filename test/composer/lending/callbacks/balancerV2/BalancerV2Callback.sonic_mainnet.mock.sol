@@ -10,6 +10,7 @@ import {CalldataLib} from "test/composer/utils/CalldataLib.sol";
 import {BaseTest} from "test/shared/BaseTest.sol";
 import {Slots} from "contracts/1delta/composer/slots/Slots.sol";
 import {BalancerV2MockVault, IVault} from "test/mocks/BalancerV2MockVault.sol";
+import {SweepType} from "contracts/1delta/composer/enums/MiscEnums.sol";
 
 contract BalancerV2FlashLoanCallbackTest is BaseTest, DeltaErrors, Slots {
     IComposerLike oneDV2;
@@ -47,7 +48,7 @@ contract BalancerV2FlashLoanCallbackTest is BaseTest, DeltaErrors, Slots {
         // mock implementation
         replaceLendingPoolWithMock(BALANCER_V2);
 
-        bytes memory params = CalldataLib.encodeBalancerV2FlashLoan(WETH, 1e6, uint8(0), "");
+        bytes memory params = CalldataLib.encodeBalancerV2FlashLoan(WETH, 1e6, uint8(0), sweepCall());
 
         // check gateway flag is 0
         assertEq(uint256(vm.load(address(oneDV2), bytes32(uint256(FLASH_LOAN_GATEWAY_SLOT)))), 0);
@@ -80,7 +81,7 @@ contract BalancerV2FlashLoanCallbackTest is BaseTest, DeltaErrors, Slots {
             if (poolId == validPools[i].poolId) return;
         }
 
-        bytes memory params = CalldataLib.encodeBalancerV2FlashLoan(WETH, 1e6, uint8(poolId), "");
+        bytes memory params = CalldataLib.encodeBalancerV2FlashLoan(WETH, 1e6, uint8(poolId), sweepCall());
 
         vm.prank(user);
         vm.expectRevert();
@@ -88,6 +89,10 @@ contract BalancerV2FlashLoanCallbackTest is BaseTest, DeltaErrors, Slots {
     }
 
     // Helper Functions
+    function sweepCall() internal returns (bytes memory) {
+        return CalldataLib.encodeSweep(WETH, user, 0, SweepType.VALIDATE);
+    }
+
     function getAddressFromRegistry() internal {
         // Get token addresses
         WETH = chain.getTokenAddress(Tokens.WETH);

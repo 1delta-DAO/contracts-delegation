@@ -119,9 +119,11 @@ abstract contract BaseComposer is
                     _invalidOperation();
                 }
             }
-            // break criteria - we shifted to the end of the calldata
+            // break if we skipped over the calldata
             if (currentOffset >= maxIndex) break;
         }
+        // revert if some excess is left
+        if (currentOffset > maxIndex) revert InvalidCalldata();
     }
 
     function _universalFlashLoan(uint256 currentOffset, address callerAddress) internal virtual returns (uint256) {}

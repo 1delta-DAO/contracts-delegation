@@ -10,6 +10,7 @@ import {CalldataLib} from "test/composer/utils/CalldataLib.sol";
 import {BaseTest} from "test/shared/BaseTest.sol";
 import {Slots} from "contracts/1delta/composer/slots/Slots.sol";
 import {BalancerV2MockVault, IVault} from "test/mocks/BalancerV2MockVault.sol";
+import {SweepType} from "contracts/1delta/composer/enums/MiscEnums.sol";
 
 contract BalancerV2FlashLoanCallbackTest is BaseTest, DeltaErrors, Slots {
     IComposerLike oneDV2;
@@ -65,7 +66,7 @@ contract BalancerV2FlashLoanCallbackTest is BaseTest, DeltaErrors, Slots {
             if (poolId == validPools[i].poolId) return;
         }
 
-        bytes memory params = CalldataLib.encodeBalancerV2FlashLoan(USDC, 1e6, uint8(poolId), "");
+        bytes memory params = CalldataLib.encodeBalancerV2FlashLoan(USDC, 1e6, uint8(poolId), sweepCall());
 
         vm.prank(user);
         vm.expectRevert();
@@ -73,6 +74,10 @@ contract BalancerV2FlashLoanCallbackTest is BaseTest, DeltaErrors, Slots {
     }
 
     // Helper Functions
+    function sweepCall() internal returns (bytes memory) {
+        return CalldataLib.encodeSweep(USDC, user, 0, SweepType.VALIDATE);
+    }
+
     function getAddressFromRegistry() internal {
         // Get token addresses
         USDC = chain.getTokenAddress(Tokens.USDC);

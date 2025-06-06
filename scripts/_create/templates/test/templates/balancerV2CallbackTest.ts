@@ -1,6 +1,10 @@
-import { getAddress } from "ethers/lib/utils";
+import {getAddress} from "ethers/lib/utils";
 
-export const templateBalancerV2Test = (chainKey: string, lenders: { entityName: string; entityId: string; pool: string; assetType: string }[], isCancun = false) => {
+export const templateBalancerV2Test = (
+    chainKey: string,
+    lenders: {entityName: string; entityId: string; pool: string; assetType: string}[],
+    isCancun = false
+) => {
     // Generate private address declarations
     let addressDeclarations = "";
     let tokenDeclarations = "";
@@ -22,12 +26,14 @@ export const templateBalancerV2Test = (chainKey: string, lenders: { entityName: 
         populateValidPools += `        validPools.push(PoolCase({poolId: ${lender.entityId}, poolAddr: ${lender.entityName}, asset: ${lender.assetType}}));\n`;
 
         // Create an individual test function for each lender
-        individualTestFunctions += isCancun ? `` : `
+        individualTestFunctions += isCancun
+            ? ``
+            : `
     function test_flash_loan_balancerV2_type_${lender.entityName.toLowerCase()}_pool_with_callbacks() public {
         // mock implementation
         replaceLendingPoolWithMock(${lender.entityName});
 
-        bytes memory params = CalldataLib.encodeBalancerV2FlashLoan(${lender.assetType}, 1e6, uint8(${lender.entityId}), "");
+        bytes memory params = CalldataLib.encodeBalancerV2FlashLoan(${lender.assetType}, 1e6, uint8(${lender.entityId}), sweepCall());
         
         // check gateway flag is 0
         assertEq(uint256(vm.load(address(oneDV2), bytes32(uint256(FLASH_LOAN_GATEWAY_SLOT)))), 0);
@@ -60,6 +66,8 @@ import {CalldataLib} from "test/composer/utils/CalldataLib.sol";
 import {BaseTest} from "test/shared/BaseTest.sol";
 import {Slots} from "contracts/1delta/composer/slots/Slots.sol";
 import {BalancerV2MockVault, IVault} from "test/mocks/BalancerV2MockVault.sol";
+import {SweepType} from "contracts/1delta/composer/enums/MiscEnums.sol";
+
 
 contract BalancerV2FlashLoanCallbackTest is BaseTest, DeltaErrors, Slots {
     IComposerLike oneDV2;
@@ -114,7 +122,9 @@ ${individualTestFunctions}
             if (poolId == validPools[i].poolId) return;
         }
         
-        bytes memory params = CalldataLib.encodeBalancerV2FlashLoan(${uniqueTokens.values().next().value || "address(0)"}, 1e6, uint8(poolId), "");
+        bytes memory params = CalldataLib.encodeBalancerV2FlashLoan(${
+            uniqueTokens.values().next().value || "address(0)"
+        }, 1e6, uint8(poolId), sweepCall());
         
         vm.prank(user);
         vm.expectRevert();
@@ -122,11 +132,14 @@ ${individualTestFunctions}
     }
 
     // Helper Functions
+    function sweepCall() internal returns (bytes memory){
+        return CalldataLib.encodeSweep(${uniqueTokens.values().next().value || "address(0)"}, user, 0, SweepType.VALIDATE);
+    }
     function getAddressFromRegistry() internal {
         // Get token addresses
 ${Array.from(uniqueTokens)
-            .map((token) => `        ${token} = chain.getTokenAddress(Tokens.${token});`)
-            .join("\n")}
+    .map((token) => `        ${token} = chain.getTokenAddress(Tokens.${token});`)
+    .join("\n")}
     }
 
     function populateValidPools() internal {

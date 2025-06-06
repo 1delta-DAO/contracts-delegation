@@ -161,19 +161,23 @@ abstract contract ExternalCallsGeneric is BaseUtils {
             // Catch and run fallback
             // execute further calldata if provided
             if (catchCalldataLength > 0) {
-                // if calldata is provided, compose the remaining data
-                _deltaComposeInternal(callerAddress, currentOffset, catchCalldataLength);
+                // Calculate the absolute end position for the catch data (last param of the _deltaComposeInternal)
+                uint256 catchMaxIndex = currentOffset + catchCalldataLength;
+                _deltaComposeInternal(callerAddress, currentOffset, catchMaxIndex);
+                // Update currentOffset to the end of catch data
+                currentOffset = catchMaxIndex;
             }
-            // case 1 - exit funciton execution here
+            // case 1 - exit function execution here
             if (catchHandling == 1) {
                 assembly {
                     return(0, 0)
                 }
             }
-        }
-        // increment offset by additional data length
-        assembly {
-            currentOffset := add(currentOffset, catchCalldataLength)
+        } else {
+            // if the call was successful, skip the catch data
+            assembly {
+                currentOffset := add(currentOffset, catchCalldataLength)
+            }
         }
         return currentOffset;
     }

@@ -25,7 +25,9 @@ export const templateAaveV3Test = (chainKey: string, lenders: {entityName: strin
         // mock implementation
         replaceLendingPoolWithMock(${lender.entityName});
 
-        bytes memory params = CalldataLib.encodeFlashLoan(${lender.assetType}, 1e6, ${lender.entityName}, uint8(2), uint8(${lender.entityId}), "");
+        bytes memory params = CalldataLib.encodeFlashLoan(${lender.assetType}, 1e6, ${lender.entityName}, uint8(2), uint8(${
+            lender.entityId
+        }), sweepCall());
 
         vm.prank(user);
         oneDV2.deltaCompose(params);
@@ -52,6 +54,7 @@ import {CalldataLib} from "test/composer/utils/CalldataLib.sol";
 import {BaseTest} from "test/shared/BaseTest.sol";
 import {AaveMockPool, IAaveFlashLoanReceiver, IAavePool} from "test/mocks/AaveMockPool.sol";
 import {IERC20} from "openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
+import {SweepType} from "contracts/1delta/composer/enums/MiscEnums.sol";
 
 contract AaveV3FlashLoanCallbackTest is BaseTest, DeltaErrors {
     IComposerLike oneDV2;
@@ -88,7 +91,7 @@ ${individualTestFunctions}
         for (uint256 i = 0; i < validPools.length; i++) {
             bytes memory params = CalldataLib.encodeFlashLoan(${
                 uniqueTokens.values().next().value || "address(0)"
-            }, 1e6, address(mockPool), uint8(2), uint8(validPools[0].poolId), "");
+            }, 1e6, address(mockPool), uint8(2), uint8(validPools[0].poolId), sweepCall());
 
             vm.prank(user);
             vm.expectRevert(DeltaErrors.INVALID_CALLER);
@@ -118,13 +121,17 @@ ${individualTestFunctions}
         }
         bytes memory params = CalldataLib.encodeFlashLoan(${uniqueTokens.values().next().value || "address(0)"}, 1e6, ${
         lenders[0]?.entityName || "address(0)"
-    }, uint8(2), uint8(poolId), "");
+    }, uint8(2), uint8(poolId), sweepCall());
         vm.prank(user);
         vm.expectRevert(DeltaErrors.INVALID_FLASH_LOAN);
         oneDV2.deltaCompose(params);
     }
 
     // Helper Functions
+        function sweepCall() internal returns (bytes memory){
+        return CalldataLib.encodeSweep(${uniqueTokens.values().next().value || "address(0)"}, user, 0, SweepType.VALIDATE);
+    }
+
     function getAddressFromRegistry() internal {
 ${lenders.map((lender) => `        ${lender.entityName} = chain.getLendingController(Lenders.${lender.entityName});`).join("\n")}
 
