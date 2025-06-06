@@ -26,18 +26,18 @@ contract CallForwarder is Transfers, ExternalCallsGeneric, BridgeForwarder {
      */
     function deltaForwardCompose(bytes calldata) external payable {
         uint256 currentOffset;
-        uint256 maxIndex;
+        uint256 endOffset;
         address callerAddress;
         assembly {
             let calldataLength := calldataload(0x24)
             currentOffset := 0x44
-            maxIndex := add(currentOffset, calldataLength)
+            endOffset := add(currentOffset, calldataLength)
             callerAddress := caller()
         }
-        _deltaComposeInternal(callerAddress, currentOffset, maxIndex);
+        _deltaComposeInternal(callerAddress, currentOffset, endOffset);
     }
 
-    function _deltaComposeInternal(address callerAddress, uint256 currentOffset, uint256 maxIndex) internal virtual override(ExternalCallsGeneric) {
+    function _deltaComposeInternal(address callerAddress, uint256 currentOffset, uint256 endOffset) internal virtual override(ExternalCallsGeneric) {
         while (true) {
             uint256 operation;
             assembly {
@@ -58,9 +58,9 @@ contract CallForwarder is Transfers, ExternalCallsGeneric, BridgeForwarder {
             }
 
             // break criteria - we reached the end of the calldata exactly
-            if (currentOffset >= maxIndex) break;
+            if (currentOffset >= endOffset) break;
         }
         // revert if we went past the end
-        if (currentOffset > maxIndex) revert InvalidCalldata();
+        if (currentOffset > endOffset) revert InvalidCalldata();
     }
 }
