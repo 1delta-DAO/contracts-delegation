@@ -15,21 +15,21 @@ contract Across is BaseUtils {
      * | 0      | 20             | spokePool                    |
      * | 20     | 20             | depositor                    |
      * | 40     | 20             | inputTokenAddress            |
-     * | 60     | 20             | receivingAssetId             |
-     * | 80     | 16             | amount                       |
-     * | 96     | 16             | FixedFee                     |
-     * | 112    | 4              | FeePercentage                |
-     * | 116    | 4              | destinationChainId           |
-     * | 120    | 20             | receiver                     |
-     * | 140    | 2              | message.length: msgLen       |
-     * | 142    | msgLen         | message                      |
+     * | 60     | 32             | receivingAssetId             |
+     * | 92     | 16             | amount                       |
+     * | 108    | 16             | FixedFee                     |
+     * | 124    | 4              | FeePercentage                |
+     * | 128    | 4              | destinationChainId           |
+     * | 132    | 32             | receiver                     |
+     * | 164    | 2              | message.length: msgLen       |
+     * | 166    | msgLen         | message                      |
      */
     function _bridgeAcross(uint256 currentOffset) internal returns (uint256) {
         assembly {
             // Load key data from calldata
             let inputTokenAddress := shr(96, calldataload(add(currentOffset, 40)))
 
-            let amount := and(shr(128, calldataload(add(currentOffset, 80))), UINT128_MASK)
+            let amount := and(shr(128, calldataload(add(currentOffset, 92))), UINT128_MASK)
 
             // whether to use native is indicated by the flag
             let isNative := and(NATIVE_FLAG, amount)
@@ -38,7 +38,7 @@ contract Across is BaseUtils {
             amount := and(amount, not(NATIVE_FLAG))
 
             // get the length as uint16
-            let messageLength := and(shr(240, calldataload(add(currentOffset, 140))), UINT16_MASK)
+            let messageLength := and(shr(240, calldataload(add(currentOffset, 164))), UINT16_MASK)
 
             let requiredNativeValue := 0
 
@@ -80,7 +80,7 @@ contract Across is BaseUtils {
                         amount,
                         sub(
                             FEE_DENOMINATOR,
-                            and(shr(224, calldataload(add(currentOffset, 112))), UINT32_MASK) // extract the fee from calldata
+                            and(shr(224, calldataload(add(currentOffset, 124))), UINT32_MASK) // extract the fee from calldata
                         )
                     ),
                     FEE_DENOMINATOR
@@ -88,15 +88,15 @@ contract Across is BaseUtils {
 
             let ptr := mload(0x40)
 
-            // depositV3 function selector
+            // deposit function selector
             mstore(ptr, 0xad5425c600000000000000000000000000000000000000000000000000000000)
             mstore(add(ptr, 0x04), shr(96, calldataload(add(currentOffset, 20)))) // depositor
-            mstore(add(ptr, 0x24), shr(96, calldataload(add(currentOffset, 120)))) // recipient
+            mstore(add(ptr, 0x24), calldataload(add(currentOffset, 132))) // recipient (32 bytes)
             mstore(add(ptr, 0x44), inputTokenAddress) // inputToken
-            mstore(add(ptr, 0x64), shr(96, calldataload(add(currentOffset, 60)))) // outputToken
+            mstore(add(ptr, 0x64), calldataload(add(currentOffset, 60))) // outputToken (32 bytes)
             mstore(add(ptr, 0x84), amount) // amount
             mstore(add(ptr, 0xa4), outputAmount) // outputAmount
-            mstore(add(ptr, 0xc4), and(shr(224, calldataload(add(currentOffset, 116))), UINT32_MASK)) // destinationChainId
+            mstore(add(ptr, 0xc4), and(shr(224, calldataload(add(currentOffset, 128))), UINT32_MASK)) // destinationChainId
             mstore(add(ptr, 0xe4), 0) // exclusiveRelayer (zero address)
             mstore(add(ptr, 0x104), timestamp()) // quoteTimestamp (block timestamp)
             mstore(add(ptr, 0x124), add(timestamp(), 1800)) // fillDeadline (block timestamp + 30 minutes)
@@ -108,7 +108,7 @@ contract Across is BaseUtils {
             switch gt(messageLength, 0)
             case 1 {
                 // add the message from the calldata
-                calldatacopy(add(ptr, 0x1a4), add(currentOffset, 142), messageLength)
+                calldatacopy(add(ptr, 0x1a4), add(currentOffset, 166), messageLength)
 
                 // call and forward error
                 if iszero(
@@ -147,7 +147,7 @@ contract Across is BaseUtils {
 
                 mstore(0x40, add(ptr, 0x1a4)) // one word after the message
             }
-            currentOffset := add(currentOffset, add(142, messageLength))
+            currentOffset := add(currentOffset, add(166, messageLength))
         }
 
         return currentOffset;
