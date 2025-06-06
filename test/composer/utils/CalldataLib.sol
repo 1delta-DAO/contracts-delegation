@@ -176,12 +176,12 @@ library CalldataLib {
         address spokePool,
         address depositor,
         address sendingAssetId,
-        address receivingAssetId,
+        bytes32 receivingAssetId,
         uint256 amount,
         uint128 fixedFee,
         uint32 feePercentage,
         uint32 destinationChainId,
-        address receiver,
+        bytes32 receiver,
         bytes memory message
     )
         internal
@@ -211,12 +211,12 @@ library CalldataLib {
         address spokePool,
         address depositor,
         address sendingAssetId,
-        address receivingAssetId,
+        bytes32 receivingAssetId,
         uint256 amount,
         uint128 fixedFee,
         uint32 feePercentage,
         uint32 destinationChainId,
-        address receiver,
+        bytes32 receiver,
         bytes memory message
     )
         internal
