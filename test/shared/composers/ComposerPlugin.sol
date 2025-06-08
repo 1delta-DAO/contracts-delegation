@@ -18,6 +18,7 @@ import {OneDeltaComposerSonic} from "../../../contracts/1delta/composer//chains/
 import {OneDeltaComposerOp} from "../../../contracts/1delta/composer//chains/op/Composer.sol";
 import {OneDeltaComposerScroll} from "../../../contracts/1delta/composer//chains/scroll/Composer.sol";
 import {OneDeltaComposerLinea} from "../../../contracts/1delta/composer//chains/linea/Composer.sol";
+import {OneDeltaComposerSoneium} from "../../../contracts/1delta/composer//chains/soneium/Composer.sol";
 
 library ComposerPlugin {
     function getComposer(string memory chainName) public returns (IComposerLike) {
@@ -38,6 +39,7 @@ library ComposerPlugin {
         if (keccak256(bytes(chainName)) == keccak256(bytes(Chains.OP_MAINNET))) return IComposerLike(address(new OneDeltaComposerOp()));
         if (keccak256(bytes(chainName)) == keccak256(bytes(Chains.SCROLL))) return IComposerLike(address(new OneDeltaComposerScroll()));
         if (keccak256(bytes(chainName)) == keccak256(bytes(Chains.LINEA))) return IComposerLike(address(new OneDeltaComposerLinea()));
+        if (keccak256(bytes(chainName)) == keccak256(bytes(Chains.SONEIUM))) return IComposerLike(address(new OneDeltaComposerSoneium()));
 
         revert("No composer for chain");
     }

@@ -10,9 +10,9 @@ import {DeltaErrors} from "../../../../../shared/errors/Errors.sol";
  */
 contract AaveV3FlashLoanCallback is Masks, DeltaErrors {
     // Aave V3 style lender pool addresses
-    address private constant AAVE_V3 = 0xb50201558B00496A145fE76f7424749556E326D8;
-    address private constant SPARK = 0x2Dae5307c5E3FD1CF5A72Cb6F698f915860607e0;
-    address private constant RMM = 0xFb9b496519fCa8473fba1af0850B6B8F476BFdB3;
+    address private constant AAVE_V3 = 0xDd3d7A7d03D9fD9ef45f3E587287922eF65CA38B;
+    address private constant SAKE = 0x3C3987A310ee13F7B8cBBe21D97D4436ba5E4B5f;
+    address private constant SAKE_ASTAR = 0x0Bd12d3C4E794cf9919618E2bC71Bdd0C4FF1cF6;
 
     /**
      * @dev Aave V3 style flash loan callback
@@ -43,8 +43,8 @@ contract AaveV3FlashLoanCallback is Masks, DeltaErrors {
             let pool
             switch and(UINT8_MASK, shr(88, firstWord))
             case 0 { pool := AAVE_V3 }
-            case 10 { pool := SPARK }
-            case 90 { pool := RMM }
+            case 87 { pool := SAKE }
+            case 88 { pool := SAKE_ASTAR }
             // We revert on any other id
             default {
                 mstore(0, INVALID_FLASH_LOAN)

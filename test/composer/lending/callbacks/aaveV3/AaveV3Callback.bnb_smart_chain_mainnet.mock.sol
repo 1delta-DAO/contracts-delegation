@@ -25,6 +25,7 @@ contract AaveV3FlashLoanCallbackTest is BaseTest, DeltaErrors {
     address private AVALON_XAUM;
     address private AVALON_LISTA;
     address private AVALON_USDX;
+    address private AVALON_UNIBTC;
     address private KINZA;
 
     address private USDC;
@@ -149,6 +150,16 @@ contract AaveV3FlashLoanCallbackTest is BaseTest, DeltaErrors {
         oneDV2.deltaCompose(params);
     }
 
+    function test_flash_loan_aaveV3_type_avalon_unibtc_pool_with_callbacks() public {
+        // mock implementation
+        replaceLendingPoolWithMock(AVALON_UNIBTC);
+
+        bytes memory params = CalldataLib.encodeFlashLoan(USDC, 1e6, AVALON_UNIBTC, uint8(2), uint8(70), sweepCall());
+
+        vm.prank(user);
+        oneDV2.deltaCompose(params);
+    }
+
     function test_flash_loan_aaveV3_type_kinza_pool_with_callbacks() public {
         // mock implementation
         replaceLendingPoolWithMock(KINZA);
@@ -208,6 +219,7 @@ contract AaveV3FlashLoanCallbackTest is BaseTest, DeltaErrors {
         AVALON_XAUM = chain.getLendingController(Lenders.AVALON_XAUM);
         AVALON_LISTA = chain.getLendingController(Lenders.AVALON_LISTA);
         AVALON_USDX = chain.getLendingController(Lenders.AVALON_USDX);
+        AVALON_UNIBTC = chain.getLendingController(Lenders.AVALON_UNIBTC);
         KINZA = chain.getLendingController(Lenders.KINZA);
 
         // Get token addresses
@@ -230,6 +242,7 @@ contract AaveV3FlashLoanCallbackTest is BaseTest, DeltaErrors {
         validPools.push(PoolCase({poolId: 67, poolAddr: AVALON_XAUM, asset: XAUM}));
         validPools.push(PoolCase({poolId: 68, poolAddr: AVALON_LISTA, asset: LISTA}));
         validPools.push(PoolCase({poolId: 69, poolAddr: AVALON_USDX, asset: USDX}));
+        validPools.push(PoolCase({poolId: 70, poolAddr: AVALON_UNIBTC, asset: USDC}));
         validPools.push(PoolCase({poolId: 82, poolAddr: KINZA, asset: USDC}));
     }
 

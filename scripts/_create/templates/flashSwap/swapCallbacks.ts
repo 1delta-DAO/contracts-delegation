@@ -49,7 +49,7 @@ export const templateSwapCallbacks = (
         })
     }
 
-    if (cbs.length === 0) throw new Error("No Flash loans")
+    if (cbs.length === 0) throw new Error("No Flash swaps")
 
     return `
 // SPDX-License-Identifier: BUSL-1.1
