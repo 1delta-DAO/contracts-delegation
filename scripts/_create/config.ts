@@ -1,12 +1,10 @@
-import {Chain, CHAIN_INFO} from "@1delta/asset-registry";
+import { Chain, CHAIN_INFO } from "@1delta/asset-registry";
 
 export const CREATE_CHAIN_IDS = [
     Chain.ARBITRUM_ONE,
     Chain.HEMI_NETWORK,
     Chain.BNB_SMART_CHAIN_MAINNET,
     Chain.METIS_ANDROMEDA_MAINNET,
-    // Chain.LINEA,
-    // Chain.SCROLL,
     Chain.BASE,
     Chain.POLYGON_MAINNET,
     Chain.TAIKO_ALETHIA,
@@ -18,6 +16,7 @@ export const CREATE_CHAIN_IDS = [
     Chain.OP_MAINNET,
     Chain.SCROLL,
     Chain.LINEA,
+    Chain.SONEIUM,
 ];
 
 export function sortForks<T>(arr: T[], field: keyof T) {

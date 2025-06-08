@@ -27,7 +27,7 @@ abstract contract UniV3Callbacks is V3Callbacker, Masks, DeltaErrors {
     bytes32 private constant UNAGI_V3_CODE_HASH = 0x5ccd5621c1bb9e44ce98cef8b90d31eb2423dec3793b6239232cefae976936ea;
 
     bytes32 private constant AXION_V3_FF_FACTORY = 0xff34a9F4a8F3A8d57Ec3B5ab823442572ae740C92f0000000000000000000000;
-    bytes32 private constant AXION_V3_CODE_HASH = 0xe34f199b19b2b4f47f68442619d555527d244f78a3297ea89325f843f87b8b54;
+    bytes32 private constant AXION_V3_CODE_HASH = 0x101e6602a77572eb84dbb680d0904690b023afbe1ba9323cc3cb2644c82ebd25;
 
     bytes32 private constant SWAPSICLE_FF_FACTORY = 0xffb68b27a1c93A52d698EecA5a759E2E4469432C09ffffffffffffffffffffff;
     bytes32 private constant SWAPSICLE_CODE_HASH = 0xf96d2474815c32e070cd63233f06af5413efc5dcb430aee4ff18cc29007c562d;

@@ -13,6 +13,7 @@ contract AaveV3FlashLoanCallback is Masks, DeltaErrors {
     address private constant AAVE_V3 = 0x794a61358D6845594F94dc1DB02A252b5b4814aD;
     address private constant AVALON = 0xe1ee45DB12ac98d16F1342a03c93673d74527b55;
     address private constant AVALON_PUMP_BTC = 0x4B801fb6f0830D070f40aff9ADFC8f6939Cc1F8D;
+    address private constant AVALON_UNIBTC = 0x4B801fb6f0830D070f40aff9ADFC8f6939Cc1F8D;
     address private constant YLDR = 0x54aD657851b6Ae95bA3380704996CAAd4b7751A3;
 
     /**
@@ -46,6 +47,7 @@ contract AaveV3FlashLoanCallback is Masks, DeltaErrors {
             case 0 { pool := AAVE_V3 }
             case 50 { pool := AVALON }
             case 53 { pool := AVALON_PUMP_BTC }
+            case 70 { pool := AVALON_UNIBTC }
             case 100 { pool := YLDR }
             // We revert on any other id
             default {

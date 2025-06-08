@@ -66,7 +66,7 @@ abstract contract V2TypeGeneric is ERC20Selectors, Masks {
                 )
 
             switch lt(
-                and(UINT8_MASK, shr(88, pool)), // this is the forkId
+                and(UINT8_MASK, shr(72, pool)), // this is the forkId
                 128 // less than 128 indicates that it is classic uni V2, solidly otherwise
             )
             case 1 {

@@ -232,7 +232,7 @@ async function main() {
 
         let poolIdsBalancerV2: FlashLoanIdData[] = [];
         Object.entries(BALANCER_V2_FORKS).forEach(([lender, maps]) => {
-            Object.entries(maps).forEach(([chains, e]) => {
+            Object.entries(maps.vault).forEach(([chains, e]) => {
                 if (chains === chain) {
                     poolIdsBalancerV2.push({
                         entityName: lender,

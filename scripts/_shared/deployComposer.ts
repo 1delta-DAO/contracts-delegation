@@ -15,7 +15,7 @@ async function main() {
     console.log("operator", operator.address, "on", chainId)
 
     // we manually increment the nonce
-    let nonce = await operator.getTransactionCount()
+    let nonce = await operator.getNonce()
 
     let config = await getGasConfig(operator, 10, true)
     // config.gasLimit = 10_000_000
@@ -29,7 +29,7 @@ async function main() {
 
     console.log("deployment complete")
     console.log("======== Addresses =======")
-    console.log("proxy:", proxy.address)
+    console.log("proxy:", await proxy.getAddress())
     console.log("==========================")
 }
 
