@@ -18,6 +18,7 @@ contract AaveV3FlashLoanCallbackTest is BaseTest, DeltaErrors {
 
     address private ZEROLEND;
     address private LENDOS;
+    address private LAYERBANK_V3;
 
     address private WBTC;
 
@@ -65,6 +66,16 @@ contract AaveV3FlashLoanCallbackTest is BaseTest, DeltaErrors {
         oneDV2.deltaCompose(params);
     }
 
+    function test_flash_loan_aaveV3_type_layerbank_v3_pool_with_callbacks() public {
+        // mock implementation
+        replaceLendingPoolWithMock(LAYERBANK_V3);
+
+        bytes memory params = CalldataLib.encodeFlashLoan(WBTC, 1e6, LAYERBANK_V3, uint8(2), uint8(91), sweepCall());
+
+        vm.prank(user);
+        oneDV2.deltaCompose(params);
+    }
+
     function test_flash_loan_aaveV3_type_wrongCaller_revert() public {
         for (uint256 i = 0; i < validPools.length; i++) {
             bytes memory params = CalldataLib.encodeFlashLoan(WBTC, 1e6, address(mockPool), uint8(2), uint8(validPools[0].poolId), sweepCall());
@@ -107,6 +118,7 @@ contract AaveV3FlashLoanCallbackTest is BaseTest, DeltaErrors {
     function getAddressFromRegistry() internal {
         ZEROLEND = chain.getLendingController(Lenders.ZEROLEND);
         LENDOS = chain.getLendingController(Lenders.LENDOS);
+        LAYERBANK_V3 = chain.getLendingController(Lenders.LAYERBANK_V3);
 
         // Get token addresses
         WBTC = chain.getTokenAddress(Tokens.WBTC);
@@ -115,6 +127,7 @@ contract AaveV3FlashLoanCallbackTest is BaseTest, DeltaErrors {
     function populateValidPools() internal {
         validPools.push(PoolCase({poolId: 20, poolAddr: ZEROLEND, asset: WBTC}));
         validPools.push(PoolCase({poolId: 83, poolAddr: LENDOS, asset: WBTC}));
+        validPools.push(PoolCase({poolId: 91, poolAddr: LAYERBANK_V3, asset: WBTC}));
     }
 
     function mockERC20FunctionsForAllTokens() internal {

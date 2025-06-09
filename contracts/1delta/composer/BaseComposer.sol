@@ -73,7 +73,6 @@ abstract contract BaseComposer is
         assembly {
             maxIndex := add(currentOffset, calldataLength)
         }
-
         ////////////////////////////////////////////////////
         // Progressively loop through the calldata
         // The first byte defines the operation

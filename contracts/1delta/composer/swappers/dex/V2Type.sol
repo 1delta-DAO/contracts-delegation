@@ -164,15 +164,17 @@ abstract contract V2TypeGeneric is ERC20Selectors, Masks {
                 mstore(add(ptr, 204), shl(96, tokenOut))
                 // we skip to the forkId offset
                 currentOffset := add(22, currentOffset)
+                // increment by 3 here (forkId, calldataLength)
+                clLength := add(clLength, 3)
                 // Store callback  (incl forkId)
-                calldatacopy(add(ptr, 224), currentOffset, add(clLength, 3))
+                calldatacopy(add(ptr, 224), currentOffset, clLength)
                 if iszero(
                     call(
                         gas(),
                         pool,
                         0x0,
                         ptr, // input selector
-                        add(227, clLength), // 164 + (63+clLength)
+                        add(224, clLength), // 164 + (63+clLength)
                         0x0, // output = 0
                         0x0 // output size = 0
                     )
@@ -182,8 +184,8 @@ abstract contract V2TypeGeneric is ERC20Selectors, Masks {
                     revert(0, returndatasize())
                 }
                 // update clLength as new offset
-                // we add forkId and clLengh and datalength
-                clLength := add(add(3, currentOffset), clLength)
+                // we already added forkId and clLengh and datalength
+                clLength := add(currentOffset, clLength)
             }
             ////////////////////////////////////////////////////
             // Otherwise, we have to assume that payment needs to
@@ -197,19 +199,21 @@ abstract contract V2TypeGeneric is ERC20Selectors, Masks {
             default {
                 switch clLength
                 case 0 {
+                    // we need an incremented ptr here to not override the swap call below
+                    clLength := add(ptr, 0xC4)
                     // selector for transferFrom(address,address,uint256)
-                    mstore(ptr, ERC20_TRANSFER_FROM)
-                    mstore(add(ptr, 0x04), callerAddress)
-                    mstore(add(ptr, 0x24), pool)
-                    mstore(add(ptr, 0x44), amountIn)
+                    mstore(clLength, ERC20_TRANSFER_FROM)
+                    mstore(add(clLength, 0x04), callerAddress)
+                    mstore(add(clLength, 0x24), pool)
+                    mstore(add(clLength, 0x44), amountIn)
 
-                    let success := call(gas(), tokenIn, 0, ptr, 0x64, 0, 32)
+                    clLength := call(gas(), tokenIn, 0, clLength, 0x64, 0, 32)
 
                     let rdsize := returndatasize()
 
                     if iszero(
                         and(
-                            success, // call itself succeeded
+                            clLength, // call itself succeeded
                             or(
                                 iszero(rdsize), // no return data, or
                                 and(
@@ -225,17 +229,19 @@ abstract contract V2TypeGeneric is ERC20Selectors, Masks {
                 }
                 // transfer plain
                 case 1 {
+                    // we need an incremented ptr here to not override the swap call below
+                    clLength := add(ptr, 0xC4)
                     // selector for transfer(address,uint256)
-                    mstore(ptr, ERC20_TRANSFER)
-                    mstore(add(ptr, 0x04), pool)
-                    mstore(add(ptr, 0x24), amountIn)
-                    let success := call(gas(), tokenIn, 0, ptr, 0x44, 0, 32)
+                    mstore(clLength, ERC20_TRANSFER)
+                    mstore(add(clLength, 0x04), pool)
+                    mstore(add(clLength, 0x24), amountIn)
+                    clLength := call(gas(), tokenIn, 0, clLength, 0x44, 0, 32)
 
                     let rdsize := returndatasize()
 
                     if iszero(
                         and(
-                            success, // call itself succeeded
+                            clLength, // call itself succeeded
                             or(
                                 iszero(rdsize), // no return data, or
                                 and(
