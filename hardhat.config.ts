@@ -484,7 +484,18 @@ const config: HardhatUserConfig = {
           },
           evmVersion: 'paris',
         },
-      },// proxy
+      },
+      "contracts/external-protocols/misc/FeeOnTransferDetector.sol": {
+        version: '0.8.28',
+        settings: {
+          optimizer: {
+            enabled: true,
+            runs: 1_000_000,
+          },
+          evmVersion: 'paris',
+        },
+      },
+      // proxy
       "contracts/external-protocols/openzeppelin/proxy/transparent/TransparentUpgradeableProxy.sol": {
         version: '0.8.28',
         settings: {
@@ -551,7 +562,7 @@ const config: HardhatUserConfig = {
         settings: {
           optimizer: {
             enabled: true,
-            runs: 100_000,
+            runs: 10_000,
           },
           evmVersion: 'cancun',
         },
