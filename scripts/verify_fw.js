@@ -41,7 +41,7 @@ module.exports = [
 
 
 // npx hardhat verify --network taiko 0x594cE4B82A81930cC637f1A59afdFb0D70054232 --contract contracts/external-protocols/openzeppelin/proxy/transparent/TransparentUpgradeableProxy.sol:TransparentUpgradeableProxy  --constructor-args scripts/verify_fw.js
-// npx hardhat verify --network taiko 0x5659a4124b986eFfE52c255BEd92E3d69B731F4d --contract contracts/1delta/composer/chains/taiko/Composer.sol:OneDeltaComposerTaiko
+// npx hardhat verify --network taiko 0x868E267F80dd4d9cfe45b17fCB41Cf9894E72972 --contract contracts/1delta/composer/chains/taiko/Composer.sol:OneDeltaComposerTaiko
 
 // npx hardhat verify --network sonic 0x8E24CfC19c6C00c524353CB8816f5f1c2F33c201 --contract contracts/external-protocols/openzeppelin/proxy/transparent/TransparentUpgradeableProxy.sol:TransparentUpgradeableProxy  --constructor-args scripts/verify_fw.js
 // npx hardhat verify --network sonic 0x4b5458BB47dCBC1a41B31b41e1a8773dE312BE9d --contract contracts/1delta/composer/chains/sonic/Composer.sol:OneDeltaComposerSonic
