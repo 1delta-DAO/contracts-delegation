@@ -139,6 +139,7 @@ const config: HardhatUserConfig = {
       gnosis: process.env.GNOSISSCAN_API_KEY ?? '',
       blast: process.env.BLASTSCAN_API_KEY ?? '',
       base: process.env.BASESCAN_API_KEY ?? '',
+      xdai: process.env.GNOSISSCAN_API_KEY ?? '',
       metis: "XX",
       avalanche: "XX",
       hemi: "XX",
@@ -251,7 +252,7 @@ const config: HardhatUserConfig = {
       live: true,
     },
     mantle: {
-      url: 'https://rpc.mantle.xyz',
+      url: 'https://1rpc.io/mantle',
       accounts,
       chainId: 5000,
     },
@@ -280,7 +281,7 @@ const config: HardhatUserConfig = {
       live: true,
     },
     avalanche: {
-      url: 'https://avalanche.public-rpc.com',
+      url: 'https://api.avax.network/ext/bc/C/rpc',
       accounts,
       chainId: 43114,
       live: true,
@@ -563,6 +564,96 @@ const config: HardhatUserConfig = {
           optimizer: {
             enabled: true,
             runs: 10_000,
+          },
+          evmVersion: 'cancun',
+        },
+      },
+      "contracts/1delta/composer/chains/gnosis/Composer.sol": {
+        version: '0.8.28',
+        settings: {
+          optimizer: {
+            enabled: true,
+            runs: 10_000,
+          },
+          evmVersion: 'cancun',
+        },
+      },
+      "contracts/1delta/composer/chains/scroll/Composer.sol": {
+        version: '0.8.28',
+        settings: {
+          optimizer: {
+            enabled: true,
+            runs: 5_000,
+          },
+          evmVersion: 'cancun',
+        },
+      },
+      "contracts/1delta/composer/chains/linea/Composer.sol": {
+        version: '0.8.28',
+        settings: {
+          optimizer: {
+            enabled: true,
+            runs: 1_000,
+          },
+          evmVersion: 'london',
+        },
+      },
+      "contracts/1delta/composer/chains/fantom-opera/Composer.sol": {
+        version: '0.8.28',
+        settings: {
+          optimizer: {
+            enabled: true,
+            runs: 10_000,
+          },
+          evmVersion: 'london',
+        },
+      },
+      "contracts/1delta/composer/chains/avalanche/Composer.sol": {
+        version: '0.8.28',
+        settings: {
+          optimizer: {
+            enabled: true,
+            runs: 5_000,
+          },
+          evmVersion: 'cancun',
+        },
+      },
+      "contracts/1delta/composer/chains/bnb/Composer.sol": {
+        version: '0.8.28',
+        settings: {
+          optimizer: {
+            enabled: true,
+            runs: 1_000,
+          },
+          evmVersion: 'cancun',
+        },
+      },
+      "contracts/1delta/composer/chains/mantle/Composer.sol": {
+        version: '0.8.28',
+        settings: {
+          optimizer: {
+            enabled: true,
+            runs: 2_500,
+          },
+          evmVersion: 'shanghai',
+        },
+      },
+      "contracts/1delta/composer/chains/core/Composer.sol": {
+        version: '0.8.28',
+        settings: {
+          optimizer: {
+            enabled: true,
+            runs: 25_000,
+          },
+          evmVersion: 'shanghai',
+        },
+      },
+      "contracts/1delta/composer/chains/mode/Composer.sol": {
+        version: '0.8.28',
+        settings: {
+          optimizer: {
+            enabled: true,
+            runs: 5_000,
           },
           evmVersion: 'cancun',
         },

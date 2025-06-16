@@ -17,6 +17,9 @@ export const CREATE_CHAIN_IDS = [
     Chain.SCROLL,
     Chain.LINEA,
     Chain.SONEIUM,
+    Chain.MODE,
+    Chain.CORE_BLOCKCHAIN_MAINNET,
+    Chain.FANTOM_OPERA,
 ];
 
 export function sortForks<T>(arr: T[], field: keyof T) {
