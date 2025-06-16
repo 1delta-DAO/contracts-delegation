@@ -9,11 +9,11 @@ module.exports = [
 
 
 // npx hardhat verify --network optimism 0xCDef0A216fcEF809258aA4f341dB1A5aB296ea72 --contract contracts/external-protocols/openzeppelin/proxy/transparent/TransparentUpgradeableProxy.sol:TransparentUpgradeableProxy  --constructor-args scripts/verify_fw.js
-// npx hardhat verify --network optimism 0xFc107f469A92c0de7B3105B802584CD6c7D710C2 --contract contracts/1delta/composer/chains/op/Composer.sol:OneDeltaComposerOp
+// npx hardhat verify --network optimism 0x4aEA1CE479BF7E036bBB6826A2bF084bce6560a0 --contract contracts/1delta/composer/chains/op/Composer.sol:OneDeltaComposerOp
 
 
 // npx hardhat verify --network arbitrum 0x05f3f58716a88A52493Be45aA0871c55b3748f18 --contract contracts/external-protocols/openzeppelin/proxy/transparent/TransparentUpgradeableProxy.sol:TransparentUpgradeableProxy  --constructor-args scripts/verify_fw.js
-// npx hardhat verify --network arbitrum 0x2B43fBb7D1171bCfA31c9685f24A417dC8757064 --contract contracts/1delta/composer/chains/arbitrum-one/Composer.sol:OneDeltaComposerArbitrumOne
+// npx hardhat verify --network arbitrum 0xbaEe36c9ef69b0F8454e379314c7CBA628Fc6B61 --contract contracts/1delta/composer/chains/arbitrum-one/Composer.sol:OneDeltaComposerArbitrumOne
 
 
 // npx hardhat verify --network matic 0xFd245e732b40b6BF2038e42b476bD06580585326 --contract contracts/external-protocols/openzeppelin/proxy/transparent/TransparentUpgradeableProxy.sol:TransparentUpgradeableProxy  --constructor-args scripts/verify_fw.js
@@ -49,7 +49,7 @@ module.exports = [
 // npx hardhat verify --network sonic 0x8E24CfC19c6C00c524353CB8816f5f1c2F33c201 --contract contracts/external-protocols/openzeppelin/proxy/transparent/TransparentUpgradeableProxy.sol:TransparentUpgradeableProxy  --constructor-args scripts/verify_fw.js
 // npx hardhat verify --network sonic 0x4b5458BB47dCBC1a41B31b41e1a8773dE312BE9d --contract contracts/1delta/composer/chains/sonic/Composer.sol:OneDeltaComposerSonic
 
-// npx hardhat verify --network metis 0x80416C1e314662D6417ba9fA4F983fE4507785ff --contract contracts/1delta/composer/chains/metis-andromeda/Composer.sol:OneDeltaComposerMetisAndromeda
+// npx hardhat verify --network metis 0x5c4F2eACBdc1EB38F839bDDD7620E250a36819D4 --contract contracts/1delta/composer/chains/metis-andromeda/Composer.sol:OneDeltaComposerMetisAndromeda
 // npx hardhat verify --network metis 0xCe434378adacC51d54312c872113D687Ac19B516 --contract contracts/external-protocols/openzeppelin/proxy/transparent/TransparentUpgradeableProxy.sol:TransparentUpgradeableProxy  --constructor-args scripts/verify_fw.js
 
 // npx hardhat verify --network xdai 0x8e24cfc19c6c00c524353cb8816f5f1c2f33c201 --contract contracts/1delta/composer/chains/gnosis/Composer.sol:OneDeltaComposerGnosis
