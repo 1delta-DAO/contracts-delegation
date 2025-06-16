@@ -17,11 +17,11 @@ module.exports = [
 
 
 // npx hardhat verify --network matic 0xFd245e732b40b6BF2038e42b476bD06580585326 --contract contracts/external-protocols/openzeppelin/proxy/transparent/TransparentUpgradeableProxy.sol:TransparentUpgradeableProxy  --constructor-args scripts/verify_fw.js
-// npx hardhat verify --network matic 0x1DD5D0659e5e525f85B2d95f846062e55C60f55E --contract contracts/1delta/composer/chains/polygon/Composer.sol:OneDeltaComposerPolygon
+// npx hardhat verify --network matic 0x5EFf6Dc523fE79E18303F039a23F173C0dc9Ab94 --contract contracts/1delta/composer/chains/polygon/Composer.sol:OneDeltaComposerPolygon
 
 
 // npx hardhat verify --network base 0xB7ea94340e65CC68d1274aE483dfBE593fD6f21e --contract contracts/external-protocols/openzeppelin/proxy/transparent/TransparentUpgradeableProxy.sol:TransparentUpgradeableProxy  --constructor-args scripts/verify_fw.js
-// npx hardhat verify --network base 0xFbd8F286B962F99614d2c787a1Cee6dA9D17e7B3 --contract contracts/1delta/composer/chains/base/Composer.sol:OneDeltaComposerBase
+// npx hardhat verify --network base 0x79f4061BF049c5c6CAC6bfe2415c2460815F4ac7 --contract contracts/1delta/composer/chains/base/Composer.sol:OneDeltaComposerBase
 
 
 // npx hardhat verify --network sonic 0x8E24CfC19c6C00c524353CB8816f5f1c2F33c201 --contract contracts/external-protocols/openzeppelin/proxy/transparent/TransparentUpgradeableProxy.sol:TransparentUpgradeableProxy  --constructor-args scripts/verify_fw.js
