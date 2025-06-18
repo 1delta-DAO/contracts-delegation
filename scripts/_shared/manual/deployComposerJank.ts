@@ -10,7 +10,7 @@ async function main() {
     const chainId = await operator.getChainId();
     console.log("operator", operator.address, "on", chainId)
 
-    console.log("deploy quoter")
+    console.log("deploy composer")
 
     const dt = new OneDeltaComposerMantle__factory(operator).getDeployTransaction()
 

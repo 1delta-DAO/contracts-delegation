@@ -13,7 +13,7 @@ module.exports = [
 
 
 // npx hardhat verify --network arbitrum 0x05f3f58716a88A52493Be45aA0871c55b3748f18 --contract contracts/external-protocols/openzeppelin/proxy/transparent/TransparentUpgradeableProxy.sol:TransparentUpgradeableProxy  --constructor-args scripts/verify_fw.js
-// npx hardhat verify --network arbitrum 0xbaEe36c9ef69b0F8454e379314c7CBA628Fc6B61 --contract contracts/1delta/composer/chains/arbitrum-one/Composer.sol:OneDeltaComposerArbitrumOne
+// npx hardhat verify --network arbitrum 0x4039aD23E3d362D80Bd2Fb7A59d71a79198dF515 --contract contracts/1delta/composer/chains/arbitrum-one/Composer.sol:OneDeltaComposerArbitrumOne
 
 
 // npx hardhat verify --network matic 0xFd245e732b40b6BF2038e42b476bD06580585326 --contract contracts/external-protocols/openzeppelin/proxy/transparent/TransparentUpgradeableProxy.sol:TransparentUpgradeableProxy  --constructor-args scripts/verify_fw.js
@@ -67,5 +67,5 @@ module.exports = [
 // npx hardhat verify --network fantom 0xf9438f2b1c63D8dAC24311256F5483D7f7575863 --contract contracts/1delta/composer/chains/fantom-opera/Composer.sol:OneDeltaComposerFantomOpera
 // npx hardhat verify --network fantom 0x816EBC5cb8A5651C902Cb06659907A93E574Db0B --contract contracts/external-protocols/openzeppelin/proxy/transparent/TransparentUpgradeableProxy.sol:TransparentUpgradeableProxy  --constructor-args scripts/verify_fw.js
 
-// npx hardhat verify --network mantle 0xcF5a5AC7796d4230263880d4Ec078D3513cE7E6C --contract contracts/1delta/composer/chains/mantle/Composer.sol:OneDeltaComposerMantle
+// npx hardhat verify --network mantle 0x5b7cD0E82C34bE6263dB7A908c67Ee3E4f59d25d --contract contracts/1delta/composer/chains/mantle/Composer.sol:OneDeltaComposerMantle
 // npx hardhat verify --network mantle 0x5c019a146758287c614fe654caec1ba1caf05f4e --contract contracts/external-protocols/openzeppelin/proxy/transparent/TransparentUpgradeableProxy.sol:TransparentUpgradeableProxy  --constructor-args scripts/verify_fw.js

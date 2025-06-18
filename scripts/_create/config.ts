@@ -16,6 +16,7 @@ export const CREATE_CHAIN_IDS = [
     Chain.OP_MAINNET,
     Chain.SCROLL,
     Chain.LINEA,
+    Chain.BLAST,
     Chain.SONEIUM,
     Chain.MODE,
     Chain.CORE_BLOCKCHAIN_MAINNET,
@@ -44,6 +45,7 @@ export function toCamelCaseWithFirstUpper(str: string) {
     const camel = str.replace(/-([a-z])/g, (_, char) => char.toUpperCase());
     return camel.charAt(0).toUpperCase() + camel.slice(1);
 }
+
 
 export const getChainKey = (chainId: string) => CHAIN_INFO[chainId].key!;
 export const getChainEnum = (chainId: string) => CHAIN_INFO[chainId].enum!;
