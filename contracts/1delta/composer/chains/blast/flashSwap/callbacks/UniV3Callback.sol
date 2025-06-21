@@ -23,6 +23,12 @@ abstract contract UniV3Callbacks is V3Callbacker, Masks, DeltaErrors {
     bytes32 private constant SUSHISWAP_V3_FF_FACTORY = 0xff7680D4B43f3d1d54d6cfEeB2169463bFa7a6cf0d0000000000000000000000;
     bytes32 private constant SUSHISWAP_V3_CODE_HASH = 0x8e13daee7f5a62e37e71bf852bcd44e7d16b90617ed2b17c24c2ee62411c5bae;
 
+    bytes32 private constant FENIX_FF_FACTORY = 0xff5aCCAc55f692Ae2F065CEdDF5924C8f6B53cDaa8ffffffffffffffffffffff;
+    bytes32 private constant FENIX_CODE_HASH = 0xf45e886a0794c1d80aeae5ab5befecd4f0f2b77c0cf627f7c46ec92dc1fa00e4;
+
+    bytes32 private constant BLADE_FF_FACTORY = 0xfffFeEcb1fe0EAaEFeE69d122F6B7a0368637cb593ffffffffffffffffffffff;
+    bytes32 private constant BLADE_CODE_HASH = 0xa9df2657ce5872e94bdc9525588fd983b0aa5db2f3c7a83d7e6b6a99cd2003a1;
+
     bytes32 private constant IZUMI_FF_FACTORY = 0xff5162f29E9626CF7186ec40ab97D92230B428ff2d0000000000000000000000;
     bytes32 private constant IZUMI_CODE_HASH = 0xbe0bfe068cdd78cafa3ddd44e214cfa4e412c15d7148e932f8043fe883865e40;
 
@@ -50,6 +56,22 @@ abstract contract UniV3Callbacks is V3Callbacker, Masks, DeltaErrors {
                 case 1 {
                     ffFactoryAddress := SUSHISWAP_V3_FF_FACTORY
                     codeHash := SUSHISWAP_V3_CODE_HASH
+                }
+                default { revert(0, 0) }
+                let _amount1 := calldataload(36)
+                switch sgt(_amount1, 0)
+                case 1 { amountToPay := _amount1 }
+                default { amountToPay := calldataload(4) }
+            }
+            case 0x2c8958f600000000000000000000000000000000000000000000000000000000 {
+                switch and(UINT8_MASK, shr(88, calldataload(172)))
+                case 17 {
+                    ffFactoryAddress := FENIX_FF_FACTORY
+                    codeHash := FENIX_CODE_HASH
+                }
+                case 18 {
+                    ffFactoryAddress := BLADE_FF_FACTORY
+                    codeHash := BLADE_CODE_HASH
                 }
                 default { revert(0, 0) }
                 let _amount1 := calldataload(36)
