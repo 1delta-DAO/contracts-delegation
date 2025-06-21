@@ -100,11 +100,13 @@ abstract contract PermitUtils is PermitConstants {
                 // and(0xffffffffffff, ...) - conversion to uint48
                 mstore(add(ptr, 0xc4), and(0xffffffffffff, sub(shr(224, calldataload(add(permitOffset, 0x1c))), 1))) // store sigDeadline = ((permitOffset 0x1c..0x1f - 1) & 0xffffffffffff)
                 mstore(add(ptr, 0xe4), 0x100) // store offset = 256
-                mstore(add(ptr, 0x104), 0x40) // store length = 64
+                mstore(add(ptr, 0x104), 65) // store length = 64
+                let vs := calldataload(add(permitOffset, 0x40)) // copy permitOffset 0x40..0x5f
                 calldatacopy(add(ptr, 0x124), add(permitOffset, 0x20), 0x20) // store r      = copy permitOffset 0x20..0x3f
-                calldatacopy(add(ptr, 0x144), add(permitOffset, 0x40), 0x20) // store vs     = copy permitOffset 0x40..0x5f
+                mstore(add(ptr, 0x144), shr(1, shl(1, vs))) // store s     = vs without most significant bit
+                mstore8(add(ptr, 0x164), add(27, shr(255, vs))) // store v     = copy permitOffset 0x40..0x5f
                 // IPermit2.permit(address owner, PermitSingle calldata permitSingle, bytes calldata signature)
-                success := call(gas(), PERMIT2, 0, ptr, 0x164, 0, 0)
+                success := call(gas(), PERMIT2, 0, ptr, 0x165, 0, 0)
             }
             // Unknown
             default {
