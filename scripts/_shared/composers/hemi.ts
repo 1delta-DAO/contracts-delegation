@@ -18,7 +18,7 @@ async function main() {
     const composer = await new OneDeltaComposerHemi__factory(operator).deploy({ gasPrice: gp, gasLimit: gl })
     await composer.deployed()
 
-    console.log("deployed expected to", composer.address)
+    console.log("deployed to", composer.address)
 }
 
 main()
