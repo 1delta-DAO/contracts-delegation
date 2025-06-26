@@ -543,7 +543,7 @@ const config: HardhatUserConfig = {
         settings: {
           optimizer: {
             enabled: true,
-            runs: 20_000,
+            runs: 10_000,
           },
           evmVersion: 'cancun',
         },
