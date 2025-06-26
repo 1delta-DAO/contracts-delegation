@@ -22,7 +22,7 @@ async function main() {
         COMPOSER_LOGICS[chainId],
         "0x"
     ])
-    console.log("deploy proxy")
+    console.log("upgrade")
 
     await operator.sendTransaction({
         // @ts-ignore
