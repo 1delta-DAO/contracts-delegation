@@ -95,7 +95,7 @@ contract DodoLightTest is BaseTest {
             SweepType.VALIDATE
         );
         bytes memory swap = dodoPoolWETHJOJOSwap(
-            user,
+            address(oneDV2),
             amount, //
             abi.encodePacked(transfer, sweep)
         );
