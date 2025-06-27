@@ -6,13 +6,7 @@ import {ComposerCommands} from "../enums/DeltaEnums.sol";
 import {DeltaErrors} from "../../shared/errors/Errors.sol";
 
 abstract contract BaseComposerValidator is DeltaErrors {
-    struct ValidationResult {
-        bool isValid;
-        string errorMessage;
-        uint256 failedAtOffset;
-    }
-
-    function validateComposerCalldata(bytes calldata) external view returns (ValidationResult memory result) {
+    function validateComposerCalldata(bytes calldata) external view returns (bool isValid, string memory errorMessage, uint256 failedAtOffset) {
         uint256 length;
         assembly {
             length := calldataload(0x24)
@@ -21,8 +15,15 @@ abstract contract BaseComposerValidator is DeltaErrors {
         return _validateComposeInternal(0x44, length);
     }
 
-    function _validateComposeInternal(uint256 currentOffset, uint256 calldataLength) internal view returns (ValidationResult memory result) {
-        result.isValid = true;
+    function _validateComposeInternal(
+        uint256 currentOffset,
+        uint256 calldataLength
+    )
+        internal
+        view
+        returns (bool isValid, string memory errorMessage, uint256 failedAtOffset)
+    {
+        isValid = true;
 
         uint256 maxIndex;
         assembly {
@@ -39,10 +40,7 @@ abstract contract BaseComposerValidator is DeltaErrors {
             (bool opValid, string memory opError, uint256 newOffset) = _validateOperation(operation, currentOffset);
 
             if (!opValid) {
-                result.isValid = false;
-                result.errorMessage = opError;
-                result.failedAtOffset = currentOffset;
-                return result;
+                return (false, opError, currentOffset);
             }
 
             currentOffset = newOffset;
@@ -53,20 +51,10 @@ abstract contract BaseComposerValidator is DeltaErrors {
 
         // revert if some excess is left
         if (currentOffset > maxIndex) {
-            result.isValid = false;
-            result.errorMessage = "Invalid calldata length - excess data";
-            result.failedAtOffset = currentOffset;
+            return (false, "Invalid calldata length - excess data", currentOffset);
         }
     }
 
-    /**
-     * @notice Validates a single operation
-     * @param operation The operation code
-     * @param currentOffset Current position in calldata
-     * @return isValid Whether the operation is valid
-     * @return errorMessage Error message if invalid
-     * @return newOffset New offset after validation
-     */
     function _validateOperation(
         uint256 operation,
         uint256 currentOffset
@@ -102,6 +90,7 @@ abstract contract BaseComposerValidator is DeltaErrors {
         }
     }
 
+    // should be overriden by implementers of this contract
     function _validateSwap(uint256 currentOffset) internal view virtual returns (bool, string memory, uint256);
 
     function _validateExternalCall(uint256 currentOffset) internal view virtual returns (bool, string memory, uint256);
