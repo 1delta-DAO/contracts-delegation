@@ -7,6 +7,7 @@ import {CompoundV3Lending} from "./CompoundV3Lending.sol";
 import {CompoundV2Lending} from "./CompoundV2Lending.sol";
 import {MorphoLending} from "./MorphoLending.sol";
 import {LenderIds, LenderOps} from "../enums/DeltaEnums.sol";
+import {DeltaErrors} from "contracts/1delta/shared/errors/Errors.sol";
 
 // solhint-disable max-line-length
 
@@ -16,7 +17,7 @@ import {LenderIds, LenderOps} from "../enums/DeltaEnums.sol";
  * - paramPush for receiving funds (e.g. receiving funds from swaps or flash loans)
  * - paramPull for being required to pay an exact amount (e.g. DEX swap payments, flash loan amounts)
  */
-abstract contract UniversalLending is AaveLending, CompoundV3Lending, CompoundV2Lending, MorphoLending {
+abstract contract UniversalLending is AaveLending, CompoundV3Lending, CompoundV2Lending, MorphoLending, DeltaErrors {
     /**
      * execute ANY lending operation across various lenders
      * | Offset | Length (bytes) | Description                     |
@@ -110,7 +111,7 @@ abstract contract UniversalLending is AaveLending, CompoundV3Lending, CompoundV2
         else if (lendingOperation == LenderOps.WITHDRAW_LENDING_TOKEN) {
             return _encodeMorphoWithdraw(currentOffset, callerAddress);
         } else {
-            revert();
+            _invalidOperation();
         }
     }
 }
