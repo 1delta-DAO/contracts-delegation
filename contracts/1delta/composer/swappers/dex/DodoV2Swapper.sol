@@ -23,7 +23,6 @@ abstract contract DodoV2Swapper is ERC20Selectors, Masks {
     function _dodoPrepare(
         uint256 amountIn,
         address tokenIn,
-        address receiver,
         address callerAddress,
         uint256 currentOffset
     )
@@ -106,7 +105,6 @@ abstract contract DodoV2Swapper is ERC20Selectors, Masks {
         (amountOut, pool, clLength) = _dodoPrepare(
             amountIn,
             tokenIn,
-            receiver,
             callerAddress, //
             currentOffset
         );
