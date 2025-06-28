@@ -78,3 +78,41 @@ module.exports = [
 
 // npx hardhat verify --network blast 0xcB6Eb8df68153cebF60E1872273Ef52075a5C297 --contract contracts/1delta/composer/chains/blast/Composer.sol:OneDeltaComposerBlast
 // npx hardhat verify --network blast 0x816EBC5cb8A5651C902Cb06659907A93E574Db0B --contract contracts/external-protocols/openzeppelin/proxy/transparent/TransparentUpgradeableProxy.sol:TransparentUpgradeableProxy  --constructor-args scripts/verify_fw.js
+
+
+
+// npx hardhat verify --network optimism 0xD48FeCce2cE91e1c644B8C59516567f2041CE260 --contract contracts/1delta/composer/chains/op/Composer.sol:OneDeltaComposerOp
+
+// npx hardhat verify --network arbitrum 0x033BA8191568403957b89C2f3636a6AbFa131512 --contract contracts/1delta/composer/chains/arbitrum-one/Composer.sol:OneDeltaComposerArbitrumOne
+
+// npx hardhat verify --network polygon 0x645123F724ac42cC0AB5c5a98deb31582D582657 --contract contracts/1delta/composer/chains/polygon/Composer.sol:OneDeltaComposerPolygon
+
+// npx hardhat verify --network base 0x2eA75bBBc5615651efc9401FBc9Db4d03B055CA6 --contract contracts/1delta/composer/chains/base/Composer.sol:OneDeltaComposerBase
+
+// npx hardhat verify --network sonic 0x91549bad7A081742dEC72E2CF55a2477A880a798 --contract contracts/1delta/composer/chains/sonic/Composer.sol:OneDeltaComposerSonic
+
+// npx hardhat verify --network hemi 0x05f3f58716a88A52493Be45aA0871c55b3748f18 --contract contracts/1delta/composer/chains/hemi/Composer.sol:OneDeltaComposerHemi
+
+// npx hardhat verify --network taiko 0xA7E688a86F4C1a4429FDFf54C4A9e9c1A5b52a16 --contract contracts/1delta/composer/chains/taiko/Composer.sol:OneDeltaComposerTaiko
+
+// npx hardhat verify --network metis 0xB7ea94340e65CC68d1274aE483dfBE593fD6f21e --contract contracts/1delta/composer/chains/metis-andromeda/Composer.sol:OneDeltaComposerMetisAndromeda
+
+// npx hardhat verify --network gnosis 0xCe434378adacC51d54312c872113D687Ac19B516 --contract contracts/1delta/composer/chains/gnosis/Composer.sol:OneDeltaComposerGnosis
+
+// npx hardhat verify --network avalanche 0x0bd7473CbBf81d9dD936c61117eD230d95006CA2 --contract contracts/1delta/composer/chains/avalanche/Composer.sol:OneDeltaComposerAvalanche
+
+// npx hardhat verify --network mode 0x0bd7473CbBf81d9dD936c61117eD230d95006CA2 --contract contracts/1delta/composer/chains/mode/Composer.sol:OneDeltaComposerMode
+
+// npx hardhat verify --network scroll 0x0bd7473CbBf81d9dD936c61117eD230d95006CA2 --contract contracts/1delta/composer/chains/scroll/Composer.sol:OneDeltaComposerScroll
+
+// npx hardhat verify --network core 0xcB6Eb8df68153cebF60E1872273Ef52075a5C297 --contract contracts/1delta/composer/chains/core/Composer.sol:OneDeltaComposerCore
+
+// npx hardhat verify --network fantom 0xcB6Eb8df68153cebF60E1872273Ef52075a5C297 --contract contracts/1delta/composer/chains/fantom-opera/Composer.sol:OneDeltaComposerFantomOpera
+
+// npx hardhat verify --network mantle 0xe676d0553912f172Cf8744Bc8d6e9bb269649517 --contract contracts/1delta/composer/chains/mantle/Composer.sol:OneDeltaComposerMantle
+
+// npx hardhat verify --network linea 0xcB6Eb8df68153cebF60E1872273Ef52075a5C297 --contract contracts/1delta/composer/chains/linea/Composer.sol:OneDeltaComposerLinea
+
+// npx hardhat verify --network blast 0xCe434378adacC51d54312c872113D687Ac19B516 --contract contracts/1delta/composer/chains/blast/Composer.sol:OneDeltaComposerBlast
+
+// npx hardhat verify --network bnb 0xcB6Eb8df68153cebF60E1872273Ef52075a5C297 --contract contracts/1delta/composer/chains/bnb/Composer.sol:OneDeltaComposerBnb
