@@ -399,7 +399,7 @@ contract ComposerValidator is BaseComposerValidator, Masks {
          */
         else if (lendingOperation == LenderOps.BORROW) {
             if (lenderId < LenderIds.UP_TO_AAVE_V2) {
-                return _validateAaveBorrow(currentOffset);
+                return _validateAaveBorrow(currentOffset, lenderId);
             } else if (lenderId < LenderIds.UP_TO_COMPOUND_V3) {
                 return _validateCompoundV3Borrow(currentOffset);
             } else if (lenderId < LenderIds.UP_TO_COMPOUND_V2) {
@@ -413,7 +413,7 @@ contract ComposerValidator is BaseComposerValidator, Masks {
          */
         else if (lendingOperation == LenderOps.REPAY) {
             if (lenderId < LenderIds.UP_TO_AAVE_V2) {
-                return _validateAaveRepay(currentOffset);
+                return _validateAaveRepay(currentOffset, lenderId);
             } else if (lenderId < LenderIds.UP_TO_COMPOUND_V3) {
                 return _validateCompoundV3Repay(currentOffset);
             } else if (lenderId < LenderIds.UP_TO_COMPOUND_V2) {
@@ -427,7 +427,7 @@ contract ComposerValidator is BaseComposerValidator, Masks {
          */
         else if (lendingOperation == LenderOps.WITHDRAW) {
             if (lenderId < LenderIds.UP_TO_AAVE_V2) {
-                return _validateAaveWithdraw(currentOffset);
+                return _validateAaveWithdraw(currentOffset, lenderId);
             } else if (lenderId < LenderIds.UP_TO_COMPOUND_V3) {
                 return _validateCompoundV3Withdraw(currentOffset);
             } else if (lenderId < LenderIds.UP_TO_COMPOUND_V2) {
@@ -465,8 +465,6 @@ contract ComposerValidator is BaseComposerValidator, Masks {
         address receiver;
         address pool;
 
-        // todo: add pool whitelist check
-
         assembly {
             underlying := shr(96, calldataload(currentOffset))
             currentOffset := add(currentOffset, 36) // skip underlying(20) + amount(16)
@@ -480,10 +478,20 @@ contract ComposerValidator is BaseComposerValidator, Masks {
         if (receiver == address(0)) return (false, "Invalid receiver address", currentOffset);
         if (pool == address(0)) return (false, "Invalid pool address", currentOffset);
 
+        if (aaveVersion == AaveVersion.AAVE_V3) {
+            if (!whitelistManager.isAaveV3PoolWhitelisted(pool)) {
+                return (false, "Aave V3 pool not whitelisted", currentOffset);
+            }
+        } else {
+            if (!whitelistManager.isAaveV2PoolWhitelisted(pool)) {
+                return (false, "Aave V2 pool not whitelisted", currentOffset);
+            }
+        }
+
         return (true, "", currentOffset);
     }
 
-    function _validateAaveBorrow(uint256 currentOffset) internal view returns (bool, string memory, uint256) {
+    function _validateAaveBorrow(uint256 currentOffset, uint256 lenderId) internal view returns (bool, string memory, uint256) {
         address underlying;
         address receiver;
         address pool;
@@ -501,10 +509,20 @@ contract ComposerValidator is BaseComposerValidator, Masks {
         if (receiver == address(0)) return (false, "Invalid receiver address", currentOffset);
         if (pool == address(0)) return (false, "Invalid pool address", currentOffset);
 
+        if (lenderId < LenderIds.UP_TO_AAVE_V2) {
+            if (!whitelistManager.isAaveV3PoolWhitelisted(pool)) {
+                return (false, "Aave V3 pool not whitelisted", currentOffset);
+            }
+        } else {
+            if (!whitelistManager.isAaveV2PoolWhitelisted(pool)) {
+                return (false, "Aave V2 pool not whitelisted", currentOffset);
+            }
+        }
+
         return (true, "", currentOffset);
     }
 
-    function _validateAaveRepay(uint256 currentOffset) internal view returns (bool, string memory, uint256) {
+    function _validateAaveRepay(uint256 currentOffset, uint256 lenderId) internal view returns (bool, string memory, uint256) {
         address underlying;
         address receiver;
         address debtToken;
@@ -526,10 +544,20 @@ contract ComposerValidator is BaseComposerValidator, Masks {
         if (debtToken == address(0)) return (false, "Invalid debt token address", currentOffset);
         if (pool == address(0)) return (false, "Invalid pool address", currentOffset);
 
+        if (lenderId < LenderIds.UP_TO_AAVE_V2) {
+            if (!whitelistManager.isAaveV3PoolWhitelisted(pool)) {
+                return (false, "Aave V3 pool not whitelisted", currentOffset);
+            }
+        } else {
+            if (!whitelistManager.isAaveV2PoolWhitelisted(pool)) {
+                return (false, "Aave V2 pool not whitelisted", currentOffset);
+            }
+        }
+
         return (true, "", currentOffset);
     }
 
-    function _validateAaveWithdraw(uint256 currentOffset) internal view returns (bool, string memory, uint256) {
+    function _validateAaveWithdraw(uint256 currentOffset, uint256 lenderId) internal view returns (bool, string memory, uint256) {
         address underlying;
         address receiver;
         address aToken;
@@ -550,6 +578,16 @@ contract ComposerValidator is BaseComposerValidator, Masks {
         if (receiver == address(0)) return (false, "Invalid receiver address", currentOffset);
         if (aToken == address(0)) return (false, "Invalid aToken address", currentOffset);
         if (pool == address(0)) return (false, "Invalid pool address", currentOffset);
+
+        if (lenderId < LenderIds.UP_TO_AAVE_V2) {
+            if (!whitelistManager.isAaveV3PoolWhitelisted(pool)) {
+                return (false, "Aave V3 pool not whitelisted", currentOffset);
+            }
+        } else {
+            if (!whitelistManager.isAaveV2PoolWhitelisted(pool)) {
+                return (false, "Aave V2 pool not whitelisted", currentOffset);
+            }
+        }
 
         return (true, "", currentOffset);
     }
@@ -584,6 +622,10 @@ contract ComposerValidator is BaseComposerValidator, Masks {
         if (receiver == address(0)) return (false, "Invalid receiver address", currentOffset);
         if (comet == address(0)) return (false, "Invalid comet address", currentOffset);
 
+        if (!whitelistManager.isCompoundV3CometWhitelisted(comet)) {
+            return (false, "Compound V3 comet not whitelisted", currentOffset);
+        }
+
         return (true, "", currentOffset);
     }
 
@@ -604,6 +646,10 @@ contract ComposerValidator is BaseComposerValidator, Masks {
         if (underlying == address(0)) return (false, "Invalid underlying address", currentOffset);
         if (receiver == address(0)) return (false, "Invalid receiver address", currentOffset);
         if (comet == address(0)) return (false, "Invalid comet address", currentOffset);
+
+        if (!whitelistManager.isCompoundV3CometWhitelisted(comet)) {
+            return (false, "Compound V3 comet not whitelisted", currentOffset);
+        }
 
         return (true, "", currentOffset);
     }
@@ -640,6 +686,10 @@ contract ComposerValidator is BaseComposerValidator, Masks {
 
         if (receiver == address(0)) return (false, "Invalid receiver address", currentOffset);
         if (cToken == address(0)) return (false, "Invalid cToken address", currentOffset);
+
+        if (!whitelistManager.isCompoundV2CTokenWhitelisted(cToken)) {
+            return (false, "Compound V2 cToken not whitelisted", currentOffset);
+        }
 
         return (true, "", currentOffset);
     }
@@ -722,6 +772,10 @@ contract ComposerValidator is BaseComposerValidator, Masks {
         if (irm == address(0)) return (false, "Invalid IRM address", currentOffset);
         if (receiver == address(0)) return (false, "Invalid receiver address", currentOffset);
         if (morpho == address(0)) return (false, "Invalid morpho address", currentOffset);
+
+        if (!whitelistManager.isMorphoWhitelisted(morpho)) {
+            return (false, "Morpho not whitelisted", currentOffset);
+        }
 
         return (true, "", currentOffset - 152 + totalLength);
     }
