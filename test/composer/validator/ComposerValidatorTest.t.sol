@@ -55,6 +55,8 @@ contract ComposerValidatorTest is BaseTest {
         bytes memory data = abi.encodeWithSignature("balanceOf(address)", user);
 
         bytes memory calldataBytes = CalldataLib.encodeExternalCall(target, value, false, data);
+        // 0xdead000000000000000000000000000000000000 is the mock callforwarder address
+        calldataBytes = CalldataLib.encodeExternalCall(address(0xdEad000000000000000000000000000000000000), value, false, calldataBytes);
 
         (bool isValid, string memory errorMessage, uint256 failedAtOffset) = validator.validateComposerCalldata(calldataBytes);
 
@@ -82,6 +84,7 @@ contract ComposerValidatorTest is BaseTest {
         bytes memory data = abi.encodeWithSignature("transferFrom(address,address,uint256)", user, address(this), 100);
 
         bytes memory calldataBytes = CalldataLib.encodeExternalCall(target, value, false, data);
+        calldataBytes = CalldataLib.encodeExternalCall(address(0xdEad000000000000000000000000000000000000), value, false, calldataBytes);
 
         (bool isValid, string memory errorMessage, uint256 failedAtOffset) = validator.validateComposerCalldata(calldataBytes);
 
@@ -316,9 +319,10 @@ contract ComposerValidatorTest is BaseTest {
         address target = address(0x1111111111111111111111111111111111111111);
         uint256 value = 0;
         bytes memory data = abi.encodeWithSignature("balanceOf(address)", user);
-        bytes memory catchData = abi.encodePacked(uint8(ComposerCommands.TRANSFERS), uint8(0)); // Simple transfer operation
+        bytes memory catchData = CalldataLib.encodeSweep(target, address(this), 1, SweepType.AMOUNT);
 
         bytes memory calldataBytes = CalldataLib.encodeTryExternalCall(target, value, false, false, data, catchData);
+        calldataBytes = CalldataLib.encodeExternalCall(address(0xdEad000000000000000000000000000000000000), value, false, calldataBytes);
 
         (bool isValid, string memory errorMessage, uint256 failedAtOffset) = validator.validateComposerCalldata(calldataBytes);
 
