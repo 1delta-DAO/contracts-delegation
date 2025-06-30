@@ -135,13 +135,15 @@ const config: HardhatUserConfig = {
       taiko: process.env.TAIKOSCAN_API_KEY ?? '',
       linea: process.env.LINEASCAN_API_KEY ?? '',
       optimisticEthereum: process.env.OPSCAN_API_KEY ?? '',
+      bnb: process.env.BSCSCAN_API_KEY ?? '',
       bsc: process.env.BSCSCAN_API_KEY ?? '',
       gnosis: process.env.GNOSISSCAN_API_KEY ?? '',
+      xdai: process.env.GNOSISSCAN_API_KEY ?? '',
       blast: process.env.BLASTSCAN_API_KEY ?? '',
       base: process.env.BASESCAN_API_KEY ?? '',
-      xdai: process.env.GNOSISSCAN_API_KEY ?? '',
       metis: "XX",
       avalanche: "XX",
+      mode: "XX",
       hemi: "XX",
       core: process.env.CORESCAN_API_KEY ?? '',
       sonic: process.env.SONICSCAN_API_KEY ?? '',
@@ -241,7 +243,7 @@ const config: HardhatUserConfig = {
       chainId: 146,
       live: true,
     },
-    matic: {
+    polygon: {
       url: 'https://polygon-rpc.com',
       accounts,
       chainId: 137,
@@ -256,13 +258,13 @@ const config: HardhatUserConfig = {
       accounts,
       chainId: 5000,
     },
-    xdai: {
+    gnosis: {
       url: 'https://rpc.gnosischain.com',
       accounts,
       chainId: 100,
       live: true,
     },
-    bsc: {
+    bnb: {
       url: 'https://bsc-dataseed.binance.org',
       chainId: 56,
       live: true,
