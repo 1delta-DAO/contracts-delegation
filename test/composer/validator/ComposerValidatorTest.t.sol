@@ -68,6 +68,7 @@ contract ComposerValidatorTest is BaseTest {
         bytes memory data = abi.encodeWithSignature("permitTransferFrom(bytes,bytes,address)", "", "", user);
 
         bytes memory calldataBytes = CalldataLib.encodeExternalCall(permit2, value, false, data);
+        calldataBytes = CalldataLib.encodeExternalCall(address(0xdEad000000000000000000000000000000000000), value, false, calldataBytes);
 
         (bool isValid, string memory errorMessage, uint256 failedAtOffset) = validator.validateComposerCalldata(calldataBytes);
 
