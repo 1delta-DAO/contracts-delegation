@@ -150,11 +150,11 @@ contract ComposerValidator is BaseComposerValidator, Masks {
 
         // Check for forbidden selectors (transferFrom)
         if (dataLength >= 4) {
-            bytes4 selector;
+            bytes32 selector;
             assembly {
-                selector := shr(224, calldataload(currentOffset))
+                selector := and(0xffffffff00000000000000000000000000000000000000000000000000000000, calldataload(currentOffset))
             }
-            if (selector == 0x23b872dd) {
+            if (selector == 0x23b872dd00000000000000000000000000000000000000000000000000000000) {
                 // transferFrom selector
                 return (false, "transferFrom calls forbidden", currentOffset);
             }
@@ -695,15 +695,15 @@ contract ComposerValidator is BaseComposerValidator, Masks {
     }
 
     function _validateMorphoBorrow(uint256 currentOffset) internal view returns (bool, string memory, uint256) {
-        return _validateMorphoBasic(currentOffset, 152);
+        return _validateMorphoBasic(currentOffset);
     }
 
     function _validateMorphoRepay(uint256 currentOffset) internal view returns (bool, string memory, uint256) {
-        return _validateMorphoBasic(currentOffset, 152);
+        return _validateMorphoBasic(currentOffset);
     }
 
     function _validateMorphoDepositCollateral(uint256 currentOffset) internal view returns (bool, string memory, uint256) {
-        (bool isValid, string memory errorMessage, uint256 newOffset) = _validateMorphoBasic(currentOffset, 154);
+        (bool isValid, string memory errorMessage, uint256 newOffset) = _validateMorphoBasic(currentOffset);
         if (!isValid) return (false, errorMessage, newOffset);
 
         uint256 calldataLength;
@@ -715,11 +715,11 @@ contract ComposerValidator is BaseComposerValidator, Masks {
     }
 
     function _validateMorphoWithdrawCollateral(uint256 currentOffset) internal view returns (bool, string memory, uint256) {
-        return _validateMorphoBasic(currentOffset, 152);
+        return _validateMorphoBasic(currentOffset);
     }
 
     function _validateMorphoDeposit(uint256 currentOffset) internal view returns (bool, string memory, uint256) {
-        (bool isValid, string memory errorMessage, uint256 newOffset) = _validateMorphoBasic(currentOffset, 154);
+        (bool isValid, string memory errorMessage, uint256 newOffset) = _validateMorphoBasic(currentOffset);
         if (!isValid) return (false, errorMessage, newOffset);
 
         uint256 calldataLength;
@@ -731,7 +731,7 @@ contract ComposerValidator is BaseComposerValidator, Masks {
     }
 
     function _validateMorphoWithdraw(uint256 currentOffset) internal view returns (bool, string memory, uint256) {
-        (bool isValid, string memory errorMessage, uint256 newOffset) = _validateMorphoBasic(currentOffset, 154);
+        (bool isValid, string memory errorMessage, uint256 newOffset) = _validateMorphoBasic(currentOffset);
         if (!isValid) return (false, errorMessage, newOffset);
 
         uint256 calldataLength;
@@ -742,7 +742,7 @@ contract ComposerValidator is BaseComposerValidator, Masks {
         return (true, "", newOffset + calldataLength);
     }
 
-    function _validateMorphoBasic(uint256 currentOffset, uint256 totalLength) internal view returns (bool, string memory, uint256) {
+    function _validateMorphoBasic(uint256 currentOffset) internal view returns (bool, string memory, uint256) {
         address loanToken;
         address collateralToken;
         address oracle;
@@ -764,6 +764,7 @@ contract ComposerValidator is BaseComposerValidator, Masks {
             receiver := shr(96, calldataload(currentOffset))
             currentOffset := add(currentOffset, 20)
             morpho := shr(96, calldataload(currentOffset))
+            currentOffset := add(currentOffset, 20)
         }
 
         if (loanToken == address(0)) return (false, "Invalid loan token address", currentOffset);
@@ -777,7 +778,7 @@ contract ComposerValidator is BaseComposerValidator, Masks {
             return (false, "Morpho not whitelisted", currentOffset);
         }
 
-        return (true, "", currentOffset - 152 + totalLength);
+        return (true, "", currentOffset);
     }
 
     function _validateTransfers(uint256 currentOffset) internal view override returns (bool isValid, string memory errorMessage, uint256 newOffset) {
