@@ -47,6 +47,10 @@ contract AddressWhitelistManager is AddressWhitelistManagerStorage {
         whitelistedMorphos[morpho] = whitelisted;
     }
 
+    function setCallForwarderWhitelist(address callForwarder, bool whitelisted) external onlyOwner {
+        whitelistedCallForwarders[callForwarder] = whitelisted;
+    }
+
     // View Functions
 
     function isAaveV2PoolWhitelisted(address pool) external view returns (bool) {
@@ -67,5 +71,9 @@ contract AddressWhitelistManager is AddressWhitelistManagerStorage {
 
     function isMorphoWhitelisted(address morpho) external view returns (bool) {
         return whitelistedMorphos[morpho];
+    }
+
+    function isCallForwarderWhitelisted(address callForwarder) external view returns (bool) {
+        return whitelistedCallForwarders[callForwarder];
     }
 }

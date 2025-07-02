@@ -47,6 +47,11 @@ contract ComposerValidator is BaseComposerValidator, Masks {
             currentOffset := add(currentOffset, 38)
         }
 
+        // Validate target is whitelisted
+        if (!whitelistManager.isCallForwarderWhitelisted(target)) {
+            return (false, "CallForwarder not whitelisted", currentOffset - 38);
+        }
+
         // Validate calldata length
         if (calldataLength > MAX_CALLDATA_LENGTH) {
             return (false, "Calldata too long", currentOffset);
@@ -136,6 +141,11 @@ contract ComposerValidator is BaseComposerValidator, Masks {
             currentOffset := add(16, currentOffset)
             dataLength := shr(240, calldataload(currentOffset))
             currentOffset := add(2, currentOffset)
+        }
+
+        // Validate target is not whitelisted (meaning they are not calling callforwarder again)
+        if (whitelistManager.isCallForwarderWhitelisted(target)) {
+            return (false, "CallForwarder should not call itself", currentOffset - 38);
         }
 
         // Validate the target is not Permit2 (same check as in ExternalCallsGeneric)

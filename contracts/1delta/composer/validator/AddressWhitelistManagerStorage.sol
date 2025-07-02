@@ -12,6 +12,7 @@ abstract contract AddressWhitelistManagerStorage is Initializable {
     mapping(address => bool) public whitelistedCompoundV3Comets;
     mapping(address => bool) public whitelistedCompoundV2CTokens;
     mapping(address => bool) public whitelistedMorphos;
+    mapping(address => bool) public whitelistedCallForwarders;
 
     uint256[45] private __gap;
 }

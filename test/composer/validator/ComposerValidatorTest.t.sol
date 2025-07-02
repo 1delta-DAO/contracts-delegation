@@ -22,6 +22,7 @@ contract ComposerValidatorTest is BaseTest {
     address public compoundV3Comet;
     address public validCompoundV2CToken;
     address public morpho;
+    address public callForwarder;
 
     address public invalidPool = address(0xDeaD500100000000000000000000000000000000);
 
@@ -34,6 +35,7 @@ contract ComposerValidatorTest is BaseTest {
         aaveV3Pool = chain.getLendingController(Lenders.AAVE_V3);
         compoundV3Comet = chain.getLendingController(Lenders.COMPOUND_V3_USDC);
         morpho = address(0xBBBBBbbBBb9cC5e90e3b3Af64bdAF62C37EEFFCb);
+        callForwarder = address(0xcA11F00000000000000000000000000000000000);
 
         AddressWhitelistManager implementation = new AddressWhitelistManager();
         bytes memory initData = abi.encodeWithSelector(AddressWhitelistManager.initialize.selector, owner);
@@ -45,6 +47,7 @@ contract ComposerValidatorTest is BaseTest {
         whitelistManager.setAaveV3PoolWhitelist(aaveV3Pool, true);
         whitelistManager.setCompoundV3CometWhitelist(compoundV3Comet, true);
         whitelistManager.setMorphoWhitelist(morpho, true);
+        whitelistManager.setCallForwarderWhitelist(callForwarder, true);
     }
 
     function test_validator_external_call_valid() external {
@@ -53,8 +56,7 @@ contract ComposerValidatorTest is BaseTest {
         bytes memory data = abi.encodeWithSignature("balanceOf(address)", user);
 
         bytes memory calldataBytes = CalldataLib.encodeExternalCall(target, value, false, data);
-        // 0xdead000000000000000000000000000000000000 is the mock callforwarder address
-        calldataBytes = CalldataLib.encodeExternalCall(address(0xdEad000000000000000000000000000000000000), value, false, calldataBytes);
+        calldataBytes = CalldataLib.encodeExternalCall(callForwarder, value, false, calldataBytes);
 
         (bool isValid, string memory errorMessage, uint256 failedAtOffset) = validator.validateComposerCalldata(calldataBytes);
 
@@ -68,7 +70,7 @@ contract ComposerValidatorTest is BaseTest {
         bytes memory data = abi.encodeWithSignature("permitTransferFrom(bytes,bytes,address)", "", "", user);
 
         bytes memory calldataBytes = CalldataLib.encodeExternalCall(permit2, value, false, data);
-        calldataBytes = CalldataLib.encodeExternalCall(address(0xdEad000000000000000000000000000000000000), value, false, calldataBytes);
+        calldataBytes = CalldataLib.encodeExternalCall(callForwarder, value, false, calldataBytes);
 
         (bool isValid, string memory errorMessage, uint256 failedAtOffset) = validator.validateComposerCalldata(calldataBytes);
 
@@ -82,7 +84,7 @@ contract ComposerValidatorTest is BaseTest {
 
         bytes memory calldataBytes =
             CalldataLib.encodeExternalCall(target, value, false, hex"23b872dd00000000000000000000000000000000000000000000000000000000");
-        calldataBytes = CalldataLib.encodeExternalCall(address(0xdEad000000000000000000000000000000000000), value, false, calldataBytes);
+        calldataBytes = CalldataLib.encodeExternalCall(callForwarder, value, false, calldataBytes);
 
         (bool isValid, string memory errorMessage, uint256 failedAtOffset) = validator.validateComposerCalldata(calldataBytes);
 
@@ -91,11 +93,10 @@ contract ComposerValidatorTest is BaseTest {
     }
 
     function test_validator_external_call_data_too_long() external {
-        address target = address(0x1111111111111111111111111111111111111111);
         uint256 value = 0;
         bytes memory data = new bytes(10001);
 
-        bytes memory calldataBytes = CalldataLib.encodeExternalCall(target, value, false, data);
+        bytes memory calldataBytes = CalldataLib.encodeExternalCall(callForwarder, value, false, data);
 
         (bool isValid, string memory errorMessage, uint256 failedAtOffset) = validator.validateComposerCalldata(calldataBytes);
 
@@ -316,11 +317,24 @@ contract ComposerValidatorTest is BaseTest {
         bytes memory catchData = CalldataLib.encodeSweep(target, address(this), 1, SweepType.AMOUNT);
 
         bytes memory calldataBytes = CalldataLib.encodeTryExternalCall(target, value, false, false, data, catchData);
-        calldataBytes = CalldataLib.encodeExternalCall(address(0xdEad000000000000000000000000000000000000), value, false, calldataBytes);
+        calldataBytes = CalldataLib.encodeExternalCall(callForwarder, value, false, calldataBytes);
 
         (bool isValid, string memory errorMessage, uint256 failedAtOffset) = validator.validateComposerCalldata(calldataBytes);
 
         assertTrue(isValid, errorMessage);
         assertEq(bytes(errorMessage).length, 0);
+    }
+
+    function test_validator_external_call_invalid_callforwarder_self() external {
+        bytes memory data = abi.encodeWithSignature("balanceOf(address)", user); // arbitrary call
+        bytes memory catchData = CalldataLib.encodeSweep(0x1111111111111111111111111111111111111111, address(this), 1, SweepType.AMOUNT);
+
+        bytes memory calldataBytes = CalldataLib.encodeTryExternalCall(callForwarder, 0, false, false, data, catchData);
+        calldataBytes = CalldataLib.encodeExternalCall(callForwarder, 0, false, calldataBytes);
+
+        (bool isValid, string memory errorMessage, uint256 failedAtOffset) = validator.validateComposerCalldata(calldataBytes);
+
+        assertFalse(isValid);
+        assertEq(errorMessage, "CallForwarder should not call itself");
     }
 }
