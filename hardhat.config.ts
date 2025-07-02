@@ -258,6 +258,11 @@ const config: HardhatUserConfig = {
       accounts,
       chainId: 5000,
     },
+    kaia: {
+      url: 'https://kaia.blockpi.network/v1/rpc/public',
+      accounts,
+      chainId: 8217,
+    },
     gnosis: {
       url: 'https://rpc.gnosischain.com',
       accounts,
@@ -319,7 +324,7 @@ const config: HardhatUserConfig = {
       live: true,
     },
     metis: {
-      url: 'https://metis-andromeda.rpc.thirdweb.com',
+      url: 'https://andromeda.metis.io/?owner=1088',
       accounts,
       chainId: 1088,
       live: true,
