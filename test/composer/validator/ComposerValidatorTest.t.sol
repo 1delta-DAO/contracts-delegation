@@ -25,11 +25,9 @@ contract ComposerValidatorTest is BaseTest {
 
     address public invalidPool = address(0xDeaD500100000000000000000000000000000000);
 
-    uint256 internal constant forkBlock = 0;
-
     function setUp() public virtual {
         string memory chainName = Chains.BASE;
-        _init(chainName, forkBlock, true);
+        _init(chainName, 0, false);
 
         owner = address(this);
 
@@ -81,9 +79,9 @@ contract ComposerValidatorTest is BaseTest {
     function test_validator_external_call_invalid_transferFrom() external {
         address target = address(0x1111111111111111111111111111111111111111);
         uint256 value = 0;
-        bytes memory data = abi.encodeWithSignature("transferFrom(address,address,uint256)", user, address(this), 100);
 
-        bytes memory calldataBytes = CalldataLib.encodeExternalCall(target, value, false, data);
+        bytes memory calldataBytes =
+            CalldataLib.encodeExternalCall(target, value, false, hex"23b872dd00000000000000000000000000000000000000000000000000000000");
         calldataBytes = CalldataLib.encodeExternalCall(address(0xdEad000000000000000000000000000000000000), value, false, calldataBytes);
 
         (bool isValid, string memory errorMessage, uint256 failedAtOffset) = validator.validateComposerCalldata(calldataBytes);
@@ -251,11 +249,7 @@ contract ComposerValidatorTest is BaseTest {
     }
 
     function test_validator_invalid_lender_id() external {
-        bytes memory calldataBytes = abi.encodePacked(
-            uint8(ComposerCommands.LENDING),
-            uint8(LenderOps.DEPOSIT),
-            uint16(LenderIds.UP_TO_MORPHO) // Invalid lender ID
-        );
+        bytes memory calldataBytes = abi.encodePacked(uint8(ComposerCommands.LENDING), uint8(LenderOps.DEPOSIT), uint16(LenderIds.UP_TO_MORPHO + 1));
 
         (bool isValid, string memory errorMessage, uint256 failedAtOffset) = validator.validateComposerCalldata(calldataBytes);
 

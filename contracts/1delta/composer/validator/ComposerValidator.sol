@@ -374,7 +374,7 @@ contract ComposerValidator is BaseComposerValidator, Masks {
         }
 
         // Validate lender ID
-        if (lenderId >= LenderIds.UP_TO_MORPHO) {
+        if (lenderId > LenderIds.UP_TO_MORPHO) {
             return (false, "Invalid lender ID", currentOffset);
         }
 
