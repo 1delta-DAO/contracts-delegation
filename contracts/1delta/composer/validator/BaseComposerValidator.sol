@@ -5,6 +5,8 @@ pragma solidity 0.8.28;
 import {ComposerCommands} from "../enums/DeltaEnums.sol";
 import {DeltaErrors} from "../../shared/errors/Errors.sol";
 
+// solhint-disable max-line-length
+
 abstract contract BaseComposerValidator is DeltaErrors {
     function validateComposerCalldata(bytes calldata) external view returns (bool isValid, string memory errorMessage, uint256 failedAtOffset) {
         uint256 length;

@@ -17,6 +17,8 @@ import {
 } from "../enums/DeltaEnums.sol";
 import {Masks} from "../../shared/masks/Masks.sol";
 
+// solhint-disable max-line-length
+
 enum AaveVersion {
     AAVE_V2,
     AAVE_V3

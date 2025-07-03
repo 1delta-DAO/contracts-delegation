@@ -21,7 +21,6 @@ contract AddressWhitelistManager is AddressWhitelistManagerStorage {
 
     function transferOwnership(address newOwner) external onlyOwner {
         require(newOwner != address(0), "Invalid owner");
-        address previousOwner = owner;
         owner = newOwner;
     }
 
