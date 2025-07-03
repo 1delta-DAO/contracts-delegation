@@ -19,6 +19,7 @@ contract AaveV3FlashLoanCallback is Masks, DeltaErrors {
     address private constant AVALON_XAUM = 0x4B801fb6f0830D070f40aff9ADFC8f6939Cc1F8D;
     address private constant AVALON_LISTA = 0x54925C6dDeB73A962B3C3A21B10732eD5548e43a;
     address private constant AVALON_USDX = 0x77fF9B0cdbb6039b9D42d92d7289110E6CCD3890;
+    address private constant AVALON_UNIBTC = 0x795Ae4Bd3B63aA8657a7CC2b3e45Fb0F7c9ED9Cc;
     address private constant KINZA = 0xcB0620b181140e57D1C0D8b724cde623cA963c8C;
 
     /**
@@ -69,6 +70,7 @@ contract AaveV3FlashLoanCallback is Masks, DeltaErrors {
                     case 67 { pool := AVALON_XAUM }
                     case 68 { pool := AVALON_LISTA }
                     case 69 { pool := AVALON_USDX }
+                    case 70 { pool := AVALON_UNIBTC }
                     case 82 { pool := KINZA }
                 }
             }

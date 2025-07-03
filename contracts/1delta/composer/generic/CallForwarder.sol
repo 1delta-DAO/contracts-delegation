@@ -26,28 +26,29 @@ contract CallForwarder is Transfers, ExternalCallsGeneric, BridgeForwarder {
      */
     function deltaForwardCompose(bytes calldata) external payable {
         uint256 currentOffset;
-        // data loop paramters
-        uint256 maxIndex;
+        uint256 endOffset;
         address callerAddress;
         assembly {
-            maxIndex := calldataload(0x24)
+            let calldataLength := calldataload(0x24)
             currentOffset := 0x44
+            endOffset := add(currentOffset, calldataLength)
             callerAddress := caller()
         }
+        _deltaComposeInternal(callerAddress, currentOffset, endOffset);
+    }
 
-        ////////////////////////////////////////////////////
-        // Same as composer
-        ////////////////////////////////////////////////////
+    function _deltaComposeInternal(address callerAddress, uint256 currentOffset, uint256 endOffset) internal virtual override(ExternalCallsGeneric) {
         while (true) {
             uint256 operation;
-            // fetch op metadata
             assembly {
-                operation := shr(248, calldataload(currentOffset)) // last byte
-                // we increment the current offset to skip the operation
+                operation := shr(248, calldataload(currentOffset))
                 currentOffset := add(1, currentOffset)
             }
+
             if (operation == ComposerCommands.EXT_CALL) {
                 currentOffset = _callExternal(currentOffset);
+            } else if (operation == ComposerCommands.EXT_TRY_CALL) {
+                currentOffset = _tryCallExternal(currentOffset, callerAddress);
             } else if (operation == ComposerCommands.TRANSFERS) {
                 currentOffset = _transfers(currentOffset, callerAddress);
             } else if (operation == ComposerCommands.BRIDGING) {
@@ -55,8 +56,11 @@ contract CallForwarder is Transfers, ExternalCallsGeneric, BridgeForwarder {
             } else {
                 _invalidOperation();
             }
-            // break criteria - we shifted to the end of the calldata
-            if (currentOffset >= maxIndex) break;
+
+            // break criteria - we reached the end of the calldata exactly
+            if (currentOffset >= endOffset) break;
         }
+        // revert if we went past the end
+        if (currentOffset > endOffset) revert InvalidCalldata();
     }
 }

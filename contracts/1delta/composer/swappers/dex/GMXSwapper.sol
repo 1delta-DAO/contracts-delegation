@@ -33,7 +33,7 @@ abstract contract GMXSwapper is ERC20Selectors, Masks {
             let gmxData := calldataload(currentOffset)
             let vault := shr(96, gmxData)
 
-            switch and(UINT8_MASK, shr(72, gmxData))
+            switch and(UINT8_MASK, shr(88, gmxData))
             case 0 {
                 // selector for transferFrom(address,address,uint256)
                 mstore(ptr, ERC20_TRANSFER_FROM)

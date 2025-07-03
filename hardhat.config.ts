@@ -135,12 +135,15 @@ const config: HardhatUserConfig = {
       taiko: process.env.TAIKOSCAN_API_KEY ?? '',
       linea: process.env.LINEASCAN_API_KEY ?? '',
       optimisticEthereum: process.env.OPSCAN_API_KEY ?? '',
+      bnb: process.env.BSCSCAN_API_KEY ?? '',
       bsc: process.env.BSCSCAN_API_KEY ?? '',
       gnosis: process.env.GNOSISSCAN_API_KEY ?? '',
+      xdai: process.env.GNOSISSCAN_API_KEY ?? '',
       blast: process.env.BLASTSCAN_API_KEY ?? '',
       base: process.env.BASESCAN_API_KEY ?? '',
       metis: "XX",
       avalanche: "XX",
+      mode: "XX",
       hemi: "XX",
       core: process.env.CORESCAN_API_KEY ?? '',
       sonic: process.env.SONICSCAN_API_KEY ?? '',
@@ -240,7 +243,7 @@ const config: HardhatUserConfig = {
       chainId: 146,
       live: true,
     },
-    matic: {
+    polygon: {
       url: 'https://polygon-rpc.com',
       accounts,
       chainId: 137,
@@ -251,17 +254,22 @@ const config: HardhatUserConfig = {
       live: true,
     },
     mantle: {
-      url: 'https://rpc.mantle.xyz',
+      url: 'https://1rpc.io/mantle',
       accounts,
       chainId: 5000,
     },
-    xdai: {
+    kaia: {
+      url: 'https://kaia.blockpi.network/v1/rpc/public',
+      accounts,
+      chainId: 8217,
+    },
+    gnosis: {
       url: 'https://rpc.gnosischain.com',
       accounts,
       chainId: 100,
       live: true,
     },
-    bsc: {
+    bnb: {
       url: 'https://bsc-dataseed.binance.org',
       chainId: 56,
       live: true,
@@ -280,7 +288,7 @@ const config: HardhatUserConfig = {
       live: true,
     },
     avalanche: {
-      url: 'https://avalanche.public-rpc.com',
+      url: 'https://api.avax.network/ext/bc/C/rpc',
       accounts,
       chainId: 43114,
       live: true,
@@ -316,7 +324,7 @@ const config: HardhatUserConfig = {
       live: true,
     },
     metis: {
-      url: 'https://metis-andromeda.rpc.thirdweb.com',
+      url: 'https://andromeda.metis.io/?owner=1088',
       accounts,
       chainId: 1088,
       live: true,
@@ -484,8 +492,29 @@ const config: HardhatUserConfig = {
           },
           evmVersion: 'paris',
         },
-      },// proxy
+      },
+      "contracts/external-protocols/misc/FeeOnTransferDetector.sol": {
+        version: '0.8.28',
+        settings: {
+          optimizer: {
+            enabled: true,
+            runs: 1_000_000,
+          },
+          evmVersion: 'paris',
+        },
+      },
+      // proxy
       "contracts/external-protocols/openzeppelin/proxy/transparent/TransparentUpgradeableProxy.sol": {
+        version: '0.8.28',
+        settings: {
+          optimizer: {
+            enabled: true,
+            runs: 1_000_000,
+          },
+          evmVersion: 'paris',
+        },
+      },
+      "contracts/external-protocols/openzeppelin/proxy/transparent/ProxyAdmin.sol": {
         version: '0.8.28',
         settings: {
           optimizer: {
@@ -506,6 +535,36 @@ const config: HardhatUserConfig = {
           evmVersion: 'cancun',
         },
       },
+      "contracts/1delta/composer/chains/hemi/Composer.sol": {
+        version: '0.8.28',
+        settings: {
+          optimizer: {
+            enabled: true,
+            runs: 10_000,
+          },
+          evmVersion: 'cancun',
+        },
+      },
+      "contracts/1delta/composer/chains/blast/Composer.sol": {
+        version: '0.8.28',
+        settings: {
+          optimizer: {
+            enabled: true,
+            runs: 10_000,
+          },
+          evmVersion: 'cancun',
+        },
+      },
+      "contracts/1delta/composer/chains/sonic/Composer.sol": {
+        version: '0.8.28',
+        settings: {
+          optimizer: {
+            enabled: true,
+            runs: 5000,
+          },
+          evmVersion: 'cancun',
+        },
+      },
       "contracts/1delta/composer/chains/polygon/Composer.sol": {
         version: '0.8.28',
         settings: {
@@ -514,6 +573,116 @@ const config: HardhatUserConfig = {
             runs: 1_500,
           },
           evmVersion: 'cancun',
+        },
+      },
+      "contracts/1delta/composer/chains/metis-andromeda/Composer.sol": {
+        version: '0.8.28',
+        settings: {
+          optimizer: {
+            enabled: true,
+            runs: 10_000,
+          },
+          evmVersion: 'cancun',
+        },
+      },
+      "contracts/1delta/composer/chains/gnosis/Composer.sol": {
+        version: '0.8.28',
+        settings: {
+          optimizer: {
+            enabled: true,
+            runs: 10_000,
+          },
+          evmVersion: 'cancun',
+        },
+      },
+      "contracts/1delta/composer/chains/scroll/Composer.sol": {
+        version: '0.8.28',
+        settings: {
+          optimizer: {
+            enabled: true,
+            runs: 5_000,
+          },
+          evmVersion: 'cancun',
+        },
+      },
+      "contracts/1delta/composer/chains/linea/Composer.sol": {
+        version: '0.8.28',
+        settings: {
+          optimizer: {
+            enabled: true,
+            runs: 1_000,
+          },
+          evmVersion: 'london',
+        },
+      },
+      "contracts/1delta/composer/chains/fantom-opera/Composer.sol": {
+        version: '0.8.28',
+        settings: {
+          optimizer: {
+            enabled: true,
+            runs: 10_000,
+          },
+          evmVersion: 'london',
+        },
+      },
+      "contracts/1delta/composer/chains/avalanche/Composer.sol": {
+        version: '0.8.28',
+        settings: {
+          optimizer: {
+            enabled: true,
+            runs: 5_000,
+          },
+          evmVersion: 'cancun',
+        },
+      },
+      "contracts/1delta/composer/chains/bnb/Composer.sol": {
+        version: '0.8.28',
+        settings: {
+          optimizer: {
+            enabled: true,
+            runs: 1_000,
+          },
+          evmVersion: 'cancun',
+        },
+      },
+      "contracts/1delta/composer/chains/mantle/Composer.sol": {
+        version: '0.8.28',
+        settings: {
+          optimizer: {
+            enabled: true,
+            runs: 2_500,
+          },
+          evmVersion: 'shanghai',
+        },
+      },
+      "contracts/1delta/composer/chains/core/Composer.sol": {
+        version: '0.8.28',
+        settings: {
+          optimizer: {
+            enabled: true,
+            runs: 25_000,
+          },
+          evmVersion: 'shanghai',
+        },
+      },
+      "contracts/1delta/composer/chains/mode/Composer.sol": {
+        version: '0.8.28',
+        settings: {
+          optimizer: {
+            enabled: true,
+            runs: 5_000,
+          },
+          evmVersion: 'cancun',
+        },
+      },
+      "contracts/external-protocols/misc/UniswapMulticall.sol": {
+        version: '0.7.6',
+        settings: {
+          optimizer: {
+            enabled: true,
+            runs: 10_000_000,
+          },
+          evmVersion: 'istanbul',
         },
       },
       "contracts/1delta/composer/chains/base/Composer.sol": {

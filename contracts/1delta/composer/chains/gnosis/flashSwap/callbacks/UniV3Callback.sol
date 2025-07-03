@@ -77,9 +77,17 @@ abstract contract UniV3Callbacks is V3Callbacker, Masks, DeltaErrors {
                     mstore(p, tokenIn)
                     mstore(add(p, 32), tokenOut)
                 }
-                // this stores the fee
-                mstore(add(p, 64), and(UINT16_MASK, shr(72, tokenOutAndFee)))
-                mstore(p, keccak256(p, 96))
+
+                switch and(FF_ADDRESS_COMPLEMENT, ffFactoryAddress)
+                case 0 {
+                    // cases with fee
+                    mstore(add(p, 64), and(UINT16_MASK, shr(72, tokenOutAndFee)))
+                    mstore(p, keccak256(p, 96))
+                }
+                default {
+                    // cases without fee, e.g. algebra case
+                    mstore(p, keccak256(p, 64))
+                }
                 p := add(p, 32)
                 mstore(p, codeHash)
 

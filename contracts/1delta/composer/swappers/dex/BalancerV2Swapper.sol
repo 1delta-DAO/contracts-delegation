@@ -38,7 +38,7 @@ abstract contract BalancerV2Swapper is ERC20Selectors, Masks {
 
             let ptr := mload(0x40)
             // only need to check whether we have to pull from caller
-            if iszero(and(UINT8_MASK, shr(72, balancerData))) {
+            if iszero(and(UINT8_MASK, shr(88, balancerData))) {
                 // selector for transferFrom(address,address,uint256)
                 mstore(ptr, ERC20_TRANSFER_FROM)
                 mstore(add(ptr, 0x04), callerAddress)

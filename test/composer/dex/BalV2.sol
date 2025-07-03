@@ -2,7 +2,7 @@
 pragma solidity ^0.8.19;
 
 import {console} from "forge-std/console.sol";
-
+import "../../../contracts/1delta/composer//quoter/QuoterLight.sol";
 import {IERC20All} from "../../shared/interfaces/IERC20All.sol";
 import {BaseTest} from "../../shared/BaseTest.sol";
 import {Chains, Tokens, Lenders} from "../../data/LenderRegistry.sol";
@@ -16,6 +16,7 @@ contract BalV2LightTest is BaseTest {
     address internal constant BALANCER_V2_VAULT = 0xBA12222222228d8Ba445958a75a0704d566BF2C8;
     bytes32 internal constant WETH_RETH_PID = 0xc771c1a5905420daec317b154eb13e4198ba97d0000000000000000000000023;
     uint256 internal constant forkBlock = 27970029;
+    QuoterLight quoter;
     IComposerLike oneDV2;
 
     address internal USDC;
@@ -36,15 +37,16 @@ contract BalV2LightTest is BaseTest {
         cbBTC = chain.getTokenAddress(Tokens.CBBTC);
         USDC = chain.getTokenAddress(Tokens.USDC);
         oneDV2 = ComposerPlugin.getComposer(chainName);
+        quoter = new QuoterLight();
     }
 
-    function balancerWethRethSwap(address receiver, uint256 amount) internal view returns (bytes memory data) {
+    function balancerWethRethSwap(address receiver, uint256 amount, bool rev) internal view returns (bytes memory data) {
         data = abi.encodePacked(
             uint8(ComposerCommands.SWAPS),
             uint128(amount), //
             uint128(1),
             //
-            WETH,
+            rev ? rETH : WETH,
             uint8(0), // swaps max index
             uint8(0) // splits
                 // single split data (no data here)
@@ -52,8 +54,28 @@ contract BalV2LightTest is BaseTest {
         );
         data = abi.encodePacked(
             data,
-            rETH,
+            rev ? WETH : rETH,
             receiver,
+            uint8(DexTypeMappings.BALANCER_V2_ID), //
+            WETH_RETH_PID,
+            BALANCER_V2_VAULT,
+            uint8(0) // payMode <- user pays
+        );
+    }
+
+    function balancerWethRethQuote(bool rev) internal view returns (bytes memory data) {
+        data = abi.encodePacked(
+            //
+            rev ? rETH : WETH,
+            uint8(0), // swaps max index
+            uint8(0) // splits
+                // single split data (no data here)
+                // uint8(0), // swaps max index for inner path
+        );
+        data = abi.encodePacked(
+            data,
+            rev ? WETH : rETH,
+            address(0),
             uint8(DexTypeMappings.BALANCER_V2_ID), //
             WETH_RETH_PID,
             BALANCER_V2_VAULT,
@@ -72,9 +94,12 @@ contract BalV2LightTest is BaseTest {
         vm.prank(user);
         IERC20All(tokenIn).approve(address(oneDV2), type(uint256).max);
 
+        uint256 quote = quoter.quote(amount, balancerWethRethQuote(false));
+
         bytes memory swap = balancerWethRethSwap(
             user,
-            amount //
+            amount,
+            false //
         );
 
         uint256 balBefore = IERC20All(tokenOut).balanceOf(user);
@@ -84,5 +109,35 @@ contract BalV2LightTest is BaseTest {
         uint256 balAfter = IERC20All(tokenOut).balanceOf(user);
         console.log("received", balAfter - balBefore);
         assertApproxEqAbs(balAfter - balBefore, amount, (amount * 20) / 100);
+        assertApproxEqRel(balAfter - balBefore, quote, 0.1e18);
+    }
+
+    function test_light_swap_balancer_single_rev() external {
+        vm.assume(user != address(0));
+
+        address tokenIn = rETH;
+        address tokenOut = WETH;
+        uint256 amount = 1.0e18;
+        deal(tokenIn, user, amount);
+
+        vm.prank(user);
+        IERC20All(tokenIn).approve(address(oneDV2), type(uint256).max);
+
+        uint256 quote = quoter.quote(amount, balancerWethRethQuote(true));
+
+        bytes memory swap = balancerWethRethSwap(
+            user,
+            amount,
+            true //
+        );
+
+        uint256 balBefore = IERC20All(tokenOut).balanceOf(user);
+        vm.prank(user);
+        oneDV2.deltaCompose(swap);
+
+        uint256 balAfter = IERC20All(tokenOut).balanceOf(user);
+        console.log("received", balAfter - balBefore);
+        assertApproxEqAbs(balAfter - balBefore, amount, (amount * 20) / 100);
+        assertApproxEqRel(balAfter - balBefore, quote, 0.1e18);
     }
 }

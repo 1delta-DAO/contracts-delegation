@@ -20,7 +20,7 @@ abstract contract SyncQuoter {
                 returndatacopy(0, 0, returndatasize())
                 revert(0, returndatasize())
             }
-            currentOffset := add(currentOffset, 22)
+            currentOffset := add(currentOffset, 21)
 
             amountOut := mload(ptr)
         }

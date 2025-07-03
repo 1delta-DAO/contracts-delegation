@@ -22,6 +22,7 @@ contract BaseTest is Test {
     constructor() Test() {
         rpcOverrides[Chains.ARBITRUM_ONE] = "https://arbitrum.drpc.org";
         rpcOverrides[Chains.BNB_SMART_CHAIN_MAINNET] = "https://bsc-dataseed1.binance.org/";
+        rpcOverrides[Chains.OP_MAINNET] = "https://optimism.api.onfinality.io/public";
         // rpcOverrides[Chains.TAIKO_ALETHIA] = "https://rpc.mainnet.taiko.xyz/";
     }
 
@@ -36,6 +37,7 @@ contract BaseTest is Test {
         userPrivateKey = 0x1de17a;
         user = vm.addr(userPrivateKey);
         vm.deal(user, 100 ether);
+        vm.label(user, "user");
 
         // Create a fork
         string memory rpcUrl = chain.getRpcUrl();

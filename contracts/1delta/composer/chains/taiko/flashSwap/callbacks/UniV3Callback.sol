@@ -27,12 +27,12 @@ abstract contract UniV3Callbacks is V3Callbacker, Masks, DeltaErrors {
     bytes32 private constant UNAGI_V3_CODE_HASH = 0x5ccd5621c1bb9e44ce98cef8b90d31eb2423dec3793b6239232cefae976936ea;
 
     bytes32 private constant AXION_V3_FF_FACTORY = 0xff34a9F4a8F3A8d57Ec3B5ab823442572ae740C92f0000000000000000000000;
-    bytes32 private constant AXION_V3_CODE_HASH = 0xe34f199b19b2b4f47f68442619d555527d244f78a3297ea89325f843f87b8b54;
+    bytes32 private constant AXION_V3_CODE_HASH = 0x101e6602a77572eb84dbb680d0904690b023afbe1ba9323cc3cb2644c82ebd25;
 
-    bytes32 private constant SWAPSICLE_FF_FACTORY = 0xffb68b27a1c93A52d698EecA5a759E2E4469432C090000000000000000000000;
+    bytes32 private constant SWAPSICLE_FF_FACTORY = 0xffb68b27a1c93A52d698EecA5a759E2E4469432C09ffffffffffffffffffffff;
     bytes32 private constant SWAPSICLE_CODE_HASH = 0xf96d2474815c32e070cd63233f06af5413efc5dcb430aee4ff18cc29007c562d;
 
-    bytes32 private constant HENJIN_FF_FACTORY = 0xff0d22b434E478386Cd3564956BFc722073B3508f60000000000000000000000;
+    bytes32 private constant HENJIN_FF_FACTORY = 0xff0d22b434E478386Cd3564956BFc722073B3508f6ffffffffffffffffffffff;
     bytes32 private constant HENJIN_CODE_HASH = 0x4b9e4a8044ce5695e06fce9421a63b6f5c3db8a561eebb30ea4c775469e36eaf;
 
     bytes32 private constant PANKO_FF_FACTORY = 0xff7DD105453D0AEf177743F5461d7472cC779e63f70000000000000000000000;
@@ -147,9 +147,17 @@ abstract contract UniV3Callbacks is V3Callbacker, Masks, DeltaErrors {
                     mstore(p, tokenIn)
                     mstore(add(p, 32), tokenOut)
                 }
-                // this stores the fee
-                mstore(add(p, 64), and(UINT16_MASK, shr(72, tokenOutAndFee)))
-                mstore(p, keccak256(p, 96))
+
+                switch and(FF_ADDRESS_COMPLEMENT, ffFactoryAddress)
+                case 0 {
+                    // cases with fee
+                    mstore(add(p, 64), and(UINT16_MASK, shr(72, tokenOutAndFee)))
+                    mstore(p, keccak256(p, 96))
+                }
+                default {
+                    // cases without fee, e.g. algebra case
+                    mstore(p, keccak256(p, 64))
+                }
                 p := add(p, 32)
                 mstore(p, codeHash)
 

@@ -17,8 +17,34 @@ import {DexPayConfig, SweepType, DodoSelector, WrapOperation} from "contracts/1d
  * - use if condition to revert (no require statements)
  */
 library CalldataLib {
-    function encodeExternalCall(address target, uint256 value, bytes memory data) internal pure returns (bytes memory) {
-        return abi.encodePacked(uint8(ComposerCommands.EXT_CALL), target, uint112(value), uint16(data.length), data);
+    function encodeExternalCall(address target, uint256 value, bool useSelfBalance, bytes memory data) internal pure returns (bytes memory) {
+        return abi.encodePacked(
+            uint8(ComposerCommands.EXT_CALL), target, generateAmountBitmap(uint128(value), false, false, useSelfBalance), uint16(data.length), data
+        );
+    }
+
+    function encodeTryExternalCall(
+        address target,
+        uint256 value,
+        bool useSelfBalance,
+        bool rOnFailure,
+        bytes memory data,
+        bytes memory catchData
+    )
+        internal
+        pure
+        returns (bytes memory)
+    {
+        return abi.encodePacked(
+            uint8(ComposerCommands.EXT_TRY_CALL),
+            target,
+            generateAmountBitmap(uint128(value), false, false, useSelfBalance),
+            uint16(data.length),
+            data,
+            uint8(rOnFailure ? 0 : 1),
+            uint16(catchData.length),
+            catchData
+        );
     }
     // StargateV2 bridging
 
@@ -52,6 +78,10 @@ library CalldataLib {
         return abi.encodePacked(
             uint8(ComposerCommands.BRIDGING), uint8(BridgeIds.STARGATE_V2), asset, stargatePool, dstEid, receiver, refundReceiver, partialData
         );
+    }
+
+    function encodePermit(uint256 permitId, address target, bytes memory data) internal pure returns (bytes memory) {
+        return abi.encodePacked(uint8(ComposerCommands.PERMIT), uint8(permitId), target, uint16(data.length), data);
     }
 
     function encodeStargateV2BridgePartial(
@@ -146,12 +176,12 @@ library CalldataLib {
         address spokePool,
         address depositor,
         address sendingAssetId,
-        address receivingAssetId,
+        bytes32 receivingAssetId,
         uint256 amount,
         uint128 fixedFee,
         uint32 feePercentage,
         uint32 destinationChainId,
-        address receiver,
+        bytes32 receiver,
         bytes memory message
     )
         internal
@@ -181,12 +211,12 @@ library CalldataLib {
         address spokePool,
         address depositor,
         address sendingAssetId,
-        address receivingAssetId,
+        bytes32 receivingAssetId,
         uint256 amount,
         uint128 fixedFee,
         uint32 feePercentage,
         uint32 destinationChainId,
-        address receiver,
+        bytes32 receiver,
         bytes memory message
     )
         internal
@@ -416,7 +446,7 @@ library CalldataLib {
             uint8(DexTypeMappings.BALANCER_V2_ID),
             poolId,
             balancerVault,
-            uint16(uint256(cfg)) // cll length <- user pays
+            uint8(uint256(cfg)) // cll length <- user pays
         );
     }
 
@@ -462,7 +492,7 @@ library CalldataLib {
             receiver,
             uint8(DexTypeMappings.SYNC_SWAP_ID),
             pool,
-            uint16(uint256(cfg)) // cll length <- user pays
+            uint8(uint256(cfg)) // cll length <- user pays
         );
     }
 

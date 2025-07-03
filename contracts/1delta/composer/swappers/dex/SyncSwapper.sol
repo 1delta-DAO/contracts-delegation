@@ -12,14 +12,12 @@ abstract contract SyncSwapper is ERC20Selectors, Masks {
     /// @dev selector for swap(bytes,address,address,bytes)
     bytes32 internal constant SYNCSWAP_SELECTOR = 0x7132bb7f00000000000000000000000000000000000000000000000000000000;
 
-    constructor() {}
-
     /**
      * Swaps exact input on SyncSwap
      * | Offset | Length (bytes) | Description          |
      * |--------|----------------|----------------------|
      * | 0      | 20             | pool                 |
-     * | 20     | 2              | pay flag             | <- 0: caller pays; 1: contract pays; greater: pre-funded
+     * | 20     | 1              | pay flag             | <- 0: caller pays; 1: contract pays; greater: pre-funded
      */
     function _swapSyncExactIn(
         uint256 fromAmount,
@@ -33,12 +31,12 @@ abstract contract SyncSwapper is ERC20Selectors, Masks {
     {
         assembly {
             let syncSwapData := calldataload(currentOffset)
-            let pool := shr(96, syncSwapData)
 
             let ptr := mload(0x40)
 
             // facilitate payment if needed
-            payFlag := and(UINT8_MASK, shr(72, syncSwapData))
+            payFlag := and(UINT8_MASK, shr(88, syncSwapData))
+            let pool := shr(96, syncSwapData)
             if lt(payFlag, 2) {
                 let success
                 switch payFlag
@@ -112,7 +110,7 @@ abstract contract SyncSwapper is ERC20Selectors, Masks {
                 revert(0, returndatasize())
             }
             buyAmount := mload(add(ptr, 0x20))
-            currentOffset := add(currentOffset, 22)
+            currentOffset := add(currentOffset, 21)
         }
         return (buyAmount, currentOffset);
     }

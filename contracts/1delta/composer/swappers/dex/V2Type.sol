@@ -22,6 +22,12 @@ abstract contract V2TypeGeneric is ERC20Selectors, Masks {
     /// @dev selector for swap(...)
     bytes32 private constant UNI_V2_SWAP = 0x022c0d9f00000000000000000000000000000000000000000000000000000000;
 
+    /// @notice fixed selector transferFrom(...) on permit2
+    bytes32 private constant PERMIT2_TRANSFER_FROM = 0x36c7851600000000000000000000000000000000000000000000000000000000;
+
+    /// @notice deterministically deployed pemrit2 address
+    address private constant PERMIT2 = 0x000000000022D473030F116dDEE9F6B43aC78BA3;
+
     /*
      * | Offset | Length (bytes) | Description          |
      * |--------|----------------|----------------------|
@@ -66,7 +72,7 @@ abstract contract V2TypeGeneric is ERC20Selectors, Masks {
                 )
 
             switch lt(
-                and(UINT8_MASK, shr(88, pool)), // this is the forkId
+                and(UINT8_MASK, shr(72, pool)), // this is the forkId
                 128 // less than 128 indicates that it is classic uni V2, solidly otherwise
             )
             case 1 {
@@ -164,15 +170,17 @@ abstract contract V2TypeGeneric is ERC20Selectors, Masks {
                 mstore(add(ptr, 204), shl(96, tokenOut))
                 // we skip to the forkId offset
                 currentOffset := add(22, currentOffset)
+                // increment by 3 here (forkId, calldataLength)
+                clLength := add(clLength, 3)
                 // Store callback  (incl forkId)
-                calldatacopy(add(ptr, 224), currentOffset, add(clLength, 3))
+                calldatacopy(add(ptr, 224), currentOffset, clLength)
                 if iszero(
                     call(
                         gas(),
                         pool,
                         0x0,
                         ptr, // input selector
-                        add(227, clLength), // 164 + (63+clLength)
+                        add(224, clLength), // 164 + (63+clLength)
                         0x0, // output = 0
                         0x0 // output size = 0
                     )
@@ -182,8 +190,8 @@ abstract contract V2TypeGeneric is ERC20Selectors, Masks {
                     revert(0, returndatasize())
                 }
                 // update clLength as new offset
-                // we add forkId and clLengh and datalength
-                clLength := add(add(3, currentOffset), clLength)
+                // we already added forkId and clLengh and datalength
+                clLength := add(currentOffset, clLength)
             }
             ////////////////////////////////////////////////////
             // Otherwise, we have to assume that payment needs to
@@ -197,19 +205,21 @@ abstract contract V2TypeGeneric is ERC20Selectors, Masks {
             default {
                 switch clLength
                 case 0 {
+                    // we need an incremented ptr here to not override the swap call below
+                    clLength := add(ptr, 0xC4)
                     // selector for transferFrom(address,address,uint256)
-                    mstore(ptr, ERC20_TRANSFER_FROM)
-                    mstore(add(ptr, 0x04), callerAddress)
-                    mstore(add(ptr, 0x24), pool)
-                    mstore(add(ptr, 0x44), amountIn)
+                    mstore(clLength, ERC20_TRANSFER_FROM)
+                    mstore(add(clLength, 0x04), callerAddress)
+                    mstore(add(clLength, 0x24), pool)
+                    mstore(add(clLength, 0x44), amountIn)
 
-                    let success := call(gas(), tokenIn, 0, ptr, 0x64, 0, 32)
+                    clLength := call(gas(), tokenIn, 0, clLength, 0x64, 0, 32)
 
                     let rdsize := returndatasize()
 
                     if iszero(
                         and(
-                            success, // call itself succeeded
+                            clLength, // call itself succeeded
                             or(
                                 iszero(rdsize), // no return data, or
                                 and(
@@ -225,17 +235,19 @@ abstract contract V2TypeGeneric is ERC20Selectors, Masks {
                 }
                 // transfer plain
                 case 1 {
+                    // we need an incremented ptr here to not override the swap call below
+                    clLength := add(ptr, 0xC4)
                     // selector for transfer(address,uint256)
-                    mstore(ptr, ERC20_TRANSFER)
-                    mstore(add(ptr, 0x04), pool)
-                    mstore(add(ptr, 0x24), amountIn)
-                    let success := call(gas(), tokenIn, 0, ptr, 0x44, 0, 32)
+                    mstore(clLength, ERC20_TRANSFER)
+                    mstore(add(clLength, 0x04), pool)
+                    mstore(add(clLength, 0x24), amountIn)
+                    clLength := call(gas(), tokenIn, 0, clLength, 0x44, 0, 32)
 
                     let rdsize := returndatasize()
 
                     if iszero(
                         and(
-                            success, // call itself succeeded
+                            clLength, // call itself succeeded
                             or(
                                 iszero(rdsize), // no return data, or
                                 and(
@@ -297,8 +309,9 @@ abstract contract V2TypeGeneric is ERC20Selectors, Masks {
             let poolFeeDenom := and(shr(80, pair), UINT16_MASK)
 
             // We only allow the caller to pay as otherwise, the fee is charged twice
-            switch and(UINT16_MASK, shr(64, pair))
+            switch and(UINT16_MASK, shr(56, pair))
             case 0 {
+                pair := shr(96, pair)
                 // selector for transferFrom(address,address,uint256)
                 mstore(ptr, ERC20_TRANSFER_FROM)
                 mstore(add(ptr, 0x04), callerAddress)
@@ -324,9 +337,25 @@ abstract contract V2TypeGeneric is ERC20Selectors, Masks {
                     revert(0, rdsize)
                 }
             }
+            case 1 {
+                pair := shr(96, pair)
+                // the 1-case here is a permit2 transfer
+                // this is needed as FOT usually has no permit, meaning
+                // direct permissioning is not possible
+                // the "real" 1-case is not mixed up with the "regular" uni V2 case
+                // as for FOT the intermediate holding of the asset cannot be facilitated
+                mstore(ptr, PERMIT2_TRANSFER_FROM)
+                mstore(add(ptr, 0x04), callerAddress)
+                mstore(add(ptr, 0x24), pair)
+                mstore(add(ptr, 0x44), amountIn)
+                mstore(add(ptr, 0x64), tokenIn)
+                if iszero(call(gas(), PERMIT2, 0, ptr, 0x84, 0x0, 0x0)) {
+                    returndatacopy(0, 0, returndatasize())
+                    revert(0, returndatasize())
+                }
+            }
             default { revert(0, 0) }
 
-            pair := shr(96, pair)
             // we define this as token in and later re-assign this to
             // reserve in to prevent stack too deep errors
             // Compute the buy amount based on the pair reserves.

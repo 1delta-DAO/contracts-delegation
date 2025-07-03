@@ -12,6 +12,7 @@ contract AaveV3FlashLoanCallback is Masks, DeltaErrors {
     // Aave V3 style lender pool addresses
     address private constant ZEROLEND = 0xdB7e029394a7cdbE27aBdAAf4D15e78baC34d6E8;
     address private constant LENDOS = 0xaA397b29510a7219A0f3f7cE3eb53A09bc2A924c;
+    address private constant LAYERBANK_V3 = 0xfeAce246DC83Ba5E4E95A67b1357D6Fd7C3C088f;
 
     /**
      * @dev Aave V3 style flash loan callback
@@ -43,6 +44,7 @@ contract AaveV3FlashLoanCallback is Masks, DeltaErrors {
             switch and(UINT8_MASK, shr(88, firstWord))
             case 20 { pool := ZEROLEND }
             case 83 { pool := LENDOS }
+            case 91 { pool := LAYERBANK_V3 }
             // We revert on any other id
             default {
                 mstore(0, INVALID_FLASH_LOAN)

@@ -1,12 +1,10 @@
-import {Chain, CHAIN_INFO} from "@1delta/asset-registry";
+import { Chain, CHAIN_INFO } from "@1delta/asset-registry";
 
 export const CREATE_CHAIN_IDS = [
     Chain.ARBITRUM_ONE,
     Chain.HEMI_NETWORK,
     Chain.BNB_SMART_CHAIN_MAINNET,
     Chain.METIS_ANDROMEDA_MAINNET,
-    // Chain.LINEA,
-    // Chain.SCROLL,
     Chain.BASE,
     Chain.POLYGON_MAINNET,
     Chain.TAIKO_ALETHIA,
@@ -18,6 +16,11 @@ export const CREATE_CHAIN_IDS = [
     Chain.OP_MAINNET,
     Chain.SCROLL,
     Chain.LINEA,
+    Chain.BLAST,
+    Chain.SONEIUM,
+    Chain.MODE,
+    Chain.CORE_BLOCKCHAIN_MAINNET,
+    Chain.FANTOM_OPERA,
 ];
 
 export function sortForks<T>(arr: T[], field: keyof T) {
@@ -42,6 +45,7 @@ export function toCamelCaseWithFirstUpper(str: string) {
     const camel = str.replace(/-([a-z])/g, (_, char) => char.toUpperCase());
     return camel.charAt(0).toUpperCase() + camel.slice(1);
 }
+
 
 export const getChainKey = (chainId: string) => CHAIN_INFO[chainId].key!;
 export const getChainEnum = (chainId: string) => CHAIN_INFO[chainId].enum!;

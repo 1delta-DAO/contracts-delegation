@@ -9,7 +9,8 @@ async function main() {
     const chainId = await operator.getChainId();
     if (String(chainId) !== Chain.POLYGON_MAINNET) throw new Error("IC")
     console.log("operator", operator.address, "on", chainId)
-    const composer = await new OneDeltaComposerPolygon__factory(operator).deploy()
+    const gd = await operator.getGasPrice()
+    const composer = await new OneDeltaComposerPolygon__factory(operator).deploy({ gasPrice: gd.add(100) })
     await composer.deployed()
 
     console.log("deployed expected to", composer.address)

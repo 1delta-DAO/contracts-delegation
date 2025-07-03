@@ -21,6 +21,7 @@ import { DeployFactory__factory } from "../../types";
 // sonic
 // fantom
 // scroll
+// kaia
 
 async function main() {
     const accounts = await ethers.getSigners()

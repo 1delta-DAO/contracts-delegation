@@ -67,13 +67,24 @@ contract AcrossTest is BaseTest {
 
         bytes memory forwarderCalldata = abi.encodePacked(
             CalldataLib.encodeApprove(USDC, SPOKE_POOL),
-            CalldataLib.encodeAcrossBridgeToken(SPOKE_POOL, user, USDC, POLYGON_USDC, 0, FIXED_FEE, FEE_PERCENTAGE, POLYGON_CHAIN_ID, user, message),
+            CalldataLib.encodeAcrossBridgeToken(
+                SPOKE_POOL,
+                user,
+                USDC,
+                bytes32(uint256(uint160(POLYGON_USDC))),
+                0,
+                FIXED_FEE,
+                FEE_PERCENTAGE,
+                POLYGON_CHAIN_ID,
+                bytes32(uint256(uint160(user))),
+                message
+            ),
             CalldataLib.encodeSweep(USDC, user, 0, SweepType.VALIDATE)
         );
 
         bytes memory composerCalldata = abi.encodePacked(
             CalldataLib.encodeTransferIn(USDC, address(callForwarder), BRIDGE_AMOUNT),
-            CalldataLib.encodeExternalCall(address(callForwarder), 0, forwarderCalldata)
+            CalldataLib.encodeExternalCall(address(callForwarder), 0, false, forwarderCalldata)
         );
 
         vm.startPrank(user);
@@ -92,7 +103,16 @@ contract AcrossTest is BaseTest {
         bytes memory forwarderCalldata = abi.encodePacked(
             CalldataLib.encodeApprove(USDC, SPOKE_POOL),
             CalldataLib.encodeAcrossBridgeToken(
-                SPOKE_POOL, user, USDC, POLYGON_USDC, BRIDGE_AMOUNT - 100e6, FIXED_FEE, FEE_PERCENTAGE, POLYGON_CHAIN_ID, user, message
+                SPOKE_POOL,
+                user,
+                USDC,
+                bytes32(uint256(uint160(POLYGON_USDC))),
+                BRIDGE_AMOUNT - 100e6,
+                FIXED_FEE,
+                FEE_PERCENTAGE,
+                POLYGON_CHAIN_ID,
+                bytes32(uint256(uint160(user))),
+                message
             ),
             //CalldataLib.encodeApprove(WETH9_arb, SPOKE_POOL),
             CalldataLib.encodeSweep(USDC, user, 0, SweepType.VALIDATE)
@@ -100,7 +120,7 @@ contract AcrossTest is BaseTest {
 
         bytes memory composerCalldata = abi.encodePacked(
             CalldataLib.encodeTransferIn(USDC, address(callForwarder), BRIDGE_AMOUNT),
-            CalldataLib.encodeExternalCall(address(callForwarder), 0, forwarderCalldata)
+            CalldataLib.encodeExternalCall(address(callForwarder), 0, false, forwarderCalldata)
         );
 
         vm.startPrank(user);
@@ -125,13 +145,24 @@ contract AcrossTest is BaseTest {
         deal(address(composer), eth_amount + fee);
 
         bytes memory forwarderCalldata = abi.encodePacked(
-            CalldataLib.encodeAcrossBridgeNative(SPOKE_POOL, user, WETH9_arb, WETH, 0, fee, FEE_PERCENTAGE, POLYGON_CHAIN_ID, user, message),
+            CalldataLib.encodeAcrossBridgeNative(
+                SPOKE_POOL,
+                user,
+                WETH9_arb,
+                bytes32(uint256(uint160(WETH))),
+                0,
+                fee,
+                FEE_PERCENTAGE,
+                POLYGON_CHAIN_ID,
+                bytes32(uint256(uint160(user))),
+                message
+            ),
             CalldataLib.encodeSweep(address(0), user, 0, SweepType.VALIDATE) // sweep any remaining ETH
         );
 
         bytes memory composerCalldata = abi.encodePacked(
             CalldataLib.encodeSweep(address(0), address(callForwarder), 0, SweepType.VALIDATE), // transfer all eth to call forwarder
-            CalldataLib.encodeExternalCall(address(callForwarder), 0, forwarderCalldata)
+            CalldataLib.encodeExternalCall(address(callForwarder), 0, false, forwarderCalldata)
         );
 
         vm.startPrank(user);
@@ -150,13 +181,24 @@ contract AcrossTest is BaseTest {
         deal(address(composer), eth_amount);
 
         bytes memory forwarderCalldata = abi.encodePacked(
-            CalldataLib.encodeAcrossBridgeNative(SPOKE_POOL, user, WETH9_arb, WETH, eth_amount, fee, FEE_PERCENTAGE, POLYGON_CHAIN_ID, user, message),
+            CalldataLib.encodeAcrossBridgeNative(
+                SPOKE_POOL,
+                user,
+                WETH9_arb,
+                bytes32(uint256(uint160(WETH))),
+                eth_amount,
+                fee,
+                FEE_PERCENTAGE,
+                POLYGON_CHAIN_ID,
+                bytes32(uint256(uint160(user))),
+                message
+            ),
             CalldataLib.encodeSweep(address(0), user, 0, SweepType.VALIDATE) // sweep any remaining ETH
         );
 
         bytes memory composerCalldata = abi.encodePacked(
             CalldataLib.encodeSweep(address(0), address(callForwarder), 0, SweepType.VALIDATE), // transfer all eth to call forwarder
-            CalldataLib.encodeExternalCall(address(callForwarder), 0, forwarderCalldata)
+            CalldataLib.encodeExternalCall(address(callForwarder), 0, false, forwarderCalldata)
         );
 
         vm.startPrank(user);
@@ -185,14 +227,23 @@ contract AcrossTest is BaseTest {
 
         bytes memory forwarderCalldata = abi.encodePacked(
             CalldataLib.encodeAcrossBridgeNative(
-                address(spokePool), user, WETH9_arb, WETH, eth_amount, fee, FEE_PERCENTAGE, POLYGON_CHAIN_ID, user, message
+                address(spokePool),
+                user,
+                WETH9_arb,
+                bytes32(uint256(uint160(WETH))),
+                eth_amount,
+                fee,
+                FEE_PERCENTAGE,
+                POLYGON_CHAIN_ID,
+                bytes32(uint256(uint160(user))),
+                message
             ),
             CalldataLib.encodeSweep(address(0), user, 0, SweepType.VALIDATE) // sweep any remaining ETH
         );
 
         bytes memory composerCalldata = abi.encodePacked(
             CalldataLib.encodeSweep(address(0), address(callForwarder), 0, SweepType.VALIDATE), // transfer all eth to call forwarder
-            CalldataLib.encodeExternalCall(address(callForwarder), 0, forwarderCalldata)
+            CalldataLib.encodeExternalCall(address(callForwarder), 0, false, forwarderCalldata)
         );
 
         vm.startPrank(user);

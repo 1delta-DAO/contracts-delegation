@@ -10,6 +10,7 @@ import {CalldataLib} from "test/composer/utils/CalldataLib.sol";
 import {BaseTest} from "test/shared/BaseTest.sol";
 import {AaveMockPool, IAaveFlashLoanReceiver, IAavePool} from "test/mocks/AaveMockPool.sol";
 import {IERC20} from "openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
+import {SweepType} from "contracts/1delta/composer/enums/MiscEnums.sol";
 
 contract AaveV3FlashLoanCallbackTest is BaseTest, DeltaErrors {
     IComposerLike oneDV2;
@@ -24,6 +25,7 @@ contract AaveV3FlashLoanCallbackTest is BaseTest, DeltaErrors {
     address private AVALON_XAUM;
     address private AVALON_LISTA;
     address private AVALON_USDX;
+    address private AVALON_UNIBTC;
     address private KINZA;
 
     address private USDC;
@@ -62,7 +64,7 @@ contract AaveV3FlashLoanCallbackTest is BaseTest, DeltaErrors {
         // mock implementation
         replaceLendingPoolWithMock(AAVE_V3);
 
-        bytes memory params = CalldataLib.encodeFlashLoan(USDC, 1e6, AAVE_V3, uint8(2), uint8(0), "");
+        bytes memory params = CalldataLib.encodeFlashLoan(USDC, 1e6, AAVE_V3, uint8(2), uint8(0), sweepCall());
 
         vm.prank(user);
         oneDV2.deltaCompose(params);
@@ -72,7 +74,7 @@ contract AaveV3FlashLoanCallbackTest is BaseTest, DeltaErrors {
         // mock implementation
         replaceLendingPoolWithMock(AVALON_SOLV_BTC);
 
-        bytes memory params = CalldataLib.encodeFlashLoan(USDC, 1e6, AVALON_SOLV_BTC, uint8(2), uint8(51), "");
+        bytes memory params = CalldataLib.encodeFlashLoan(USDC, 1e6, AVALON_SOLV_BTC, uint8(2), uint8(51), sweepCall());
 
         vm.prank(user);
         oneDV2.deltaCompose(params);
@@ -82,7 +84,7 @@ contract AaveV3FlashLoanCallbackTest is BaseTest, DeltaErrors {
         // mock implementation
         replaceLendingPoolWithMock(AVALON_PUMP_BTC);
 
-        bytes memory params = CalldataLib.encodeFlashLoan(USDC, 1e6, AVALON_PUMP_BTC, uint8(2), uint8(53), "");
+        bytes memory params = CalldataLib.encodeFlashLoan(USDC, 1e6, AVALON_PUMP_BTC, uint8(2), uint8(53), sweepCall());
 
         vm.prank(user);
         oneDV2.deltaCompose(params);
@@ -92,7 +94,7 @@ contract AaveV3FlashLoanCallbackTest is BaseTest, DeltaErrors {
         // mock implementation
         replaceLendingPoolWithMock(AVALON_STBTC);
 
-        bytes memory params = CalldataLib.encodeFlashLoan(STBTC, 1e6, AVALON_STBTC, uint8(2), uint8(64), "");
+        bytes memory params = CalldataLib.encodeFlashLoan(STBTC, 1e6, AVALON_STBTC, uint8(2), uint8(64), sweepCall());
 
         vm.prank(user);
         oneDV2.deltaCompose(params);
@@ -102,7 +104,7 @@ contract AaveV3FlashLoanCallbackTest is BaseTest, DeltaErrors {
         // mock implementation
         replaceLendingPoolWithMock(AVALON_WBTC);
 
-        bytes memory params = CalldataLib.encodeFlashLoan(WBTC, 1e6, AVALON_WBTC, uint8(2), uint8(65), "");
+        bytes memory params = CalldataLib.encodeFlashLoan(WBTC, 1e6, AVALON_WBTC, uint8(2), uint8(65), sweepCall());
 
         vm.prank(user);
         oneDV2.deltaCompose(params);
@@ -112,7 +114,7 @@ contract AaveV3FlashLoanCallbackTest is BaseTest, DeltaErrors {
         // mock implementation
         replaceLendingPoolWithMock(AVALON_LBTC);
 
-        bytes memory params = CalldataLib.encodeFlashLoan(LBTC, 1e6, AVALON_LBTC, uint8(2), uint8(66), "");
+        bytes memory params = CalldataLib.encodeFlashLoan(LBTC, 1e6, AVALON_LBTC, uint8(2), uint8(66), sweepCall());
 
         vm.prank(user);
         oneDV2.deltaCompose(params);
@@ -122,7 +124,7 @@ contract AaveV3FlashLoanCallbackTest is BaseTest, DeltaErrors {
         // mock implementation
         replaceLendingPoolWithMock(AVALON_XAUM);
 
-        bytes memory params = CalldataLib.encodeFlashLoan(XAUM, 1e6, AVALON_XAUM, uint8(2), uint8(67), "");
+        bytes memory params = CalldataLib.encodeFlashLoan(XAUM, 1e6, AVALON_XAUM, uint8(2), uint8(67), sweepCall());
 
         vm.prank(user);
         oneDV2.deltaCompose(params);
@@ -132,7 +134,7 @@ contract AaveV3FlashLoanCallbackTest is BaseTest, DeltaErrors {
         // mock implementation
         replaceLendingPoolWithMock(AVALON_LISTA);
 
-        bytes memory params = CalldataLib.encodeFlashLoan(LISTA, 1e6, AVALON_LISTA, uint8(2), uint8(68), "");
+        bytes memory params = CalldataLib.encodeFlashLoan(LISTA, 1e6, AVALON_LISTA, uint8(2), uint8(68), sweepCall());
 
         vm.prank(user);
         oneDV2.deltaCompose(params);
@@ -142,7 +144,17 @@ contract AaveV3FlashLoanCallbackTest is BaseTest, DeltaErrors {
         // mock implementation
         replaceLendingPoolWithMock(AVALON_USDX);
 
-        bytes memory params = CalldataLib.encodeFlashLoan(USDX, 1e6, AVALON_USDX, uint8(2), uint8(69), "");
+        bytes memory params = CalldataLib.encodeFlashLoan(USDX, 1e6, AVALON_USDX, uint8(2), uint8(69), sweepCall());
+
+        vm.prank(user);
+        oneDV2.deltaCompose(params);
+    }
+
+    function test_flash_loan_aaveV3_type_avalon_unibtc_pool_with_callbacks() public {
+        // mock implementation
+        replaceLendingPoolWithMock(AVALON_UNIBTC);
+
+        bytes memory params = CalldataLib.encodeFlashLoan(USDC, 1e6, AVALON_UNIBTC, uint8(2), uint8(70), sweepCall());
 
         vm.prank(user);
         oneDV2.deltaCompose(params);
@@ -152,7 +164,7 @@ contract AaveV3FlashLoanCallbackTest is BaseTest, DeltaErrors {
         // mock implementation
         replaceLendingPoolWithMock(KINZA);
 
-        bytes memory params = CalldataLib.encodeFlashLoan(USDC, 1e6, KINZA, uint8(2), uint8(82), "");
+        bytes memory params = CalldataLib.encodeFlashLoan(USDC, 1e6, KINZA, uint8(2), uint8(82), sweepCall());
 
         vm.prank(user);
         oneDV2.deltaCompose(params);
@@ -160,7 +172,7 @@ contract AaveV3FlashLoanCallbackTest is BaseTest, DeltaErrors {
 
     function test_flash_loan_aaveV3_type_wrongCaller_revert() public {
         for (uint256 i = 0; i < validPools.length; i++) {
-            bytes memory params = CalldataLib.encodeFlashLoan(USDC, 1e6, address(mockPool), uint8(2), uint8(validPools[0].poolId), "");
+            bytes memory params = CalldataLib.encodeFlashLoan(USDC, 1e6, address(mockPool), uint8(2), uint8(validPools[0].poolId), sweepCall());
 
             vm.prank(user);
             vm.expectRevert(DeltaErrors.INVALID_CALLER);
@@ -186,13 +198,17 @@ contract AaveV3FlashLoanCallbackTest is BaseTest, DeltaErrors {
         for (uint256 i = 0; i < validPools.length; i++) {
             if (poolId == validPools[i].poolId) return;
         }
-        bytes memory params = CalldataLib.encodeFlashLoan(USDC, 1e6, AAVE_V3, uint8(2), uint8(poolId), "");
+        bytes memory params = CalldataLib.encodeFlashLoan(USDC, 1e6, AAVE_V3, uint8(2), uint8(poolId), sweepCall());
         vm.prank(user);
         vm.expectRevert(DeltaErrors.INVALID_FLASH_LOAN);
         oneDV2.deltaCompose(params);
     }
 
     // Helper Functions
+    function sweepCall() internal returns (bytes memory) {
+        return CalldataLib.encodeSweep(USDC, user, 0, SweepType.VALIDATE);
+    }
+
     function getAddressFromRegistry() internal {
         AAVE_V3 = chain.getLendingController(Lenders.AAVE_V3);
         AVALON_SOLV_BTC = chain.getLendingController(Lenders.AVALON_SOLV_BTC);
@@ -203,6 +219,7 @@ contract AaveV3FlashLoanCallbackTest is BaseTest, DeltaErrors {
         AVALON_XAUM = chain.getLendingController(Lenders.AVALON_XAUM);
         AVALON_LISTA = chain.getLendingController(Lenders.AVALON_LISTA);
         AVALON_USDX = chain.getLendingController(Lenders.AVALON_USDX);
+        AVALON_UNIBTC = chain.getLendingController(Lenders.AVALON_UNIBTC);
         KINZA = chain.getLendingController(Lenders.KINZA);
 
         // Get token addresses
@@ -225,6 +242,7 @@ contract AaveV3FlashLoanCallbackTest is BaseTest, DeltaErrors {
         validPools.push(PoolCase({poolId: 67, poolAddr: AVALON_XAUM, asset: XAUM}));
         validPools.push(PoolCase({poolId: 68, poolAddr: AVALON_LISTA, asset: LISTA}));
         validPools.push(PoolCase({poolId: 69, poolAddr: AVALON_USDX, asset: USDX}));
+        validPools.push(PoolCase({poolId: 70, poolAddr: AVALON_UNIBTC, asset: USDC}));
         validPools.push(PoolCase({poolId: 82, poolAddr: KINZA, asset: USDC}));
     }
 

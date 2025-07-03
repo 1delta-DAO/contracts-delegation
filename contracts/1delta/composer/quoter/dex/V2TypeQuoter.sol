@@ -37,7 +37,7 @@ abstract contract V2TypeQuoter is ERC20Selectors, Masks {
                 // Pairs are in the range (0, 2¹¹²) so this shouldn't overflow.
                 // buyAmount = (pairSellAmount * feeAm * buyReserve) /
                 //     (pairSellAmount * feeAm + sellReserve * 1000);
-                switch lt(and(UINT8_MASK, shr(88, pair)), 128)
+                switch lt(and(UINT8_MASK, shr(72, pair)), 128)
                 case 1 {
                     let feeDenom := and(shr(80, pair), UINT16_MASK)
                     pair := shr(96, pair)

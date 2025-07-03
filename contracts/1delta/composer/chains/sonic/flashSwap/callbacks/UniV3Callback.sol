@@ -23,13 +23,13 @@ abstract contract UniV3Callbacks is V3Callbacker, Masks, DeltaErrors {
     bytes32 private constant SOLIDLY_V3_FF_FACTORY = 0xff777fAca731b17E8847eBF175c94DbE9d81A8f6300000000000000000000000;
     bytes32 private constant SOLIDLY_V3_CODE_HASH = 0xe9b68c5f77858eecac2e651646e208175e9b1359d68d0e14fc69f8c54e5010bf;
 
-    bytes32 private constant SHADOW_CL_FF_FACTORY = 0xff8BBDc15759a8eCf99A92E004E0C64ea9A5142d590000000000000000000000;
+    bytes32 private constant SHADOW_CL_FF_FACTORY = 0xff8BBDc15759a8eCf99A92E004E0C64ea9A5142d59ffffffffffffffffffffff;
     bytes32 private constant SHADOW_CL_CODE_HASH = 0xc701ee63862761c31d620a4a083c61bdc1e81761e6b9c9267fd19afd22e0821d;
 
     bytes32 private constant WAGMI_FF_FACTORY = 0xff56CFC796bC88C9c7e1b38C2b0aF9B7120B079aef0000000000000000000000;
     bytes32 private constant WAGMI_CODE_HASH = 0x30146866f3a846fe3c636beb2756dbd24cf321bc52c9113c837c21f47470dfeb;
 
-    bytes32 private constant SWAPX_FF_FACTORY = 0xff885229E48987EA4c68F0aA1bCBff5184198A91880000000000000000000000;
+    bytes32 private constant SWAPX_FF_FACTORY = 0xff885229E48987EA4c68F0aA1bCBff5184198A9188ffffffffffffffffffffff;
     bytes32 private constant SWAPX_CODE_HASH = 0xf96d2474815c32e070cd63233f06af5413efc5dcb430aee4ff18cc29007c562d;
 
     /**
@@ -103,9 +103,17 @@ abstract contract UniV3Callbacks is V3Callbacker, Masks, DeltaErrors {
                     mstore(p, tokenIn)
                     mstore(add(p, 32), tokenOut)
                 }
-                // this stores the fee
-                mstore(add(p, 64), and(UINT16_MASK, shr(72, tokenOutAndFee)))
-                mstore(p, keccak256(p, 96))
+
+                switch and(FF_ADDRESS_COMPLEMENT, ffFactoryAddress)
+                case 0 {
+                    // cases with fee
+                    mstore(add(p, 64), and(UINT16_MASK, shr(72, tokenOutAndFee)))
+                    mstore(p, keccak256(p, 96))
+                }
+                default {
+                    // cases without fee, e.g. algebra case
+                    mstore(p, keccak256(p, 64))
+                }
                 p := add(p, 32)
                 mstore(p, codeHash)
 

@@ -26,10 +26,10 @@ abstract contract UniV3Callbacks is V3Callbacker, Masks, DeltaErrors {
     bytes32 private constant RETRO_FF_FACTORY = 0xff91e1B99072f238352f59e58de875691e20Dc19c10000000000000000000000;
     bytes32 private constant RETRO_CODE_HASH = 0x817e07951f93017a93327ac8cc31e946540203a19e1ecc37bc1761965c2d1090;
 
-    bytes32 private constant QUICKSWAP_V3_FF_FACTORY = 0xff2D98E2FA9da15aa6dC9581AB097Ced7af697CB920000000000000000000000;
+    bytes32 private constant QUICKSWAP_V3_FF_FACTORY = 0xff2D98E2FA9da15aa6dC9581AB097Ced7af697CB92ffffffffffffffffffffff;
     bytes32 private constant QUICKSWAP_V3_CODE_HASH = 0x6ec6c9c8091d160c0aa74b2b14ba9c1717e95093bd3ac085cee99a49aab294a4;
 
-    bytes32 private constant HOLIVERSE_FF_FACTORY = 0xff0b643D3A5903ED89921b85c889797dd9887125Ad0000000000000000000000;
+    bytes32 private constant HOLIVERSE_FF_FACTORY = 0xff0b643D3A5903ED89921b85c889797dd9887125Adffffffffffffffffffffff;
     bytes32 private constant HOLIVERSE_CODE_HASH = 0xb3fc09be5eb433d99b1ec89fd8435aaf5ffea75c1879e19028aa2414a14b3c85;
 
     bytes32 private constant IZUMI_FF_FACTORY = 0xffcA7e21764CD8f7c1Ec40e651E25Da68AeD0960370000000000000000000000;
@@ -123,9 +123,17 @@ abstract contract UniV3Callbacks is V3Callbacker, Masks, DeltaErrors {
                     mstore(p, tokenIn)
                     mstore(add(p, 32), tokenOut)
                 }
-                // this stores the fee
-                mstore(add(p, 64), and(UINT16_MASK, shr(72, tokenOutAndFee)))
-                mstore(p, keccak256(p, 96))
+
+                switch and(FF_ADDRESS_COMPLEMENT, ffFactoryAddress)
+                case 0 {
+                    // cases with fee
+                    mstore(add(p, 64), and(UINT16_MASK, shr(72, tokenOutAndFee)))
+                    mstore(p, keccak256(p, 96))
+                }
+                default {
+                    // cases without fee, e.g. algebra case
+                    mstore(p, keccak256(p, 64))
+                }
                 p := add(p, 32)
                 mstore(p, codeHash)
 

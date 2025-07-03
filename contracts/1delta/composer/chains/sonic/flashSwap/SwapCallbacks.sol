@@ -4,6 +4,7 @@ pragma solidity 0.8.28;
 
 import {UniV3Callbacks, V3Callbacker} from "./callbacks/UniV3Callback.sol";
 import {UniV2Callbacks} from "./callbacks/UniV2Callback.sol";
+import {BalancerV3Callbacks} from "./callbacks/BalancerV3Callback.sol";
 
 /**
  * @title Swap Callback executor
@@ -11,7 +12,8 @@ import {UniV2Callbacks} from "./callbacks/UniV2Callback.sol";
  */
 contract SwapCallbacks is
     UniV3Callbacks,
-    UniV2Callbacks //
+    UniV2Callbacks,
+    BalancerV3Callbacks //
 {
     // override the compose
     function _deltaComposeInternal(
@@ -23,7 +25,8 @@ contract SwapCallbacks is
         virtual
         override(
             V3Callbacker,
-            UniV2Callbacks //
+            UniV2Callbacks,
+            BalancerV3Callbacks //
         )
     {}
 

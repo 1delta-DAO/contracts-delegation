@@ -10,6 +10,7 @@ import {UniversalLending} from "./lending/UniversalLending.sol";
 import {Permits} from "./permit/Permits.sol";
 import {Swaps} from "./swappers/Swaps.sol";
 import {Gen2025DexActions} from "./singletons/Gen2025DexActions.sol";
+import {DeadLogger} from "../shared/logs/DeadLogger.sol";
 
 /**
  * @title Base aggregator contract that needs overrides for explicit chains.
@@ -19,6 +20,7 @@ import {Gen2025DexActions} from "./singletons/Gen2025DexActions.sol";
  * @author 1delta Labs AG
  */
 abstract contract BaseComposer is
+    DeadLogger,
     Swaps,
     Gen2025DexActions,
     UniversalLending,
@@ -46,6 +48,9 @@ abstract contract BaseComposer is
             0x44, // the offset is constant
             length
         );
+
+        // log for tracing
+        _deadLog();
     }
 
     /**
@@ -73,7 +78,6 @@ abstract contract BaseComposer is
         assembly {
             maxIndex := add(currentOffset, calldataLength)
         }
-
         ////////////////////////////////////////////////////
         // Progressively loop through the calldata
         // The first byte defines the operation
@@ -119,9 +123,11 @@ abstract contract BaseComposer is
                     _invalidOperation();
                 }
             }
-            // break criteria - we shifted to the end of the calldata
+            // break if we skipped over the calldata
             if (currentOffset >= maxIndex) break;
         }
+        // revert if some excess is left
+        if (currentOffset > maxIndex) revert InvalidCalldata();
     }
 
     function _universalFlashLoan(uint256 currentOffset, address callerAddress) internal virtual returns (uint256) {}

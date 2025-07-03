@@ -13,7 +13,7 @@ import { CREATE_CHAIN_IDS, getChainKey } from "./config";
 import { composerTestImports } from "./templates/test/composerImport";
 import { customV2ValidationSnippets, customV3ValidationSnippets } from "./dex/customSnippets";
 
-import { IZUMI_FORKS, UNISWAP_V2_FORKS, UNISWAP_V3_FORKS, DODO_V2_DATA, DexValidation, UNISWAP_V4_FORKS, BALANCER_V3_FORKS, DexProtocol } from "@1delta/dex-registry"
+import { IZUMI_FORKS, UNISWAP_V2_FORKS, UNISWAP_V3_FORKS, DODO_V2_DATA, DexValidation, UNISWAP_V4_FORKS, BALANCER_V3_FORKS, DexProtocol, UniV3ForkType } from "@1delta/dex-registry"
 import { DEX_TO_CHAINS_EXCLUSIONS } from "./dex/blacklists";
 
 const SOLIDLY_V2_MIN_ID = 130
@@ -28,13 +28,13 @@ function createConstant(pool: string, lender: string) {
  * constants imports for uni V2s and V3s
  * respect overrdides that populate lower bytes and have no code hash 
  */
-function createffAddressConstant(pool: string, dexName: string, codeHash: string, overrideConstants?: string) {
+function createffAddressConstant(pool: string, dexName: string, codeHash: string, overrideConstants?: string, lowerFFs = false) {
     if (codeHash === DexValidation.OVERRIDE)
         return `
             ${overrideConstants ? overrideConstants : `bytes32 private constant ${dexName}_FACTORY = 0x000000000000000000000000${getAddress(pool).replace("0x", "")};`}
             `
     return `
-            bytes32 private constant ${dexName}_FF_FACTORY = ${getAddress(pool).replace("0x", "0xff")}0000000000000000000000;
+            bytes32 private constant ${dexName}_FF_FACTORY = ${getAddress(pool).replace("0x", "0xff")}${lowerFFs ? "ffffffffffffffffffffff" : "0000000000000000000000"};
             bytes32 private constant ${dexName}_CODE_HASH = ${codeHash};
            `
 }
@@ -201,6 +201,7 @@ interface DexIdData {
     pool: string
     codeHash?: string
     callbackSelector?: string
+    isAlgebra?: boolean
     impl?: string
 }
 
@@ -248,7 +249,8 @@ async function main() {
                             pool: address,
                             codeHash: maps.codeHash[chain] ?? maps.codeHash.default,
                             callbackSelector: maps.callbackSelector,
-                            impl: customV2ValidationSnippets[dex]?.[chain]?.constants
+                            impl: undefined,
+                            isAlgebra: (maps.forkType[chain] ?? maps.forkType.default).startsWith("Algebra")
                         })
                 }
             });
@@ -376,15 +378,15 @@ async function main() {
             // single case
             if (idsForSelector.length === 1) {
                 switchCaseContentV3 += createCaseSelectorV3Solo(sel)
-                const { pool, entityName, codeHash, impl } = idsForSelector[0]
-                constantsDataV3 += createffAddressConstant(pool, entityName, codeHash!, impl)
+                const { pool, entityName, codeHash, impl, isAlgebra } = idsForSelector[0]
+                constantsDataV3 += createffAddressConstant(pool, entityName, codeHash!, impl, isAlgebra)
                 switchCaseContentV3 += createCaseV3Solo(entityName, codeHash === DexValidation.OVERRIDE)
             }
             // multi case
             else {
                 switchCaseContentV3 += createCaseSelectorV3(sel)
-                idsForSelector.forEach(({ pool, entityName, codeHash, entityId, impl }, i) => {
-                    constantsDataV3 += createffAddressConstant(pool, entityName, codeHash!, impl)
+                idsForSelector.forEach(({ pool, entityName, codeHash, entityId, impl, isAlgebra }, i) => {
+                    constantsDataV3 += createffAddressConstant(pool, entityName, codeHash!, impl, isAlgebra)
                     switchCaseContentV3 += createCaseV3(entityName, entityId, codeHash === DexValidation.OVERRIDE)
                 })
                 // mutli case rejects invalid ids

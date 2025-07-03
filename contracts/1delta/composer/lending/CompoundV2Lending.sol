@@ -12,9 +12,6 @@ import {Masks} from "../../shared/masks/Masks.sol";
  * Most effective for Venus
  */
 abstract contract CompoundV2Lending is ERC20Selectors, Masks {
-    // BadLender()
-    bytes4 private constant BAD_LENDER = 0x603b7f3e;
-
     /*
      * Note this is for Venus Finance only as other COmpound forks
      * do not have this feature.

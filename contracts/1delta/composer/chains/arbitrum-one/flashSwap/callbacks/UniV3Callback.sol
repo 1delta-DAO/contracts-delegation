@@ -32,10 +32,10 @@ abstract contract UniV3Callbacks is V3Callbacker, Masks, DeltaErrors {
     bytes32 private constant RAMSES_V2_FF_FACTORY = 0xffAA2cd7477c451E703f3B9Ba5663334914763edF80000000000000000000000;
     bytes32 private constant RAMSES_V2_CODE_HASH = 0x1565b129f2d1790f12d45301b9b084335626f0c92410bc43130763b69971135d;
 
-    bytes32 private constant CAMELOT_FF_FACTORY = 0xff6Dd3FB9653B10e806650F107C3B5A0a6fF974F650000000000000000000000;
+    bytes32 private constant CAMELOT_FF_FACTORY = 0xff6Dd3FB9653B10e806650F107C3B5A0a6fF974F65ffffffffffffffffffffff;
     bytes32 private constant CAMELOT_CODE_HASH = 0x6c1bebd370ba84753516bc1393c0d0a6c645856da55f5393ac8ab3d6dbc861d3;
 
-    bytes32 private constant ZYBERSWAP_FF_FACTORY = 0xff24E85F5F94C6017d2d87b434394e87df4e4D56E30000000000000000000000;
+    bytes32 private constant ZYBERSWAP_FF_FACTORY = 0xff24E85F5F94C6017d2d87b434394e87df4e4D56E3ffffffffffffffffffffff;
     bytes32 private constant ZYBERSWAP_CODE_HASH = 0x6ec6c9c8091d160c0aa74b2b14ba9c1717e95093bd3ac085cee99a49aab294a4;
 
     bytes32 private constant IZUMI_FF_FACTORY = 0xffCFD8A067e1fa03474e79Be646c5f6b6A278473990000000000000000000000;
@@ -147,9 +147,17 @@ abstract contract UniV3Callbacks is V3Callbacker, Masks, DeltaErrors {
                     mstore(p, tokenIn)
                     mstore(add(p, 32), tokenOut)
                 }
-                // this stores the fee
-                mstore(add(p, 64), and(UINT16_MASK, shr(72, tokenOutAndFee)))
-                mstore(p, keccak256(p, 96))
+
+                switch and(FF_ADDRESS_COMPLEMENT, ffFactoryAddress)
+                case 0 {
+                    // cases with fee
+                    mstore(add(p, 64), and(UINT16_MASK, shr(72, tokenOutAndFee)))
+                    mstore(p, keccak256(p, 96))
+                }
+                default {
+                    // cases without fee, e.g. algebra case
+                    mstore(p, keccak256(p, 64))
+                }
                 p := add(p, 32)
                 mstore(p, codeHash)
 

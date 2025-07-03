@@ -26,7 +26,7 @@ abstract contract UniV3Callbacks is V3Callbacker, Masks, DeltaErrors {
     bytes32 private constant VELODROME_V3_FF_FACTORY = 0xffCc0bDDB707055e04e497aB22a59c2aF4391cd12F0000000000000000000000;
     bytes32 private constant VELODROME_V3_CODE_HASH = 0x339492e30b7a68609e535da9b0773082bfe60230ca47639ee5566007d525f5a7;
 
-    bytes32 private constant ZYBERSWAP_FF_FACTORY = 0xffc0D4323426C709e8D04B5b130e7F059523464a910000000000000000000000;
+    bytes32 private constant ZYBERSWAP_FF_FACTORY = 0xffc0D4323426C709e8D04B5b130e7F059523464a91ffffffffffffffffffffff;
     bytes32 private constant ZYBERSWAP_CODE_HASH = 0xbce37a54eab2fcd71913a0d40723e04238970e7fc1159bfd58ad5b79531697e7;
 
     /**
@@ -96,9 +96,17 @@ abstract contract UniV3Callbacks is V3Callbacker, Masks, DeltaErrors {
                     mstore(p, tokenIn)
                     mstore(add(p, 32), tokenOut)
                 }
-                // this stores the fee
-                mstore(add(p, 64), and(UINT16_MASK, shr(72, tokenOutAndFee)))
-                mstore(p, keccak256(p, 96))
+
+                switch and(FF_ADDRESS_COMPLEMENT, ffFactoryAddress)
+                case 0 {
+                    // cases with fee
+                    mstore(add(p, 64), and(UINT16_MASK, shr(72, tokenOutAndFee)))
+                    mstore(p, keccak256(p, 96))
+                }
+                default {
+                    // cases without fee, e.g. algebra case
+                    mstore(p, keccak256(p, 64))
+                }
                 p := add(p, 32)
                 mstore(p, codeHash)
 

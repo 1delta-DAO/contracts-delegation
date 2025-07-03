@@ -52,7 +52,7 @@ contract DodoLightTest is BaseTest {
         oneDV2 = ComposerPlugin.getComposer(chainName);
     }
 
-    function dodOPoolWETHJOJOSwap(address receiver, uint256 amount, bytes memory callbackData) internal view returns (bytes memory data) {
+    function dodoPoolWETHJOJOSwap(address receiver, uint256 amount, bytes memory callbackData) internal view returns (bytes memory data) {
         // create head config
         data = CalldataLib.swapHead(
             amount,
@@ -88,10 +88,16 @@ contract DodoLightTest is BaseTest {
             DODO_WETH_JOJO,
             amount //
         );
-        bytes memory swap = dodOPoolWETHJOJOSwap(
+        bytes memory sweep = CalldataLib.encodeSweep(
+            tokenOut,
             user,
+            0, //
+            SweepType.VALIDATE
+        );
+        bytes memory swap = dodoPoolWETHJOJOSwap(
+            address(oneDV2),
             amount, //
-            transfer
+            abi.encodePacked(transfer, sweep)
         );
 
         uint256 balBefore = IERC20All(tokenOut).balanceOf(user);

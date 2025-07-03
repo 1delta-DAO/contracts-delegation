@@ -11,6 +11,39 @@ import {BaseTest} from "test/shared/BaseTest.sol";
 import {Chains, Tokens, Lenders} from "test/data/LenderRegistry.sol";
 import "test/composer/utils/CalldataLib.sol";
 
+contract MockPermitter {
+    struct Authorization {
+        address authorizer;
+        address authorized;
+        bool isAuthorized;
+        uint256 nonce;
+        uint256 deadline;
+    }
+
+    struct Signature {
+        uint8 v;
+        bytes32 r;
+        bytes32 s;
+    }
+
+    bool public isAuth;
+
+    /// @notice Sets the authorization for `authorization.authorized` to manage `authorization.authorizer`'s positions.
+    /// @dev Warning: Reverts if the signature has already been submitted.
+    /// @dev The signature is malleable, but it has no impact on the security here.
+    /// @dev The nonce is passed as argument to be able to revert with a different error message.
+    /// @param authorization The `Authorization` struct.
+    /// @param signature The signature.
+
+    function setAuthorizationWithSig(Authorization calldata authorization, Signature calldata signature) external {
+        isAuth = true;
+    }
+
+    function getIsAuth() external view returns (bool) {
+        return isAuth;
+    }
+}
+
 /**
  * We test all CalldataLib.morpho blue operations
  * - supply, supplyCollateral, borrow, repay, encodeErc4646Deposit, encodeErc4646Withdraw
@@ -79,8 +112,25 @@ contract MorphoBlueTest is BaseTest {
         );
 
         vm.prank(user);
-        vm.expectRevert("invalid nonce");
+        vm.expectRevert("signature expired");
         oneD.deltaCompose(data);
+
+        MockPermitter p = new MockPermitter();
+
+        bytes memory data2 = CalldataLib.encodePermit(
+            PermitIds.ALLOW_CREDIT_PERMIT,
+            address(p),
+            d //
+        );
+
+        // attach call to make sure that the end-offset is correct
+        data2 = abi.encodePacked(data2, CalldataLib.encodeSweep(address(0), address(0), 0, SweepType.VALIDATE));
+
+        vm.prank(user);
+        // vm.expectRevert("signature expired");
+        oneD.deltaCompose(data2);
+
+        assert(p.getIsAuth());
     }
 
     function test_light_lending_morpho_withdraw_collateral() external {
