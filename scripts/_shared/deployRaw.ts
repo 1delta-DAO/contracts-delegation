@@ -3,11 +3,11 @@ import { ethers } from "ethers";
 import { getPDDeployCode } from "./aaveV2PDProvider";
 
 /** The address provider for the deployment */
-const addressesProvider = "0x4d1227D71e64d79c069221C1f7Ff1a492F0FB133"
+const addressesProvider = "0x0736B3dAdDe5B78354BF7F7faaFAcEE82B1851b9"
 
 /** Deploy an aave v2/3 protocol data provider based on simple bytecode (no explicit contract needed) */
 async function main() {
-    const provider = new ethers.JsonRpcProvider("https://klaytn.api.onfinality.io/public")
+    const provider = new ethers.providers.JsonRpcProvider("https://bsc-dataseed.binance.org")
     // const accounts = await ethers.getSigners()
     const operator = new ethers.Wallet(process.env.PK_5!, provider)
     // const operator = accounts[1]
@@ -21,7 +21,7 @@ async function main() {
 
     const gs = await provider.getFeeData()
 
-    const tx = await operator.sendTransaction({ data: dt, gasLimit: gl, gasPrice: gs.gasPrice })
+    const tx = await operator.sendTransaction({ data: dt, gasLimit: gl, })
 
     console.log("tx", tx.hash)
 
