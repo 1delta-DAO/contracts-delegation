@@ -74,7 +74,7 @@ contract MorphoLens {
      */
     function getUserDataCompact(bytes32[] memory marketsIds, address user, address morpho) external view returns (bytes memory data) {
         uint256 totalCount;
-        for (uint256 i; i < marketsIds.lenght; i++) {
+        for (uint256 i; i < marketsIds.length; i++) {
             bytes32 id = marketsIds[i];
             (uint256 supplyShares, uint128 borrowShares, uint128 collateral) = IMorpho(morpho).position(id, user);
             // no balances found - continue
