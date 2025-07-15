@@ -87,6 +87,7 @@ contract MorphoLens {
                 uint128 totalSupplyShares, //
                 uint128 totalBorrowAssets,
                 uint128 totalBorrowShares,
+                ,
             ) = IMorpho(morpho).market(id);
             // progressively pack the data
             data = abi.encodePacked(
