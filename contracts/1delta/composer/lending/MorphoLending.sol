@@ -350,13 +350,6 @@ abstract contract MorphoLending is ERC20Selectors, Masks {
 
             mstore(add(ptr, 132), shr(128, lltvAndAmount)) // MarketParams.lltv
 
-            // get amount, ignore flags
-            lltvAndAmount := and(UINT120_MASK, lltvAndAmount)
-
-            // amount
-            mstore(add(ptr, 164), lltvAndAmount) // assets
-
-            // onbehalf
             mstore(add(ptr, 196), callerAddress) // onBehalfOf
 
             currentOffset := add(currentOffset, 32)
@@ -366,6 +359,26 @@ abstract contract MorphoLending is ERC20Selectors, Masks {
             currentOffset := add(currentOffset, 20)
 
             let morpho := shr(96, calldataload(currentOffset))
+
+            // get amount, ignore flags
+            lltvAndAmount := and(UINT120_MASK, lltvAndAmount)
+
+            // technically not needed, hwoever, we keep it consistent
+            // to withdraw all like this - maxUnit112 means read collateral balance
+            if eq(lltvAndAmount, 0xffffffffffffffffffffffffffff) {
+                let ptrBase := add(ptr, 280)
+                let marketId := keccak256(add(ptr, 4), 160)
+                // position datas (1st slot of return data is the user shares)
+                mstore(ptrBase, MORPHO_POSITION)
+                mstore(add(ptrBase, 0x4), marketId)
+                mstore(add(ptrBase, 0x24), callerAddress)
+                if iszero(staticcall(gas(), morpho, ptrBase, 0x44, ptrBase, 0x60)) { revert(0x0, 0x0) }
+                lltvAndAmount := mload(add(ptrBase, 0x40))
+            }
+
+            // amount is stored last
+            mstore(add(ptr, 164), lltvAndAmount) // assets
+
             currentOffset := add(currentOffset, 20)
 
             if iszero(
