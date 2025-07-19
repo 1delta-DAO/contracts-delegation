@@ -114,8 +114,8 @@ contract Chain is LenderRegistry, IChain {
             return ILendingTools(lendingTokens[getChainName()][lender][underlying].collateral).borrowBalanceCurrent(user);
         } else if (Lenders.isCompoundV3(lender)) {
             address base = cometToBase[getChainName()][lender];
-            if (underlying == base) {
-                revert("cannot borrow base");
+            if (underlying != base) {
+                revert("can only borrow base");
             }
             return ILendingTools(lendingControllers[getChainName()][lender]).borrowBalanceOf(user);
         }

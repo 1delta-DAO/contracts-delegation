@@ -168,16 +168,7 @@ abstract contract MorphoLending is ERC20Selectors, Masks {
                     // add this address as parameter
                     mstore(0x04, address())
                     // call to token
-                    pop(
-                        staticcall(
-                            gas(),
-                            token, // collateral token
-                            0x0,
-                            0x24,
-                            0x0,
-                            0x20
-                        )
-                    )
+                    pop(staticcall(gas(), token, 0x0, 0x24, 0x0, 0x20))
                     // load the retrieved balance
                     amountToDeposit := mload(0x0)
                 }
@@ -285,16 +276,7 @@ abstract contract MorphoLending is ERC20Selectors, Masks {
                 // add this address as parameter
                 mstore(0x04, address())
                 // call to token
-                pop(
-                    staticcall(
-                        gas(),
-                        token, // collateral token
-                        0x0,
-                        0x24,
-                        0x0,
-                        0x20
-                    )
-                )
+                pop(staticcall(gas(), token, 0x0, 0x24, 0x0, 0x20))
                 // load the retrieved balance
                 amountToDeposit := mload(0x0)
             }
@@ -537,107 +519,90 @@ abstract contract MorphoLending is ERC20Selectors, Masks {
             currentOffset := add(currentOffset, 20)
 
             /**
-             * Logic tree
-             *  if repayAmount is Max -> repay max shares
-             *  else {
-             *      if(unsafeFlag): repay amount unsafe
-             *      if(shares flag): repay amount as shares (unsafe, determinsitic on-chain though)
-             *      else repay amount safe (fetch balance and cap amount at balcne - will not revert if amount is too hiuh)
-             *  }
+             *  if repayAmount is Max -> repay safe maximum (to prevent too low contract balance to revert)
+             *  else if repayAmount is 0 -> repay contract balance as assets
+             *  else repay amount as shares or assets, based on flag set
              */
             switch repayAm
-            // all or nothing
-            // fails if there are not enough funds in this contract
             case 0xffffffffffffffffffffffffffff {
-                // fetch user shares and repay all shares
-                // will revert if balance in contract is not enough
+                // get the contract balance
+                mstore(0x0, ERC20_BALANCE_OF)
+                mstore(0x04, address())
+                if iszero(staticcall(gas(), token, 0x0, 0x24, 0x0, 0x20)) { revert(0x0, 0x0) }
+                // this is the maximum we can repay
+                repayAm := mload(0x0)
+
+                // by assets safe - will not revert if too much is repaid
+                // we need to fetch everything and acrure interest
+                // https://docs.morpho.org/morpho/tutorials/manage-positions/#repayAll
+
+                // accrue interest
+                // add accrueInterest (0x151c1ade)
+                mstore(sub(ptr, 28), 0x151c1ade)
+                if iszero(call(gas(), morpho, 0x0, ptr, 0xA4, 0x0, 0x0)) { revert(0x0, 0x0) }
+
+                // get market params for conversion
                 let marketId := keccak256(add(ptr, 4), 160)
+                mstore(0x0, MORPHO_MARKET)
+                mstore(0x4, marketId)
+                if iszero(staticcall(gas(), morpho, 0x0, 0x24, ptrBase, 0x80)) { revert(0x0, 0x0) }
+                let totalBorrowAssets := mload(add(ptrBase, 0x40))
+                let totalBorrowShares := mload(add(ptrBase, 0x60))
+
                 // position datas
                 mstore(ptrBase, MORPHO_POSITION)
                 mstore(add(ptrBase, 0x4), marketId)
                 mstore(add(ptrBase, 0x24), receiver)
                 if iszero(staticcall(gas(), morpho, ptrBase, 0x44, ptrBase, 0x40)) { revert(0x0, 0x0) }
-                mstore(add(ptr, 164), 0) // assets
-                mstore(add(ptr, 196), mload(add(ptrBase, 0x20))) // shares
-            }
-            default {
-                switch and(UNSAFE_AMOUNT_FLAG, tempData)
-                case 0 {
-                    switch and(USE_SHARES_FLAG, tempData)
-                    case 0 {
-                        // by shares
-                        mstore(add(ptr, 164), 0) // assets
-                        mstore(add(ptr, 196), repayAm) // shares
-                    }
-                    default {
-                        // zero balance means contract balance
-                        // creates unexpected behavior if this amount is used for shares!
-                        if iszero(repayAm) {
-                            // get balance
-                            mstore(0x0, ERC20_BALANCE_OF)
-                            mstore(0x04, address())
-                            if iszero(staticcall(gas(), token, 0x0, 0x24, 0x0, 0x20)) { revert(0x0, 0x0) }
-                            repayAm := mload(0x0)
-                        }
-                        // by assets safe - will not revert if too much is repaid
-                        // we need to fetch everything and acrure interest
-                        // https://docs.morpho.org/morpho/tutorials/manage-positions/#repayAll
+                let userBorrowShares := mload(add(ptrBase, 0x20))
 
-                        // accrue interest
-                        // add accrueInterest (0x151c1ade)
-                        mstore(sub(ptr, 28), 0x151c1ade)
-                        if iszero(call(gas(), morpho, 0x0, ptr, 0xA4, 0x0, 0x0)) { revert(0x0, 0x0) }
+                // mulDivUp(shares, totalAssets + VIRTUAL_ASSETS, totalShares + VIRTUAL_SHARES);
+                let maxAssets := add(totalBorrowShares, 1000000) // VIRTUAL_SHARES=1e6
+                maxAssets :=
+                    div(
+                        add(
+                            mul(userBorrowShares, add(totalBorrowAssets, 1)), // VIRTUAL_ASSETS=1
+                            sub(maxAssets, 1) //
+                        ),
+                        maxAssets //
+                    )
 
-                        let marketId := keccak256(add(ptr, 4), 160)
-                        mstore(0x0, MORPHO_MARKET)
-                        mstore(0x4, marketId)
-                        if iszero(staticcall(gas(), morpho, 0x0, 0x24, ptrBase, 0x80)) { revert(0x0, 0x0) }
-                        let totalBorrowAssets := mload(add(ptrBase, 0x40))
-                        let totalBorrowShares := mload(add(ptrBase, 0x60))
-
-                        // get balance
-                        mstore(0x0, ERC20_BALANCE_OF)
-                        mstore(0x04, address())
-                        if iszero(staticcall(gas(), token, 0x0, 0x24, 0x0, 0x20)) { revert(0x0, 0x0) }
-                        repayAm := mload(0x0)
-
-                        // position datas
-                        mstore(ptrBase, MORPHO_POSITION)
-                        mstore(add(ptrBase, 0x4), marketId)
-                        mstore(add(ptrBase, 0x24), receiver)
-                        if iszero(staticcall(gas(), morpho, ptrBase, 0x44, ptrBase, 0x40)) { revert(0x0, 0x0) }
-                        let userBorrowShares := mload(add(ptrBase, 0x20))
-
-                        // mulDivUp(shares, totalAssets + VIRTUAL_ASSETS, totalShares + VIRTUAL_SHARES);
-                        let maxAssets := add(totalBorrowShares, 1000000) // VIRTUAL_SHARES=1e6
-                        maxAssets :=
-                            div(
-                                add(
-                                    mul(userBorrowShares, add(totalBorrowAssets, 1)), // VIRTUAL_ASSETS=1
-                                    sub(maxAssets, 1) //
-                                ),
-                                maxAssets //
-                            )
-
-                        // if maxAssets is greater than repay amount
-                        // we repay whatever is possible
-                        switch gt(maxAssets, repayAm)
-                        case 1 {
-                            mstore(add(ptr, 164), repayAm) // assets
-                            mstore(add(ptr, 196), 0) // shares
-                        }
-                        // otherwise, repay all shares, leaving no dust
-                        default {
-                            mstore(add(ptr, 164), 0) // assets
-                            mstore(add(ptr, 196), userBorrowShares) // shares
-                        }
-                    }
-                }
-                default {
-                    // by assets unsafe
-                    // reverts if repay amount is too high
+                // if maxAssets is greater than repay amount
+                // we repay whatever is possible
+                switch gt(maxAssets, repayAm)
+                case 1 {
                     mstore(add(ptr, 164), repayAm) // assets
                     mstore(add(ptr, 196), 0) // shares
+                }
+                // otherwise, repay all shares, leaving no dust
+                default {
+                    mstore(add(ptr, 164), 0) // assets
+                    mstore(add(ptr, 196), userBorrowShares) // shares
+                }
+            }
+            // by balance (using assets)
+            case 0 {
+                // get balance
+                mstore(0x0, ERC20_BALANCE_OF)
+                mstore(0x04, address())
+                if iszero(staticcall(gas(), token, 0x0, 0x24, 0x0, 0x20)) { revert(0x0, 0x0) }
+
+                // use balance by assets
+                mstore(add(ptr, 164), mload(0x0)) // assets
+                mstore(add(ptr, 196), 0) // shares
+            }
+            // plain amount (assets or shares)
+            default {
+                switch and(USE_SHARES_FLAG, tempData)
+                case 0 {
+                    // by assets
+                    mstore(add(ptr, 164), repayAm) // assets
+                    mstore(add(ptr, 196), 0) // shares
+                }
+                default {
+                    // by shares
+                    mstore(add(ptr, 164), 0) // assets
+                    mstore(add(ptr, 196), repayAm) // shares
                 }
             }
 

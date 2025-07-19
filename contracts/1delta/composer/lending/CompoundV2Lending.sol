@@ -13,7 +13,7 @@ import {Masks} from "../../shared/masks/Masks.sol";
  */
 abstract contract CompoundV2Lending is ERC20Selectors, Masks {
     /*
-     * Note this is for Venus Finance only as other COmpound forks
+     * Note this is for Venus Finance only as other Compound forks
      * do not have this feature.
      * | Offset | Length (bytes) | Description                     |
      * |--------|----------------|---------------------------------|
@@ -47,17 +47,7 @@ abstract contract CompoundV2Lending is ERC20Selectors, Masks {
             mstore(ptr, 0x856e5bb300000000000000000000000000000000000000000000000000000000)
             mstore(add(ptr, 0x4), callerAddress) // user
             mstore(add(ptr, 0x24), amount) // to this address
-            if iszero(
-                call(
-                    gas(),
-                    cToken,
-                    0x0, // no ETH sent
-                    ptr, // input selector
-                    0x44, // input size = selector + address + uint256
-                    ptr, // output
-                    0x0 // output size = zero
-                )
-            ) {
+            if iszero(call(gas(), cToken, 0x0, ptr, 0x44, ptr, 0x0)) {
                 returndatacopy(0, 0, returndatasize())
                 revert(0, returndatasize())
             }
@@ -322,16 +312,7 @@ abstract contract CompoundV2Lending is ERC20Selectors, Masks {
                     // add this address as parameter
                     mstore(0x04, address())
                     // call to token
-                    pop(
-                        staticcall(
-                            gas(),
-                            cToken, // token
-                            0x0,
-                            0x24,
-                            0x0,
-                            0x20
-                        )
-                    )
+                    pop(staticcall(gas(), cToken, 0x0, 0x24, 0x0, 0x20))
                     // load the retrieved balance
                     let cBalance := mload(0x0)
 
@@ -375,16 +356,7 @@ abstract contract CompoundV2Lending is ERC20Selectors, Masks {
                     // add this address as parameter
                     mstore(0x04, address())
                     // call to token
-                    pop(
-                        staticcall(
-                            gas(),
-                            underlying, // token
-                            0x0,
-                            0x24,
-                            0x0,
-                            0x20
-                        )
-                    )
+                    pop(staticcall(gas(), underlying, 0x0, 0x24, 0x0, 0x20))
                     // load the retrieved balance
                     amount := mload(0x0)
                 }
@@ -441,7 +413,22 @@ abstract contract CompoundV2Lending is ERC20Selectors, Masks {
                     // load the retrieved balance
                     amount := selfbalance()
                 }
-                case 0xffffffffffffffffffffffffffff { amount := MAX_UINT256 }
+                // safe repay the maximum
+                case 0xffffffffffffffffffffffffffff {
+                    // contract balance
+                    amount := selfbalance()
+
+                    // selector for borrowBalanceCurrent(address)
+                    mstore(0, 0x17bfdfbc00000000000000000000000000000000000000000000000000000000)
+                    // add this address as parameter
+                    mstore(0x04, receiver)
+                    // call to token
+                    pop(call(gas(), cToken, 0x0, 0x0, 0x24, 0x0, 0x20))
+
+                    // borrow balance smaller than amount available - use max
+                    // otherwise, repay whatever is in the contract
+                    if lt(mload(0x0), amount) { amount := MAX_UINT256 }
+                }
 
                 // selector for repayBorrowBehalf(address)
                 mstore(0, 0xe597461900000000000000000000000000000000000000000000000000000000)
@@ -472,20 +459,32 @@ abstract contract CompoundV2Lending is ERC20Selectors, Masks {
                     // add this address as parameter
                     mstore(0x04, address())
                     // call to token
-                    pop(
-                        staticcall(
-                            gas(),
-                            underlying, // token
-                            0x0,
-                            0x24,
-                            0x0,
-                            0x20
-                        )
-                    )
+                    pop(staticcall(gas(), underlying, 0x0, 0x24, 0x0, 0x20))
                     // load the retrieved balance
                     amount := mload(0x0)
                 }
-                case 0xffffffffffffffffffffffffffff { amount := MAX_UINT256 }
+                // safe repay the maximum
+                case 0xffffffffffffffffffffffffffff {
+                    // selector for balanceOf(address)
+                    mstore(0, ERC20_BALANCE_OF)
+                    // add this address as parameter
+                    mstore(0x04, address())
+                    // call to token
+                    pop(staticcall(gas(), underlying, 0x0, 0x24, 0x0, 0x20))
+                    // load the retrieved balance
+                    amount := mload(0x0)
+
+                    // selector for borrowBalanceCurrent(address)
+                    mstore(0, 0x17bfdfbc00000000000000000000000000000000000000000000000000000000)
+                    // add this address as parameter
+                    mstore(0x04, receiver)
+                    // call to collateral token
+                    pop(call(gas(), cToken, 0x0, 0x0, 0x24, 0x0, 0x20))
+
+                    // borrow balance smaller than amount available - use max
+                    // otherwise, repay whatever is in the contract
+                    if lt(mload(0x0), amount) { amount := MAX_UINT256 }
+                }
 
                 // selector for repayBorrowBehalf(address,uint256)
                 mstore(ptr, 0x2608f81800000000000000000000000000000000000000000000000000000000)

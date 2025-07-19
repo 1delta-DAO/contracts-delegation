@@ -19,7 +19,7 @@ import {DexPayConfig, SweepType, DodoSelector, WrapOperation} from "contracts/1d
 library CalldataLib {
     function encodeExternalCall(address target, uint256 value, bool useSelfBalance, bytes memory data) internal pure returns (bytes memory) {
         return abi.encodePacked(
-            uint8(ComposerCommands.EXT_CALL), target, generateAmountBitmap(uint128(value), false, false, useSelfBalance), uint16(data.length), data
+            uint8(ComposerCommands.EXT_CALL), target, generateAmountBitmap(uint128(value), false, useSelfBalance), uint16(data.length), data
         );
     }
 
@@ -38,7 +38,7 @@ library CalldataLib {
         return abi.encodePacked(
             uint8(ComposerCommands.EXT_TRY_CALL),
             target,
-            generateAmountBitmap(uint128(value), false, false, useSelfBalance),
+            generateAmountBitmap(uint128(value), false, useSelfBalance),
             uint16(data.length),
             data,
             uint8(rOnFailure ? 0 : 1),
@@ -98,7 +98,7 @@ library CalldataLib {
         returns (bytes memory)
     {
         return abi.encodePacked(
-            generateAmountBitmap(uint128(amount), false, false, isNative),
+            generateAmountBitmap(uint128(amount), false, isNative),
             slippage,
             uint128(fee),
             uint8(isBusMode ? 1 : 0),
@@ -195,7 +195,7 @@ library CalldataLib {
             depositor,
             sendingAssetId,
             receivingAssetId,
-            generateAmountBitmap(uint128(amount), false, false, false),
+            generateAmountBitmap(uint128(amount), false, false),
             fixedFee,
             feePercentage,
             destinationChainId,
@@ -230,7 +230,7 @@ library CalldataLib {
             depositor,
             sendingAssetId,
             receivingAssetId,
-            generateAmountBitmap(uint128(amount), false, false, true),
+            generateAmountBitmap(uint128(amount), false, true),
             fixedFee,
             feePercentage,
             destinationChainId,
@@ -352,7 +352,7 @@ library CalldataLib {
     function swapHead(uint256 amount, uint256 amountOutMin, address assetIn) internal pure returns (bytes memory) {
         return abi.encodePacked(
             uint8(ComposerCommands.SWAPS),
-            generateAmountBitmap(uint128(amount), false, false, false),
+            generateAmountBitmap(uint128(amount), false, false),
             uint128(amountOutMin),
             assetIn //
         );
@@ -926,7 +926,7 @@ library CalldataLib {
             uint8(LenderOps.DEPOSIT_LENDING_TOKEN), // 1
             uint16(LenderIds.UP_TO_MORPHO), // 2
             market, // 4 * 20 + 16
-            generateAmountBitmap(uint128(assets), isShares, false, false),
+            generateAmountBitmap(uint128(assets), isShares, false),
             receiver,
             morphoB,
             uint16(data.length > 0 ? data.length + 1 : 0), // 2 @ 1 + 4*20
@@ -951,7 +951,7 @@ library CalldataLib {
             uint8(0), // 1
             asset, // 20
             vault, // 20
-            generateAmountBitmap(uint128(assets), isShares, false, false),
+            generateAmountBitmap(uint128(assets), isShares, false),
             receiver // 20
         );
     }
@@ -970,7 +970,7 @@ library CalldataLib {
             uint8(ComposerCommands.ERC4626), // 1
             uint8(1), // 1
             vault, // 20
-            generateAmountBitmap(uint128(assets), isShares, false, false),
+            generateAmountBitmap(uint128(assets), isShares, false),
             receiver // 20
         );
     }
@@ -991,7 +991,7 @@ library CalldataLib {
             uint8(LenderOps.WITHDRAW_LENDING_TOKEN), // 1
             uint16(LenderIds.UP_TO_MORPHO), // 2
             market, // 4 * 20 + 16
-            generateAmountBitmap(uint128(assets), isShares, false, false),
+            generateAmountBitmap(uint128(assets), isShares, false),
             receiver, // 20
             morphoB
         );
@@ -1034,7 +1034,7 @@ library CalldataLib {
             uint8(LenderOps.BORROW), // 1
             uint16(LenderIds.UP_TO_MORPHO), // 2
             market, // 4 * 20 + 16
-            generateAmountBitmap(uint128(assets), isShares, false, false),
+            generateAmountBitmap(uint128(assets), isShares, false),
             receiver,
             morphoB
         );
@@ -1043,7 +1043,6 @@ library CalldataLib {
     function encodeMorphoRepay(
         bytes memory market,
         bool isShares, //
-        bool unsafe,
         uint256 assets,
         address receiver,
         bytes memory data,
@@ -1060,7 +1059,7 @@ library CalldataLib {
             uint8(LenderOps.REPAY), // 1
             uint16(LenderIds.UP_TO_MORPHO), // 2
             market, // 4 * 20 + 16
-            generateAmountBitmap(uint128(assets), isShares, unsafe, false),
+            generateAmountBitmap(uint128(assets), isShares, false),
             receiver,
             morphoB,
             uint16(data.length > 0 ? data.length + 1 : 0), // 2 @ 1 + 4*20
@@ -1343,14 +1342,11 @@ library CalldataLib {
     uint256 private constant NATIVE_FLAG = 1 << 127;
     /// @dev Mask for shares
     uint256 private constant USE_SHARES_FLAG = 1 << 126;
-    /// @dev Mask for morpho using unsafe repay
-    uint256 internal constant UNSAFE_AMOUNT_FLAG = 1 << 125;
 
-    function generateAmountBitmap(uint128 amount, bool useShares, bool unsafe, bool native) internal pure returns (uint128 am) {
+    function generateAmountBitmap(uint128 amount, bool useShares, bool native) internal pure returns (uint128 am) {
         am = amount;
         if (native) am = uint128((am & ~NATIVE_FLAG) | NATIVE_FLAG); // sets the first bit to 1
         if (useShares) am = uint128((am & ~USE_SHARES_FLAG) | USE_SHARES_FLAG); // sets the second bit to 1
-        if (unsafe) am = uint128((am & ~UNSAFE_AMOUNT_FLAG) | UNSAFE_AMOUNT_FLAG); // sets the third bit to 1
         return am;
     }
 }

@@ -8,6 +8,8 @@ import "test/composer/utils/CalldataLib.sol";
 import {ComposerPlugin, IComposerLike} from "plugins/ComposerPlugin.sol";
 import {SweepType} from "contracts/1delta/composer/enums/MiscEnums.sol";
 
+// solhint-disable max-line-length
+
 /**
  * We test all morpho blue operations
  * - supply, supplyCollateral, borrow, repay, encodeErc4646Deposit, encodeErc4646Withdraw
@@ -94,14 +96,14 @@ contract CompoundV3ComposerLightTest is BaseTest {
         bytes memory d = CalldataLib.encodeCompoundV3Borrow(token, amountToBorrow, user, comet);
 
         // Check balances before borrowing
-        uint256 borrowBalanceBefore = chain.getDebtBalance(user, depositToken, lender);
+        uint256 borrowBalanceBefore = chain.getDebtBalance(user, token, lender);
         uint256 tokenBefore = IERC20All(token).balanceOf(user);
 
         vm.prank(user);
         oneDV2.deltaCompose(d);
 
         // Check balances after borrowing
-        uint256 borrowBalanceAfter = chain.getDebtBalance(user, depositToken, lender);
+        uint256 borrowBalanceAfter = chain.getDebtBalance(user, token, lender);
         uint256 tokenAfter = IERC20All(token).balanceOf(user);
         // Assert debt increased by borrowed amount
         assertApproxEqAbs(borrowBalanceAfter - borrowBalanceBefore, amountToBorrow, 1, "1");
@@ -171,20 +173,106 @@ contract CompoundV3ComposerLightTest is BaseTest {
         bytes memory d = CalldataLib.encodeCompoundV3Repay(token, amountToRepay, user, comet);
 
         // Check balances before repay
-        uint256 debtBefore = chain.getDebtBalance(user, depositToken, lender);
+        uint256 debtBefore = chain.getDebtBalance(user, token, lender);
         uint256 tokenBefore = IERC20All(token).balanceOf(user);
 
         vm.prank(user);
         oneDV2.deltaCompose(abi.encodePacked(transferTo, d));
 
         // Check balances after repay
-        uint256 debtAfter = chain.getDebtBalance(user, depositToken, lender);
+        uint256 debtAfter = chain.getDebtBalance(user, token, lender);
         uint256 tokenAfter = IERC20All(token).balanceOf(user);
 
         // Assert debt decreased by repaid amount
         assertApproxEqAbs(debtBefore - debtAfter, amountToRepay, 1, "1");
         // Assert token balance decreased by repaid amount
         assertApproxEqAbs(tokenBefore - tokenAfter, amountToRepay, 1, "3");
+    }
+
+    function test_light_lending_compoundV3_repay_max() external {
+        vm.assume(user != address(0));
+
+        address depositToken = WETH;
+        address token = USDC;
+        address comet = COMPOUND_V3_USDC_COMET;
+
+        uint256 depositAmount = 1.0e18;
+        deal(depositToken, user, depositAmount);
+        deal(token, user, depositAmount);
+
+        depositToCompoundV3(depositToken, user, depositAmount, comet);
+
+        uint256 amountToBorrow = 100.0e6;
+        borrowFromCompoundV3(token, user, amountToBorrow, comet);
+
+        vm.prank(user);
+        IERC20All(token).approve(address(oneDV2), type(uint256).max);
+
+        uint256 amountToRepay = 101.0e6;
+
+        bytes memory transferTo = CalldataLib.encodeTransferIn(
+            token,
+            address(oneDV2),
+            amountToRepay //
+        );
+
+        bytes memory d = CalldataLib.encodeCompoundV3Repay(token, type(uint112).max, user, comet);
+
+        bytes memory sweep = CalldataLib.encodeSweep(token, user, 0, SweepType.VALIDATE);
+
+        vm.prank(user);
+        oneDV2.deltaCompose(abi.encodePacked(transferTo, d, sweep));
+
+        // Check balances after repay
+        uint256 debtAfter = chain.getDebtBalance(user, token, lender);
+
+        assertApproxEqAbs(IERC20All(token).balanceOf(address(oneDV2)), 0, 0);
+        assertApproxEqAbs(IERC20All(depositToken).balanceOf(address(oneDV2)), 0, 0);
+
+        // Assert debt decreased by repaid amount
+        assertApproxEqAbs(debtAfter, 0, 0, "0");
+    }
+
+    function test_light_lending_compoundV3_try_repay_max() external {
+        vm.assume(user != address(0));
+
+        address depositToken = WETH;
+        address token = USDC;
+        address comet = COMPOUND_V3_USDC_COMET;
+
+        uint256 depositAmount = 1.0e18;
+        deal(depositToken, user, depositAmount);
+
+        depositToCompoundV3(depositToken, user, depositAmount, comet);
+
+        uint256 amountToBorrow = 100.0e6;
+        borrowFromCompoundV3(token, user, amountToBorrow, comet);
+
+        vm.prank(user);
+        IERC20All(token).approve(address(oneDV2), type(uint256).max);
+
+        uint256 amountToRepay = 90.0e6;
+
+        bytes memory transferTo = CalldataLib.encodeTransferIn(
+            token,
+            address(oneDV2),
+            amountToRepay //
+        );
+
+        bytes memory d = CalldataLib.encodeCompoundV3Repay(token, type(uint112).max, user, comet);
+
+        bytes memory sweep = CalldataLib.encodeSweep(token, user, 0, SweepType.VALIDATE);
+
+        vm.prank(user);
+        oneDV2.deltaCompose(abi.encodePacked(transferTo, d, sweep));
+
+        assertApproxEqAbs(IERC20All(token).balanceOf(address(oneDV2)), 0, 0);
+        assertApproxEqAbs(IERC20All(depositToken).balanceOf(address(oneDV2)), 0, 0);
+        // Check balances after repay
+        uint256 debtAfter = chain.getDebtBalance(user, token, lender);
+
+        // Assert debt decreased by repaid amount
+        assertApproxEqAbs(debtAfter, 10.0e6, 0, "0");
     }
 
     function test_light_lending_compoundV3_full_compose() external {

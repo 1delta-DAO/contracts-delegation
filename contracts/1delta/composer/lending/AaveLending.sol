@@ -50,17 +50,8 @@ abstract contract AaveLending is ERC20Selectors, Masks {
                 mstore(0, ERC20_BALANCE_OF)
                 // add caller address as parameter
                 mstore(0x04, callerAddress)
-                // call to token
-                pop(
-                    staticcall(
-                        gas(),
-                        collateralToken, // collateral token
-                        0x0,
-                        0x24,
-                        0x0,
-                        0x20
-                    )
-                )
+                // call to collateral token
+                pop(staticcall(gas(), collateralToken, 0x0, 0x24, 0x0, 0x20))
                 // load the retrieved balance
                 amount := mload(0x0)
             }
@@ -245,16 +236,7 @@ abstract contract AaveLending is ERC20Selectors, Masks {
                 // add this address as parameter
                 mstore(0x04, address())
                 // call to token
-                pop(
-                    staticcall(
-                        gas(),
-                        underlying, // token
-                        0x0,
-                        0x24,
-                        0x0,
-                        0x20
-                    )
-                )
+                pop(staticcall(gas(), underlying, 0x0, 0x24, 0x0, 0x20))
                 // load the retrieved balance
                 amount := mload(0x0)
             }
@@ -373,37 +355,30 @@ abstract contract AaveLending is ERC20Selectors, Masks {
                 // add this address as parameter
                 mstore(0x04, address())
                 // call to token
-                pop(
-                    staticcall(
-                        gas(),
-                        underlying, // token
-                        0x0,
-                        0x24,
-                        0x0,
-                        0x20
-                    )
-                )
+                pop(staticcall(gas(), underlying, 0x0, 0x24, 0x0, 0x20))
                 // load the retrieved balance
                 amount := mload(0x0)
             }
+            // safe repay maximum: fetch contract balance and user debt and take minimum
             case 0xffffffffffffffffffffffffffff {
                 // selector for balanceOf(address)
                 mstore(0, ERC20_BALANCE_OF)
+
+                // add this address as parameter
+                mstore(0x04, address())
+                // call to token
+                pop(staticcall(gas(), underlying, 0x0, 0x24, 0x4, 0x20))
+                // load the retrieved balance
+                amount := mload(0x4)
+
                 // add caller address as parameter
                 mstore(0x04, callerAddress)
-                // call to token
-                pop(
-                    staticcall(
-                        gas(),
-                        shr(96, calldataload(currentOffset)), // debt token
-                        0x0,
-                        0x24,
-                        0x0,
-                        0x20
-                    )
-                )
+                // call to debt token
+                pop(staticcall(gas(), shr(96, calldataload(currentOffset)), 0x0, 0x24, 0x0, 0x20))
                 // load the retrieved balance
-                amount := mload(0x0)
+                let borrowBalance := mload(0x0)
+                // if borrow balance is less than the amount, select borrow balance
+                if lt(borrowBalance, amount) { amount := borrowBalance }
             }
 
             // skip debt token

@@ -176,6 +176,95 @@ contract AaveLightTest is BaseTest {
         assertApproxEqAbs(underlyingBefore - underlyingAfter, amountToRepay, 1);
     }
 
+    function test_light_lending_aave_repay_try_max() external {
+        vm.assume(user != address(0));
+
+        address token = USDC;
+        address pool = AAVE_V3_POOL;
+        deal(token, user, 1000.0e6);
+        uint256 amount = 100.0e6;
+
+        depositToAave(token, user, amount, pool);
+
+        uint256 amountToBorrow = 10.0e6;
+        borrowFromAave(token, user, amountToBorrow, pool);
+
+        vm.prank(user);
+        IERC20All(token).approve(address(oneDV2), type(uint256).max);
+
+        uint256 amountToRepay = 7.0e6;
+
+        bytes memory transferTo = CalldataLib.encodeTransferIn(
+            token,
+            address(oneDV2),
+            amountToRepay //
+        );
+
+        address vToken = _getDebtToken(token);
+
+        bytes memory d = CalldataLib.encodeAaveRepay(token, type(uint112).max, user, 2, vToken, pool);
+        bytes memory sweep = CalldataLib.encodeSweep(token, user, 0, SweepType.VALIDATE);
+
+        // Check balances before repay
+        uint256 debtBefore = chain.getDebtBalance(user, token, lender);
+        uint256 underlyingBefore = IERC20All(token).balanceOf(user);
+
+        vm.prank(user);
+        oneDV2.deltaCompose(abi.encodePacked(transferTo, d, sweep));
+
+        assertApproxEqAbs(IERC20All(token).balanceOf(address(oneDV2)), 0, 0);
+
+        // Check balances after repay
+        uint256 debtAfter = chain.getDebtBalance(user, token, lender);
+        uint256 underlyingAfter = IERC20All(token).balanceOf(user);
+
+        // Assert debt decreased by repaid amount
+        assertApproxEqAbs(debtBefore - debtAfter, amountToRepay, 1);
+        // Assert underlying decreased by repaid amount
+        assertApproxEqAbs(underlyingBefore - underlyingAfter, amountToRepay, 1);
+    }
+
+    function test_light_lending_aave_repay_max() external {
+        vm.assume(user != address(0));
+
+        address token = USDC;
+        address pool = AAVE_V3_POOL;
+        deal(token, user, 1000.0e6);
+        uint256 amount = 100.0e6;
+
+        depositToAave(token, user, amount, pool);
+
+        uint256 amountToBorrow = 10.0e6;
+        borrowFromAave(token, user, amountToBorrow, pool);
+
+        vm.prank(user);
+        IERC20All(token).approve(address(oneDV2), type(uint256).max);
+
+        uint256 amountToRepay = 11.0e6;
+
+        bytes memory transferTo = CalldataLib.encodeTransferIn(
+            token,
+            address(oneDV2),
+            amountToRepay //
+        );
+
+        address vToken = _getDebtToken(token);
+
+        bytes memory d = CalldataLib.encodeAaveRepay(token, type(uint112).max, user, 2, vToken, pool);
+        bytes memory sweep = CalldataLib.encodeSweep(token, user, 0, SweepType.VALIDATE);
+
+        vm.prank(user);
+        oneDV2.deltaCompose(abi.encodePacked(transferTo, d, sweep));
+
+        assertApproxEqAbs(IERC20All(token).balanceOf(address(oneDV2)), 0, 0);
+
+        // Check balances after repay
+        uint256 debtAfter = chain.getDebtBalance(user, token, lender);
+
+        // Assert debt decreased by repaid amount
+        assertApproxEqAbs(debtAfter, 0, 0);
+    }
+
     function depositToAave(address token, address userAddress, uint256 amount, address pool) internal {
         deal(token, userAddress, 1000.0e6);
 

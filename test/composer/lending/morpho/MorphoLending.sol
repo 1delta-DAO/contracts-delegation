@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.19;
 
+// solhint-disable no-console
+
 import {console} from "forge-std/console.sol";
 import {MorphoMathLib} from "../utils/MathLib.sol";
 import {MarketParams, IMorphoEverything} from "../utils/Morpho.sol";
@@ -43,6 +45,8 @@ contract MockPermitter {
         return isAuth;
     }
 }
+
+// solhint-disable max-line-length
 
 /**
  * We test all CalldataLib.morpho blue operations
@@ -224,7 +228,6 @@ contract MorphoBlueTest is BaseTest {
         bytes memory repayCall = CalldataLib.encodeMorphoRepay(
             encodeMarket(LBTC_USDC_MARKET),
             false,
-            true,
             borrowAssets, //
             user,
             hex"",
@@ -268,8 +271,7 @@ contract MorphoBlueTest is BaseTest {
 
         (, uint128 borrowShares,) = IMorphoEverything(MORPHO).position(marketId(LBTC_USDC_MARKET), user);
 
-        bytes memory repayCall =
-            CalldataLib.encodeMorphoRepay(encodeMarket(LBTC_USDC_MARKET), true, false, borrowShares, user, hex"", MORPHO, MORPHO_ID);
+        bytes memory repayCall = CalldataLib.encodeMorphoRepay(encodeMarket(LBTC_USDC_MARKET), true, borrowShares, user, hex"", MORPHO, MORPHO_ID);
 
         vm.prank(user);
         IERC20All(borrowAsset).approve(address(oneD), type(uint256).max);
@@ -277,14 +279,14 @@ contract MorphoBlueTest is BaseTest {
         bytes memory transferTo = CalldataLib.encodeTransferIn(
             borrowAsset,
             address(oneD),
-            borrowAssets //
+            borrowAssets + 1 //
         );
 
         vm.prank(user);
         oneD.deltaCompose(abi.encodePacked(transferTo, repayCall));
 
         (, uint128 borrowSharesAfter,) = IMorphoEverything(MORPHO).position(marketId(LBTC_USDC_MARKET), user);
-        assertApproxEqAbs(borrowSharesAfter, 0, 1);
+        assertApproxEqAbs(borrowSharesAfter, 0, 0);
     }
 
     function test_light_lending_morpho_repay_with_callback() external {
@@ -324,7 +326,6 @@ contract MorphoBlueTest is BaseTest {
         bytes memory repayCall = CalldataLib.encodeMorphoRepay(
             encodeMarket(LBTC_USDC_MARKET),
             false,
-            true,
             borrowAssets, //
             user,
             sweepWethInCallback,
@@ -377,7 +378,6 @@ contract MorphoBlueTest is BaseTest {
 
         bytes memory repayCall = CalldataLib.encodeMorphoRepay(
             encodeMarket(LBTC_USDC_MARKET),
-            false,
             false,
             type(uint112).max, //
             user,

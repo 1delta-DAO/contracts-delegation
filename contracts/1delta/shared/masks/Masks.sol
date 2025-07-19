@@ -34,6 +34,4 @@ abstract contract Masks {
     uint256 internal constant NATIVE_FLAG = 1 << 127;
     /// @dev Mask for shares
     uint256 internal constant USE_SHARES_FLAG = 1 << 126;
-    /// @dev Mask for morpho using unsafe repay
-    uint256 internal constant UNSAFE_AMOUNT_FLAG = 1 << 125;
 }
