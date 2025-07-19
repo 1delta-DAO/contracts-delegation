@@ -26,25 +26,18 @@ abstract contract CompoundV3Lending is ERC20Selectors, Masks {
             // Compound V3 types need to trasfer collateral tokens
 
             let underlying := shr(96, calldataload(currentOffset))
-            // offset for amoutn at lower bytes
-            currentOffset := add(currentOffset, 20)
-            let amountData := shr(128, calldataload(currentOffset))
+            // offset for amount at lower bytes
+            let amountData := shr(128, calldataload(add(currentOffset, 20)))
 
-            // skip amounts
-            currentOffset := add(currentOffset, 16)
-            let isBase := calldataload(currentOffset)
+            let isBase := calldataload(add(currentOffset, 36))
             // receiver
             let receiver := shr(96, isBase)
 
-            // skip receiver and isBase flag
-            currentOffset := add(currentOffset, 21)
-
             // adjust isBase flag
 
-            let cometPool := shr(96, calldataload(currentOffset))
+            let cometPool := shr(96, calldataload(add(currentOffset, 57)))
 
-            // skip base comet
-            currentOffset := add(currentOffset, 20)
+            currentOffset := add(currentOffset, 77)
 
             let amount := and(UINT120_MASK, amountData)
             if eq(amount, 0xffffffffffffffffffffffffffff) {
@@ -102,19 +95,14 @@ abstract contract CompoundV3Lending is ERC20Selectors, Masks {
             let ptr := mload(0x40)
             // Compound V3 types need to trasfer collateral tokens
             let underlying := shr(96, calldataload(currentOffset))
-            currentOffset := add(currentOffset, 20)
-            // offset for amoutn at lower bytes
-            let amountData := shr(128, calldataload(currentOffset))
-            currentOffset := add(currentOffset, 16)
+            // offset for amount at lower bytes
+            let amountData := shr(128, calldataload(add(currentOffset, 20)))
             // receiver
-            let receiver := shr(96, calldataload(currentOffset))
-            // skip receiver
-            currentOffset := add(currentOffset, 20)
+            let receiver := shr(96, calldataload(add(currentOffset, 36)))
 
-            let cometPool := shr(96, calldataload(currentOffset))
+            let cometPool := shr(96, calldataload(add(currentOffset, 56)))
 
-            // skip base comet
-            currentOffset := add(currentOffset, 20)
+            currentOffset := add(currentOffset, 76)
 
             let amount := and(UINT120_MASK, amountData)
 
@@ -145,19 +133,13 @@ abstract contract CompoundV3Lending is ERC20Selectors, Masks {
     function _depositToCompoundV3(uint256 currentOffset) internal returns (uint256) {
         assembly {
             let underlying := shr(96, calldataload(currentOffset))
-            // offset for amoutn at lower bytes
-            currentOffset := add(currentOffset, 20)
-            let amountData := shr(128, calldataload(currentOffset))
-            // skip amounts
-            currentOffset := add(currentOffset, 16)
+            // offset for amount at lower bytes
+            let amountData := shr(128, calldataload(add(currentOffset, 20)))
             // receiver
-            let receiver := shr(96, calldataload(currentOffset))
-            // skip receiver
-            currentOffset := add(currentOffset, 20)
+            let receiver := shr(96, calldataload(add(currentOffset, 36)))
             // get comet
-            let comet := shr(96, calldataload(currentOffset))
-            // skip comet (end of data)
-            currentOffset := add(currentOffset, 20)
+            let comet := shr(96, calldataload(add(currentOffset, 56)))
+            currentOffset := add(currentOffset, 76)
 
             let amount := and(UINT120_MASK, amountData)
             // zero is this balance
@@ -199,19 +181,13 @@ abstract contract CompoundV3Lending is ERC20Selectors, Masks {
     function _repayToCompoundV3(uint256 currentOffset) internal returns (uint256) {
         assembly {
             let underlying := shr(96, calldataload(currentOffset))
-            // offset for amoutn at lower bytes
-            currentOffset := add(currentOffset, 20)
-            let amountData := shr(128, calldataload(currentOffset))
-            // skip amounts
-            currentOffset := add(currentOffset, 16)
+            // offset for amount at lower bytes
+            let amountData := shr(128, calldataload(add(currentOffset, 20)))
             // receiver
-            let receiver := shr(96, calldataload(currentOffset))
-            // skip receiver
-            currentOffset := add(currentOffset, 20)
+            let receiver := shr(96, calldataload(add(currentOffset, 36)))
             // get comet
-            let comet := shr(96, calldataload(currentOffset))
-            // skip comet (end of data)
-            currentOffset := add(currentOffset, 20)
+            let comet := shr(96, calldataload(add(currentOffset, 56)))
+            currentOffset := add(currentOffset, 76)
 
             let amount := and(UINT120_MASK, amountData)
             switch amount

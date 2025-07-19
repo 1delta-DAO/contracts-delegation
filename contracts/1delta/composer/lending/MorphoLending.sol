@@ -56,14 +56,11 @@ abstract contract MorphoLending is ERC20Selectors, Masks {
 
             // market data
             mstore(add(ptr, 4), shr(96, calldataload(currentOffset))) // MarketParams.loanToken
-            currentOffset := add(currentOffset, 20)
-            mstore(add(ptr, 36), shr(96, calldataload(currentOffset))) // MarketParams.collateralToken
-            currentOffset := add(currentOffset, 20)
-            mstore(add(ptr, 68), shr(96, calldataload(currentOffset))) // MarketParams.oracle
-            currentOffset := add(currentOffset, 20)
-            mstore(add(ptr, 100), shr(96, calldataload(currentOffset))) // MarketParams.irm
-            currentOffset := add(currentOffset, 20)
-            let lltvAndAmount := calldataload(currentOffset)
+            mstore(add(ptr, 36), shr(96, calldataload(add(currentOffset, 20)))) // MarketParams.collateralToken
+            mstore(add(ptr, 68), shr(96, calldataload(add(currentOffset, 40)))) // MarketParams.oracle
+            mstore(add(ptr, 100), shr(96, calldataload(add(currentOffset, 60)))) // MarketParams.irm
+
+            let lltvAndAmount := calldataload(add(currentOffset, 80))
             mstore(add(ptr, 132), shr(128, lltvAndAmount)) // MarketParams.lltv
 
             let borrowAm := and(UINT112_MASK, lltvAndAmount)
@@ -80,15 +77,14 @@ abstract contract MorphoLending is ERC20Selectors, Masks {
                 mstore(add(ptr, 164), 0) // assets
                 mstore(add(ptr, 196), borrowAm) // shares
             }
-            currentOffset := add(currentOffset, 32)
 
             // onbehalf
             mstore(add(ptr, 228), callerAddress) // onBehalfOf
-            let lastBit := calldataload(currentOffset)
+            let lastBit := calldataload(add(currentOffset, 112))
             mstore(add(ptr, 260), shr(96, lastBit)) // receiver
-            currentOffset := add(currentOffset, 20)
-            let morpho := shr(96, calldataload(currentOffset))
-            currentOffset := add(currentOffset, 20)
+            let morpho := shr(96, calldataload(add(currentOffset, 132)))
+
+            currentOffset := add(currentOffset, 152)
             if iszero(
                 call(
                     gas(),
@@ -137,22 +133,14 @@ abstract contract MorphoLending is ERC20Selectors, Masks {
             mstore(ptr, MORPHO_SUPPLY)
             // market data
             mstore(add(ptr, 4), token) // MarketParams.loanToken
-            currentOffset := add(currentOffset, 20)
+            mstore(add(ptr, 36), shr(96, calldataload(add(currentOffset, 20)))) // MarketParams.collateralToken
+            mstore(add(ptr, 68), shr(96, calldataload(add(currentOffset, 40)))) // MarketParams.oracle
+            mstore(add(ptr, 100), shr(96, calldataload(add(currentOffset, 60)))) // MarketParams.irm
 
-            mstore(add(ptr, 36), shr(96, calldataload(currentOffset))) // MarketParams.collateralToken
-            currentOffset := add(currentOffset, 20)
-
-            mstore(add(ptr, 68), shr(96, calldataload(currentOffset))) // MarketParams.oracle
-            currentOffset := add(currentOffset, 20)
-
-            mstore(add(ptr, 100), shr(96, calldataload(currentOffset))) // MarketParams.irm
-            currentOffset := add(currentOffset, 20)
-
-            let lltvAndAmount := calldataload(currentOffset)
+            let lltvAndAmount := calldataload(add(currentOffset, 80))
             mstore(add(ptr, 132), shr(128, lltvAndAmount)) // MarketParams.lltv
             let amountToDeposit := and(UINT112_MASK, lltvAndAmount)
             // increment for the amounts
-            currentOffset := add(currentOffset, 32)
 
             /**
              * check if it is by shares or assets
@@ -182,17 +170,15 @@ abstract contract MorphoLending is ERC20Selectors, Masks {
             }
 
             // receiver address
-            let receiver := shr(96, calldataload(currentOffset))
-            currentOffset := add(currentOffset, 20)
+            let receiver := shr(96, calldataload(add(currentOffset, 112)))
 
-            let morpho := shr(96, calldataload(currentOffset))
-            currentOffset := add(currentOffset, 20)
+            let morpho := shr(96, calldataload(add(currentOffset, 132)))
 
             // get calldatalength
-            let inputCalldataLength := and(UINT16_MASK, shr(240, calldataload(currentOffset)))
+            let inputCalldataLength := and(UINT16_MASK, shr(240, calldataload(add(currentOffset, 152))))
             let calldataLength := inputCalldataLength
 
-            currentOffset := add(currentOffset, 2)
+            currentOffset := add(currentOffset, 154)
 
             // leftover params
             mstore(add(ptr, 228), receiver) // onBehalfOf is the receiver here
@@ -250,22 +236,17 @@ abstract contract MorphoLending is ERC20Selectors, Masks {
             // supplyCollateral(...)
             mstore(ptr, MORPHO_SUPPLY_COLLATERAL)
             mstore(add(ptr, 4), shr(96, calldataload(currentOffset))) // MarketParams.loanToken
-            currentOffset := add(currentOffset, 20)
 
             // get the collateral token and approve if needed
-            let token := shr(96, calldataload(currentOffset))
+            let token := shr(96, calldataload(add(currentOffset, 20)))
             mstore(add(ptr, 36), token) // MarketParams.collateralToken
-            currentOffset := add(currentOffset, 20)
-            mstore(add(ptr, 68), shr(96, calldataload(currentOffset))) // MarketParams.oracle
-            currentOffset := add(currentOffset, 20)
-            mstore(add(ptr, 100), shr(96, calldataload(currentOffset))) // MarketParams.irm
-            currentOffset := add(currentOffset, 20)
-            let lltvAndAmount := calldataload(currentOffset)
+            mstore(add(ptr, 68), shr(96, calldataload(add(currentOffset, 40)))) // MarketParams.oracle
+            mstore(add(ptr, 100), shr(96, calldataload(add(currentOffset, 60)))) // MarketParams.irm
+            let lltvAndAmount := calldataload(add(currentOffset, 80))
             mstore(add(ptr, 132), shr(128, lltvAndAmount)) // MarketParams.lltv
 
             // we ignore flags as this only allows assets
             let amountToDeposit := and(UINT120_MASK, lltvAndAmount)
-            currentOffset := add(currentOffset, 32)
 
             /**
              * if the amount is zero, we assume that the contract balance is deposited
@@ -282,21 +263,19 @@ abstract contract MorphoLending is ERC20Selectors, Masks {
             }
 
             // receiver address
-            let receiver := shr(96, calldataload(currentOffset))
-            currentOffset := add(currentOffset, 20)
+            let receiver := shr(96, calldataload(add(currentOffset, 112)))
 
             mstore(add(ptr, 164), amountToDeposit) // assets
             mstore(add(ptr, 196), receiver) // onBehalfOf
             mstore(add(ptr, 228), 0x100) // offset
 
             // get morpho
-            let morpho := shr(96, calldataload(currentOffset))
-            currentOffset := add(currentOffset, 20)
+            let morpho := shr(96, calldataload(add(currentOffset, 132)))
 
             // get calldatalength
-            let inputCalldataLength := and(UINT16_MASK, shr(240, calldataload(currentOffset)))
+            let inputCalldataLength := and(UINT16_MASK, shr(240, calldataload(add(currentOffset, 152))))
             let calldataLength := inputCalldataLength
-            currentOffset := add(currentOffset, 2)
+            currentOffset := add(currentOffset, 154)
 
             // add calldata if needed
             if xor(0, calldataLength) {
@@ -338,27 +317,21 @@ abstract contract MorphoLending is ERC20Selectors, Masks {
             // market stuff
 
             mstore(add(ptr, 4), shr(96, calldataload(currentOffset))) // MarketParams.loanToken
-            currentOffset := add(currentOffset, 20)
-            mstore(add(ptr, 36), shr(96, calldataload(currentOffset))) // MarketParams.collateralToken
-            currentOffset := add(currentOffset, 20)
-            mstore(add(ptr, 68), shr(96, calldataload(currentOffset))) // MarketParams.oracle
-            currentOffset := add(currentOffset, 20)
-            mstore(add(ptr, 100), shr(96, calldataload(currentOffset))) // MarketParams.irm
+            mstore(add(ptr, 36), shr(96, calldataload(add(currentOffset, 20)))) // MarketParams.collateralToken
+            mstore(add(ptr, 68), shr(96, calldataload(add(currentOffset, 40)))) // MarketParams.oracle
+            mstore(add(ptr, 100), shr(96, calldataload(add(currentOffset, 60)))) // MarketParams.irm
 
-            currentOffset := add(currentOffset, 20)
-            let lltvAndAmount := calldataload(currentOffset)
+            let lltvAndAmount := calldataload(add(currentOffset, 80))
 
             mstore(add(ptr, 132), shr(128, lltvAndAmount)) // MarketParams.lltv
 
             mstore(add(ptr, 196), callerAddress) // onBehalfOf
 
-            currentOffset := add(currentOffset, 32)
             // store receiver
-            mstore(add(ptr, 228), shr(96, calldataload(currentOffset))) // receiver
+            mstore(add(ptr, 228), shr(96, calldataload(add(currentOffset, 112)))) // receiver
             // skip receiver in offset
-            currentOffset := add(currentOffset, 20)
 
-            let morpho := shr(96, calldataload(currentOffset))
+            let morpho := shr(96, calldataload(add(currentOffset, 132)))
 
             // get amount, ignore flags
             lltvAndAmount := and(UINT120_MASK, lltvAndAmount)
@@ -379,7 +352,7 @@ abstract contract MorphoLending is ERC20Selectors, Masks {
             // amount is stored last
             mstore(add(ptr, 164), lltvAndAmount) // assets
 
-            currentOffset := add(currentOffset, 20)
+            currentOffset := add(currentOffset, 152)
 
             if iszero(
                 call(
@@ -409,26 +382,19 @@ abstract contract MorphoLending is ERC20Selectors, Masks {
 
             // market data
             mstore(add(ptr, 4), shr(96, calldataload(currentOffset))) // MarketParams.loanToken
-            currentOffset := add(currentOffset, 20)
-            mstore(add(ptr, 36), shr(96, calldataload(currentOffset))) // MarketParams.collateralToken
-            currentOffset := add(currentOffset, 20)
-            mstore(add(ptr, 68), shr(96, calldataload(currentOffset))) // MarketParams.oracle
-            currentOffset := add(currentOffset, 20)
-            mstore(add(ptr, 100), shr(96, calldataload(currentOffset))) // MarketParams.irm
-            currentOffset := add(currentOffset, 20)
-            let lltvAndAmount := calldataload(currentOffset)
+            mstore(add(ptr, 36), shr(96, calldataload(add(currentOffset, 20)))) // MarketParams.collateralToken
+            mstore(add(ptr, 68), shr(96, calldataload(add(currentOffset, 40)))) // MarketParams.oracle
+            mstore(add(ptr, 100), shr(96, calldataload(add(currentOffset, 60)))) // MarketParams.irm
+            let lltvAndAmount := calldataload(add(currentOffset, 80))
             mstore(add(ptr, 132), shr(128, lltvAndAmount)) // MarketParams.lltv
 
             let withdrawAm := and(UINT120_MASK, lltvAndAmount)
 
-            currentOffset := add(currentOffset, 32)
-
             mstore(add(ptr, 228), callerAddress) // onBehalfOf
-            mstore(add(ptr, 260), shr(96, calldataload(currentOffset))) // receiver
-            currentOffset := add(currentOffset, 20)
+            mstore(add(ptr, 260), shr(96, calldataload(add(currentOffset, 112)))) // receiver
             // get morpho
-            let morpho := shr(96, calldataload(currentOffset))
-            currentOffset := add(currentOffset, 20)
+            let morpho := shr(96, calldataload(add(currentOffset, 132)))
+            currentOffset := add(currentOffset, 152)
 
             /**
              * check if it is by shares or assets
@@ -490,7 +456,7 @@ abstract contract MorphoLending is ERC20Selectors, Masks {
         return currentOffset;
     }
 
-    /// @notice Withdraw from lender lastgiven user address and lender Id
+    /// @notice Repay to morpho blue
     function _morphoRepay(
         uint256 currentOffset,
         address callerAddress
@@ -510,26 +476,19 @@ abstract contract MorphoLending is ERC20Selectors, Masks {
             let token := shr(96, calldataload(currentOffset))
             // market data
             mstore(add(ptr, 4), token) // MarketParams.loanToken
-            currentOffset := add(currentOffset, 20)
-            mstore(add(ptr, 36), shr(96, calldataload(currentOffset))) // MarketParams.collateralToken
-            currentOffset := add(currentOffset, 20)
-            mstore(add(ptr, 68), shr(96, calldataload(currentOffset))) // MarketParams.oracle
-            currentOffset := add(currentOffset, 20)
-            mstore(add(ptr, 100), shr(96, calldataload(currentOffset))) // MarketParams.irm
-            currentOffset := add(currentOffset, 20)
-            tempData := calldataload(currentOffset)
+            mstore(add(ptr, 36), shr(96, calldataload(add(currentOffset, 20)))) // MarketParams.collateralToken
+            mstore(add(ptr, 68), shr(96, calldataload(add(currentOffset, 40)))) // MarketParams.oracle
+            mstore(add(ptr, 100), shr(96, calldataload(add(currentOffset, 60)))) // MarketParams.irm
+            tempData := calldataload(add(currentOffset, 80))
             mstore(add(ptr, 132), shr(128, tempData)) // MarketParams.lltv
 
             let repayAm := and(UINT120_MASK, tempData)
             // skip amounts
-            currentOffset := add(currentOffset, 32)
 
             // receiver address
-            let receiver := shr(96, calldataload(currentOffset))
-            currentOffset := add(currentOffset, 20)
+            let receiver := shr(96, calldataload(add(currentOffset, 112)))
 
-            let morpho := shr(96, calldataload(currentOffset))
-            currentOffset := add(currentOffset, 20)
+            let morpho := shr(96, calldataload(add(currentOffset, 132)))
 
             /**
              *  if repayAmount is Max -> repay safe maximum (to prevent too low contract balance to revert)
@@ -623,9 +582,9 @@ abstract contract MorphoLending is ERC20Selectors, Masks {
             mstore(add(ptr, 260), 0x120) // offset
 
             // get calldatalength
-            let inputCalldataLength := and(UINT16_MASK, shr(240, calldataload(currentOffset)))
+            let inputCalldataLength := and(UINT16_MASK, shr(240, calldataload(add(currentOffset, 152))))
             let calldataLength := inputCalldataLength
-            currentOffset := add(currentOffset, 2)
+            currentOffset := add(currentOffset, 154)
 
             // add calldata if needed
             if xor(0, calldataLength) {

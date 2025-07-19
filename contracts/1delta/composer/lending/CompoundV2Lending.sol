@@ -27,19 +27,14 @@ abstract contract CompoundV2Lending is ERC20Selectors, Masks {
             let ptr := mload(0x40)
             // Compound V3 types need to trasfer collateral tokens
             let underlying := shr(96, calldataload(currentOffset))
-            currentOffset := add(currentOffset, 20)
-            // offset for amoutn at lower bytes
-            let amountData := shr(128, calldataload(currentOffset))
-            currentOffset := add(currentOffset, 16)
+            // offset for amount at lower bytes
+            let amountData := shr(128, calldataload(add(currentOffset, 20)))
             // receiver
-            let receiver := shr(96, calldataload(currentOffset))
-            // skip receiver
-            currentOffset := add(currentOffset, 20)
+            let receiver := shr(96, calldataload(add(currentOffset, 36)))
 
-            let cToken := shr(96, calldataload(currentOffset))
+            let cToken := shr(96, calldataload(add(currentOffset, 56)))
 
-            // skip cToken
-            currentOffset := add(currentOffset, 20)
+            currentOffset := add(currentOffset, 76)
 
             let amount := and(UINT120_MASK, amountData)
 
@@ -105,19 +100,14 @@ abstract contract CompoundV2Lending is ERC20Selectors, Masks {
             let ptr := mload(0x40)
             // Compound V2 types need to trasfer collateral tokens
             let underlying := shr(96, calldataload(currentOffset))
-            currentOffset := add(currentOffset, 20)
-            // offset for amoutn at lower bytes
-            let amountData := shr(128, calldataload(currentOffset))
-            currentOffset := add(currentOffset, 16)
+            // offset for amount at lower bytes
+            let amountData := shr(128, calldataload(add(currentOffset, 20)))
             // receiver
-            let receiver := shr(96, calldataload(currentOffset))
-            // skip receiver
-            currentOffset := add(currentOffset, 20)
+            let receiver := shr(96, calldataload(add(currentOffset, 36)))
 
-            let cToken := shr(96, calldataload(currentOffset))
+            let cToken := shr(96, calldataload(add(currentOffset, 56)))
 
-            // skip cToken
-            currentOffset := add(currentOffset, 20)
+            currentOffset := add(currentOffset, 76)
 
             let amount := and(UINT120_MASK, amountData)
             if eq(amount, 0xffffffffffffffffffffffffffff) {
@@ -274,19 +264,13 @@ abstract contract CompoundV2Lending is ERC20Selectors, Masks {
     function _depositToCompoundV2(uint256 currentOffset) internal returns (uint256) {
         assembly {
             let underlying := shr(96, calldataload(currentOffset))
-            // offset for amoutn at lower bytes
-            currentOffset := add(currentOffset, 20)
-            let amountData := shr(128, calldataload(currentOffset))
-            // skip amounts
-            currentOffset := add(currentOffset, 16)
+            // offset for amount at lower bytes
+            let amountData := shr(128, calldataload(add(currentOffset, 20)))
             // receiver
-            let receiver := shr(96, calldataload(currentOffset))
-            // skip receiver
-            currentOffset := add(currentOffset, 20)
+            let receiver := shr(96, calldataload(add(currentOffset, 36)))
             // get cToken
-            let cToken := shr(96, calldataload(currentOffset))
-            // skip cToken (end of data)
-            currentOffset := add(currentOffset, 20)
+            let cToken := shr(96, calldataload(add(currentOffset, 56)))
+            currentOffset := add(currentOffset, 76)
 
             switch underlying
             // case native
@@ -388,19 +372,13 @@ abstract contract CompoundV2Lending is ERC20Selectors, Masks {
     function _repayToCompoundV2(uint256 currentOffset) internal returns (uint256) {
         assembly {
             let underlying := shr(96, calldataload(currentOffset))
-            // offset for amoutn at lower bytes
-            currentOffset := add(currentOffset, 20)
-            let amountData := shr(128, calldataload(currentOffset))
-            // skip amounts
-            currentOffset := add(currentOffset, 16)
+            // offset for amount at lower bytes
+            let amountData := shr(128, calldataload(add(currentOffset, 20)))
             // receiver
-            let receiver := shr(96, calldataload(currentOffset))
-            // skip receiver
-            currentOffset := add(currentOffset, 20)
+            let receiver := shr(96, calldataload(add(currentOffset, 36)))
             // get comet
-            let cToken := shr(96, calldataload(currentOffset))
-            // skip comet (end of data)
-            currentOffset := add(currentOffset, 20)
+            let cToken := shr(96, calldataload(add(currentOffset, 56)))
+            currentOffset := add(currentOffset, 76)
 
             let ptr := mload(0x40)
 

@@ -25,23 +25,17 @@ abstract contract AaveLending is ERC20Selectors, Masks {
         assembly {
             let ptr := mload(0x40)
             // Aave types need to trasfer collateral tokens
-
             let underlying := shr(96, calldataload(currentOffset))
-            // offset for amoutn at lower bytes
-            currentOffset := add(currentOffset, 20)
-            let amountData := shr(128, calldataload(currentOffset))
-            // skip amounts
-            currentOffset := add(currentOffset, 16)
+            // offset for amount at lower bytes
+            let amountData := shr(128, calldataload(add(currentOffset, 20)))
             // receiver
-            let receiver := shr(96, calldataload(currentOffset))
-            // skip receiver
-            currentOffset := add(currentOffset, 20)
+            let receiver := shr(96, calldataload(add(currentOffset, 36)))
 
             let amount := and(UINT120_MASK, amountData)
             // get aToken
-            let collateralToken := shr(96, calldataload(currentOffset))
-            // skip token
-            currentOffset := add(currentOffset, 20)
+            let collateralToken := shr(96, calldataload(add(currentOffset, 56)))
+            // skip  to end
+            currentOffset := add(currentOffset, 76)
 
             // apply max if needed
             switch amount
@@ -118,21 +112,16 @@ abstract contract AaveLending is ERC20Selectors, Masks {
     function _borrowFromAave(uint256 currentOffset, address callerAddress) internal returns (uint256) {
         assembly {
             let underlying := shr(96, calldataload(currentOffset))
-            // offset for amoutn at lower bytes
-            currentOffset := add(currentOffset, 20)
-            let amountData := shr(128, calldataload(currentOffset))
-            // skip amounts
-            currentOffset := add(currentOffset, 16)
-            let receiverAndMode := calldataload(currentOffset)
+            // offset for amount at lower bytes
+            let amountData := shr(128, calldataload(add(currentOffset, 20)))
+            let receiverAndMode := calldataload(add(currentOffset, 36))
             // receiver
             let receiver := shr(96, receiverAndMode)
             let mode := and(UINT8_MASK, shr(88, receiverAndMode))
-            // skip receiver & mode
-            currentOffset := add(currentOffset, 21)
             // get pool
-            let pool := shr(96, calldataload(currentOffset))
+            let pool := shr(96, calldataload(add(currentOffset, 57)))
             // skip pool (end of data)
-            currentOffset := add(currentOffset, 20)
+            currentOffset := add(currentOffset, 77)
 
             let amount := and(UINT120_MASK, amountData)
 
@@ -214,19 +203,14 @@ abstract contract AaveLending is ERC20Selectors, Masks {
     function _depositToAaveV3(uint256 currentOffset) internal returns (uint256) {
         assembly {
             let underlying := shr(96, calldataload(currentOffset))
-            // offset for amoutn at lower bytes
-            currentOffset := add(currentOffset, 20)
-            let amountData := shr(128, calldataload(currentOffset))
-            // skip amounts
-            currentOffset := add(currentOffset, 16)
+            // offset for amount at lower bytes
+            let amountData := shr(128, calldataload(add(currentOffset, 20)))
             // receiver
-            let receiver := shr(96, calldataload(currentOffset))
-            // skip receiver
-            currentOffset := add(currentOffset, 20)
+            let receiver := shr(96, calldataload(add(currentOffset, 36)))
             // get pool
-            let pool := shr(96, calldataload(currentOffset))
+            let pool := shr(96, calldataload(add(currentOffset, 56)))
             // skip pool (end of data)
-            currentOffset := add(currentOffset, 20)
+            currentOffset := add(currentOffset, 76)
 
             let amount := and(UINT120_MASK, amountData)
             // zero is this balance
@@ -270,19 +254,14 @@ abstract contract AaveLending is ERC20Selectors, Masks {
     function _depositToAaveV2(uint256 currentOffset) internal returns (uint256) {
         assembly {
             let underlying := shr(96, calldataload(currentOffset))
-            // offset for amoutn at lower bytes
-            currentOffset := add(currentOffset, 20)
-            let amountData := shr(128, calldataload(currentOffset))
-            // skip amounts
-            currentOffset := add(currentOffset, 16)
+            // offset for amount at lower bytes
+            let amountData := shr(128, calldataload(add(currentOffset, 20)))
             // receiver
-            let receiver := shr(96, calldataload(currentOffset))
-            // skip receiver
-            currentOffset := add(currentOffset, 20)
+            let receiver := shr(96, calldataload(add(currentOffset, 36)))
             // get pool
-            let pool := shr(96, calldataload(currentOffset))
+            let pool := shr(96, calldataload(add(currentOffset, 56)))
             // skip pool (end of data)
-            currentOffset := add(currentOffset, 20)
+            currentOffset := add(currentOffset, 76)
 
             let amount := and(UINT120_MASK, amountData)
             // zero is this balance
@@ -329,23 +308,18 @@ abstract contract AaveLending is ERC20Selectors, Masks {
      * | 20     | 16             | amount                          |
      * | 36     | 20             | receiver                        |
      * | 76     | 1              | mode                            |
-     * | 76     | 20             | debtToken                       |
+     * | 77     | 20             | debtToken                       |
      * | 97     | 20             | pool                            |
      */
     function _repayToAave(uint256 currentOffset, address callerAddress) internal returns (uint256) {
         assembly {
             let underlying := shr(96, calldataload(currentOffset))
-            // offset for amoutn at lower bytes
-            currentOffset := add(currentOffset, 20)
-            let amountData := shr(128, calldataload(currentOffset))
-            // skip amounts
-            currentOffset := add(currentOffset, 16)
-            let receiverAndMode := calldataload(currentOffset)
+            // offset for amount at lower bytes
+            let amountData := shr(128, calldataload(add(currentOffset, 20)))
+            let receiverAndMode := calldataload(add(currentOffset, 36))
             // receiver
             let receiver := shr(96, receiverAndMode)
             let mode := and(UINT8_MASK, shr(88, receiverAndMode))
-            // skip receiver & mode
-            currentOffset := add(currentOffset, 21)
 
             let amount := and(UINT120_MASK, amountData)
             switch amount
@@ -374,19 +348,17 @@ abstract contract AaveLending is ERC20Selectors, Masks {
                 // add caller address as parameter
                 mstore(0x04, callerAddress)
                 // call to debt token
-                pop(staticcall(gas(), shr(96, calldataload(currentOffset)), 0x0, 0x24, 0x0, 0x20))
+                pop(staticcall(gas(), shr(96, calldataload(add(currentOffset, 57))), 0x0, 0x24, 0x0, 0x20))
                 // load the retrieved balance
                 let borrowBalance := mload(0x0)
                 // if borrow balance is less than the amount, select borrow balance
                 if lt(borrowBalance, amount) { amount := borrowBalance }
             }
 
-            // skip debt token
-            currentOffset := add(currentOffset, 20)
             // get pool
-            let pool := shr(96, calldataload(currentOffset))
+            let pool := shr(96, calldataload(add(currentOffset, 77)))
             // skip pool (end of data)
-            currentOffset := add(currentOffset, 20)
+            currentOffset := add(currentOffset, 97)
 
             let ptr := mload(0x40)
 
