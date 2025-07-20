@@ -17,8 +17,8 @@ contract AaveV3FlashLoanCallbackTest is BaseTest, DeltaErrors {
     AaveMockPool mockPool;
 
     address private AAVE_V3;
-    address private AVALON_SOLV_BTC;
-    address private AVALON_PUMP_BTC;
+    address private AVALON_SOLVBTC;
+    address private AVALON_PUMPBTC;
     address private AVALON_STBTC;
     address private AVALON_WBTC;
     address private AVALON_LBTC;
@@ -70,21 +70,21 @@ contract AaveV3FlashLoanCallbackTest is BaseTest, DeltaErrors {
         oneDV2.deltaCompose(params);
     }
 
-    function test_flash_loan_aaveV3_type_avalon_solv_btc_pool_with_callbacks() public {
+    function test_flash_loan_aaveV3_type_avalon_solvbtc_pool_with_callbacks() public {
         // mock implementation
-        replaceLendingPoolWithMock(AVALON_SOLV_BTC);
+        replaceLendingPoolWithMock(AVALON_SOLVBTC);
 
-        bytes memory params = CalldataLib.encodeFlashLoan(USDC, 1e6, AVALON_SOLV_BTC, uint8(2), uint8(51), sweepCall());
+        bytes memory params = CalldataLib.encodeFlashLoan(USDC, 1e6, AVALON_SOLVBTC, uint8(2), uint8(51), sweepCall());
 
         vm.prank(user);
         oneDV2.deltaCompose(params);
     }
 
-    function test_flash_loan_aaveV3_type_avalon_pump_btc_pool_with_callbacks() public {
+    function test_flash_loan_aaveV3_type_avalon_pumpbtc_pool_with_callbacks() public {
         // mock implementation
-        replaceLendingPoolWithMock(AVALON_PUMP_BTC);
+        replaceLendingPoolWithMock(AVALON_PUMPBTC);
 
-        bytes memory params = CalldataLib.encodeFlashLoan(USDC, 1e6, AVALON_PUMP_BTC, uint8(2), uint8(53), sweepCall());
+        bytes memory params = CalldataLib.encodeFlashLoan(USDC, 1e6, AVALON_PUMPBTC, uint8(2), uint8(53), sweepCall());
 
         vm.prank(user);
         oneDV2.deltaCompose(params);
@@ -211,8 +211,8 @@ contract AaveV3FlashLoanCallbackTest is BaseTest, DeltaErrors {
 
     function getAddressFromRegistry() internal {
         AAVE_V3 = chain.getLendingController(Lenders.AAVE_V3);
-        AVALON_SOLV_BTC = chain.getLendingController(Lenders.AVALON_SOLV_BTC);
-        AVALON_PUMP_BTC = chain.getLendingController(Lenders.AVALON_PUMP_BTC);
+        AVALON_SOLVBTC = chain.getLendingController(Lenders.AVALON_SOLVBTC);
+        AVALON_PUMPBTC = chain.getLendingController(Lenders.AVALON_PUMPBTC);
         AVALON_STBTC = chain.getLendingController(Lenders.AVALON_STBTC);
         AVALON_WBTC = chain.getLendingController(Lenders.AVALON_WBTC);
         AVALON_LBTC = chain.getLendingController(Lenders.AVALON_LBTC);
@@ -234,8 +234,8 @@ contract AaveV3FlashLoanCallbackTest is BaseTest, DeltaErrors {
 
     function populateValidPools() internal {
         validPools.push(PoolCase({poolId: 0, poolAddr: AAVE_V3, asset: USDC}));
-        validPools.push(PoolCase({poolId: 51, poolAddr: AVALON_SOLV_BTC, asset: USDC}));
-        validPools.push(PoolCase({poolId: 53, poolAddr: AVALON_PUMP_BTC, asset: USDC}));
+        validPools.push(PoolCase({poolId: 51, poolAddr: AVALON_SOLVBTC, asset: USDC}));
+        validPools.push(PoolCase({poolId: 53, poolAddr: AVALON_PUMPBTC, asset: USDC}));
         validPools.push(PoolCase({poolId: 64, poolAddr: AVALON_STBTC, asset: STBTC}));
         validPools.push(PoolCase({poolId: 65, poolAddr: AVALON_WBTC, asset: WBTC}));
         validPools.push(PoolCase({poolId: 66, poolAddr: AVALON_LBTC, asset: LBTC}));

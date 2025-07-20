@@ -16,7 +16,7 @@ contract AaveV3FlashLoanCallbackTest is BaseTest, DeltaErrors {
     IComposerLike oneDV2;
     AaveMockPool mockPool;
 
-    address private AVALON_SOLV_BTC;
+    address private AVALON_SOLVBTC;
     address private AVALON_UNIBTC;
 
     address private USDC;
@@ -45,11 +45,11 @@ contract AaveV3FlashLoanCallbackTest is BaseTest, DeltaErrors {
         mockPool = new AaveMockPool();
     }
 
-    function test_flash_loan_aaveV3_type_avalon_solv_btc_pool_with_callbacks() public {
+    function test_flash_loan_aaveV3_type_avalon_solvbtc_pool_with_callbacks() public {
         // mock implementation
-        replaceLendingPoolWithMock(AVALON_SOLV_BTC);
+        replaceLendingPoolWithMock(AVALON_SOLVBTC);
 
-        bytes memory params = CalldataLib.encodeFlashLoan(USDC, 1e6, AVALON_SOLV_BTC, uint8(2), uint8(51), sweepCall());
+        bytes memory params = CalldataLib.encodeFlashLoan(USDC, 1e6, AVALON_SOLVBTC, uint8(2), uint8(51), sweepCall());
 
         vm.prank(user);
         oneDV2.deltaCompose(params);
@@ -88,12 +88,12 @@ contract AaveV3FlashLoanCallbackTest is BaseTest, DeltaErrors {
     }
 
     function test_flash_loan_aaveV3_type_fuzz_invalidPoolIds(uint8 poolId) public {
-        replaceLendingPoolWithMock(AVALON_SOLV_BTC);
+        replaceLendingPoolWithMock(AVALON_SOLVBTC);
 
         for (uint256 i = 0; i < validPools.length; i++) {
             if (poolId == validPools[i].poolId) return;
         }
-        bytes memory params = CalldataLib.encodeFlashLoan(USDC, 1e6, AVALON_SOLV_BTC, uint8(2), uint8(poolId), sweepCall());
+        bytes memory params = CalldataLib.encodeFlashLoan(USDC, 1e6, AVALON_SOLVBTC, uint8(2), uint8(poolId), sweepCall());
         vm.prank(user);
         vm.expectRevert(DeltaErrors.INVALID_FLASH_LOAN);
         oneDV2.deltaCompose(params);
@@ -105,7 +105,7 @@ contract AaveV3FlashLoanCallbackTest is BaseTest, DeltaErrors {
     }
 
     function getAddressFromRegistry() internal {
-        AVALON_SOLV_BTC = chain.getLendingController(Lenders.AVALON_SOLV_BTC);
+        AVALON_SOLVBTC = chain.getLendingController(Lenders.AVALON_SOLVBTC);
         AVALON_UNIBTC = chain.getLendingController(Lenders.AVALON_UNIBTC);
 
         // Get token addresses
@@ -113,7 +113,7 @@ contract AaveV3FlashLoanCallbackTest is BaseTest, DeltaErrors {
     }
 
     function populateValidPools() internal {
-        validPools.push(PoolCase({poolId: 51, poolAddr: AVALON_SOLV_BTC, asset: USDC}));
+        validPools.push(PoolCase({poolId: 51, poolAddr: AVALON_SOLVBTC, asset: USDC}));
         validPools.push(PoolCase({poolId: 70, poolAddr: AVALON_UNIBTC, asset: USDC}));
     }
 

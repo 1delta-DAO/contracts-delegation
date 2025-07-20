@@ -11,8 +11,8 @@ import {DeltaErrors} from "../../../../../shared/errors/Errors.sol";
 contract AaveV3FlashLoanCallback is Masks, DeltaErrors {
     // Aave V3 style lender pool addresses
     address private constant AAVE_V3 = 0x6807dc923806fE8Fd134338EABCA509979a7e0cB;
-    address private constant AVALON_SOLV_BTC = 0xf9278C7c4AEfAC4dDfd0D496f7a1C39cA6BCA6d4;
-    address private constant AVALON_PUMP_BTC = 0xeCaC6332e2De19e8c8e6Cd905cb134E980F18cC4;
+    address private constant AVALON_SOLVBTC = 0xf9278C7c4AEfAC4dDfd0D496f7a1C39cA6BCA6d4;
+    address private constant AVALON_PUMPBTC = 0xeCaC6332e2De19e8c8e6Cd905cb134E980F18cC4;
     address private constant AVALON_STBTC = 0x05C194eE95370ED803B1526f26EFd98C79078ab5;
     address private constant AVALON_WBTC = 0xF8718Fc27eF04633B7EB372F778348dE02642207;
     address private constant AVALON_LBTC = 0x390166389f5D30281B9bDE086805eb3c9A10F46F;
@@ -54,8 +54,8 @@ contract AaveV3FlashLoanCallback is Masks, DeltaErrors {
             case 1 {
                 switch poolId
                 case 0 { pool := AAVE_V3 }
-                case 51 { pool := AVALON_SOLV_BTC }
-                case 53 { pool := AVALON_PUMP_BTC }
+                case 51 { pool := AVALON_SOLVBTC }
+                case 53 { pool := AVALON_PUMPBTC }
             }
             default {
                 switch lt(poolId, 67)

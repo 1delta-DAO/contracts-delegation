@@ -11,7 +11,7 @@ import {DeltaErrors} from "../../../../../shared/errors/Errors.sol";
 contract AaveV3FlashLoanCallback is Masks, DeltaErrors {
     // Aave V3 style lender pool addresses
     address private constant ZEROLEND = 0xa70B0F3C2470AbBE104BdB3F3aaa9C7C54BEA7A8;
-    address private constant PAC_FINANCE = 0xd2499b3c8611E36ca89A70Fda2A72C49eE19eAa8;
+    address private constant PAC = 0xd2499b3c8611E36ca89A70Fda2A72C49eE19eAa8;
 
     /**
      * @dev Aave V3 style flash loan callback
@@ -42,7 +42,7 @@ contract AaveV3FlashLoanCallback is Masks, DeltaErrors {
             let pool
             switch and(UINT8_MASK, shr(88, firstWord))
             case 20 { pool := ZEROLEND }
-            case 81 { pool := PAC_FINANCE }
+            case 81 { pool := PAC }
             // We revert on any other id
             default {
                 mstore(0, INVALID_FLASH_LOAN)

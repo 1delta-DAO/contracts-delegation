@@ -17,6 +17,9 @@ contract AaveV3FlashLoanCallbackTest is BaseTest, DeltaErrors {
     AaveMockPool mockPool;
 
     address private KINZA;
+    address private LENDLE_CMETH;
+    address private LENDLE_PT_CMETH;
+    address private LENDLE_SUSDE;
 
     address private USDC;
 
@@ -49,6 +52,36 @@ contract AaveV3FlashLoanCallbackTest is BaseTest, DeltaErrors {
         replaceLendingPoolWithMock(KINZA);
 
         bytes memory params = CalldataLib.encodeFlashLoan(USDC, 1e6, KINZA, uint8(2), uint8(82), sweepCall());
+
+        vm.prank(user);
+        oneDV2.deltaCompose(params);
+    }
+
+    function test_flash_loan_aaveV3_type_lendle_cmeth_pool_with_callbacks() public {
+        // mock implementation
+        replaceLendingPoolWithMock(LENDLE_CMETH);
+
+        bytes memory params = CalldataLib.encodeFlashLoan(USDC, 1e6, LENDLE_CMETH, uint8(2), uint8(102), sweepCall());
+
+        vm.prank(user);
+        oneDV2.deltaCompose(params);
+    }
+
+    function test_flash_loan_aaveV3_type_lendle_pt_cmeth_pool_with_callbacks() public {
+        // mock implementation
+        replaceLendingPoolWithMock(LENDLE_PT_CMETH);
+
+        bytes memory params = CalldataLib.encodeFlashLoan(USDC, 1e6, LENDLE_PT_CMETH, uint8(2), uint8(103), sweepCall());
+
+        vm.prank(user);
+        oneDV2.deltaCompose(params);
+    }
+
+    function test_flash_loan_aaveV3_type_lendle_susde_pool_with_callbacks() public {
+        // mock implementation
+        replaceLendingPoolWithMock(LENDLE_SUSDE);
+
+        bytes memory params = CalldataLib.encodeFlashLoan(USDC, 1e6, LENDLE_SUSDE, uint8(2), uint8(104), sweepCall());
 
         vm.prank(user);
         oneDV2.deltaCompose(params);
@@ -95,6 +128,9 @@ contract AaveV3FlashLoanCallbackTest is BaseTest, DeltaErrors {
 
     function getAddressFromRegistry() internal {
         KINZA = chain.getLendingController(Lenders.KINZA);
+        LENDLE_CMETH = chain.getLendingController(Lenders.LENDLE_CMETH);
+        LENDLE_PT_CMETH = chain.getLendingController(Lenders.LENDLE_PT_CMETH);
+        LENDLE_SUSDE = chain.getLendingController(Lenders.LENDLE_SUSDE);
 
         // Get token addresses
         USDC = chain.getTokenAddress(Tokens.USDC);
@@ -102,6 +138,9 @@ contract AaveV3FlashLoanCallbackTest is BaseTest, DeltaErrors {
 
     function populateValidPools() internal {
         validPools.push(PoolCase({poolId: 82, poolAddr: KINZA, asset: USDC}));
+        validPools.push(PoolCase({poolId: 102, poolAddr: LENDLE_CMETH, asset: USDC}));
+        validPools.push(PoolCase({poolId: 103, poolAddr: LENDLE_PT_CMETH, asset: USDC}));
+        validPools.push(PoolCase({poolId: 104, poolAddr: LENDLE_SUSDE, asset: USDC}));
     }
 
     function mockERC20FunctionsForAllTokens() internal {

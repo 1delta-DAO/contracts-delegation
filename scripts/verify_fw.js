@@ -87,7 +87,7 @@ module.exports = [
 
 // npx hardhat verify --network polygon 0x645123F724ac42cC0AB5c5a98deb31582D582657 --contract contracts/1delta/composer/chains/polygon/Composer.sol:OneDeltaComposerPolygon
 
-// npx hardhat verify --network base 0x2eA75bBBc5615651efc9401FBc9Db4d03B055CA6 --contract contracts/1delta/composer/chains/base/Composer.sol:OneDeltaComposerBase
+// npx hardhat verify --network base 0xD48FeCce2cE91e1c644B8C59516567f2041CE260 --contract contracts/1delta/composer/chains/base/Composer.sol:OneDeltaComposerBase
 
 // npx hardhat verify --network sonic 0x91549bad7A081742dEC72E2CF55a2477A880a798 --contract contracts/1delta/composer/chains/sonic/Composer.sol:OneDeltaComposerSonic
 

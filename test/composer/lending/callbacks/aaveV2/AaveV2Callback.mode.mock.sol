@@ -15,7 +15,7 @@ contract AaveV2FlashLoanCallbackTest is BaseTest, DeltaErrors {
     IComposerLike oneDV2;
     AaveV2MockPool mockPool;
 
-    address private IRONCLAD_FINANCE;
+    address private IRONCLAD;
     address private MOLEND;
 
     address private USDC;
@@ -44,10 +44,10 @@ contract AaveV2FlashLoanCallbackTest is BaseTest, DeltaErrors {
         mockPool = new AaveV2MockPool();
     }
 
-    function test_flash_loan_aaveV2_type_ironclad_finance_pool_with_callbacks() public {
-        replaceLendingPoolWithMock(IRONCLAD_FINANCE);
+    function test_flash_loan_aaveV2_type_ironclad_pool_with_callbacks() public {
+        replaceLendingPoolWithMock(IRONCLAD);
 
-        bytes memory params = CalldataLib.encodeFlashLoan(USDC, 1e6, IRONCLAD_FINANCE, uint8(3), uint8(9), sweepCall());
+        bytes memory params = CalldataLib.encodeFlashLoan(USDC, 1e6, IRONCLAD, uint8(3), uint8(9), sweepCall());
 
         vm.prank(user);
         oneDV2.deltaCompose(params);
@@ -90,12 +90,12 @@ contract AaveV2FlashLoanCallbackTest is BaseTest, DeltaErrors {
     }
 
     function test_flash_loan_aaveV2_type_fuzz_invalidPoolIds(uint8 poolId) public {
-        replaceLendingPoolWithMock(IRONCLAD_FINANCE);
+        replaceLendingPoolWithMock(IRONCLAD);
 
         for (uint256 i = 0; i < validPools.length; i++) {
             if (poolId == validPools[i].poolId) return;
         }
-        bytes memory params = CalldataLib.encodeFlashLoan(USDC, 1e6, IRONCLAD_FINANCE, uint8(3), uint8(poolId), sweepCall());
+        bytes memory params = CalldataLib.encodeFlashLoan(USDC, 1e6, IRONCLAD, uint8(3), uint8(poolId), sweepCall());
         vm.prank(user);
         vm.expectRevert(DeltaErrors.INVALID_FLASH_LOAN);
         oneDV2.deltaCompose(params);
@@ -107,7 +107,7 @@ contract AaveV2FlashLoanCallbackTest is BaseTest, DeltaErrors {
     }
 
     function getAddressFromRegistry() internal {
-        IRONCLAD_FINANCE = chain.getLendingController(Lenders.IRONCLAD_FINANCE);
+        IRONCLAD = chain.getLendingController(Lenders.IRONCLAD);
         MOLEND = chain.getLendingController(Lenders.MOLEND);
 
         // Get token addresses
@@ -115,7 +115,7 @@ contract AaveV2FlashLoanCallbackTest is BaseTest, DeltaErrors {
     }
 
     function populateValidPools() internal {
-        validPools.push(PoolCase({poolId: 9, poolAddr: IRONCLAD_FINANCE, asset: USDC}));
+        validPools.push(PoolCase({poolId: 9, poolAddr: IRONCLAD, asset: USDC}));
         validPools.push(PoolCase({poolId: 10, poolAddr: MOLEND, asset: USDC}));
     }
 

@@ -17,7 +17,7 @@ contract AaveV3FlashLoanCallbackTest is BaseTest, DeltaErrors {
     AaveMockPool mockPool;
 
     address private AVALON;
-    address private AVALON_SOLV_BTC;
+    address private AVALON_SOLVBTC;
     address private AVALON_USDA;
     address private HANA;
 
@@ -57,11 +57,11 @@ contract AaveV3FlashLoanCallbackTest is BaseTest, DeltaErrors {
         oneDV2.deltaCompose(params);
     }
 
-    function test_flash_loan_aaveV3_type_avalon_solv_btc_pool_with_callbacks() public {
+    function test_flash_loan_aaveV3_type_avalon_solvbtc_pool_with_callbacks() public {
         // mock implementation
-        replaceLendingPoolWithMock(AVALON_SOLV_BTC);
+        replaceLendingPoolWithMock(AVALON_SOLVBTC);
 
-        bytes memory params = CalldataLib.encodeFlashLoan(USDC, 1e6, AVALON_SOLV_BTC, uint8(2), uint8(51), sweepCall());
+        bytes memory params = CalldataLib.encodeFlashLoan(USDC, 1e6, AVALON_SOLVBTC, uint8(2), uint8(51), sweepCall());
 
         vm.prank(user);
         oneDV2.deltaCompose(params);
@@ -128,7 +128,7 @@ contract AaveV3FlashLoanCallbackTest is BaseTest, DeltaErrors {
 
     function getAddressFromRegistry() internal {
         AVALON = chain.getLendingController(Lenders.AVALON);
-        AVALON_SOLV_BTC = chain.getLendingController(Lenders.AVALON_SOLV_BTC);
+        AVALON_SOLVBTC = chain.getLendingController(Lenders.AVALON_SOLVBTC);
         AVALON_USDA = chain.getLendingController(Lenders.AVALON_USDA);
         HANA = chain.getLendingController(Lenders.HANA);
 
@@ -138,7 +138,7 @@ contract AaveV3FlashLoanCallbackTest is BaseTest, DeltaErrors {
 
     function populateValidPools() internal {
         validPools.push(PoolCase({poolId: 50, poolAddr: AVALON, asset: USDC}));
-        validPools.push(PoolCase({poolId: 51, poolAddr: AVALON_SOLV_BTC, asset: USDC}));
+        validPools.push(PoolCase({poolId: 51, poolAddr: AVALON_SOLVBTC, asset: USDC}));
         validPools.push(PoolCase({poolId: 55, poolAddr: AVALON_USDA, asset: USDC}));
         validPools.push(PoolCase({poolId: 81, poolAddr: HANA, asset: USDC}));
     }
