@@ -243,7 +243,7 @@ const config: HardhatUserConfig = {
             live: true,
         },
         polygon: {
-            url: "https://polygon-rpc.com",
+            url: "https://api.zan.top/polygon-mainnet",
             accounts,
             chainId: 137,
         },
