@@ -9,11 +9,11 @@ importers:
   .:
     dependencies:
       '@1delta/asset-registry':
-        specifier: ^0.0.169
-        version: 0.0.169
+        specifier: ^0.0.170
+        version: 0.0.170
       '@1delta/dex-registry':
-        specifier: ^0.0.62
-        version: 0.0.62
+        specifier: ^0.0.64
+        version: 0.0.64
       '@chainlink/contracts':
         specifier: ^0.6.1
         version: 0.6.1(bufferutil@4.0.9)(ethers@5.8.0(bufferutil@4.0.9)(utf-8-validate@5.0.10))(utf-8-validate@5.0.10)
@@ -189,16 +189,12 @@ importers:
 
 packages:
 
-  '@1delta/asset-registry@0.0.166':
-    resolution: {integrity: sha512-rb2Fht8PFWO7yljCYxDp7JvkDMx13jBbyH65b0mrCKBenuariSVQSUy9L76rJC+zUbmdQSCztUSI11IX3+TIVg==}
+  '@1delta/asset-registry@0.0.170':
+    resolution: {integrity: sha512-p+OkvVET+8Zr4wRlE5XwDbgLQt3VRGlRqPiTrEqEkdn59FQ8yCqDMUZrMm8Hb2kGVruDa7Ui62PSNCG8lJEhVw==}
     engines: {node: '>=20'}
 
-  '@1delta/asset-registry@0.0.169':
-    resolution: {integrity: sha512-YpY30dC/rO+bZkif2qY2DWT15yAnoodO9j2mvMMteS76ktiFgTw8ZgW64OZ2IliqOToIfKdh7sEFeIffGAI5pQ==}
-    engines: {node: '>=20'}
-
-  '@1delta/dex-registry@0.0.62':
-    resolution: {integrity: sha512-h98NGFMPLWa/er7dL0qO+8Fs9a8rPvNXD+gH8xEMMe5K0b+B5y63J5ShYpQGUQbg3ehrFbriaEI8LW4nXIuWTQ==}
+  '@1delta/dex-registry@0.0.64':
+    resolution: {integrity: sha512-hQ9yEzlcFIam+2dQ7Kw3YghBe+s55RO+Ag82wJevvVOUXXAG4KrXNaTxS11PuyEduB7rSUSOMBICcpR+tofizQ==}
     engines: {node: '>=20'}
 
   '@ampproject/remapping@2.3.0':
@@ -6791,13 +6787,11 @@ packages:
 
 snapshots:
 
-  '@1delta/asset-registry@0.0.166': {}
+  '@1delta/asset-registry@0.0.170': {}
 
-  '@1delta/asset-registry@0.0.169': {}
-
-  '@1delta/dex-registry@0.0.62':
+  '@1delta/dex-registry@0.0.64':
     dependencies:
-      '@1delta/asset-registry': 0.0.166
+      '@1delta/asset-registry': 0.0.170
 
   '@ampproject/remapping@2.3.0':
     dependencies:

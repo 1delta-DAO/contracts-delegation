@@ -224,6 +224,18 @@ const config: HardhatUserConfig = {
             chainId: 43111,
             live: true,
         },
+        soneium: {
+            url: "https://rpc.soneium.org",
+            accounts,
+            chainId: 1868,
+            live: true,
+        },
+        hyperevm: {
+            url: "https://rpc.hyperliquid.xyz/evm",
+            accounts,
+            chainId: 999,
+            live: true,
+        },
         core: {
             url: "https://rpc.coredao.org",
             accounts,
@@ -621,6 +633,36 @@ const config: HardhatUserConfig = {
                     optimizer: {
                         enabled: true,
                         runs: 5_000,
+                    },
+                    evmVersion: "cancun",
+                },
+            },
+            "contracts/1delta/composer/chains/kaia/Composer.sol": {
+                version: "0.8.28",
+                settings: {
+                    optimizer: {
+                        enabled: true,
+                        runs: 10_000,
+                    },
+                    evmVersion: "shanghai",
+                },
+            },
+            "contracts/1delta/composer/chains/soneium/Composer.sol": {
+                version: "0.8.28",
+                settings: {
+                    optimizer: {
+                        enabled: true,
+                        runs: 1_000_000,
+                    },
+                    evmVersion: "cancun",
+                },
+            },
+            "contracts/1delta/composer/chains/celo/Composer.sol": {
+                version: "0.8.28",
+                settings: {
+                    optimizer: {
+                        enabled: true,
+                        runs: 10_000,
                     },
                     evmVersion: "cancun",
                 },

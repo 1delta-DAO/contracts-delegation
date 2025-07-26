@@ -23,6 +23,8 @@ import {OneDeltaComposerSoneium} from "../../../contracts/1delta/composer//chain
 import {OneDeltaComposerMode} from "../../../contracts/1delta/composer//chains/mode/Composer.sol";
 import {OneDeltaComposerCore} from "../../../contracts/1delta/composer//chains/core/Composer.sol";
 import {OneDeltaComposerFantomOpera} from "../../../contracts/1delta/composer//chains/fantom-opera/Composer.sol";
+import {OneDeltaComposerKaia} from "../../../contracts/1delta/composer//chains/kaia/Composer.sol";
+import {OneDeltaComposerHyperevm} from "../../../contracts/1delta/composer//chains/hyperevm/Composer.sol";
 
 library ComposerPlugin {
     function getComposer(string memory chainName) public returns (IComposerLike) {
@@ -50,6 +52,8 @@ library ComposerPlugin {
             return IComposerLike(address(new OneDeltaComposerCore()));
         }
         if (keccak256(bytes(chainName)) == keccak256(bytes(Chains.FANTOM_OPERA))) return IComposerLike(address(new OneDeltaComposerFantomOpera()));
+        if (keccak256(bytes(chainName)) == keccak256(bytes(Chains.KAIA_MAINNET))) return IComposerLike(address(new OneDeltaComposerKaia()));
+        if (keccak256(bytes(chainName)) == keccak256(bytes(Chains.HYPEREVM))) return IComposerLike(address(new OneDeltaComposerHyperevm()));
 
         revert("No composer for chain");
     }
