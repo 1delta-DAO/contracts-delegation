@@ -1,4 +1,4 @@
-import { Chain } from "@1delta/asset-registry";
+import {Chain} from "@1delta/asset-registry";
 
 export const CANCUN_OR_HIGHER = [
     Chain.ETHEREUM_MAINNET,
@@ -10,4 +10,6 @@ export const CANCUN_OR_HIGHER = [
     Chain.GNOSIS,
     Chain.BASE,
     Chain.HEMI_NETWORK,
-]
+    Chain.HYPEREVM,
+    Chain.KATANA,
+];
