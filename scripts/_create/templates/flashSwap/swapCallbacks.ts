@@ -1,68 +1,83 @@
-
-
-export const templateSwapCallbacks = (
-    hasV4: boolean,
-    hasV3: boolean,
-    hasV2: boolean,
-    hasDodo: boolean,
-    hasBalancerV3: boolean,
-) => {
-    let cbs: { imports: string, name: string, overr: string }[] = []
+export const templateSwapCallbacks = (hasV4: boolean, hasV3: boolean, hasV2: boolean, hasDodo: boolean, hasBalancerV3: boolean) => {
+    let cbs: {imports: string; name: string; overr: string}[] = [];
 
     if (hasV4) {
         cbs.push({
             imports: `import {UniV4Callbacks} from "./callbacks/UniV4Callback.sol";`,
             name: "UniV4Callbacks",
-            overr: "UniV4Callbacks"
-        })
+            overr: "UniV4Callbacks",
+        });
     }
 
     if (hasV3) {
         cbs.push({
             imports: `import {UniV3Callbacks, V3Callbacker} from "./callbacks/UniV3Callback.sol";`,
             name: "UniV3Callbacks",
-            overr: "V3Callbacker"
-        })
+            overr: "V3Callbacker",
+        });
     }
 
     if (hasV2) {
         cbs.push({
             imports: `import {UniV2Callbacks} from "./callbacks/UniV2Callback.sol";`,
             name: "UniV2Callbacks",
-            overr: "UniV2Callbacks"
-        })
+            overr: "UniV2Callbacks",
+        });
     }
 
     if (hasDodo) {
         cbs.push({
             imports: `import {DodoV2Callbacks} from "./callbacks/DodoV2Callback.sol";`,
             name: "DodoV2Callbacks",
-            overr: "DodoV2Callbacks"
-        })
+            overr: "DodoV2Callbacks",
+        });
     }
 
     if (hasBalancerV3) {
         cbs.push({
             imports: `import {BalancerV3Callbacks} from "./callbacks/BalancerV3Callback.sol";`,
             name: "BalancerV3Callbacks",
-            overr: "BalancerV3Callbacks"
-        })
+            overr: "BalancerV3Callbacks",
+        });
+    }
+    // no callbacks -> return an empty shell of callback without fallbacks
+    if (cbs.length === 0)
+        return `
+    // SPDX-License-Identifier: BUSL-1.1
+
+    pragma solidity 0.8.28;
+
+    /**
+     * @title Swap Callback executor
+     * @author 1delta Labs AG
+     */
+    contract SwapCallbacks is
+    {
+        // override the compose
+        function _deltaComposeInternal(
+            address callerAddress,
+            uint256 offset,
+            uint256 length
+        )
+            internal
+            virtual
+        {}
     }
 
-    if (cbs.length === 0) throw new Error("No Flash swaps")
+    `;
 
     return `
 // SPDX-License-Identifier: BUSL-1.1
 
 pragma solidity 0.8.28;
 
-${cbs.map(a => a.imports + `\n`).join("")}
+${cbs.map((a) => a.imports + `\n`).join("")}
 /**
  * @title Swap Callback executor
  * @author 1delta Labs AG
  */
 contract SwapCallbacks is 
-${cbs.map(a => a.name).join(",\n") + "//"}
+${cbs.map((a) => a.name).join(",\n") + "//"}
 {
     // override the compose
     function _deltaComposeInternal(
@@ -73,7 +88,7 @@ ${cbs.map(a => a.name).join(",\n") + "//"}
         internal
         virtual
         override(
-            ${cbs.map(a => a.overr).join(",\n") + "//"}
+            ${cbs.map((a) => a.overr).join(",\n") + "//"}
         )
     {}
 
@@ -107,4 +122,5 @@ ${cbs.map(a => a.name).join(",\n") + "//"}
     }
 }
 
-`}
+`;
+};
