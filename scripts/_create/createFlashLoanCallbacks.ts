@@ -200,18 +200,20 @@ async function main() {
             Object.entries(maps).forEach(([chains, e]) => {
                 if (chains === chain) {
                     if (AAVE_V2_LENDERS.includes(lender as any)) {
-                        lenderIdsAaveV2.push({
-                            entityName: lender,
-                            entityId: FLASH_LOAN_IDS[lender].toString(),
-                            pool: e.pool,
-                        });
+                        if (FLASH_LOAN_IDS[lender] !== undefined)
+                            lenderIdsAaveV2.push({
+                                entityName: lender,
+                                entityId: FLASH_LOAN_IDS[lender].toString(),
+                                pool: e.pool,
+                            });
                     }
                     if (AAVE_V3_LENDERS.includes(lender as any)) {
-                        lenderIdsAaveV3.push({
-                            entityName: lender,
-                            entityId: FLASH_LOAN_IDS[lender].toString(),
-                            pool: e.pool,
-                        });
+                        if (FLASH_LOAN_IDS[lender] !== undefined)
+                            lenderIdsAaveV3.push({
+                                entityName: lender,
+                                entityId: FLASH_LOAN_IDS[lender].toString(),
+                                pool: e.pool,
+                            });
                     }
                 }
             });

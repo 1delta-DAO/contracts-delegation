@@ -25,6 +25,9 @@ import {OneDeltaComposerCore} from "../../../contracts/1delta/composer//chains/c
 import {OneDeltaComposerFantomOpera} from "../../../contracts/1delta/composer//chains/fantom-opera/Composer.sol";
 import {OneDeltaComposerKaia} from "../../../contracts/1delta/composer//chains/kaia/Composer.sol";
 import {OneDeltaComposerHyperevm} from "../../../contracts/1delta/composer//chains/hyperevm/Composer.sol";
+import {OneDeltaComposerUnichain} from "../../../contracts/1delta/composer//chains/unichain/Composer.sol";
+import {OneDeltaComposerKatana} from "../../../contracts/1delta/composer//chains/katana/Composer.sol";
+import {OneDeltaComposerPulsechain} from "../../../contracts/1delta/composer//chains/pulsechain/Composer.sol";
 
 library ComposerPlugin {
     function getComposer(string memory chainName) public returns (IComposerLike) {
@@ -54,6 +57,9 @@ library ComposerPlugin {
         if (keccak256(bytes(chainName)) == keccak256(bytes(Chains.FANTOM_OPERA))) return IComposerLike(address(new OneDeltaComposerFantomOpera()));
         if (keccak256(bytes(chainName)) == keccak256(bytes(Chains.KAIA_MAINNET))) return IComposerLike(address(new OneDeltaComposerKaia()));
         if (keccak256(bytes(chainName)) == keccak256(bytes(Chains.HYPEREVM))) return IComposerLike(address(new OneDeltaComposerHyperevm()));
+        if (keccak256(bytes(chainName)) == keccak256(bytes(Chains.UNICHAIN))) return IComposerLike(address(new OneDeltaComposerUnichain()));
+        if (keccak256(bytes(chainName)) == keccak256(bytes(Chains.KATANA))) return IComposerLike(address(new OneDeltaComposerKatana()));
+        if (keccak256(bytes(chainName)) == keccak256(bytes(Chains.PULSECHAIN))) return IComposerLike(address(new OneDeltaComposerPulsechain()));
 
         revert("No composer for chain");
     }

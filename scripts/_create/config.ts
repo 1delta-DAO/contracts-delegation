@@ -23,6 +23,9 @@ export const CREATE_CHAIN_IDS = [
     Chain.FANTOM_OPERA,
     Chain.KAIA_MAINNET,
     Chain.HYPEREVM,
+    Chain.UNICHAIN,
+    Chain.KATANA,
+    Chain.PULSECHAIN,
 ];
 
 export function sortForks<T>(arr: T[], field: keyof T) {
