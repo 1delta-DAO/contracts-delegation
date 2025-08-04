@@ -20,8 +20,11 @@ abstract contract UniV3Callbacks is V3Callbacker, Masks, DeltaErrors {
     bytes32 private constant SUSHISWAP_V3_FF_FACTORY = 0xffc35DADB65012eC5796536bD9864eD8773aBc74C40000000000000000000000;
     bytes32 private constant SUSHISWAP_V3_CODE_HASH = 0xe34f199b19b2b4f47f68442619d555527d244f78a3297ea89325f843f87b8b54;
 
-    bytes32 private constant GLYPH_FF_FACTORY = 0xff24196b3f35E1B8313016b9f6641D605dCf48A76affffffffffffffffffffff;
-    bytes32 private constant GLYPH_CODE_HASH = 0xf96d2474815c32e070cd63233f06af5413efc5dcb430aee4ff18cc29007c562d;
+    bytes32 private constant COREX_FF_FACTORY = 0xff526190295AFB6b8736B14E4b42744FBd95203A3a0000000000000000000000;
+    bytes32 private constant COREX_CODE_HASH = 0xe34f199b19b2b4f47f68442619d555527d244f78a3297ea89325f843f87b8b54;
+
+    bytes32 private constant MOLTEN_FF_FACTORY = 0xff24196b3f35E1B8313016b9f6641D605dCf48A76affffffffffffffffffffff;
+    bytes32 private constant MOLTEN_CODE_HASH = 0xf96d2474815c32e070cd63233f06af5413efc5dcb430aee4ff18cc29007c562d;
 
     bytes32 private constant IZUMI_FF_FACTORY = 0xff8c7d3063579BdB0b90997e18A770eaE32E1eBb080000000000000000000000;
     bytes32 private constant IZUMI_CODE_HASH = 0xbe0bfe068cdd78cafa3ddd44e214cfa4e412c15d7148e932f8043fe883865e40;
@@ -42,17 +45,24 @@ abstract contract UniV3Callbacks is V3Callbacker, Masks, DeltaErrors {
         assembly {
             switch selector
             case 0xfa461e3300000000000000000000000000000000000000000000000000000000 {
-                ffFactoryAddress := SUSHISWAP_V3_FF_FACTORY
-                codeHash := SUSHISWAP_V3_CODE_HASH
-
+                switch and(UINT8_MASK, shr(88, calldataload(172)))
+                case 1 {
+                    ffFactoryAddress := SUSHISWAP_V3_FF_FACTORY
+                    codeHash := SUSHISWAP_V3_CODE_HASH
+                }
+                case 5 {
+                    ffFactoryAddress := COREX_FF_FACTORY
+                    codeHash := COREX_CODE_HASH
+                }
+                default { revert(0, 0) }
                 let _amount1 := calldataload(36)
                 switch sgt(_amount1, 0)
                 case 1 { amountToPay := _amount1 }
                 default { amountToPay := calldataload(4) }
             }
             case 0x2c8958f600000000000000000000000000000000000000000000000000000000 {
-                ffFactoryAddress := GLYPH_FF_FACTORY
-                codeHash := GLYPH_CODE_HASH
+                ffFactoryAddress := MOLTEN_FF_FACTORY
+                codeHash := MOLTEN_CODE_HASH
 
                 let _amount1 := calldataload(36)
                 switch sgt(_amount1, 0)

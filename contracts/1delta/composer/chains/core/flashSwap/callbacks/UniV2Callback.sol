@@ -17,6 +17,12 @@ import {DeltaErrors} from "../../../../../shared/errors/Errors.sol";
 abstract contract UniV2Callbacks is Masks, DeltaErrors {
     // factories
 
+    bytes32 private constant SHADOW_CORE_FF_FACTORY = 0xff326Ee96748E7DcC04BE1Ef8f4E4F6bdd540489320000000000000000000000;
+    bytes32 private constant SHADOW_CORE_CODE_HASH = 0xcfeb1f8754759f0abe461dd409d6d501fdd73b91a848c483faa6db0faf53c3bd;
+
+    bytes32 private constant ARCHERSWAP_FF_FACTORY = 0xffe0b8838e8d73ff1CA193E8cc2bC0Ebf7Cf86F6200000000000000000000000;
+    bytes32 private constant ARCHERSWAP_CODE_HASH = 0xa496ce5b8348c4a27befb2616addacbfdd5beaf87f2e951c1f8910fd0d3bf9c0;
+
     bytes32 private constant SUSHISWAP_V2_FF_FACTORY = 0xffB45e53277a7e0F1D35f2a77160e91e25507f17630000000000000000000000;
     bytes32 private constant SUSHISWAP_V2_CODE_HASH = 0x96e8ac4277198ff8b6f785478aa9a39f403cb768dd02cbee326c3e7da348845f;
 
@@ -32,6 +38,18 @@ abstract contract UniV2Callbacks is Masks, DeltaErrors {
         assembly {
             outData := calldataload(204)
             switch selector
+            case 0xabe68bdc00000000000000000000000000000000000000000000000000000000 {
+                forkId := and(UINT8_MASK, shr(88, outData))
+
+                ffFactoryAddress := SHADOW_CORE_FF_FACTORY
+                codeHash := SHADOW_CORE_CODE_HASH
+            }
+            case 0xb9f03bd800000000000000000000000000000000000000000000000000000000 {
+                forkId := and(UINT8_MASK, shr(88, outData))
+
+                ffFactoryAddress := ARCHERSWAP_FF_FACTORY
+                codeHash := ARCHERSWAP_CODE_HASH
+            }
             case 0x10d1e85c00000000000000000000000000000000000000000000000000000000 {
                 forkId := and(UINT8_MASK, shr(88, outData))
 

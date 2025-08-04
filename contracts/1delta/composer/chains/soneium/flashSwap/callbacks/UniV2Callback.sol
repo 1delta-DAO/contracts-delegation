@@ -17,6 +17,9 @@ import {DeltaErrors} from "../../../../../shared/errors/Errors.sol";
 abstract contract UniV2Callbacks is Masks, DeltaErrors {
     // factories
 
+    bytes32 private constant KYO_V2_FF_FACTORY = 0xffC3d4fA777308412CbA0520c4034Ad3567de852dF0000000000000000000000;
+    bytes32 private constant KYO_V2_CODE_HASH = 0x986d5bc7d1ebad7b6aa48b90d79ba2498e5e223dad50971c48f147ab6395bdd2;
+
     bytes32 private constant VELODROME_V2_FF_FACTORY = 0xff31832f2a97Fd20664D76Cc421207669b55CE4BC00000000000000000000000;
     bytes32 private constant VELODROME_V2_CODE_HASH = 0x558be7ee0c63546b31d0773eee1d90451bd76a0167bb89653722a2bd677c002d;
 
@@ -32,6 +35,12 @@ abstract contract UniV2Callbacks is Masks, DeltaErrors {
         assembly {
             outData := calldataload(204)
             switch selector
+            case 0x10d1e85c00000000000000000000000000000000000000000000000000000000 {
+                forkId := and(UINT8_MASK, shr(88, outData))
+
+                ffFactoryAddress := KYO_V2_FF_FACTORY
+                codeHash := KYO_V2_CODE_HASH
+            }
             case 0x9a7bff7900000000000000000000000000000000000000000000000000000000 {
                 forkId := and(UINT8_MASK, shr(88, outData))
 
