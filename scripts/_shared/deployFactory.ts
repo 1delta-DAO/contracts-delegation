@@ -22,6 +22,7 @@ import {DeployFactory__factory} from "../../types";
 // scroll
 // kaia
 // soneium
+// hyperEVM
 
 async function main() {
     const accounts = await ethers.getSigners();

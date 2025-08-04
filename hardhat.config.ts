@@ -259,6 +259,11 @@ const config: HardhatUserConfig = {
             accounts,
             chainId: 137,
         },
+        pulse: {
+            url: "https://rpc.pulsechain.com",
+            accounts,
+            chainId: 369,
+        },
         base: {
             url: "https://mainnet.base.org",
             accounts,
@@ -633,6 +638,16 @@ const config: HardhatUserConfig = {
                     optimizer: {
                         enabled: true,
                         runs: 5_000,
+                    },
+                    evmVersion: "cancun",
+                },
+            },
+            "contracts/1delta/composer/chains/hyperevm/Composer.sol": {
+                version: "0.8.28",
+                settings: {
+                    optimizer: {
+                        enabled: true,
+                        runs: 50_000,
                     },
                     evmVersion: "cancun",
                 },
