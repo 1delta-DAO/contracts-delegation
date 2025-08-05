@@ -11,5 +11,6 @@ export const CANCUN_OR_HIGHER = [
     Chain.BASE,
     Chain.HEMI_NETWORK,
     Chain.HYPEREVM,
+    Chain.UNICHAIN,
     Chain.KATANA,
 ];

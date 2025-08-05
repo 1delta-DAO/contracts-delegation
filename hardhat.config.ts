@@ -309,6 +309,12 @@ const config: HardhatUserConfig = {
             chainId: 43114,
             live: true,
         },
+        unichain: {
+            url: "https://mainnet.unichain.org",
+            accounts,
+            chainId: 130,
+            live: true,
+        },
         harmony: {
             url: "https://api.s0.t.hmny.io",
             accounts,
