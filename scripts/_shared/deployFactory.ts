@@ -24,6 +24,7 @@ import {DeployFactory__factory} from "../../types";
 // soneium
 // hyperEVM
 // unichain
+// katana
 
 async function main() {
     const accounts = await ethers.getSigners();

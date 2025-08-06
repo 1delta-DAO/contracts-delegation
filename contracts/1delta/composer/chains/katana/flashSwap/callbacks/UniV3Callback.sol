@@ -18,7 +18,7 @@ abstract contract UniV3Callbacks is V3Callbacker, Masks, DeltaErrors {
     // factory ff addresses
 
     bytes32 private constant SUSHISWAP_V3_FF_FACTORY = 0xff203e8740894c8955cB8950759876d7E7E45E04c10000000000000000000000;
-    bytes32 private constant SUSHISWAP_V3_CODE_HASH = 0xe34f199b19b2b4f47f68442619d555527d244f78a3297ea89325f843f87b8b54;
+    bytes32 private constant SUSHISWAP_V3_CODE_HASH = 0xe040f12c7cee3904b78f24f8fc395629c2e69525c2815da7a659f7483e378ecb;
 
     /**
      * Generic UniswapV3 callback executor

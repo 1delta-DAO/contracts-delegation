@@ -68,7 +68,19 @@ contract LenderRegistry {
         chainInfo[Chains.BERACHAIN] = ChainInfo("https://rpc.berachain.com", 80094);
         chainInfo[Chains.FANTOM_OPERA] = ChainInfo("https://rpc.ftm.tools", 250);
         chainInfo[Chains.NEON_EVM_MAINNET] = ChainInfo("https://neon-proxy-mainnet.solana.p2p.org", 245022934);
+        chainInfo[Chains.PULSECHAIN] = ChainInfo("https://rpc.pulsechain.com", 369);
         chainInfo[Chains.UNICHAIN] = ChainInfo("https://mainnet.unichain.org", 130);
+        chainInfo[Chains.TAC_MAINNET] = ChainInfo("https://rpc.tac.build", 239);
+        chainInfo[Chains.FRAXTAL] = ChainInfo("https://rpc.frax.com", 252);
+        chainInfo[Chains.WORLD_CHAIN] = ChainInfo("https://worldchain-mainnet.g.alchemy.com/public", 480);
+        chainInfo[Chains.LISK] = ChainInfo("https://rpc.api.lisk.com", 1135);
+        chainInfo[Chains.BOTANIX_MAINNET] = ChainInfo("https://rpc.btxtestchain.com", 3637);
+        chainInfo[Chains.ETHERLINK_MAINNET] = ChainInfo("https://node.mainnet.etherlink.com", 42793);
+        chainInfo[Chains.INK] = ChainInfo("https://rpc-gel.inkonchain.com", 57073);
+        chainInfo[Chains.PLUME_MAINNET] = ChainInfo("https://phoenix-rpc.plumenetwork.xyz", 98866);
+        chainInfo[Chains.KATANA] = ChainInfo("https://rpc.katana.network", 747474);
+        chainInfo[Chains.FLAME] = ChainInfo("https://rpc.flame.astria.org", 253368190);
+        chainInfo[Chains.BASECAMP] = ChainInfo("https://rpc.basecamp.t.raas.gelato.cloud", 123420001114);
         chainInfo[Chains.RONIN_MAINNET] = ChainInfo("https://api.roninchain.com/rpc", 2020);
 
         // Initialize AAVE protocol data
@@ -218,6 +230,9 @@ contract LenderRegistry {
         );
         lendingTokens[Chains.ETHEREUM_MAINNET][Lenders.AAVE_V3][0x9F56094C450763769BA0EA9Fe2876070c0fD5F77] = LenderTokens(
             0x5f4a0873a3A02f7C0CB0e13a1d4362a1AD90e751, 0xc9AD8Dd111e6384128146467aAf92B81EC422848, 0x0000000000000000000000000000000000000000
+        );
+        lendingTokens[Chains.ETHEREUM_MAINNET][Lenders.AAVE_V3][0xBC6736d346a5eBC0dEbc997397912CD9b8FAe10a] = LenderTokens(
+            0x38A5357Ce55c81add62aBc84Fb32981e2626ADEf, 0x0D8486E1CAbf3C9407B3DdA0cfc4d9C3101fB683, 0x0000000000000000000000000000000000000000
         );
         lendingTokens[Chains.OP_MAINNET][Lenders.AAVE_V3][0xDA10009cBd5D07dd0CeCc66161FC93D7c9000da1] = LenderTokens(
             0x82E64f49Ed5EC1bC6e43DAD4FC8Af9bb3A2312EE, 0x8619d80FB0141ba7F184CbF22fd724116D9f7ffC, 0x0000000000000000000000000000000000000000
@@ -1269,6 +1284,12 @@ contract LenderRegistry {
         lendingTokens[Chains.HYPEREVM][Lenders.HYPERLEND][0xfD739d4e423301CE9385c1fb8850539D657C296D] = LenderTokens(
             0xa55DE93CDE5A34c5521B7584022846829CB74366, 0x185697d814330430b8D4B3121fAB9c811B59798D, 0x0000000000000000000000000000000000000000
         );
+        lendingTokens[Chains.HYPEREVM][Lenders.HYPERLEND][0x0aD339d66BF4AeD5ce31c64Bc37B3244b6394A77] = LenderTokens(
+            0x2A2d7663Cb77220de9BA55Aa9aAe2b360F2c23fC, 0xd1b2c6Be5Ae55F3aBfdDE8070fD3322e87Cfb895, 0x0000000000000000000000000000000000000000
+        );
+        lendingTokens[Chains.HYPEREVM][Lenders.HYPERLEND][0x311dB0FDe558689550c68355783c95eFDfe25329] = LenderTokens(
+            0x329FebbBF38A6C202786fCc8Ac02DbD2f40D5a18, 0x957fb7538cA456824314051A7fc6F0eAC5E7345c, 0x0000000000000000000000000000000000000000
+        );
         lendingControllers[Chains.HYPEREVM][Lenders.HYPERLEND] = 0x00A89d7a5A02160f20150EbEA7a2b5E4879A1A8b;
         lendingTokens[Chains.HYPEREVM][Lenders.HYPURRFI][0x5555555555555555555555555555555555555555] = LenderTokens(
             0x7C97cd7B57b736c6AD74fAE97C0e21e856251dcf, 0x37E44F3070b5455f1f5d7aaAd9Fc8590229CC5Cb, 0x7938045B86812e51a3e01cD4aFbCfbc4921F2ec3
@@ -2017,6 +2038,29 @@ contract LenderRegistry {
             0xb9DEA832b5b734932F8bfBA2D8d9fE2Fc7F58430, 0x3D3C17134a0F4d7b529fb5c05002f949313806AF, 0x31E438d7449995162142D5D95C59e724eBF5A7Bf
         );
         lendingControllers[Chains.MERLIN_MAINNET][Lenders.AVALON_INNOVATION] = 0xdCB0FAA822B99B87E630BF47399C5a0bF3C642cf;
+        lendingTokens[Chains.BASE][Lenders.MOONCAKE][0xd9aAEc86B65D86f6A7B5B1b0c42FFA531710b6CA] = LenderTokens(
+            0xfb5cDCa3d8dbF44d7EB6D6e2eA41a1dA8B838EEc, 0x48D6F2D147eB6E304dFFD513CA0800a799148930, 0x1a18D6F0BdF9FA8942DEfa8a07D406Dc1A0E1fdD
+        );
+        lendingTokens[Chains.BASE][Lenders.MOONCAKE][0x50c5725949A6F0c72E6C4a641F24049A917DB0Cb] = LenderTokens(
+            0xE8D0DEEC9d28a5E60B8333F42364974877DD7f8F, 0x12764Cb05537176FB995387bcAeDE3A7c67a8984, 0x4F36485B14E3dFE56CF6697A3145780a1AE60d2B
+        );
+        lendingTokens[Chains.BASE][Lenders.MOONCAKE][0x4200000000000000000000000000000000000006] = LenderTokens(
+            0xb0f711e269D52535A64E2306C5ACbDB3DB042703, 0xDbb73714A37a3220C6d02D36F0CBE26677a6039F, 0x648EC781244A019201CF2cb3b05D7Dc91B1df398
+        );
+        lendingTokens[Chains.LINEA][Lenders.MOONCAKE][0xe5D7C2a44FfDDf6b295A15c148167daaAf5Cf34f] = LenderTokens(
+            0x7D5cDa275D2311F218bd8833e64A87a0767B5b11, 0x70ee7b4B40aDC4190Fd9D47d03b4C5e50e7115F4, 0xb0E2F0e5EAa62c1fd5D172E80c0F9E32a8858c96
+        );
+        lendingTokens[Chains.LINEA][Lenders.MOONCAKE][0x176211869cA2b568f2A7D4EE941E073a821EE1ff] = LenderTokens(
+            0xB06050FBd23dF8490C830D19d2f478fa2D0cbFa8, 0x80F8BBd798883c6FA03B85be724b5A7a7cBc2187, 0x43451178fa9Da4c2E12ce1736a062e2428517A93
+        );
+        lendingTokens[Chains.LINEA][Lenders.MOONCAKE][0x7d43AABC515C356145049227CeE54B608342c0ad] = LenderTokens(
+            0x2194783551b15A6011f52AFb2521b35219820127, 0x604Bf12Bc27a44708507Bc1D352c2f3644532b0e, 0x999554ed926E150B05A123A749c4cb549AF5BCB2
+        );
+        lendingTokens[Chains.LINEA][Lenders.MOONCAKE][0xA219439258ca9da29E9Cc4cE5596924745e12B93] = LenderTokens(
+            0xeb8A8dfeAC40BB6f02EE06bcF05A3CbBF5B57964, 0x3773e3773EDccF69CEe9F00d0d7ca88693A12c14, 0xF55ca1F247a6190B9138F7b845aE6794750DDd8C
+        );
+        lendingControllers[Chains.BASE][Lenders.MOONCAKE] = 0x6aBEa1a2B47f09C779Cb3D52B85097cB2BFaBcb0;
+        lendingControllers[Chains.LINEA][Lenders.MOONCAKE] = 0x5DB340cEfE09a9fFD1883f572C09917De5bcA230;
         lendingTokens[Chains.AVALANCHE_C_CHAIN][Lenders.NEREUS][0x49D5c2BdFfac6CE2BFdB6640F4F80f226bc10bAB] = LenderTokens(
             0x92F79834fC52f0Aa328f991C91185e081ea4f957, 0x21cBa92ce2cff49c3557FC97854bdC4f33D91690, 0x38e5b3BA108D7cc204db1873965c5442D6525c42
         );
@@ -3389,6 +3433,43 @@ contract LenderRegistry {
             0xE1Ee815B5DA785e4dEF8247f3E11fd241c5be042, 0xd455B2784bf9e019767c14068dEa7b954971dF89, 0xd1aB922bC3F4F8D332044e9dC2f42d6cFb9d2e63
         );
         lendingControllers[Chains.BNB_SMART_CHAIN_MAINNET][Lenders.VALAS] = 0xE29A55A6AEFf5C8B1beedE5bCF2F0Cb3AF8F91f5;
+        lendingTokens[Chains.PULSECHAIN][Lenders.PHIAT][0xA1077a294dDE1B09bB078844df40758a5D0f9a27] = LenderTokens(
+            0x074E0878648DE80359e1C07772A617899dD7b42a, 0x24ACB8c0d86126EF0Bd1E3454Cf52c042b6e830A, 0xd3C78458cda9ce4e84F9FedaFE5E05feEa5539Cb
+        );
+        lendingTokens[Chains.PULSECHAIN][Lenders.PHIAT][0x2b591e99afE9f32eAA6214f7B7629768c40Eeb39] = LenderTokens(
+            0xb2B9ef896d5F3e519C18771F0EE4F62F188d89d4, 0x7Ef0fdf765bc8CDDa6878c5b14e62AcfAA155E98, 0x89284cCfe82E68bA70a7c7Ee7eaf93B464482855
+        );
+        lendingTokens[Chains.PULSECHAIN][Lenders.PHIAT][0x95B303987A60C71504D99Aa1b13B4DA07b0790ab] = LenderTokens(
+            0x2242e5Fa475b07Cc6D8E88cbE237F3cA3BfA9Be0, 0x0d29B861cFA52f24Dda9d3aE4637cE3C1179D453, 0xda4c54B15849d6d2847a2B77773B0FB8774421F3
+        );
+        lendingTokens[Chains.PULSECHAIN][Lenders.PHIAT][0x15D38573d2feeb82e7ad5187aB8c1D52810B1f07] = LenderTokens(
+            0x82ef9a75218A2bb3fA8f428dD07D813c935970c9, 0xc6794Cdf9143cC571ed48a3f354496C95ffd74F4, 0x6d99Bd8F2Ff05589E3F9669D436b5D5E2B2620D1
+        );
+        lendingTokens[Chains.PULSECHAIN][Lenders.PHIAT][0x02DcdD04e3F455D838cd1249292C58f3B79e3C3C] = LenderTokens(
+            0x97e15bA1f6aBAEc1209F4895aAA09A73AC71Bf59, 0xBfa7d0eF04119b8C3B4D6794BAed7ec6bc682E06, 0xB335839B34190981877861773b91B84363023770
+        );
+        lendingTokens[Chains.PULSECHAIN][Lenders.PHIAT][0xb17D901469B9208B17d916112988A3FeD19b5cA1] = LenderTokens(
+            0xB33B68d77b431227017206705671DdaF567D366e, 0xAED4849Ec13f83c91f570A9d7749692E5E93a624, 0x3564A89F73E9AF98a13cFCdc0B5fe62A9A184172
+        );
+        lendingTokens[Chains.PULSECHAIN][Lenders.PHIAT][0xefD766cCb38EaF1dfd701853BFCe31359239F305] = LenderTokens(
+            0x781Ab98d69CEa221aBBB73F615b31632173b64fb, 0x3C81E9e18fbE4b1af7bB6eD249b92F905f6F9d7c, 0x04DedB70D2CD1ecAd12EdB17752c8aa65FeE0CDb
+        );
+        lendingTokens[Chains.PULSECHAIN][Lenders.PHIAT][0x0Cb6F5a34ad42ec934882A05265A7d5F59b51A2f] = LenderTokens(
+            0xB802659175De510D04F6d945970EAFA68141feD6, 0xEF66B290bEc401CB04FfEc06C101c47Dbae8beca, 0x4C0241c8683836E021796cEAB2347758e0d27f7d
+        );
+        lendingTokens[Chains.PULSECHAIN][Lenders.PHIAT][0x2fa878Ab3F87CC1C9737Fc071108F904c0B0C95d] = LenderTokens(
+            0xa6233896B1297440b89189b5349E7510fA0Ee095, 0x5d70147D7f3d823CcED17a0d93410f1af776E686, 0x1cEa4DD45363BE30d31f7BDEA9A172790a24526B
+        );
+        lendingTokens[Chains.PULSECHAIN][Lenders.PHIAT][0x0dEEd1486bc52aA0d3E6f8849cEC5adD6598A162] = LenderTokens(
+            0x88DD843bF70F173ED549ED39f35222045592536A, 0x74581B2d6BFd4a680756EA31c9ed7A4E1e53F649, 0x47D7c65Af8fdd255317d4DEC79Fae632D8c14764
+        );
+        lendingTokens[Chains.PULSECHAIN][Lenders.PHIAT][0x1FE0319440A672526916C232EAEe4808254Bdb00] = LenderTokens(
+            0x65856baf0244fd163A5400cC4832D713474fc9f9, 0xBe6d1f03E60b2701C1E3A5AB706515bA4F30aB1B, 0x091518d78e363a783fD1B3e42A8470f9656a38ac
+        );
+        lendingTokens[Chains.PULSECHAIN][Lenders.PHIAT][0xeB6b7932Da20c6D7B3a899D5887d86dfB09A6408] = LenderTokens(
+            0x7f78774e8a42E3d50bCaf1605d6ddDE9572f9570, 0x20d5Aa297b20f24F10cB7145a0Cf6878eFE8352a, 0x622f167E627bC64754a0296248b813387e8b9E46
+        );
+        lendingControllers[Chains.PULSECHAIN][Lenders.PHIAT] = 0xC14B5DE7fbdFF428f64AA9E7E240EA342EE9a3A3;
 
         // Initialize Compound V3 protocol data
         lendingControllers[Chains.ETHEREUM_MAINNET][Lenders.COMPOUND_V3_USDC] = 0xc3d688B66703497DAA19211EEdff47f25384cdc3;
@@ -3400,9 +3481,11 @@ contract LenderRegistry {
         lendingControllers[Chains.OP_MAINNET][Lenders.COMPOUND_V3_USDT] = 0x995E394b8B2437aC8Ce61Ee0bC610D617962B214;
         lendingControllers[Chains.OP_MAINNET][Lenders.COMPOUND_V3_WETH] = 0xE36A30D249f7761327fd973001A32010b521b6Fd;
         lendingControllers[Chains.UNICHAIN][Lenders.COMPOUND_V3_USDC] = 0x2c7118c4C88B9841FCF839074c26Ae8f035f2921;
+        lendingControllers[Chains.UNICHAIN][Lenders.COMPOUND_V3_WETH] = 0x6C987dDE50dB1dcDd32Cd4175778C2a291978E2a;
         lendingControllers[Chains.POLYGON_MAINNET][Lenders.COMPOUND_V3_USDCE] = 0xF25212E676D1F7F89Cd72fFEe66158f541246445;
         lendingControllers[Chains.POLYGON_MAINNET][Lenders.COMPOUND_V3_USDT] = 0xaeB318360f27748Acb200CE616E389A6C9409a07;
         lendingControllers[Chains.RONIN_MAINNET][Lenders.COMPOUND_V3_WETH] = 0x4006eD4097Ee51c09A04c3B0951D28CCf19e6DFE;
+        lendingControllers[Chains.RONIN_MAINNET][Lenders.COMPOUND_V3_WRON] = 0xc0Afdbd1cEB621Ef576BA969ce9D4ceF78Dbc0c0;
         lendingControllers[Chains.MANTLE][Lenders.COMPOUND_V3_USDE] = 0x606174f62cd968d8e684c645080fa694c1D7786E;
         lendingControllers[Chains.BASE][Lenders.COMPOUND_V3_USDC] = 0xb125E6687d4313864e53df431d5425969c15Eb2F;
         lendingControllers[Chains.BASE][Lenders.COMPOUND_V3_USDBC] = 0x9c4ec768c28520B50860ea7a15bd7213a9fF58bf;
@@ -3421,6 +3504,7 @@ contract LenderRegistry {
         cometToBase[Chains.SCROLL][Lenders.COMPOUND_V3_USDC] = 0x06eFdBFf2a14a7c8E15944D1F4A48F9F95F663A4;
         cometToBase[Chains.ETHEREUM_MAINNET][Lenders.COMPOUND_V3_WETH] = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;
         cometToBase[Chains.OP_MAINNET][Lenders.COMPOUND_V3_WETH] = 0x4200000000000000000000000000000000000006;
+        cometToBase[Chains.UNICHAIN][Lenders.COMPOUND_V3_WETH] = 0x4200000000000000000000000000000000000006;
         cometToBase[Chains.RONIN_MAINNET][Lenders.COMPOUND_V3_WETH] = 0xc99a6A985eD2Cac1ef41640596C5A5f9F4E19Ef5;
         cometToBase[Chains.BASE][Lenders.COMPOUND_V3_WETH] = 0x4200000000000000000000000000000000000006;
         cometToBase[Chains.ARBITRUM_ONE][Lenders.COMPOUND_V3_WETH] = 0x82aF49447D8a07e3bd95BD0d56f35241523fBab1;
@@ -3432,6 +3516,7 @@ contract LenderRegistry {
         cometToBase[Chains.ETHEREUM_MAINNET][Lenders.COMPOUND_V3_USDS] = 0xdC035D45d973E3EC169d2276DDab16f1e407384F;
         cometToBase[Chains.POLYGON_MAINNET][Lenders.COMPOUND_V3_USDCE] = 0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174;
         cometToBase[Chains.ARBITRUM_ONE][Lenders.COMPOUND_V3_USDCE] = 0xFF970A61A04b1cA14834A43f5dE4533eBDDB5CC8;
+        cometToBase[Chains.RONIN_MAINNET][Lenders.COMPOUND_V3_WRON] = 0xe514d9DEB7966c8BE0ca922de8a064264eA6bcd4;
         cometToBase[Chains.MANTLE][Lenders.COMPOUND_V3_USDE] = 0x5d3a1Ff2b6BAb83b63cd9AD0787074081a52ef34;
         cometToBase[Chains.BASE][Lenders.COMPOUND_V3_USDBC] = 0xd9aAEc86B65D86f6A7B5B1b0c42FFA531710b6CA;
         cometToBase[Chains.BASE][Lenders.COMPOUND_V3_AERO] = 0x940181a94A35A4569E4529A3CDfB74e38FD98631;
@@ -3974,6 +4059,7 @@ contract LenderRegistry {
         tokens[Chains.ETHEREUM_MAINNET][Tokens.FBTC] = 0xC96dE26018A54D51c097160568752c4E3BD6C364;
         tokens[Chains.ETHEREUM_MAINNET][Tokens.EURC] = 0x1aBaEA1f7C830bD89Acc67eC4af516284b1bC33c;
         tokens[Chains.ETHEREUM_MAINNET][Tokens.PT_SUSDE_25SEP2025] = 0x9F56094C450763769BA0EA9Fe2876070c0fD5F77;
+        tokens[Chains.ETHEREUM_MAINNET][Tokens.PT_USDE_25SEP2025] = 0xBC6736d346a5eBC0dEbc997397912CD9b8FAe10a;
         tokens[Chains.ETHEREUM_MAINNET][Tokens.EZETH] = 0xbf5495Efe5DB9ce00f80364C8B423567e58d2110;
         tokens[Chains.ETHEREUM_MAINNET][Tokens.TETH] = 0xD11c452fc99cF405034ee446803b6F6c1F6d5ED8;
         tokens[Chains.ETHEREUM_MAINNET][Tokens.GNO] = 0x6810e776880C02933D47DB1b9fc05908e5386b96;
@@ -4140,8 +4226,10 @@ contract LenderRegistry {
         tokens[Chains.UNICHAIN][Tokens.USDC] = 0x078D782b760474a361dDA0AF3839290b0EF57AD6;
         tokens[Chains.UNICHAIN][Tokens.UNI] = 0x8f187aA05619a017077f5308904739877ce9eA21;
         tokens[Chains.UNICHAIN][Tokens.WETH] = 0x4200000000000000000000000000000000000006;
-        tokens[Chains.UNICHAIN][Tokens.WEETH] = 0x7DCC39B4d1C53CB31e1aBc0e358b43987FEF80f7;
         tokens[Chains.UNICHAIN][Tokens.WSTETH] = 0xc02fE7317D4eb8753a02c35fe019786854A92001;
+        tokens[Chains.UNICHAIN][Tokens.WEETH] = 0x7DCC39B4d1C53CB31e1aBc0e358b43987FEF80f7;
+        tokens[Chains.UNICHAIN][Tokens.EZETH] = 0x2416092f143378750bb29b79eD961ab195CcEea5;
+        tokens[Chains.UNICHAIN][Tokens.WBTC] = 0x927B51f251480a681271180DA4de28D44EC4AfB8;
         tokens[Chains.UNICHAIN][Tokens.WBTC] = 0x0555E30da8f98308EdB960aa94C0Db47230d2B9c;
         tokens[Chains.UNICHAIN][Tokens.USDT0] = 0x9151434b16b9763660705744891fA906F660EcC5;
         tokens[Chains.POLYGON_MAINNET][Tokens.DAI] = 0x8f3Cf7ad23Cd3CaDbD9735AFf958023239c6A063;
@@ -4248,6 +4336,18 @@ contract LenderRegistry {
         tokens[Chains.ZKSYNC_MAINNET][Tokens.WUSDM] = 0xA900cbE7739c96D2B153a273953620A701d5442b;
         tokens[Chains.ZKSYNC_MAINNET][Tokens.USN] = 0x0469d9d1dE0ee58fA1153ef00836B9BbCb84c0B6;
         tokens[Chains.ZKSYNC_MAINNET][Tokens.ZKETH] = 0xb72207E1FB50f341415999732A20B6D25d8127aa;
+        tokens[Chains.PULSECHAIN][Tokens.WPLS] = 0xA1077a294dDE1B09bB078844df40758a5D0f9a27;
+        tokens[Chains.PULSECHAIN][Tokens.HEX] = 0x2b591e99afE9f32eAA6214f7B7629768c40Eeb39;
+        tokens[Chains.PULSECHAIN][Tokens.PLSX] = 0x95B303987A60C71504D99Aa1b13B4DA07b0790ab;
+        tokens[Chains.PULSECHAIN][Tokens.USDC] = 0x15D38573d2feeb82e7ad5187aB8c1D52810B1f07;
+        tokens[Chains.PULSECHAIN][Tokens.WETH] = 0x02DcdD04e3F455D838cd1249292C58f3B79e3C3C;
+        tokens[Chains.PULSECHAIN][Tokens.WBTC] = 0xb17D901469B9208B17d916112988A3FeD19b5cA1;
+        tokens[Chains.PULSECHAIN][Tokens.DAI] = 0xefD766cCb38EaF1dfd701853BFCe31359239F305;
+        tokens[Chains.PULSECHAIN][Tokens.USDT] = 0x0Cb6F5a34ad42ec934882A05265A7d5F59b51A2f;
+        tokens[Chains.PULSECHAIN][Tokens.INC] = 0x2fa878Ab3F87CC1C9737Fc071108F904c0B0C95d;
+        tokens[Chains.PULSECHAIN][Tokens.USDL] = 0x0dEEd1486bc52aA0d3E6f8849cEC5adD6598A162;
+        tokens[Chains.PULSECHAIN][Tokens.HEXDC] = 0x1FE0319440A672526916C232EAEe4808254Bdb00;
+        tokens[Chains.PULSECHAIN][Tokens.PXDC] = 0xeB6b7932Da20c6D7B3a899D5887d86dfB09A6408;
         tokens[Chains.HYPEREVM][Tokens.WHYPE] = 0x5555555555555555555555555555555555555555;
         tokens[Chains.HYPEREVM][Tokens.WSTHYPE] = 0x94e8396e0869c9F2200760aF0621aFd240E1CF38;
         tokens[Chains.HYPEREVM][Tokens.UBTC] = 0x9FDBdA0A5e284c32744D2f17Ee5c74B284993463;
@@ -4257,6 +4357,8 @@ contract LenderRegistry {
         tokens[Chains.HYPEREVM][Tokens.SUSDE] = 0x211Cc4DD073734dA055fbF44a2b4667d5E5fE5d2;
         tokens[Chains.HYPEREVM][Tokens.USDHL] = 0xb50A96253aBDF803D85efcDce07Ad8becBc52BD5;
         tokens[Chains.HYPEREVM][Tokens.KHYPE] = 0xfD739d4e423301CE9385c1fb8850539D657C296D;
+        tokens[Chains.HYPEREVM][Tokens.USR] = 0x0aD339d66BF4AeD5ce31c64Bc37B3244b6394A77;
+        tokens[Chains.HYPEREVM][Tokens.PT_KHYPE_13NOV2025] = 0x311dB0FDe558689550c68355783c95eFDfe25329;
         tokens[Chains.HYPEREVM][Tokens.USDXL] = 0xca79db4B49f608eF54a5CB813FbEd3a6387bC645;
         tokens[Chains.HYPEREVM][Tokens.FEUSD] = 0x02c6a2fA58cC01A18B8D9E00eA48d65E4dF26c70;
         tokens[Chains.HYPEREVM][Tokens.USOL] = 0x068f321Fa8Fb9f0D135f290Ef6a3e2813e1c8A29;
@@ -4271,7 +4373,7 @@ contract LenderRegistry {
         tokens[Chains.CORE_BLOCKCHAIN_MAINNET][Tokens.USDT] = 0x900101d06A7426441Ae63e9AB3B9b0F63Be145F1;
         tokens[Chains.CORE_BLOCKCHAIN_MAINNET][Tokens.USDC] = 0xa4151B2B3e269645181dCcF2D426cE75fcbDeca9;
         tokens[Chains.CORE_BLOCKCHAIN_MAINNET][Tokens.COREBTC] = 0x8034aB88C3512246Bf7894f57C834DdDBd1De01F;
-        tokens[Chains.CORE_BLOCKCHAIN_MAINNET][Tokens.WCORE_OLD] = 0x40375C92d9FAf44d2f9db9Bd9ba41a3317a2404f;
+        tokens[Chains.CORE_BLOCKCHAIN_MAINNET][Tokens.WCORE] = 0x40375C92d9FAf44d2f9db9Bd9ba41a3317a2404f;
         tokens[Chains.CORE_BLOCKCHAIN_MAINNET][Tokens.WBTC] = 0x5832f53d147b3d6Cd4578B9CBD62425C7ea9d0Bd;
         tokens[Chains.CORE_BLOCKCHAIN_MAINNET][Tokens.SOLVBTC_B] = 0x5B1Fb849f1F76217246B8AAAC053b5C7b15b7dc3;
         tokens[Chains.CORE_BLOCKCHAIN_MAINNET][Tokens.BTCB] = 0x7A6888c85eDBA8E38F6C7E0485212da602761C08;
@@ -4366,7 +4468,7 @@ contract LenderRegistry {
         tokens[Chains.ZETACHAIN_MAINNET][Tokens.USDC_BSC] = 0x05BA149A7bd6dC1F937fA9046A9e05C05f3b18b0;
         tokens[Chains.ZETACHAIN_MAINNET][Tokens.USDC_ETH] = 0x0cbe0dF132a6c6B4a2974Fa1b7Fb953CF0Cc798a;
         tokens[Chains.ZETACHAIN_MAINNET][Tokens.BNB_BSC] = 0x48f80608B672DC30DC7e3dbBd0343c5F02C738Eb;
-        tokens[Chains.KAIA_MAINNET][Tokens.WKLAY] = 0x19Aac5f612f524B754CA7e7c41cbFa2E981A4432;
+        tokens[Chains.KAIA_MAINNET][Tokens.WKAIA] = 0x19Aac5f612f524B754CA7e7c41cbFa2E981A4432;
         tokens[Chains.KAIA_MAINNET][Tokens.USDT] = 0x5C13E303a62Fc5DEdf5B52D66873f2E59fEdADC2;
         tokens[Chains.KAIA_MAINNET][Tokens.USDC] = 0x608792Deb376CCE1c9FA4D0E6B7b44f507CfFa6A;
         tokens[Chains.KAIA_MAINNET][Tokens.WETH] = 0x98A8345bB9D3DDa9D808Ca1c9142a28F6b0430E1;
@@ -4413,6 +4515,7 @@ contract LenderRegistry {
         tokens[Chains.BASE][Tokens.AAVE] = 0x63706e401c06ac8513145b7687A14804d17f814b;
         tokens[Chains.BASE][Tokens.SOLVBTC] = 0x3B86Ad95859b6AB773f55f8d94B4b9d443EE931f;
         tokens[Chains.BASE][Tokens.XSOLVBTC] = 0xC26C9099BD3789107888c35bb41178079B282561;
+        tokens[Chains.BASE][Tokens.DAI] = 0x50c5725949A6F0c72E6C4a641F24049A917DB0Cb;
         tokens[Chains.BASE][Tokens.AERO] = 0x940181a94A35A4569E4529A3CDfB74e38FD98631;
         tokens[Chains.BASE][Tokens.XUSDZ] = 0x0A27E060C0406f8Ab7B64e3BEE036a37e5a62853;
         tokens[Chains.BASE][Tokens.VAMM_USDCAERO] = 0x6cDcb1C4A4D1C3C6d054b27AC5B77e89eAFb971d;
@@ -4426,7 +4529,6 @@ contract LenderRegistry {
         tokens[Chains.BASE][Tokens.PT_LBTC_29MAY2025] = 0x5d746848005507DA0b1717C137A10C30AD9ee307;
         tokens[Chains.BASE][Tokens.ZAI] = 0x69000dFD5025E82f48Eb28325A2B88a241182CEd;
         tokens[Chains.BASE][Tokens.USR] = 0x35E5dB674D8e93a03d814FA0ADa70731efe8a4b9;
-        tokens[Chains.BASE][Tokens.DAI] = 0x50c5725949A6F0c72E6C4a641F24049A917DB0Cb;
         tokens[Chains.BASE][Tokens.RETH] = 0xB6fe221Fe9EeF5aBa221c348bA20A1Bf5e73624c;
         tokens[Chains.BASE][Tokens.USDS] = 0x820C137fa70C8691f0e44Dc420a5e53c168921Dc;
         tokens[Chains.BASE][Tokens.SUSDS] = 0x5875eEE11Cf8398102FdAd704C9E96607675467a;
@@ -4542,6 +4644,7 @@ contract LenderRegistry {
         tokens[Chains.LINEA][Tokens.WSTETH] = 0xB5beDd42000b71FddE22D3eE8a79Bd49A568fC8F;
         tokens[Chains.LINEA][Tokens.EZETH] = 0x2416092f143378750bb29b79eD961ab195CcEea5;
         tokens[Chains.LINEA][Tokens.WEETH] = 0x1Bf74C010E6320bab11e2e5A532b5AC15e0b8aA6;
+        tokens[Chains.LINEA][Tokens.BUSD] = 0x7d43AABC515C356145049227CeE54B608342c0ad;
         tokens[Chains.LINEA][Tokens.MIMATIC] = 0xf3B001D64C656e30a62fbaacA003B1336b4ce12A;
         tokens[Chains.LINEA][Tokens.GRAI] = 0x894134a25a5faC1c2C26F1d8fBf05111a3CB9487;
         tokens[Chains.LINEA][Tokens.WRSETH] = 0xD2671165570f41BBB3B0097893300b6EB6101E6C;
@@ -4718,7 +4821,19 @@ library Chains {
     string internal constant BERACHAIN = "BERACHAIN";
     string internal constant FANTOM_OPERA = "FANTOM_OPERA";
     string internal constant NEON_EVM_MAINNET = "NEON_EVM_MAINNET";
+    string internal constant PULSECHAIN = "PULSECHAIN";
     string internal constant UNICHAIN = "UNICHAIN";
+    string internal constant TAC_MAINNET = "TAC_MAINNET";
+    string internal constant FRAXTAL = "FRAXTAL";
+    string internal constant WORLD_CHAIN = "WORLD_CHAIN";
+    string internal constant LISK = "LISK";
+    string internal constant BOTANIX_MAINNET = "BOTANIX_MAINNET";
+    string internal constant ETHERLINK_MAINNET = "ETHERLINK_MAINNET";
+    string internal constant INK = "INK";
+    string internal constant PLUME_MAINNET = "PLUME_MAINNET";
+    string internal constant KATANA = "KATANA";
+    string internal constant FLAME = "FLAME";
+    string internal constant BASECAMP = "BASECAMP";
     string internal constant RONIN_MAINNET = "RONIN_MAINNET";
 }
 
@@ -4772,6 +4887,7 @@ library Tokens {
     string internal constant FBTC = "FBTC";
     string internal constant EURC = "EURC";
     string internal constant PT_SUSDE_25SEP2025 = "PT_SUSDE_25SEP2025";
+    string internal constant PT_USDE_25SEP2025 = "PT_USDE_25SEP2025";
     string internal constant EZETH = "EZETH";
     string internal constant TETH = "TETH";
     string internal constant GNO = "GNO";
@@ -4939,11 +5055,20 @@ library Tokens {
     string internal constant MUTE = "MUTE";
     string internal constant USN = "USN";
     string internal constant ZKETH = "ZKETH";
+    string internal constant WPLS = "WPLS";
+    string internal constant HEX = "HEX";
+    string internal constant PLSX = "PLSX";
+    string internal constant INC = "INC";
+    string internal constant USDL = "USDL";
+    string internal constant HEXDC = "HEXDC";
+    string internal constant PXDC = "PXDC";
     string internal constant WHYPE = "WHYPE";
     string internal constant WSTHYPE = "WSTHYPE";
     string internal constant UETH = "UETH";
     string internal constant USDHL = "USDHL";
     string internal constant KHYPE = "KHYPE";
+    string internal constant USR = "USR";
+    string internal constant PT_KHYPE_13NOV2025 = "PT_KHYPE_13NOV2025";
     string internal constant USDXL = "USDXL";
     string internal constant FEUSD = "FEUSD";
     string internal constant USOL = "USOL";
@@ -4953,7 +5078,7 @@ library Tokens {
     string internal constant M_USDT = "M_USDT";
     string internal constant M_WBTC = "M_WBTC";
     string internal constant COREBTC = "COREBTC";
-    string internal constant WCORE_OLD = "WCORE_OLD";
+    string internal constant WCORE = "WCORE";
     string internal constant SOLVBTC_B = "SOLVBTC_B";
     string internal constant ABTC = "ABTC";
     string internal constant SOLVBTC_M = "SOLVBTC_M";
@@ -5004,13 +5129,14 @@ library Tokens {
     string internal constant USDC_BSC = "USDC_BSC";
     string internal constant USDC_ETH = "USDC_ETH";
     string internal constant BNB_BSC = "BNB_BSC";
-    string internal constant WKLAY = "WKLAY";
+    string internal constant WKAIA = "WKAIA";
     string internal constant STKAIA = "STKAIA";
     string internal constant WGCKAIA = "WGCKAIA";
     string internal constant GRND = "GRND";
     string internal constant XGRND = "XGRND";
     string internal constant KRWO = "KRWO";
     string internal constant BORA = "BORA";
+    string internal constant WKLAY = "WKLAY";
     string internal constant WAVAX = "WAVAX";
     string internal constant OUSDT = "OUSDT";
     string internal constant KSD = "KSD";
@@ -5029,7 +5155,6 @@ library Tokens {
     string internal constant WSUPEROETHB = "WSUPEROETHB";
     string internal constant PT_CBETH_25DEC2025 = "PT_CBETH_25DEC2025";
     string internal constant PT_LBTC_29MAY2025 = "PT_LBTC_29MAY2025";
-    string internal constant USR = "USR";
     string internal constant PT_USR_25SEP2025 = "PT_USR_25SEP2025";
     string internal constant VIRTUAL = "VIRTUAL";
     string internal constant WEETH_MODE = "WEETH_MODE";
@@ -5149,6 +5274,7 @@ library Lenders {
     string internal constant AVALON_LORENZO = "AVALON_LORENZO";
     string internal constant AVALON_BEETS = "AVALON_BEETS";
     string internal constant AVALON_INNOVATION = "AVALON_INNOVATION";
+    string internal constant MOONCAKE = "MOONCAKE";
     string internal constant NEREUS = "NEREUS";
     string internal constant KINZA = "KINZA";
     string internal constant ZEROLEND_STABLECOINS_RWA = "ZEROLEND_STABLECOINS_RWA";
@@ -5171,12 +5297,14 @@ library Lenders {
     string internal constant XLEND = "XLEND";
     string internal constant KLAYBANK = "KLAYBANK";
     string internal constant VALAS = "VALAS";
+    string internal constant PHIAT = "PHIAT";
     string internal constant COMPOUND_V3_USDC = "COMPOUND_V3_USDC";
     string internal constant COMPOUND_V3_WETH = "COMPOUND_V3_WETH";
     string internal constant COMPOUND_V3_USDT = "COMPOUND_V3_USDT";
     string internal constant COMPOUND_V3_WSTETH = "COMPOUND_V3_WSTETH";
     string internal constant COMPOUND_V3_USDS = "COMPOUND_V3_USDS";
     string internal constant COMPOUND_V3_USDCE = "COMPOUND_V3_USDCE";
+    string internal constant COMPOUND_V3_WRON = "COMPOUND_V3_WRON";
     string internal constant COMPOUND_V3_USDE = "COMPOUND_V3_USDE";
     string internal constant COMPOUND_V3_USDBC = "COMPOUND_V3_USDBC";
     string internal constant COMPOUND_V3_AERO = "COMPOUND_V3_AERO";
@@ -5224,18 +5352,19 @@ library Lenders {
             || _lender == keccak256(abi.encodePacked((AVALON_UNILOTX))) || _lender == keccak256(abi.encodePacked((AVALON_BOB)))
             || _lender == keccak256(abi.encodePacked((AVALON_OBTC))) || _lender == keccak256(abi.encodePacked((AVALON_UBTC)))
             || _lender == keccak256(abi.encodePacked((AVALON_LORENZO))) || _lender == keccak256(abi.encodePacked((AVALON_BEETS)))
-            || _lender == keccak256(abi.encodePacked((AVALON_INNOVATION))) || _lender == keccak256(abi.encodePacked((NEREUS)))
-            || _lender == keccak256(abi.encodePacked((KINZA))) || _lender == keccak256(abi.encodePacked((ZEROLEND_STABLECOINS_RWA)))
-            || _lender == keccak256(abi.encodePacked((ZEROLEND_ETH_LRTS))) || _lender == keccak256(abi.encodePacked((ZEROLEND_BTC_LRTS)))
-            || _lender == keccak256(abi.encodePacked((ZEROLEND))) || _lender == keccak256(abi.encodePacked((ZEROLEND_CROAK)))
-            || _lender == keccak256(abi.encodePacked((ZEROLEND_FOXY))) || _lender == keccak256(abi.encodePacked((GRANARY)))
-            || _lender == keccak256(abi.encodePacked((LORE))) || _lender == keccak256(abi.encodePacked((LENDOS)))
-            || _lender == keccak256(abi.encodePacked((YLDR))) || _lender == keccak256(abi.encodePacked((IRONCLAD)))
-            || _lender == keccak256(abi.encodePacked((MOLEND))) || _lender == keccak256(abi.encodePacked((SEISMIC)))
-            || _lender == keccak256(abi.encodePacked((POLTER))) || _lender == keccak256(abi.encodePacked((MAGSIN)))
-            || _lender == keccak256(abi.encodePacked((AGAVE))) || _lender == keccak256(abi.encodePacked((MOOLA)))
-            || _lender == keccak256(abi.encodePacked((XLEND))) || _lender == keccak256(abi.encodePacked((KLAYBANK)))
-            || _lender == keccak256(abi.encodePacked((VALAS)));
+            || _lender == keccak256(abi.encodePacked((AVALON_INNOVATION))) || _lender == keccak256(abi.encodePacked((MOONCAKE)))
+            || _lender == keccak256(abi.encodePacked((NEREUS))) || _lender == keccak256(abi.encodePacked((KINZA)))
+            || _lender == keccak256(abi.encodePacked((ZEROLEND_STABLECOINS_RWA))) || _lender == keccak256(abi.encodePacked((ZEROLEND_ETH_LRTS)))
+            || _lender == keccak256(abi.encodePacked((ZEROLEND_BTC_LRTS))) || _lender == keccak256(abi.encodePacked((ZEROLEND)))
+            || _lender == keccak256(abi.encodePacked((ZEROLEND_CROAK))) || _lender == keccak256(abi.encodePacked((ZEROLEND_FOXY)))
+            || _lender == keccak256(abi.encodePacked((GRANARY))) || _lender == keccak256(abi.encodePacked((LORE)))
+            || _lender == keccak256(abi.encodePacked((LENDOS))) || _lender == keccak256(abi.encodePacked((YLDR)))
+            || _lender == keccak256(abi.encodePacked((IRONCLAD))) || _lender == keccak256(abi.encodePacked((MOLEND)))
+            || _lender == keccak256(abi.encodePacked((SEISMIC))) || _lender == keccak256(abi.encodePacked((POLTER)))
+            || _lender == keccak256(abi.encodePacked((MAGSIN))) || _lender == keccak256(abi.encodePacked((AGAVE)))
+            || _lender == keccak256(abi.encodePacked((MOOLA))) || _lender == keccak256(abi.encodePacked((XLEND)))
+            || _lender == keccak256(abi.encodePacked((KLAYBANK))) || _lender == keccak256(abi.encodePacked((VALAS)))
+            || _lender == keccak256(abi.encodePacked((PHIAT)));
     }
 
     function isCompoundV3(string memory lender) internal pure returns (bool isCompoundV3Flag) {
@@ -5243,8 +5372,8 @@ library Lenders {
         isCompoundV3Flag = _lender == keccak256(abi.encodePacked((COMPOUND_V3_USDC))) || _lender == keccak256(abi.encodePacked((COMPOUND_V3_WETH)))
             || _lender == keccak256(abi.encodePacked((COMPOUND_V3_USDT))) || _lender == keccak256(abi.encodePacked((COMPOUND_V3_WSTETH)))
             || _lender == keccak256(abi.encodePacked((COMPOUND_V3_USDS))) || _lender == keccak256(abi.encodePacked((COMPOUND_V3_USDCE)))
-            || _lender == keccak256(abi.encodePacked((COMPOUND_V3_USDE))) || _lender == keccak256(abi.encodePacked((COMPOUND_V3_USDBC)))
-            || _lender == keccak256(abi.encodePacked((COMPOUND_V3_AERO)));
+            || _lender == keccak256(abi.encodePacked((COMPOUND_V3_WRON))) || _lender == keccak256(abi.encodePacked((COMPOUND_V3_USDE)))
+            || _lender == keccak256(abi.encodePacked((COMPOUND_V3_USDBC))) || _lender == keccak256(abi.encodePacked((COMPOUND_V3_AERO)));
     }
 
     function isCompoundV2(string memory lender) internal pure returns (bool isCompoundV2Flag) {

@@ -125,6 +125,14 @@ const config: HardhatUserConfig = {
                     browserURL: "https://scrollscan.com",
                 },
             },
+            {
+                network: "katana",
+                chainId: 747474,
+                urls: {
+                    apiURL: "https://api.etherscan.io/v2/api?chainid=747474",
+                    browserURL: "https://katanascan.com/",
+                },
+            },
         ],
         apiKey: {
             mantle: process.env.MANTLESCAN_API_KEY ?? "abc",
@@ -144,6 +152,7 @@ const config: HardhatUserConfig = {
             avalanche: "XX",
             mode: "XX",
             hemi: "XX",
+            katana: process.env.ETHERSCAN_API_KEY ?? "",
             core: process.env.CORESCAN_API_KEY ?? "",
             sonic: process.env.SONICSCAN_API_KEY ?? "",
             scroll: process.env.SCROLLSCAN_API_KEY ?? "",
@@ -319,6 +328,12 @@ const config: HardhatUserConfig = {
             url: "https://api.s0.t.hmny.io",
             accounts,
             chainId: 1666600000,
+            live: true,
+        },
+        katana: {
+            url: "https://rpc.katana.network",
+            accounts,
+            chainId: 747474,
             live: true,
         },
         okex: {
@@ -556,6 +571,16 @@ const config: HardhatUserConfig = {
                         runs: 10_000,
                     },
                     evmVersion: "cancun",
+                },
+            },
+            "contracts/1delta/composer/chains/katana/Composer.sol": {
+                version: "0.8.28",
+                settings: {
+                    optimizer: {
+                        enabled: true,
+                        runs: 1_000_000,
+                    },
+                    evmVersion: "shanghai",
                 },
             },
             "contracts/1delta/composer/chains/blast/Composer.sol": {

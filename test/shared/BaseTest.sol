@@ -24,6 +24,7 @@ contract BaseTest is Test {
         rpcOverrides[Chains.BNB_SMART_CHAIN_MAINNET] = "https://bsc-dataseed1.binance.org/";
         rpcOverrides[Chains.OP_MAINNET] = "https://optimism.api.onfinality.io/public";
         rpcOverrides[Chains.POLYGON_MAINNET] = "https://polygon-rpc.com";
+        rpcOverrides[Chains.HYPEREVM] = "https://rpc.hyperliquid.xyz/evm";
         // rpcOverrides[Chains.TAIKO_ALETHIA] = "https://rpc.mainnet.taiko.xyz/";
     }
 

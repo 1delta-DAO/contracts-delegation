@@ -18,7 +18,7 @@ abstract contract UniV2Callbacks is Masks, DeltaErrors {
     // factories
 
     bytes32 private constant SUSHISWAP_V2_FF_FACTORY = 0xff72D111b4d6f31B38919ae39779f570b747d6Acd90000000000000000000000;
-    bytes32 private constant SUSHISWAP_V2_CODE_HASH = 0x96e8ac4277198ff8b6f785478aa9a39f403cb768dd02cbee326c3e7da348845f;
+    bytes32 private constant SUSHISWAP_V2_CODE_HASH = 0xe18a34eb0e04b04f7a0ac29a6e80748dca96319b42c54d679cb821dca90c6303;
 
     /**
      * Generic Uniswap v2 style callbck executor
