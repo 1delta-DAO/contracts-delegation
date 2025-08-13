@@ -9,11 +9,11 @@ importers:
   .:
     dependencies:
       '@1delta/asset-registry':
-        specifier: ^0.0.175
-        version: 0.0.175
+        specifier: ^0.0.182
+        version: 0.0.182
       '@1delta/dex-registry':
-        specifier: ^0.0.70
-        version: 0.0.70
+        specifier: ^0.0.71
+        version: 0.0.71
       '@chainlink/contracts':
         specifier: ^0.6.1
         version: 0.6.1(bufferutil@4.0.9)(ethers@5.8.0(bufferutil@4.0.9)(utf-8-validate@5.0.10))(utf-8-validate@5.0.10)
@@ -189,12 +189,12 @@ importers:
 
 packages:
 
-  '@1delta/asset-registry@0.0.175':
-    resolution: {integrity: sha512-FcKu0Qrhuh2ykONBSHTY6iBhY83OEawYSF2kJjzPhm9QfH7UJvG65kmqXYObw8xo3eqvMvLqdMF3sbRA2ye+3w==}
+  '@1delta/asset-registry@0.0.182':
+    resolution: {integrity: sha512-RMt8zonGUMwCQjQJcMR1zPFo0HPvBWaFBLGg3KNr3d7pkPJxCusfeN8n1PXFJT5gkqoZslSQkLu9cdwKsbUAtQ==}
     engines: {node: '>=20'}
 
-  '@1delta/dex-registry@0.0.70':
-    resolution: {integrity: sha512-24yMxVd10+tzrKCroiFpYCIuzVoLtD8yyR1xPshAE6RmleabN6FBHUXSDkL+scf/TMcsVj96fphQExGGv6mBHg==}
+  '@1delta/dex-registry@0.0.71':
+    resolution: {integrity: sha512-/+RSbZhkt3E6WDzhtRlLrdwh8ApWhGenoMfPPgEEkvhWqzIMcaN6QaLTPNqQVzR3x8JvVHJjKjpDpL/WiEK4bA==}
     engines: {node: '>=20'}
 
   '@ampproject/remapping@2.3.0':
@@ -6787,11 +6787,11 @@ packages:
 
 snapshots:
 
-  '@1delta/asset-registry@0.0.175': {}
+  '@1delta/asset-registry@0.0.182': {}
 
-  '@1delta/dex-registry@0.0.70':
+  '@1delta/dex-registry@0.0.71':
     dependencies:
-      '@1delta/asset-registry': 0.0.175
+      '@1delta/asset-registry': 0.0.182
 
   '@ampproject/remapping@2.3.0':
     dependencies:
