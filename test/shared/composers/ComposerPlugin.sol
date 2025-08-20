@@ -28,6 +28,7 @@ import {OneDeltaComposerHyperevm} from "../../../contracts/1delta/composer//chai
 import {OneDeltaComposerUnichain} from "../../../contracts/1delta/composer//chains/unichain/Composer.sol";
 import {OneDeltaComposerKatana} from "../../../contracts/1delta/composer//chains/katana/Composer.sol";
 import {OneDeltaComposerPulsechain} from "../../../contracts/1delta/composer//chains/pulsechain/Composer.sol";
+import {OneDeltaComposerEthereum} from "../../../contracts/1delta/composer//chains/ethereum/Composer.sol";
 
 library ComposerPlugin {
     function getComposer(string memory chainName) public returns (IComposerLike) {
@@ -60,6 +61,7 @@ library ComposerPlugin {
         if (keccak256(bytes(chainName)) == keccak256(bytes(Chains.UNICHAIN))) return IComposerLike(address(new OneDeltaComposerUnichain()));
         if (keccak256(bytes(chainName)) == keccak256(bytes(Chains.KATANA))) return IComposerLike(address(new OneDeltaComposerKatana()));
         if (keccak256(bytes(chainName)) == keccak256(bytes(Chains.PULSECHAIN))) return IComposerLike(address(new OneDeltaComposerPulsechain()));
+        if (keccak256(bytes(chainName)) == keccak256(bytes(Chains.ETHEREUM_MAINNET))) return IComposerLike(address(new OneDeltaComposerEthereum()));
 
         revert("No composer for chain");
     }
