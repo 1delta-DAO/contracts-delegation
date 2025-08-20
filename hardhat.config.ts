@@ -813,6 +813,16 @@ const config: HardhatUserConfig = {
                     evmVersion: "paris",
                 },
             },
+            "contracts/external-protocols/misc/CometLens.sol": {
+                version: "0.8.28",
+                settings: {
+                    optimizer: {
+                        enabled: true,
+                        runs: 1_000_000,
+                    },
+                    evmVersion: "paris",
+                },
+            },
         },
     },
     spdxLicenseIdentifier: {

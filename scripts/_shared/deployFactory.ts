@@ -32,11 +32,12 @@ async function main() {
     const operator = accounts[3];
     const chainId = await operator.getChainId();
     console.log("operator", operator.address, "on", chainId);
-    const gasprice = await operator.getGasPrice();
-    console.log(gasprice.toString());
+    const gp = await operator.getGasPrice();
+
+    console.log("gasPrice", gp.toNumber() / 1e9);
 
     console.log("Deploy factory");
-    const deployFactory = await new DeployFactory__factory(operator).deploy({gasPrice: gasprice});
+    const deployFactory = await new DeployFactory__factory(operator).deploy({gasPrice: gp});
 
     await deployFactory.deployed();
 
