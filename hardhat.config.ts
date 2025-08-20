@@ -170,7 +170,7 @@ const config: HardhatUserConfig = {
     },
     networks: {
         mainnet: {
-            url: `https://mainnet.infura.io/v3/${process.env.INFURA_API_KEY}`,
+            url: `https://eth.blockrazor.xyz`,
             accounts,
             chainId: 1,
         },

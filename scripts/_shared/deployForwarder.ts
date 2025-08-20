@@ -21,6 +21,10 @@ async function main() {
     const chainId = await operator.getChainId();
     console.log("operator", operator.address, "on", chainId);
 
+    const gp = await operator.getGasPrice();
+
+    console.log("gasPrice", gp.toNumber() / 1e9);
+
     console.log("Get deploy factory");
 
     const salt = "0x16c4dc0f662e2becec91fc5e7aeec6a25684698ae4231e242c5edf00c3a0096c";
@@ -36,7 +40,7 @@ async function main() {
     console.log("address", address);
     const estimate = await deployFactory.estimateGas.deploy(salt, bytecode);
     console.log("estimate", estimate);
-    const tx = await deployFactory.deploy(salt, bytecode, {gasLimit: estimate.add(100)});
+    const tx = await deployFactory.deploy(salt, bytecode, {gasLimit: estimate.add(100), gasPrice: gp});
     await tx.wait();
 
     console.log("deployed expected to", address);

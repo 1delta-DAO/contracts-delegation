@@ -25,15 +25,18 @@ import {DeployFactory__factory} from "../../types";
 // hyperEVM
 // unichain
 // katana
+// ethereum
 
 async function main() {
     const accounts = await ethers.getSigners();
     const operator = accounts[3];
     const chainId = await operator.getChainId();
     console.log("operator", operator.address, "on", chainId);
+    const gasprice = await operator.getGasPrice();
+    console.log(gasprice.toString());
 
     console.log("Deploy factory");
-    const deployFactory = await new DeployFactory__factory(operator).deploy();
+    const deployFactory = await new DeployFactory__factory(operator).deploy({gasPrice: gasprice});
 
     await deployFactory.deployed();
 
