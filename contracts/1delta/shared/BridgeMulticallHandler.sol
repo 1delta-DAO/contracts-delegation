@@ -6,6 +6,8 @@ import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/utils/Address.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 
+import { ILayerZeroComposer } from "@layerzerolabs/lz-evm-protocol-v2/contracts/interfaces/ILayerZeroComposer.sol";
+import { OFTComposeMsgCodec } from "@layerzerolabs/lz-evm-oapp-v2/contracts/oft/libs/OFTComposeMsgCodec.sol";
 import { AcrossMessageHandler } from "../interfaces/across/AcrossMessageHandler.sol";
 
 /**
@@ -14,9 +16,11 @@ import { AcrossMessageHandler } from "../interfaces/across/AcrossMessageHandler.
  * @dev This contract makes the calls blindly. 
  * The contract will send any remaining tokens The caller should ensure that the tokens recieved by the handler are completely consumed.
  */
-contract BridgeMulticallHandler is AcrossMessageHandler, ReentrancyGuard {
+contract BridgeMulticallHandler is ILayerZeroComposer, AcrossMessageHandler, ReentrancyGuard {
     using SafeERC20 for IERC20;
     using Address for address payable;
+
+    event ComposeAcknowledged(address indexed _from, bytes32 indexed _guid, bytes _message, address _executor, bytes _extraData);
 
     struct Call {
         address target;
@@ -62,6 +66,23 @@ contract BridgeMulticallHandler is AcrossMessageHandler, ReentrancyGuard {
         address,
         bytes memory message
     ) external override nonReentrant {
+        _handleMessage(token, message);
+    }
+
+    function lzCompose(
+        address _from,
+        bytes32 _guid,
+        bytes calldata _message,
+        address _executor,
+        bytes calldata _extraData
+    ) external payable override nonReentrant {
+        emit ComposeAcknowledged(_from, _guid, _message, _executor, _extraData);
+
+        bytes memory _composeMessage = OFTComposeMsgCodec.composeMsg(_message);
+        
+       (address token, bytes memory message) =
+            abi.decode(_composeMessage, (address, bytes));
+
         _handleMessage(token, message);
     }
 
