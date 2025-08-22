@@ -170,7 +170,7 @@ const config: HardhatUserConfig = {
     },
     networks: {
         mainnet: {
-            url: `https://mainnet.infura.io/v3/${process.env.INFURA_API_KEY}`,
+            url: `https://eth.blockrazor.xyz`,
             accounts,
             chainId: 1,
         },
@@ -563,6 +563,16 @@ const config: HardhatUserConfig = {
                     evmVersion: "cancun",
                 },
             },
+            "contracts/1delta/composer/chains/ethereum/Composer.sol": {
+                version: "0.8.28",
+                settings: {
+                    optimizer: {
+                        enabled: true,
+                        runs: 1_500,
+                    },
+                    evmVersion: "cancun",
+                },
+            },
             "contracts/1delta/composer/chains/hemi/Composer.sol": {
                 version: "0.8.28",
                 settings: {
@@ -794,6 +804,16 @@ const config: HardhatUserConfig = {
                 },
             },
             "contracts/1delta/quoter/MoeJoeLens.sol": {
+                version: "0.8.28",
+                settings: {
+                    optimizer: {
+                        enabled: true,
+                        runs: 1_000_000,
+                    },
+                    evmVersion: "paris",
+                },
+            },
+            "contracts/external-protocols/misc/CometLens.sol": {
                 version: "0.8.28",
                 settings: {
                     optimizer: {

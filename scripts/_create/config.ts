@@ -26,6 +26,7 @@ export const CREATE_CHAIN_IDS = [
     Chain.UNICHAIN,
     Chain.KATANA,
     Chain.PULSECHAIN,
+    Chain.ETHEREUM_MAINNET,
 ];
 
 export function sortForks<T>(arr: T[], field: keyof T) {
