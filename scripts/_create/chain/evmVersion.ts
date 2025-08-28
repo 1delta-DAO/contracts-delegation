@@ -13,4 +13,5 @@ export const CANCUN_OR_HIGHER = [
     Chain.HYPEREVM,
     Chain.UNICHAIN,
     Chain.KATANA,
+    Chain.BERACHAIN,
 ];

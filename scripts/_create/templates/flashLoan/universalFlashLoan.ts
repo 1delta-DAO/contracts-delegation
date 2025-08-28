@@ -1,40 +1,54 @@
-export const templateUniversalFlashLoan = (
-    hasMorpho: boolean,
-    hasAaveV2: boolean,
-    hasAaveV3: boolean,
-    hasBalancerV2: boolean
-) => {
-    let isFirst = true
+export const templateUniversalFlashLoan = (hasMorpho: boolean, hasAaveV2: boolean, hasAaveV3: boolean, hasBalancerV2: boolean) => {
+    let isFirst = true;
 
-    let imports = ``
-    let inherits: string[] = []
-    let data = ``
+    let imports = ``;
+    let inherits: string[] = [];
+    let data = ``;
     if (hasMorpho) {
-        data += morphoSnippet(isFirst)
-        isFirst = false
-        imports += `import {MorphoFlashLoans} from "../../../flashLoan/Morpho.sol";\n`
-        inherits.push("MorphoFlashLoans")
+        data += morphoSnippet(isFirst);
+        isFirst = false;
+        imports += `import {MorphoFlashLoans} from "../../../flashLoan/Morpho.sol";\n`;
+        inherits.push("MorphoFlashLoans");
     }
     if (hasAaveV3) {
-        data += aaveV3Snippet(isFirst)
-        isFirst = false
-        imports += `import {AaveV3FlashLoans} from "../../../flashLoan/AaveV3.sol";\n`
-        inherits.push("AaveV3FlashLoans")
+        data += aaveV3Snippet(isFirst);
+        isFirst = false;
+        imports += `import {AaveV3FlashLoans} from "../../../flashLoan/AaveV3.sol";\n`;
+        inherits.push("AaveV3FlashLoans");
     }
     if (hasAaveV2) {
-        data += aaveV2Snippet(isFirst)
-        isFirst = false
-        imports += `import {AaveV2FlashLoans} from "../../../flashLoan/AaveV2.sol";\n`
-        inherits.push("AaveV2FlashLoans")
+        data += aaveV2Snippet(isFirst);
+        isFirst = false;
+        imports += `import {AaveV2FlashLoans} from "../../../flashLoan/AaveV2.sol";\n`;
+        inherits.push("AaveV2FlashLoans");
     }
 
     if (hasBalancerV2) {
-        data += balancerV2Snippet(isFirst)
-        isFirst = false
-        imports += `import {BalancerV2FlashLoans} from "./BalancerV2.sol";\n`
-        inherits.push("BalancerV2FlashLoans")
+        data += balancerV2Snippet(isFirst);
+        isFirst = false;
+        imports += `import {BalancerV2FlashLoans} from "./BalancerV2.sol";\n`;
+        inherits.push("BalancerV2FlashLoans");
     }
 
+    if (inherits.length === 0)
+        return `
+    
+/**
+ * @title Flash loan aggregator
+ * @author 1delta Labs AG
+ */
+contract UniversalFlashLoan {
+    /**
+     * Empty flash loaner
+     */
+    function _universalFlashLoan(uint256 currentOffset, address callerAddress) internal virtual returns (uint256) {
+        assembly {
+            revert(0, 0)
+        }
+    }
+}
+    
+    `;
 
     return `
 
@@ -71,21 +85,20 @@ contract UniversalFlashLoan is
     }
 }
 
-`
-
-}
+`;
+};
 
 function aaveV2Snippet(isFirst: boolean) {
     if (isFirst) {
         return `
         if (flashLoanType == FlashLoanIds.AAVE_V2) {
             return aaveV2FlashLoan(currentOffset, callerAddress);
-        } `
+        } `;
     }
     return `
         else if (flashLoanType == FlashLoanIds.AAVE_V2) {
             return aaveV2FlashLoan(currentOffset, callerAddress);
-        } `
+        } `;
 }
 
 function morphoSnippet(isFirst: boolean) {
@@ -93,26 +106,25 @@ function morphoSnippet(isFirst: boolean) {
         return `
         if (flashLoanType == FlashLoanIds.MORPHO) {
             return morphoFlashLoan(currentOffset, callerAddress);
-        } `
+        } `;
     }
     return `
          else if (flashLoanType == FlashLoanIds.MORPHO) {
             return morphoFlashLoan(currentOffset, callerAddress);
-        }`
+        }`;
 }
-
 
 function balancerV2Snippet(isFirst: boolean) {
     if (isFirst) {
         return `
         if (flashLoanType == FlashLoanIds.BALANCER_V2) {
             return balancerV2FlashLoan(currentOffset, callerAddress);
-        } `
+        } `;
     }
     return `
          else if (flashLoanType == FlashLoanIds.BALANCER_V2) {
             return balancerV2FlashLoan(currentOffset, callerAddress);
-        }`
+        }`;
 }
 
 function aaveV3Snippet(isFirst: boolean) {
@@ -120,10 +132,10 @@ function aaveV3Snippet(isFirst: boolean) {
         return `
         if (flashLoanType == FlashLoanIds.AAVE_V3) {
             return aaveV3FlashLoan(currentOffset, callerAddress);
-        } `
+        } `;
     }
     return `
         else if (flashLoanType == FlashLoanIds.AAVE_V3) {
             return aaveV3FlashLoan(currentOffset, callerAddress);
-        } `
+        } `;
 }
