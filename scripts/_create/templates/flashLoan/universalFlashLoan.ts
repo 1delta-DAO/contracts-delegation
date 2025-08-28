@@ -32,16 +32,22 @@ export const templateUniversalFlashLoan = (hasMorpho: boolean, hasAaveV2: boolea
 
     if (inherits.length === 0)
         return `
-    
+
+    // SPDX-License-Identifier: BUSL-1.1
+
+pragma solidity 0.8.28;
+
+import {FlashLoanCallbacks} from "./FlashLoanCallbacks.sol";
+
 /**
  * @title Flash loan aggregator
  * @author 1delta Labs AG
  */
-contract UniversalFlashLoan {
+contract UniversalFlashLoan is FlashLoanCallbacks {
     /**
      * Empty flash loaner
      */
-    function _universalFlashLoan(uint256 currentOffset, address callerAddress) internal virtual returns (uint256) {
+    function _universalFlashLoan(uint256, address) internal virtual returns (uint256) {
         assembly {
             revert(0, 0)
         }
