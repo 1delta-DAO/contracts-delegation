@@ -26,6 +26,9 @@ import {DeployFactory__factory} from "../../types";
 // unichain
 // katana
 // ethereum
+// berachain
+// cronos
+// xdc
 
 async function main() {
     const accounts = await ethers.getSigners();
