@@ -65,6 +65,25 @@ interface IMorpho {
             uint128 lastUpdate,
             uint128 fee
         );
+
+    function idToMarketParams(bytes32 id)
+        external
+        view
+        returns (address loanToken, address collateralToken, address oracle, address irm, uint256 lltv);
+}
+
+interface IAdaptiveCurveIrm {
+    /// @notice Rate at target utilization.
+    /// @dev Tells the height of the curve.
+    function rateAtTarget(bytes32 id) external view returns (int256);
+}
+
+interface IOracle {
+    /// @notice Returns the price of 1 asset of collateral token quoted in 1 asset of loan token, scaled by 1e36.
+    /// @dev It corresponds to the price of 10**(collateral token decimals) assets of collateral token quoted in
+    /// 10**(loan token decimals) assets of loan token with `36 + loan token decimals - collateral token decimals`
+    /// decimals of precision.
+    function price() external view returns (uint256);
 }
 
 contract MorphoLens {
@@ -72,7 +91,7 @@ contract MorphoLens {
      * Get the user data if exists as packed bytes (len, data[]), data = (id,sShares,bShares,sAssets,bAssets,collateral)
      * `id` maps the data to the market in the original array
      */
-    function getUserDataCompact(bytes32[] memory marketsIds, address user, address morpho) external view returns (bytes memory data) {
+    function getUserDataCompact(bytes32[] calldata marketsIds, address user, address morpho) external view returns (bytes memory data) {
         uint256 totalCount;
         for (uint256 i; i < marketsIds.length; i++) {
             bytes32 id = marketsIds[i];
@@ -102,5 +121,76 @@ contract MorphoLens {
         }
 
         return abi.encodePacked(uint16(totalCount), data);
+    }
+
+    /**
+     * get markets data as compressed bytes array of full morpho markets, the layout for a market is:
+     *  loanToken:              20b
+     *  collateralToken:        20b
+     *  oracle:                 20b
+     *  irm:                    20b
+     *  lltv:                   16b
+     *  price:                  32b
+     *  rateAtTarget:           32b
+     *  totalSupplyAssets:      16b
+     *  totalSupplyShares:      16b
+     *  totalBorrowAssets:      16b
+     *  totalBorrowShares:      16b
+     *  lastUpdate:             16b
+     *  fee:                    16b
+     * As this is a determinisitic element size, the array is implicitly indexed
+     */
+    function getMarketDataCompact(address morpho, bytes32[] calldata marketsIds) external view returns (bytes memory data) {
+        // each entry makes 4*20 (addressses) + 16 (lltv) + 32 (price) + 32 (rateAtTarget) + 96 bytes (market) (=256) in size
+        // the return data is therfore implicitly indexed
+        for (uint256 i; i < marketsIds.length; i++) {
+            bytes32 id = marketsIds[i];
+            // pack market supply statuses
+            bytes memory market = getPackedMarket(morpho, id);
+            // get metadata
+            (
+                address loanToken,
+                address collateralToken, //
+                address oracle,
+                address irm,
+                uint256 lltv
+            ) = IMorpho(morpho).idToMarketParams(id);
+
+            // get price from oracle
+            uint256 price;
+            if (oracle != address(0)) {
+                try IOracle(oracle).price() returns (uint256 _price) {
+                    price = _price;
+                } catch {}
+            }
+            // get rate
+            uint256 rateAtTarget;
+            if (irm != address(0)) {
+                try IAdaptiveCurveIrm(irm).rateAtTarget(id) returns (int256 _rateAtTarget) {
+                    rateAtTarget = uint256(_rateAtTarget);
+                } catch {}
+            }
+
+            // progressively pack the data
+            data = abi.encodePacked(data, loanToken, collateralToken, oracle, irm, uint128(lltv), price, rateAtTarget, market);
+        }
+
+        return data;
+    }
+
+    /**
+     * Get market as 96 bytes array
+     */
+    function getPackedMarket(address morpho, bytes32 id) private view returns (bytes memory data) {
+        (
+            uint128 totalSupplyAssets,
+            uint128 totalSupplyShares,
+            uint128 totalBorrowAssets,
+            uint128 totalBorrowShares,
+            uint128 lastUpdate,
+            uint128 fee //
+        ) = IMorpho(morpho).market(id);
+        // tightly pack the data
+        data = abi.encodePacked(totalSupplyAssets, totalSupplyShares, totalBorrowAssets, totalBorrowShares, lastUpdate, fee);
     }
 }
