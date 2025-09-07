@@ -144,3 +144,5 @@ module.exports = [
 
 // npx hardhat verify --network cronos 0x4b5458BB47dCBC1a41B31b41e1a8773dE312BE9d --contract contracts/1delta/composer/chains/cronos/Composer.sol:OneDeltaComposerCronos
 // npx hardhat verify --network cronos 0xcb6eb8df68153cebf60e1872273ef52075a5c297 --contract contracts/external-protocols/openzeppelin/proxy/transparent/TransparentUpgradeableProxy.sol:TransparentUpgradeableProxy  --constructor-args scripts/verify_fw.js
+
+// npx hardhat verify --network soneium 0x7a59ddbB76521E8982Fa3A08598C9a83b14A6C07 --contract contracts/1delta/composer/chains/soneium/Composer.sol:OneDeltaComposerSoneium

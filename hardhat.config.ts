@@ -153,6 +153,7 @@ const config: HardhatUserConfig = {
             mode: "XX",
             hemi: "XX",
             berachain: "XX",
+            soneium: "XX",
             xdc: "XX",
             cronos: "XX",
             katana: process.env.ETHERSCAN_API_KEY ?? "",
@@ -729,7 +730,7 @@ const config: HardhatUserConfig = {
                 settings: {
                     optimizer: {
                         enabled: true,
-                        runs: 1_000_000,
+                        runs: 25_000,
                     },
                     evmVersion: "cancun",
                 },
