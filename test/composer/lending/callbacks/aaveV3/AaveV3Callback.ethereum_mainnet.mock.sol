@@ -19,6 +19,7 @@ contract AaveV3FlashLoanCallbackTest is BaseTest, DeltaErrors {
     address private AAVE_V3;
     address private AAVE_V3_PRIME;
     address private AAVE_V3_ETHER_FI;
+    address private AAVE_V3_HORIZON;
     address private SPARK;
     address private ZEROLEND_STABLECOINS_RWA;
     address private ZEROLEND_ETH_LRTS;
@@ -82,6 +83,16 @@ contract AaveV3FlashLoanCallbackTest is BaseTest, DeltaErrors {
         replaceLendingPoolWithMock(AAVE_V3_ETHER_FI);
 
         bytes memory params = CalldataLib.encodeFlashLoan(USDC, 1e6, AAVE_V3_ETHER_FI, uint8(2), uint8(2), sweepCall());
+
+        vm.prank(user);
+        oneDV2.deltaCompose(params);
+    }
+
+    function test_flash_loan_aaveV3_type_aave_v3_horizon_pool_with_callbacks() public {
+        // mock implementation
+        replaceLendingPoolWithMock(AAVE_V3_HORIZON);
+
+        bytes memory params = CalldataLib.encodeFlashLoan(USDC, 1e6, AAVE_V3_HORIZON, uint8(2), uint8(3), sweepCall());
 
         vm.prank(user);
         oneDV2.deltaCompose(params);
@@ -230,6 +241,7 @@ contract AaveV3FlashLoanCallbackTest is BaseTest, DeltaErrors {
         AAVE_V3 = chain.getLendingController(Lenders.AAVE_V3);
         AAVE_V3_PRIME = chain.getLendingController(Lenders.AAVE_V3_PRIME);
         AAVE_V3_ETHER_FI = chain.getLendingController(Lenders.AAVE_V3_ETHER_FI);
+        AAVE_V3_HORIZON = chain.getLendingController(Lenders.AAVE_V3_HORIZON);
         SPARK = chain.getLendingController(Lenders.SPARK);
         ZEROLEND_STABLECOINS_RWA = chain.getLendingController(Lenders.ZEROLEND_STABLECOINS_RWA);
         ZEROLEND_ETH_LRTS = chain.getLendingController(Lenders.ZEROLEND_ETH_LRTS);
@@ -250,6 +262,7 @@ contract AaveV3FlashLoanCallbackTest is BaseTest, DeltaErrors {
         validPools.push(PoolCase({poolId: 0, poolAddr: AAVE_V3, asset: USDC}));
         validPools.push(PoolCase({poolId: 1, poolAddr: AAVE_V3_PRIME, asset: USDC}));
         validPools.push(PoolCase({poolId: 2, poolAddr: AAVE_V3_ETHER_FI, asset: USDC}));
+        validPools.push(PoolCase({poolId: 3, poolAddr: AAVE_V3_HORIZON, asset: USDC}));
         validPools.push(PoolCase({poolId: 10, poolAddr: SPARK, asset: USDC}));
         validPools.push(PoolCase({poolId: 21, poolAddr: ZEROLEND_STABLECOINS_RWA, asset: USDC}));
         validPools.push(PoolCase({poolId: 22, poolAddr: ZEROLEND_ETH_LRTS, asset: USDC}));

@@ -13,6 +13,7 @@ contract AaveV3FlashLoanCallback is Masks, DeltaErrors {
     address private constant AAVE_V3 = 0x87870Bca3F3fD6335C3F4ce8392D69350B4fA4E2;
     address private constant AAVE_V3_PRIME = 0x4e033931ad43597d96D6bcc25c280717730B58B1;
     address private constant AAVE_V3_ETHER_FI = 0x0AA97c284e98396202b6A04024F5E2c65026F3c0;
+    address private constant AAVE_V3_HORIZON = 0xAe05Cd22df81871bc7cC2a04BeCfb516bFe332C8;
     address private constant SPARK = 0xC13e21B648A5Ee794902342038FF3aDAB66BE987;
     address private constant ZEROLEND_STABLECOINS_RWA = 0xD3a4DA66EC15a001466F324FA08037f3272BDbE8;
     address private constant ZEROLEND_ETH_LRTS = 0x3BC3D34C32cc98bf098D832364Df8A222bBaB4c0;
@@ -52,18 +53,19 @@ contract AaveV3FlashLoanCallback is Masks, DeltaErrors {
             let pool
             let poolId := and(UINT8_MASK, shr(88, firstWord))
 
-            switch lt(poolId, 11)
+            switch lt(poolId, 4)
             case 1 {
                 switch poolId
                 case 0 { pool := AAVE_V3 }
                 case 1 { pool := AAVE_V3_PRIME }
                 case 2 { pool := AAVE_V3_ETHER_FI }
-                case 10 { pool := SPARK }
+                case 3 { pool := AAVE_V3_HORIZON }
             }
             default {
                 switch lt(poolId, 24)
                 case 1 {
                     switch poolId
+                    case 10 { pool := SPARK }
                     case 21 { pool := ZEROLEND_STABLECOINS_RWA }
                     case 22 { pool := ZEROLEND_ETH_LRTS }
                     case 23 { pool := ZEROLEND_BTC_LRTS }

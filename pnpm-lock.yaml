@@ -9,11 +9,11 @@ importers:
   .:
     dependencies:
       '@1delta/asset-registry':
-        specifier: ^0.0.188
-        version: 0.0.188
+        specifier: ^0.0.192
+        version: 0.0.192
       '@1delta/dex-registry':
-        specifier: ^0.0.72
-        version: 0.0.72
+        specifier: ^0.0.74
+        version: 0.0.74
       '@chainlink/contracts':
         specifier: ^0.6.1
         version: 0.6.1(bufferutil@4.0.9)(ethers@5.8.0(bufferutil@4.0.9)(utf-8-validate@5.0.10))(utf-8-validate@5.0.10)
@@ -189,12 +189,20 @@ importers:
 
 packages:
 
-  '@1delta/asset-registry@0.0.188':
-    resolution: {integrity: sha512-Gvup2dPkCnYjqA1rMv1T1WrVE+iE8B6zmMnzAB+0qlK+kVfyMqHT3zR9l/GZ5LfB+ZnjdKnsevUC6RxemQtYig==}
+  '@1delta/asset-registry@0.0.192':
+    resolution: {integrity: sha512-tHlaOMI/QMnfnmkQ/rMc9CDV1z2TlO+PISqkZPrZwUCcqIzWUGrbKRL0sl9p+kE4dVVjoz6IzAbFuqQQjq3BuA==}
     engines: {node: '>=20'}
 
-  '@1delta/dex-registry@0.0.72':
-    resolution: {integrity: sha512-C44zTlK8je6XvoLdot8geq5DaKyQ0M3rOifim8qXR3ZCs+4ylfb7RXcrlxm3j7R98jQAOofQuZi193UQhuJ3Og==}
+  '@1delta/chain-registry@0.0.1':
+    resolution: {integrity: sha512-7ubiYSwA4t3MTb1y3Pv7Cslk/nzDSMT2AU11DBhEY3WZD1zjm1KlDC7mujI1rDEsZ8rrOHPBo/my1m/RpxWmbw==}
+    engines: {node: '>=20'}
+
+  '@1delta/dex-registry@0.0.74':
+    resolution: {integrity: sha512-IyMaWb5+hVoli987Cc+h98k6CJ3GYovOwgLYzfUyWnoIPaXaA3xeLNm/h1hQWPNOC5IRTVq8+H/sdN0CZ87oIg==}
+    engines: {node: '>=20'}
+
+  '@1delta/lender-registry@0.0.4':
+    resolution: {integrity: sha512-aulZoIhT7pD5q9PEF7Za3I7mN8mP02FrXIvtnPtKgkDlM0XRYotV1fbcK5QPtJGAyB2g9z1v29j3K3ovqDHx5w==}
     engines: {node: '>=20'}
 
   '@ampproject/remapping@2.3.0':
@@ -6787,11 +6795,16 @@ packages:
 
 snapshots:
 
-  '@1delta/asset-registry@0.0.188': {}
+  '@1delta/asset-registry@0.0.192': {}
 
-  '@1delta/dex-registry@0.0.72':
+  '@1delta/chain-registry@0.0.1': {}
+
+  '@1delta/dex-registry@0.0.74':
     dependencies:
-      '@1delta/asset-registry': 0.0.188
+      '@1delta/chain-registry': 0.0.1
+      '@1delta/lender-registry': 0.0.4
+
+  '@1delta/lender-registry@0.0.4': {}
 
   '@ampproject/remapping@2.3.0':
     dependencies:
