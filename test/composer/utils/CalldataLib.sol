@@ -242,6 +242,65 @@ library CalldataLib {
         return bridgeData;
     }
 
+    function encodeAxelarSendToken(
+        address asset,
+        address gateway,
+        bytes memory destinationChain,
+        bytes memory destinationAddress,
+        bytes memory symbol,
+        uint256 amount
+    )
+        internal
+        pure
+        returns (bytes memory)
+    {
+        return abi.encodePacked(
+            uint8(ComposerCommands.BRIDGING),
+            uint8(BridgeIds.AXELAR),
+            uint8(AxelarOps.SEND_TOKEN),
+            gateway,
+            asset,
+            uint16(destinationChain.length),
+            uint16(destinationAddress.length),
+            uint16(symbol.length),
+            uint128(amount),
+            destinationChain,
+            destinationAddress,
+            symbol
+        );
+    }
+
+    function encodeAxelarCallContractWithToken(
+        address asset,
+        address gateway,
+        bytes memory destinationChain,
+        bytes memory contractAddress,
+        bytes memory payload,
+        bytes memory symbol,
+        uint256 amount
+    )
+        internal
+        pure
+        returns (bytes memory)
+    {
+        return abi.encodePacked(
+            uint8(ComposerCommands.BRIDGING),
+            uint8(BridgeIds.AXELAR),
+            uint8(AxelarOps.CALL_CONTRACT_WITH_TOKEN),
+            gateway,
+            asset,
+            uint16(destinationChain.length),
+            uint16(contractAddress.length),
+            uint16(payload.length),
+            uint16(symbol.length),
+            uint128(amount),
+            destinationChain,
+            contractAddress,
+            payload,
+            symbol
+        );
+    }
+
     //
     function encodePermit2TransferFrom(address token, address receiver, uint256 amount) internal pure returns (bytes memory) {
         return abi.encodePacked(uint8(ComposerCommands.TRANSFERS), uint8(TransferIds.PERMIT2_TRANSFER_FROM), token, receiver, uint128(amount));
