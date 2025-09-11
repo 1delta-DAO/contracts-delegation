@@ -382,6 +382,24 @@ const config: HardhatUserConfig = {
             chainId: 42220,
             live: true,
         },
+        telos: {
+            url: "https://rpc.telos.net",
+            accounts,
+            chainId: 40,
+            live: true,
+        },
+        manta: {
+            url: "https://pacific-rpc.manta.network/http",
+            accounts,
+            chainId: 169,
+            live: true,
+        },
+        morph: {
+            url: "https://rpc.morphl2.io",
+            accounts,
+            chainId: 2818,
+            live: true,
+        },
         metis: {
             url: "https://andromeda.metis.io/?owner=1088",
             accounts,
@@ -645,6 +663,36 @@ const config: HardhatUserConfig = {
                     evmVersion: "cancun",
                 },
             },
+            // "contracts/1delta/composer/chains/manta/Composer.sol": {
+            //     version: "0.8.28",
+            //     settings: {
+            //         optimizer: {
+            //             enabled: true,
+            //             runs: 1_500,
+            //         },
+            //         evmVersion: "cancun",
+            //     },
+            // },
+            "contracts/1delta/composer/chains/telos-evm/Composer.sol": {
+                version: "0.8.28",
+                settings: {
+                    optimizer: {
+                        enabled: true,
+                        runs: 25_000,
+                    },
+                    evmVersion: "cancun",
+                },
+            },
+            // "contracts/1delta/composer/chains/morph/Composer.sol": {
+            //     version: "0.8.28",
+            //     settings: {
+            //         optimizer: {
+            //             enabled: true,
+            //             runs: 1_500,
+            //         },
+            //         evmVersion: "cancun",
+            //     },
+            // },
             "contracts/1delta/composer/chains/metis-andromeda/Composer.sol": {
                 version: "0.8.28",
                 settings: {

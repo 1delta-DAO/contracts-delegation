@@ -16,6 +16,7 @@ contract AaveV2FlashLoanCallbackTest is BaseTest, DeltaErrors {
     AaveV2MockPool mockPool;
 
     address private GRANARY;
+    address private RADIANT_V2;
 
     address private USDC;
 
@@ -47,6 +48,15 @@ contract AaveV2FlashLoanCallbackTest is BaseTest, DeltaErrors {
         replaceLendingPoolWithMock(GRANARY);
 
         bytes memory params = CalldataLib.encodeFlashLoan(USDC, 1e6, GRANARY, uint8(3), uint8(7), sweepCall());
+
+        vm.prank(user);
+        oneDV2.deltaCompose(params);
+    }
+
+    function test_flash_loan_aaveV2_type_radiant_v2_pool_with_callbacks() public {
+        replaceLendingPoolWithMock(RADIANT_V2);
+
+        bytes memory params = CalldataLib.encodeFlashLoan(USDC, 1e6, RADIANT_V2, uint8(3), uint8(20), sweepCall());
 
         vm.prank(user);
         oneDV2.deltaCompose(params);
@@ -98,6 +108,7 @@ contract AaveV2FlashLoanCallbackTest is BaseTest, DeltaErrors {
 
     function getAddressFromRegistry() internal {
         GRANARY = chain.getLendingController(Lenders.GRANARY);
+        RADIANT_V2 = chain.getLendingController(Lenders.RADIANT_V2);
 
         // Get token addresses
         USDC = chain.getTokenAddress(Tokens.USDC);
@@ -105,6 +116,7 @@ contract AaveV2FlashLoanCallbackTest is BaseTest, DeltaErrors {
 
     function populateValidPools() internal {
         validPools.push(PoolCase({poolId: 7, poolAddr: GRANARY, asset: USDC}));
+        validPools.push(PoolCase({poolId: 20, poolAddr: RADIANT_V2, asset: USDC}));
     }
 
     function mockERC20FunctionsForAllTokens() internal {

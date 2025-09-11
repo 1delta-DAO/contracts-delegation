@@ -1,4 +1,4 @@
-import {AAVE_FORK_POOL_DATA, AAVE_V2_LENDERS, AAVE_V3_LENDERS, Chain, MORPHO_BLUE_POOL_DATA} from "@1delta/asset-registry";
+import {AAVE_V2_LENDERS, AAVE_V3_LENDERS} from "@1delta/lender-registry";
 import {getAddress} from "ethers/lib/utils";
 import * as fs from "fs";
 import {templateAaveV2} from "./templates/flashLoan/aaveV2Callback";
@@ -12,6 +12,8 @@ import {templateUniversalFlashLoan} from "./templates/flashLoan/universalFlashLo
 import {templateBalancerV2Trigger} from "./templates/flashLoan/balancerV2Trigger";
 import {BALANCER_V2_FORKS, FLASH_LOAN_IDS} from "@1delta/dex-registry";
 import {CANCUN_OR_HIGHER} from "./chain/evmVersion";
+import {fetchLenderMetaFromDirAndInitialize} from "./utils";
+import {aavePools, morphoPools} from "@1delta/data-sdk";
 
 /** constant for the head part */
 function createConstant(pool: string, lender: string) {
@@ -183,6 +185,8 @@ function generateSwitchCaseStructure(entities: FlashLoanIdData[]): string {
 }
 
 async function main() {
+    await fetchLenderMetaFromDirAndInitialize();
+
     const chains = CREATE_CHAIN_IDS;
 
     for (let i = 0; i < chains.length; i++) {
@@ -196,7 +200,7 @@ async function main() {
         let lenderIdsAaveV2: FlashLoanIdData[] = [];
         let lenderIdsAaveV3: FlashLoanIdData[] = [];
         // aave
-        Object.entries(AAVE_FORK_POOL_DATA).forEach(([lender, maps]) => {
+        Object.entries(aavePools()).forEach(([lender, maps]) => {
             Object.entries(maps).forEach(([chains, e]) => {
                 if (chains === chain) {
                     if (AAVE_V2_LENDERS.includes(lender as any)) {
@@ -220,7 +224,7 @@ async function main() {
         });
 
         let lenderIdsMorphoBlue: FlashLoanIdData[] = [];
-        Object.entries(MORPHO_BLUE_POOL_DATA).forEach(([lender, maps]) => {
+        Object.entries(morphoPools()).forEach(([lender, maps]) => {
             Object.entries(maps).forEach(([chains, e]) => {
                 if (chains === chain) {
                     lenderIdsMorphoBlue.push({

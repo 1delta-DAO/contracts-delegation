@@ -14,4 +14,7 @@ export const CANCUN_OR_HIGHER = [
     Chain.UNICHAIN,
     Chain.KATANA,
     Chain.BERACHAIN,
+    Chain.TELOS_EVM_MAINNET,
+    Chain.MANTA_PACIFIC_MAINNET,
+    Chain.MORPH,
 ];
