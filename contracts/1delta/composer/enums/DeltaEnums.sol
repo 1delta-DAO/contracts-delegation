@@ -94,12 +94,5 @@ library ComposerCommands {
 library BridgeIds {
     uint256 internal constant STARGATE_V2 = 0x00;
     uint256 internal constant ACROSS = 0x0A;
-    uint256 internal constant AXELAR = 0x14;
-}
-
-/// @title Axelar Operations
-library AxelarOps {
-    uint256 internal constant CALL_CONTRACT_WITH_TOKEN = 0x00;
-    uint256 internal constant SEND_TOKEN = 0x01;
-    uint256 internal constant SQUID_ROUTER = 0x02;
+    uint256 internal constant SQUID_ROUTER = 0x14;
 }
