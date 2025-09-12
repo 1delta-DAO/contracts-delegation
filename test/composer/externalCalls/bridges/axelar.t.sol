@@ -31,6 +31,51 @@ contract AxelarTest is Test {
         vm.label(user, "User");
     }
 
+    function encodeSquidRouterCall(address gateway, uint256 amount) internal returns (bytes memory) {
+        string memory destChain = "polygon";
+        string memory destAddress = "destinationAddress";
+        string memory symbol = "USDC";
+        bytes memory payload = hex"1de17ababe";
+        address refundRecipient = user;
+        bool enableExpress = true;
+
+        vm.deal(address(composer), 1e10);
+
+        MockAxelar(gateway).setExpectedSquidCall(symbol, BRIDGE_AMOUNT, destChain, destAddress, payload, refundRecipient, enableExpress, 1e10);
+
+        return CalldataLib.encodeExternalCall(
+            address(callForwarder),
+            1e10,
+            false,
+            CalldataLib.encodeSquidRouterCall(
+                USDC, address(gateway), bytes(symbol), amount, bytes(destChain), bytes(destAddress), payload, refundRecipient, enableExpress, 1e10
+            )
+        );
+    }
+
+    function test_axelar_squid_bridge_call_amount() public {
+        MockAxelar gateway = new MockAxelar();
+        vm.label(address(gateway), "MockAxelarGateway");
+
+        bytes memory composerCalldata = encodeSquidRouterCall(address(gateway), BRIDGE_AMOUNT);
+
+        vm.startPrank(user);
+        composer.deltaCompose(composerCalldata);
+        vm.stopPrank();
+    }
+
+    function test_axelar_squid_bridge_call_balance() public {
+        MockAxelar gateway = new MockAxelar();
+        vm.label(address(gateway), "MockAxelarGateway");
+
+        bytes memory composerCalldata = encodeSquidRouterCall(address(gateway), 0);
+        vm.mockCall(USDC, abi.encodeWithSelector(IERC20.balanceOf.selector, address(callForwarder)), abi.encode(BRIDGE_AMOUNT));
+
+        vm.startPrank(user);
+        composer.deltaCompose(composerCalldata);
+        vm.stopPrank();
+    }
+
     function test_axelar_send_token_amount() public {
         MockAxelar gateway = new MockAxelar();
         vm.label(address(gateway), "MockAxelarGateway");
