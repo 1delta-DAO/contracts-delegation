@@ -36,21 +36,14 @@ contract Axelar is BaseUtils {
             return _callContractWithToken(gateway, asset, currentOffset);
         } else if (axelarOperation == AxelarOps.SEND_TOKEN) {
             return _sendToken(gateway, asset, currentOffset);
+        } else if (axelarOperation == AxelarOps.SQUID_ROUTER) {
+            return _squidRouterBridgeCall(gateway, asset, currentOffset);
         } else {
             _invalidOperation();
         }
     }
 
     /*
-     * function bridgeCall(
-     *   string calldata bridgedTokenSymbol,
-     *   uint256 amount,
-     *   string calldata destinationChain,
-     *   string calldata destinationAddress,
-     *   bytes calldata payload,
-     *   address gasRefundRecipient,
-     *   bool enableExpress
-     * ) external payable
      *
      * | Offset       | Length (bytes) | Description                                |
      * |--------------|----------------|--------------------------------------------|
@@ -69,36 +62,48 @@ contract Axelar is BaseUtils {
      */
     function _squidRouterBridgeCall(address gateway, address asset, uint256 currentOffset) private returns (uint256) {
         assembly {
-            let first := calldataload(currentOffset)
-            let symbolLen := shr(240, first)
-            let destLen := shr(240, shl(16, first))
-            let contractAddrLen := shr(240, shl(32, first))
-            let payloadLen := shr(240, shl(48, first))
-            let amount := shr(128, shl(64, first))
+            if lt(mload(0x40), 0x300) { mstore(0x40, 0x300) }
+            {
+                let first := calldataload(currentOffset)
+                let symbolLen := shr(240, first)
+                let destLen := shr(240, shl(16, first))
+                let contractAddrLen := shr(240, shl(32, first))
+                let payloadLen := shr(240, shl(48, first))
+                let amount := shr(128, shl(64, first))
 
-            let nativeAmount := shr(128, calldataload(add(currentOffset, 24)))
-            if gt(nativeAmount, selfbalance()) {
-                mstore(0x00, INSUFFICIENT_VALUE) // InsufficientValue()
-                revert(0x00, 0x04)
-            }
-            let gasRefundRecipient := calldataload(add(currentOffset, 40))
-            let enableExpress := and(UINT8_MASK, shr(88, gasRefundRecipient))
-            gasRefundRecipient := shr(96, gasRefundRecipient)
+                let nativeAmount := shr(128, calldataload(add(currentOffset, 24)))
+                if gt(nativeAmount, selfbalance()) {
+                    mstore(0x00, INSUFFICIENT_VALUE)
+                    revert(0x00, 0x04)
+                }
+                let gasRefundRecipient := calldataload(add(currentOffset, 40))
+                let enableExpress := and(UINT8_MASK, shr(88, gasRefundRecipient))
+                gasRefundRecipient := shr(96, gasRefundRecipient)
 
-            currentOffset := add(currentOffset, 61)
+                mstore(0x80, symbolLen)
+                mstore(0xA0, destLen)
+                mstore(0xC0, contractAddrLen)
+                mstore(0xE0, payloadLen)
+                mstore(0x100, amount)
+                mstore(0x120, nativeAmount)
+                mstore(0x140, gasRefundRecipient)
+                mstore(0x160, enableExpress)
 
-            if iszero(amount) {
-                mstore(0x00, ERC20_BALANCE_OF)
-                mstore(0x04, address())
-                pop(staticcall(gas(), asset, 0x00, 0x24, 0x00, 0x20))
-                amount := mload(0x00)
+                currentOffset := add(currentOffset, 61)
+
+                if iszero(amount) {
+                    mstore(0x00, ERC20_BALANCE_OF)
+                    mstore(0x04, address())
+                    pop(staticcall(gas(), asset, 0x00, 0x24, 0x00, 0x20))
+                    mstore(0x100, mload(0x00))
+                }
             }
 
             // zero padding length
-            let padLen1 := and(add(symbolLen, 31), not(31))
-            let padLen2 := and(add(destLen, 31), not(31))
-            let padLen3 := and(add(contractAddrLen, 31), not(31))
-            let padLen4 := and(add(payloadLen, 31), not(31))
+            let padLen1 := and(add(mload(0x80), 31), not(31))
+            let padLen2 := and(add(mload(0xA0), 31), not(31))
+            let padLen3 := and(add(mload(0xC0), 31), not(31))
+            let padLen4 := and(add(mload(0xE0), 31), not(31))
 
             // offsets (for strings and bytes)
             let off1 := 224 // 7 args, 7 * 32 = 224
@@ -115,40 +120,52 @@ contract Axelar is BaseUtils {
 
             // head (7 args)
             mstore(add(head, 0), off1)
-            mstore(add(head, 32), amount)
+            mstore(add(head, 32), mload(0x100)) // amount
             mstore(add(head, 64), off2)
             mstore(add(head, 96), off3)
             mstore(add(head, 128), off4)
-            mstore(add(head, 160), gasRefundRecipient)
-            mstore(add(head, 192), enableExpress)
+            mstore(add(head, 160), mload(0x140)) // gasRefundRecipient
+            mstore(add(head, 192), mload(0x160)) // enableExpress
 
             // bridgedTokenSymbol
-            let p := add(head, off1)
-            mstore(p, symbolLen)
-            calldatacopy(add(p, 32), currentOffset, symbolLen)
-            currentOffset := add(currentOffset, symbolLen)
+            {
+                let p := add(head, off1)
+                let l := mload(0x80)
+                mstore(p, l)
+                calldatacopy(add(p, 32), currentOffset, l)
+                currentOffset := add(currentOffset, l)
+            }
 
             // destinationChain
-            p := add(head, off2)
-            mstore(p, destLen)
-            calldatacopy(add(p, 32), currentOffset, destLen)
-            currentOffset := add(currentOffset, destLen)
+            {
+                let p := add(head, off2)
+                let l := mload(0xA0)
+                mstore(p, l)
+                calldatacopy(add(p, 32), currentOffset, l)
+                currentOffset := add(currentOffset, l)
+            }
 
             // destinationAddress
-            p := add(head, off3)
-            mstore(p, contractAddrLen)
-            calldatacopy(add(p, 32), currentOffset, contractAddrLen)
-            currentOffset := add(currentOffset, contractAddrLen)
+            {
+                let p := add(head, off3)
+                let l := mload(0xC0)
+                mstore(p, l)
+                calldatacopy(add(p, 32), currentOffset, l)
+                currentOffset := add(currentOffset, l)
+            }
 
             // payload
-            p := add(head, off4)
-            mstore(p, payloadLen)
-            calldatacopy(add(p, 32), currentOffset, payloadLen)
-            currentOffset := add(currentOffset, payloadLen)
+            {
+                let p := add(head, off4)
+                let l := mload(0xE0)
+                mstore(p, l)
+                calldatacopy(add(p, 32), currentOffset, l)
+                currentOffset := add(currentOffset, l)
+            }
 
             mstore(0x40, add(ptr, total))
 
-            if iszero(call(gas(), gateway, nativeAmount, ptr, total, 0, 0)) {
+            if iszero(call(gas(), gateway, mload(0x120), ptr, total, 0, 0)) {
                 returndatacopy(0, 0, returndatasize())
                 revert(0, returndatasize())
             }
