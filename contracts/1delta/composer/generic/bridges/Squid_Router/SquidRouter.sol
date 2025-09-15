@@ -50,12 +50,12 @@ contract SquidRouter is BaseUtils {
         assembly {
             if lt(mload(0x40), 0x300) { mstore(0x40, 0x300) }
             {
-                let first := calldataload(currentOffset)
-                let symbolLen := shr(240, first)
-                let destLen := shr(240, shl(16, first))
-                let contractAddrLen := shr(240, shl(32, first))
-                let payloadLen := shr(240, shl(48, first))
-                let amount := shr(128, shl(64, first))
+                let firstThenAmount := calldataload(currentOffset)
+                let symbolLen := shr(240, firstThenAmount)
+                let destLen := shr(240, shl(16, firstThenAmount))
+                let contractAddrLen := shr(240, shl(32, firstThenAmount))
+                let payloadLen := shr(240, shl(48, firstThenAmount))
+                firstThenAmount := shr(128, shl(64, firstThenAmount))
 
                 let nativeAmount := shr(128, calldataload(add(currentOffset, 24)))
                 if gt(nativeAmount, selfbalance()) {
@@ -67,7 +67,7 @@ contract SquidRouter is BaseUtils {
                 gasRefundRecipient := shr(96, gasRefundRecipient)
 
                 // set and store amount
-                switch amount
+                switch firstThenAmount
                 // zero-> selfbalance
                 case 0 {
                     mstore(0x00, ERC20_BALANCE_OF)
@@ -76,7 +76,7 @@ contract SquidRouter is BaseUtils {
                     mstore(0x100, mload(0x00))
                 }
                 // provided amount
-                default { mstore(0x100, amount) }
+                default { mstore(0x100, firstThenAmount) }
 
                 mstore(0x80, symbolLen)
                 mstore(0xA0, destLen)
