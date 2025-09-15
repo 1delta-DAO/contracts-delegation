@@ -30,6 +30,9 @@ export const CREATE_CHAIN_IDS = [
     Chain.BERACHAIN,
     Chain.CRONOS_MAINNET,
     Chain.XDC_NETWORK,
+    Chain.MORPH,
+    Chain.MANTA_PACIFIC_MAINNET,
+    Chain.TELOS_EVM_MAINNET,
 ];
 
 export function sortForks<T>(arr: T[], field: keyof T) {

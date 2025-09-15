@@ -1,17 +1,17 @@
+import {ASSET_META, CHAIN_INFO} from "@1delta/asset-registry";
 import {
-    AAVE_FORK_POOL_DATA,
-    AAVE_STYLE_RESERVE_ASSETS,
-    AAVE_STYLE_TOKENS,
-    ASSET_META,
-    CHAIN_INFO,
-    COMETS_PER_CHAIN_MAP,
-    COMPOUND_BASE_TOKENS,
-    COMPOUND_STYLE_RESERVE_ASSETS,
-    COMPOUND_V2_COMPTROLLERS,
-    COMPOUND_V2_STYLE_RESERVE_ASSETS,
-    COMPOUND_V2_STYLE_TOKENS,
-    MORPHO_BLUE_POOL_DATA,
-} from "@1delta/asset-registry";
+    aavePools,
+    aaveReserves,
+    aaveTokens,
+    compoundV2Pools,
+    compoundV2Reserves,
+    compoundV2Tokens,
+    compoundV3BaseData,
+    compoundV3Pools,
+    compoundV3Reserves,
+    morphoPools,
+} from "@1delta/data-sdk";
+import {fetchLenderMetaFromDirAndInitialize} from "./utils";
 import {getAddress} from "ethers/lib/utils";
 import * as fs from "fs";
 import {uniq} from "lodash";
@@ -98,6 +98,8 @@ library Lenders {
 `;
 
 async function main() {
+    await fetchLenderMetaFromDirAndInitialize();
+
     let chainIdsCovered: any[] = [];
     let lendersCovered: any[] = [];
 
@@ -106,7 +108,7 @@ async function main() {
     let compoundV2s: string[] = [];
 
     // aave
-    Object.entries(AAVE_FORK_POOL_DATA).forEach(([lender, maps]) => {
+    Object.entries(aavePools()).forEach(([lender, maps]) => {
         lendersCovered.push(lender);
         aaves.push(lender);
         Object.entries(maps).forEach(([chains, _]) => {
@@ -114,10 +116,10 @@ async function main() {
         });
     });
 
-    Object.keys(MORPHO_BLUE_POOL_DATA.MORPHO_BLUE).forEach((chainId) => chainIdsCovered.push(chainId));
+    Object.keys(morphoPools().MORPHO_BLUE).forEach((chainId) => chainIdsCovered.push(chainId));
 
     // compound V3
-    Object.entries(COMETS_PER_CHAIN_MAP).forEach(([chain, maps]) => {
+    Object.entries(compoundV3Pools()).forEach(([chain, maps]) => {
         chainIdsCovered.push(chain);
         Object.entries(maps).forEach(([lender, _]) => {
             compoundV3s.push(lender);
@@ -126,7 +128,7 @@ async function main() {
     });
 
     // compound V2
-    Object.entries(COMPOUND_V2_COMPTROLLERS).forEach(([lender, maps]) => {
+    Object.entries(compoundV2Pools()).forEach(([lender, maps]) => {
         lendersCovered.push(lender);
         compoundV2s.push(lender);
         Object.entries(maps).forEach(([chains, _]) => {
@@ -150,24 +152,24 @@ async function main() {
     let chainToToken: {[a: string]: string[]} = {};
     // Collect all tokens
     // AAVE tokens
-    Object.entries(AAVE_STYLE_TOKENS).forEach(([lender, chainTokens]) => {
+    Object.entries(aaveTokens()).forEach(([lender, chainTokens]) => {
         Object.entries(chainTokens).forEach(([chainId, _]) => {
             if (!chainToToken[chainId]) chainToToken[chainId] = [];
-            chainToToken[chainId] = [...chainToToken[chainId], ...AAVE_STYLE_RESERVE_ASSETS[lender][chainId]];
+            chainToToken[chainId] = [...chainToToken[chainId], ...aaveReserves()[lender][chainId]];
         });
     });
     // COMPOUND V3 tokens
-    Object.entries(COMETS_PER_CHAIN_MAP).forEach(([chain, lenderToComet]) => {
+    Object.entries(compoundV3Pools()).forEach(([chain, lenderToComet]) => {
         Object.entries(lenderToComet).forEach(([lender, _]) => {
             if (!chainToToken[chain]) chainToToken[chain] = [];
-            chainToToken[chain] = [...chainToToken[chain], ...COMPOUND_STYLE_RESERVE_ASSETS[lender][chain]];
+            chainToToken[chain] = [...chainToToken[chain], ...compoundV3Reserves()[lender][chain]];
         });
     });
     // COMPOUND V2 tokens
-    Object.entries(COMPOUND_V2_STYLE_TOKENS).forEach(([lender, chainTokens]) => {
+    Object.entries(compoundV2Tokens()).forEach(([lender, chainTokens]) => {
         Object.entries(chainTokens).forEach(([chainId, _]) => {
             if (!chainToToken[chainId]) chainToToken[chainId] = [];
-            chainToToken[chainId] = [...chainToToken[chainId], ...COMPOUND_V2_STYLE_RESERVE_ASSETS[lender][chainId]];
+            chainToToken[chainId] = [...chainToToken[chainId], ...compoundV2Reserves()[lender][chainId]];
         });
     });
 
@@ -227,8 +229,8 @@ async function main() {
 
     // AAVE DATA
     data += `    // Initialize AAVE protocol data\n`;
-    Object.entries(AAVE_FORK_POOL_DATA).forEach(([lender, maps]) => {
-        const tokens = AAVE_STYLE_TOKENS[lender];
+    Object.entries(aavePools()).forEach(([lender, maps]) => {
+        const tokens = aaveTokens()[lender];
 
         // add aave tokens
         Object.entries(tokens).forEach(([chainId, tokens]) => {
@@ -256,7 +258,7 @@ async function main() {
 
     // COMPOUND V3 DATA
     data += `    // Initialize Compound V3 protocol data\n`;
-    Object.entries(COMETS_PER_CHAIN_MAP).forEach(([chain, lenderToComet]) => {
+    Object.entries(compoundV3Pools()).forEach(([chain, lenderToComet]) => {
         const chainConstant = `Chains.${getChainString(chain)}`;
 
         // add comets and controllers
@@ -267,7 +269,7 @@ async function main() {
     });
 
     // map comets to base
-    Object.entries(COMPOUND_BASE_TOKENS).forEach(([lender, chainIdToBase]) => {
+    Object.entries(compoundV3BaseData()).forEach(([lender, chainIdToBase]) => {
         const lenderConstant = `Lenders.${lender}`;
 
         Object.entries(chainIdToBase).forEach(([chainId, baseData]) => {
@@ -279,9 +281,9 @@ async function main() {
 
     // COMPOUND V2 DATA
     data += `    // Initialize Compound V2 protocol data\n`;
-    Object.entries(COMPOUND_V2_COMPTROLLERS).forEach(([lender, maps]) => {
+    Object.entries(compoundV2Pools()).forEach(([lender, maps]) => {
         const lenderConstant = `Lenders.${lender}`;
-        const tokens = COMPOUND_V2_STYLE_TOKENS[lender];
+        const tokens = compoundV2Tokens()[lender];
 
         // add compound v2 tokens
         Object.entries(tokens).forEach(([chainId, tokens]) => {

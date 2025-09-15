@@ -29,6 +29,9 @@ import {DeployFactory__factory} from "../../types";
 // berachain
 // cronos
 // xdc
+// manta
+// telos
+// morph
 
 async function main() {
     const accounts = await ethers.getSigners();

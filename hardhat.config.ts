@@ -133,14 +133,56 @@ const config: HardhatUserConfig = {
                     browserURL: "https://katanascan.com/",
                 },
             },
+
+            {
+                network: "manta",
+                chainId: 169,
+                urls: {
+                    apiURL: "https://api.socialscan.io/manta-pacific/v1/explorer/command_api/contract",
+                    browserURL: "https://manta.socialscan.io//",
+                },
+            },
+            {
+                network: "xdc",
+                chainId: 50,
+                urls: {
+                    browserURL: "https://xdcscan.com/",
+                    apiURL: "https://api.etherscan.io/v2/api?chainid=50",
+                },
+            },
+            {
+                network: "soneium",
+                chainId: 1868,
+                urls: {
+                    apiURL: "https://soneium.blockscout.com/api",
+                    browserURL: "https://soneium.blockscout.com/",
+                },
+            },
+            {
+                network: "hyperevm",
+                chainId: 999,
+                urls: {
+                    browserURL: "https://xdcscan.com/",
+                    apiURL: "https://api.etherscan.io/v2/api?chainid=999",
+                },
+            },
+            {
+                network: "morph",
+                chainId: 2818,
+                urls: {
+                    apiURL: "https://explorer-api.morphl2.io/api",
+                    browserURL: "https://katanascan.com/",
+                },
+            },
         ],
+        // apiKey: process.env.ETHERSCAN_API_KEY ?? "",
         apiKey: {
             mantle: process.env.MANTLESCAN_API_KEY ?? "abc",
             arbitrumOne: process.env.ARBISCAN_API_KEY ?? "",
             mainnet: process.env.ETHERSCAN_API_KEY ?? "",
             polygon: process.env.POLYGONSCAN_API_KEY ?? "",
             taiko: process.env.TAIKOSCAN_API_KEY ?? "",
-            linea: process.env.LINEASCAN_API_KEY ?? "",
+            linea: process.env.ETHERSCAN_API_KEY ?? "",
             optimisticEthereum: process.env.OPSCAN_API_KEY ?? "",
             bnb: process.env.BSCSCAN_API_KEY ?? "",
             bsc: process.env.BSCSCAN_API_KEY ?? "",
@@ -154,9 +196,12 @@ const config: HardhatUserConfig = {
             hemi: "XX",
             berachain: "XX",
             soneium: "XX",
-            xdc: "XX",
+            xdc: process.env.ETHERSCAN_API_KEY ?? "",
+            morph: "XX",
+            manta: "XX",
             cronos: "XX",
             katana: process.env.ETHERSCAN_API_KEY ?? "",
+            hyperevm: process.env.ETHERSCAN_API_KEY ?? "",
             core: process.env.CORESCAN_API_KEY ?? "",
             sonic: process.env.SONICSCAN_API_KEY ?? "",
             scroll: process.env.SCROLLSCAN_API_KEY ?? "",
@@ -380,6 +425,24 @@ const config: HardhatUserConfig = {
             url: "https://forno.celo.org",
             accounts,
             chainId: 42220,
+            live: true,
+        },
+        telos: {
+            url: "https://rpc.telos.net",
+            accounts,
+            chainId: 40,
+            live: true,
+        },
+        manta: {
+            url: "https://pacific-rpc.manta.network/http",
+            accounts,
+            chainId: 169,
+            live: true,
+        },
+        morph: {
+            url: "https://rpc.morphl2.io",
+            accounts,
+            chainId: 2818,
             live: true,
         },
         metis: {
@@ -645,6 +708,36 @@ const config: HardhatUserConfig = {
                     evmVersion: "cancun",
                 },
             },
+            // "contracts/1delta/composer/chains/manta/Composer.sol": {
+            //     version: "0.8.28",
+            //     settings: {
+            //         optimizer: {
+            //             enabled: true,
+            //             runs: 1_500,
+            //         },
+            //         evmVersion: "cancun",
+            //     },
+            // },
+            "contracts/1delta/composer/chains/telos-evm/Composer.sol": {
+                version: "0.8.28",
+                settings: {
+                    optimizer: {
+                        enabled: true,
+                        runs: 25_000,
+                    },
+                    evmVersion: "cancun",
+                },
+            },
+            // "contracts/1delta/composer/chains/morph/Composer.sol": {
+            //     version: "0.8.28",
+            //     settings: {
+            //         optimizer: {
+            //             enabled: true,
+            //             runs: 1_500,
+            //         },
+            //         evmVersion: "cancun",
+            //     },
+            // },
             "contracts/1delta/composer/chains/metis-andromeda/Composer.sol": {
                 version: "0.8.28",
                 settings: {

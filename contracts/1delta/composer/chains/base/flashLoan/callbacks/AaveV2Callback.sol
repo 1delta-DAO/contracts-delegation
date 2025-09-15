@@ -12,6 +12,7 @@ contract AaveV2FlashLoanCallback is Masks, DeltaErrors {
     // Aave v2s
     address private constant GRANARY = 0xB702cE183b4E1Faa574834715E5D4a6378D0eEd3;
     address private constant POLTER = 0x33CA62504cebAB919f0FCa94562413ee121A9798;
+    address private constant RADIANT_V2 = 0x30798cFe2CCa822321ceed7e6085e633aAbC492F;
 
     /**
      * @dev Aave V2 style flash loan callback
@@ -44,6 +45,7 @@ contract AaveV2FlashLoanCallback is Masks, DeltaErrors {
             switch and(UINT8_MASK, shr(88, firstWord))
             case 7 { pool := GRANARY }
             case 11 { pool := POLTER }
+            case 20 { pool := RADIANT_V2 }
             // We revert on any other id
             default {
                 mstore(0, INVALID_FLASH_LOAN)
