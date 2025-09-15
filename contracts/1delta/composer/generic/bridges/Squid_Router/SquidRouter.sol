@@ -90,20 +90,28 @@ contract SquidRouter is BaseUtils {
                 currentOffset := add(currentOffset, 61)
             }
 
-            // zero padding length
-            let padLen1 := and(add(mload(0x80), 31), not(31))
-            let padLen2 := and(add(mload(0xA0), 31), not(31))
-            let padLen3 := and(add(mload(0xC0), 31), not(31))
-            let padLen4 := and(add(mload(0xE0), 31), not(31))
-
             // offsets (for strings and bytes)
-            let off1 := 224 // 7 args, 7 * 32 = 224
-            let off2 := add(off1, add(32, padLen1))
-            let off3 := add(off2, add(32, padLen2))
-            let off4 := add(off3, add(32, padLen3))
+            let off1
+            let off2
+            let off3
+            let off4
+            let total
+            {
+                // zero padding length
+                let padLen1 := and(add(mload(0x80), 31), not(31))
+                let padLen2 := and(add(mload(0xA0), 31), not(31))
+                let padLen3 := and(add(mload(0xC0), 31), not(31))
+                let padLen4 := and(add(mload(0xE0), 31), not(31))
 
-            // 4 (selector) + 224 head + dynamic sections (padded lengths + 128)
-            let total := add(356, add(add(padLen1, padLen2), add(padLen3, padLen4)))
+                // offsets (for strings and bytes)
+                off1 := 224 // 7 args, 7 * 32 = 224
+                off2 := add(off1, add(32, padLen1))
+                off3 := add(off2, add(32, padLen2))
+                off4 := add(off3, add(32, padLen3))
+
+                // 4 (selector) + 224 head + dynamic sections (padded lengths + 128)
+                total := add(356, add(add(padLen1, padLen2), add(padLen3, padLen4)))
+            }
 
             let ptr := mload(0x40)
             mstore(ptr, 0x2147796000000000000000000000000000000000000000000000000000000000)
