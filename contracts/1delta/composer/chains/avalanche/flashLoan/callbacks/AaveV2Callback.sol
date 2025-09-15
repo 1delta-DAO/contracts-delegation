@@ -10,6 +10,7 @@ import {DeltaErrors} from "../../../../../shared/errors/Errors.sol";
  */
 contract AaveV2FlashLoanCallback is Masks, DeltaErrors {
     // Aave v2s
+    address private constant AAVE_V2 = 0x4F01AeD16D97E3aB5ab2B501154DC9bb0F1A5A2C;
     address private constant NEREUS = 0xB9257597EDdfA0eCaff04FF216939FBc31AAC026;
     address private constant GRANARY = 0xB702cE183b4E1Faa574834715E5D4a6378D0eEd3;
 
@@ -42,6 +43,7 @@ contract AaveV2FlashLoanCallback is Masks, DeltaErrors {
             // the initiator paramter the caller of flashLoan
             let pool
             switch and(UINT8_MASK, shr(88, firstWord))
+            case 0 { pool := AAVE_V2 }
             case 6 { pool := NEREUS }
             case 7 { pool := GRANARY }
             // We revert on any other id

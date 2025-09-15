@@ -66,23 +66,28 @@ contract SquidRouter is BaseUtils {
                 let enableExpress := and(UINT8_MASK, shr(88, gasRefundRecipient))
                 gasRefundRecipient := shr(96, gasRefundRecipient)
 
-                mstore(0x80, symbolLen)
-                mstore(0xA0, destLen)
-                mstore(0xC0, contractAddrLen)
-                mstore(0xE0, payloadLen)
-                mstore(0x100, amount)
-                mstore(0x120, nativeAmount)
-                mstore(0x140, gasRefundRecipient)
-                mstore(0x160, enableExpress)
-
-                currentOffset := add(currentOffset, 61)
-
-                if iszero(amount) {
+                // set and store amount
+                switch amount
+                // zero-> selfbalance
+                case 0 {
                     mstore(0x00, ERC20_BALANCE_OF)
                     mstore(0x04, address())
                     pop(staticcall(gas(), asset, 0x00, 0x24, 0x00, 0x20))
                     mstore(0x100, mload(0x00))
                 }
+                // provided amount
+                default { mstore(0x100, amount) }
+
+                mstore(0x80, symbolLen)
+                mstore(0xA0, destLen)
+                mstore(0xC0, contractAddrLen)
+                mstore(0xE0, payloadLen)
+                // mstore(0x100, amount)
+                mstore(0x120, nativeAmount)
+                mstore(0x140, gasRefundRecipient)
+                mstore(0x160, enableExpress)
+
+                currentOffset := add(currentOffset, 61)
             }
 
             // zero padding length
