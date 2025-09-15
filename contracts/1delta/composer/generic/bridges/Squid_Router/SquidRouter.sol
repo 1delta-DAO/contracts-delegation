@@ -151,8 +151,9 @@ contract SquidRouter is BaseUtils {
                 returndatacopy(0, 0, returndatasize())
                 revert(0, returndatasize())
             }
-        }
 
-        return currentOffset;
+            // set ptr to offset as return value
+            ptr := currentOffset
+        }
     }
 }
