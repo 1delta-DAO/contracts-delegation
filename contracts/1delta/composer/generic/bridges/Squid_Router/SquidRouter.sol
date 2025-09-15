@@ -118,43 +118,25 @@ contract SquidRouter is BaseUtils {
             mstore(add(head, 160), mload(0x140)) // gasRefundRecipient
             mstore(add(head, 192), mload(0x160)) // enableExpress
 
-            // bridgedTokenSymbol
-            {
-                let p := add(head, off1)
-                let l := mload(0x80)
+            function copyTo(_head, _at, offs, currOffs) -> newOffs {
+                let p := add(_head, offs)
+                let l := mload(_at)
                 mstore(p, l)
-                calldatacopy(add(p, 32), currentOffset, l)
-                currentOffset := add(currentOffset, l)
+                calldatacopy(add(p, 32), currOffs, l)
+                newOffs := add(currOffs, l)
             }
+
+            // bridgedTokenSymbol
+            currentOffset := copyTo(head, 0x80, off1, currentOffset)
 
             // destinationChain
-            {
-                let p := add(head, off2)
-                let l := mload(0xA0)
-                mstore(p, l)
-                calldatacopy(add(p, 32), currentOffset, l)
-                currentOffset := add(currentOffset, l)
-            }
+            currentOffset := copyTo(head, 0xA0, off2, currentOffset)
 
             // destinationAddress
-            {
-                let p := add(head, off3)
-                let l := mload(0xC0)
-                mstore(p, l)
-                calldatacopy(add(p, 32), currentOffset, l)
-                currentOffset := add(currentOffset, l)
-            }
+            currentOffset := copyTo(head, 0xC0, off3, currentOffset)
 
             // payload
-            {
-                let p := add(head, off4)
-                let l := mload(0xE0)
-                mstore(p, l)
-                calldatacopy(add(p, 32), currentOffset, l)
-                currentOffset := add(currentOffset, l)
-            }
-
-            mstore(0x40, add(ptr, total))
+            currentOffset := copyTo(head, 0xE0, off4, currentOffset)
 
             if iszero(call(gas(), gateway, mload(0x120), ptr, total, 0, 0)) {
                 returndatacopy(0, 0, returndatasize())
