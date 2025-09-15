@@ -2,7 +2,7 @@
 // npx hardhat verify --network arbitrum 0xfca11Db2b5DE60DF9a2C81233333a449983B4101 --contract contracts/1delta/composer/generic/CallForwarder.sol:CallForwarder 
 
 module.exports = [
-    "0x816EBC5cb8A5651C902Cb06659907A93E574Db0B", // impl
+    "0xCe434378adacC51d54312c872113D687Ac19B516", // impl
     '0x999999833d965c275A2C102a4Ebf222ca938546f', // owner
     "0x", // data
 ];
@@ -76,7 +76,7 @@ module.exports = [
 // npx hardhat verify --network mantle 0x8b3f4a85b6d29b7133f1609b2aab5d6b260b1e72 --contract contracts/1delta/composer/chains/mantle/Composer.sol:OneDeltaComposerMantle
 // npx hardhat verify --network mantle 0x5c019a146758287c614fe654caec1ba1caf05f4e --contract contracts/external-protocols/openzeppelin/proxy/transparent/TransparentUpgradeableProxy.sol:TransparentUpgradeableProxy  --constructor-args scripts/verify_fw.js
 
-// npx hardhat verify --network linea 0xf9438f2b1c63D8dAC24311256F5483D7f7575863 --contract contracts/1delta/composer/chains/linea/Composer.sol:OneDeltaComposerLinea
+// npx hardhat verify --network linea 0xCe434378adacC51d54312c872113D687Ac19B516 --contract contracts/1delta/composer/chains/linea/Composer.sol:OneDeltaComposerLinea
 // npx hardhat verify --network linea 0x816EBC5cb8A5651C902Cb06659907A93E574Db0B --contract contracts/external-protocols/openzeppelin/proxy/transparent/TransparentUpgradeableProxy.sol:TransparentUpgradeableProxy  --constructor-args scripts/verify_fw.js
 
 // npx hardhat verify --network blast 0xcB6Eb8df68153cebF60E1872273Ef52075a5C297 --contract contracts/1delta/composer/chains/blast/Composer.sol:OneDeltaComposerBlast
@@ -137,8 +137,8 @@ module.exports = [
 
 
 
-// npx hardhat verify --network xdc 0x4b5458BB47dCBC1a41B31b41e1a8773dE312BE9d --contract contracts/1delta/composer/chains/xdc/Composer.sol:OneDeltaComposerXdc
-// npx hardhat verify --network xdc 0xcb6eb8df68153cebf60e1872273ef52075a5c297 --contract contracts/external-protocols/openzeppelin/proxy/transparent/TransparentUpgradeableProxy.sol:TransparentUpgradeableProxy  --constructor-args scripts/verify_fw.js
+// npx hardhat verify --network xdc 0x8E24CfC19c6C00c524353CB8816f5f1c2F33c201 --contract contracts/1delta/composer/chains/xdc/Composer.sol:OneDeltaComposerXdc
+// npx hardhat verify --network xdc 0xcB6Eb8df68153cebF60E1872273Ef52075a5C297 --contract contracts/external-protocols/openzeppelin/proxy/transparent/TransparentUpgradeableProxy.sol:TransparentUpgradeableProxy  --constructor-args scripts/verify_fw.js
 
 
 
@@ -146,3 +146,13 @@ module.exports = [
 // npx hardhat verify --network cronos 0xcb6eb8df68153cebf60e1872273ef52075a5c297 --contract contracts/external-protocols/openzeppelin/proxy/transparent/TransparentUpgradeableProxy.sol:TransparentUpgradeableProxy  --constructor-args scripts/verify_fw.js
 
 // npx hardhat verify --network soneium 0x7a59ddbB76521E8982Fa3A08598C9a83b14A6C07 --contract contracts/1delta/composer/chains/soneium/Composer.sol:OneDeltaComposerSoneium
+// npx hardhat verify --network soneium 0x8E24CfC19c6C00c524353CB8816f5f1c2F33c201 --contract contracts/external-protocols/openzeppelin/proxy/transparent/TransparentUpgradeableProxy.sol:TransparentUpgradeableProxy  --constructor-args scripts/verify_fw.js
+
+
+
+// npx hardhat verify --network manta 0x8E24CfC19c6C00c524353CB8816f5f1c2F33c201 --contract contracts/1delta/composer/chains/manta-pacific/Composer.sol:OneDeltaComposerMantaPacific
+// npx hardhat verify --network manta 0xcb6eb8df68153cebf60e1872273ef52075a5c297 --contract contracts/external-protocols/openzeppelin/proxy/transparent/TransparentUpgradeableProxy.sol:TransparentUpgradeableProxy  --constructor-args scripts/verify_fw.js
+
+// npx hardhat verify --network morph 0x0bd7473CbBf81d9dD936c61117eD230d95006CA2 --contract contracts/1delta/composer/chains/morph/Composer.sol:OneDeltaComposerMorph
+// npx hardhat verify --network morph 0xcb6eb8df68153cebf60e1872273ef52075a5c297 --contract contracts/external-protocols/openzeppelin/proxy/transparent/TransparentUpgradeableProxy.sol:TransparentUpgradeableProxy  --constructor-args scripts/verify_fw.js
+

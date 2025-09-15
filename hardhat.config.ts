@@ -133,14 +133,56 @@ const config: HardhatUserConfig = {
                     browserURL: "https://katanascan.com/",
                 },
             },
+
+            {
+                network: "manta",
+                chainId: 169,
+                urls: {
+                    apiURL: "https://api.socialscan.io/manta-pacific/v1/explorer/command_api/contract",
+                    browserURL: "https://manta.socialscan.io//",
+                },
+            },
+            {
+                network: "xdc",
+                chainId: 50,
+                urls: {
+                    browserURL: "https://xdcscan.com/",
+                    apiURL: "https://api.etherscan.io/v2/api?chainid=50",
+                },
+            },
+            {
+                network: "soneium",
+                chainId: 1868,
+                urls: {
+                    apiURL: "https://soneium.blockscout.com/api",
+                    browserURL: "https://soneium.blockscout.com/",
+                },
+            },
+            {
+                network: "hyperevm",
+                chainId: 999,
+                urls: {
+                    browserURL: "https://xdcscan.com/",
+                    apiURL: "https://api.etherscan.io/v2/api?chainid=999",
+                },
+            },
+            {
+                network: "morph",
+                chainId: 2818,
+                urls: {
+                    apiURL: "https://explorer-api.morphl2.io/api",
+                    browserURL: "https://katanascan.com/",
+                },
+            },
         ],
+        // apiKey: process.env.ETHERSCAN_API_KEY ?? "",
         apiKey: {
             mantle: process.env.MANTLESCAN_API_KEY ?? "abc",
             arbitrumOne: process.env.ARBISCAN_API_KEY ?? "",
             mainnet: process.env.ETHERSCAN_API_KEY ?? "",
             polygon: process.env.POLYGONSCAN_API_KEY ?? "",
             taiko: process.env.TAIKOSCAN_API_KEY ?? "",
-            linea: process.env.LINEASCAN_API_KEY ?? "",
+            linea: process.env.ETHERSCAN_API_KEY ?? "",
             optimisticEthereum: process.env.OPSCAN_API_KEY ?? "",
             bnb: process.env.BSCSCAN_API_KEY ?? "",
             bsc: process.env.BSCSCAN_API_KEY ?? "",
@@ -154,9 +196,12 @@ const config: HardhatUserConfig = {
             hemi: "XX",
             berachain: "XX",
             soneium: "XX",
-            xdc: "XX",
+            xdc: process.env.ETHERSCAN_API_KEY ?? "",
+            morph: "XX",
+            manta: "XX",
             cronos: "XX",
             katana: process.env.ETHERSCAN_API_KEY ?? "",
+            hyperevm: process.env.ETHERSCAN_API_KEY ?? "",
             core: process.env.CORESCAN_API_KEY ?? "",
             sonic: process.env.SONICSCAN_API_KEY ?? "",
             scroll: process.env.SCROLLSCAN_API_KEY ?? "",
