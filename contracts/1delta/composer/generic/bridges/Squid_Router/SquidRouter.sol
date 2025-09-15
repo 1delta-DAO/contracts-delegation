@@ -46,9 +46,9 @@ contract SquidRouter is BaseUtils {
      * | 61+s1+dl     | al             | destinationAddress                         |
      * | 61+s1+dl+al  | pl             | payload                                    |
      */
-    function _squidRouterBridgeCall(address gateway, address asset, uint256 currentOffset) private returns (uint256) {
+    function _squidRouterBridgeCall(address gateway, address asset, uint256 currentOffset) private returns (uint256 ptr) {
         assembly {
-            if lt(mload(0x40), 0x300) { mstore(0x40, 0x300) }
+            ptr := mload(0x40)
             {
                 let firstThenAmount := calldataload(currentOffset)
                 let symbolLen := shr(240, firstThenAmount)
@@ -73,19 +73,19 @@ contract SquidRouter is BaseUtils {
                     mstore(0x00, ERC20_BALANCE_OF)
                     mstore(0x04, address())
                     pop(staticcall(gas(), asset, 0x00, 0x24, 0x00, 0x20))
-                    mstore(0x100, mload(0x00))
+                    mstore(add(ptr, 128), mload(0x00))
                 }
                 // provided amount
-                default { mstore(0x100, firstThenAmount) }
+                default { mstore(add(ptr, 128), firstThenAmount) }
 
-                mstore(0x80, symbolLen)
-                mstore(0xA0, destLen)
-                mstore(0xC0, contractAddrLen)
-                mstore(0xE0, payloadLen)
-                // mstore(0x100, amount)
-                mstore(0x120, nativeAmount)
-                mstore(0x140, gasRefundRecipient)
-                mstore(0x160, enableExpress)
+                mstore(ptr, symbolLen)
+                mstore(add(ptr, 32), destLen)
+                mstore(add(ptr, 64), contractAddrLen)
+                mstore(add(ptr, 96), payloadLen)
+                // mstore(add(ptr, 128), amount)
+                mstore(add(ptr, 160), nativeAmount)
+                mstore(add(ptr, 192), gasRefundRecipient)
+                mstore(add(ptr, 224), enableExpress)
 
                 currentOffset := add(currentOffset, 61)
             }
@@ -98,10 +98,10 @@ contract SquidRouter is BaseUtils {
             let total
             {
                 // zero padding length
-                let padLen1 := and(add(mload(0x80), 31), not(31))
-                let padLen2 := and(add(mload(0xA0), 31), not(31))
-                let padLen3 := and(add(mload(0xC0), 31), not(31))
-                let padLen4 := and(add(mload(0xE0), 31), not(31))
+                let padLen1 := and(add(mload(ptr), 31), not(31))
+                let padLen2 := and(add(mload(add(ptr, 32)), 31), not(31))
+                let padLen3 := and(add(mload(add(ptr, 64)), 31), not(31))
+                let padLen4 := and(add(mload(add(ptr, 96)), 31), not(31))
 
                 // offsets (for strings and bytes)
                 off1 := 224 // 7 args, 7 * 32 = 224
@@ -113,18 +113,17 @@ contract SquidRouter is BaseUtils {
                 total := add(356, add(add(padLen1, padLen2), add(padLen3, padLen4)))
             }
 
-            let ptr := mload(0x40)
-            mstore(ptr, 0x2147796000000000000000000000000000000000000000000000000000000000)
-            let head := add(ptr, 4)
+            mstore(add(ptr, 256), 0x2147796000000000000000000000000000000000000000000000000000000000)
+            let head := add(ptr, 260)
 
             // head (7 args)
-            mstore(add(head, 0), off1)
-            mstore(add(head, 32), mload(0x100)) // amount
+            mstore(head, off1)
+            mstore(add(head, 32), mload(add(ptr, 128))) // amount
             mstore(add(head, 64), off2)
             mstore(add(head, 96), off3)
             mstore(add(head, 128), off4)
-            mstore(add(head, 160), mload(0x140)) // gasRefundRecipient
-            mstore(add(head, 192), mload(0x160)) // enableExpress
+            mstore(add(head, 160), mload(add(ptr, 192))) // gasRefundRecipient
+            mstore(add(head, 192), mload(add(ptr, 224))) // enableExpress
 
             function copyTo(_head, _at, offs, currOffs) -> newOffs {
                 let p := add(_head, offs)
@@ -135,18 +134,20 @@ contract SquidRouter is BaseUtils {
             }
 
             // bridgedTokenSymbol
-            currentOffset := copyTo(head, 0x80, off1, currentOffset)
+            currentOffset := copyTo(head, ptr, off1, currentOffset)
 
             // destinationChain
-            currentOffset := copyTo(head, 0xA0, off2, currentOffset)
+            currentOffset := copyTo(head, add(ptr, 32), off2, currentOffset)
 
             // destinationAddress
-            currentOffset := copyTo(head, 0xC0, off3, currentOffset)
+            currentOffset := copyTo(head, add(ptr, 64), off3, currentOffset)
 
             // payload
-            currentOffset := copyTo(head, 0xE0, off4, currentOffset)
+            currentOffset := copyTo(head, add(ptr, 96), off4, currentOffset)
 
-            if iszero(call(gas(), gateway, mload(0x120), ptr, total, 0, 0)) {
+            mstore(0x40, add(add(ptr, 256), total))
+
+            if iszero(call(gas(), gateway, mload(add(ptr, 160)), add(ptr, 256), total, 0, 0)) {
                 returndatacopy(0, 0, returndatasize())
                 revert(0, returndatasize())
             }
