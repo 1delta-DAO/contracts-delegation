@@ -242,6 +242,62 @@ library CalldataLib {
         return bridgeData;
     }
 
+    function encodeSquidRouterCall(
+        address asset,
+        address gateway,
+        bytes memory bridgedTokenSymbol,
+        uint256 amount,
+        bytes memory destinationChain,
+        bytes memory destinationAddress,
+        bytes memory payload,
+        address gasRefundRecipient,
+        bool enableExpress,
+        uint256 nativeAmount
+    )
+        internal
+        pure
+        returns (bytes memory)
+    {
+        bytes memory partialData =
+            encodeSquidRouterCallPartial(asset, gateway, bridgedTokenSymbol, amount, destinationChain, destinationAddress, payload);
+        return abi.encodePacked(
+            partialData,
+            uint128(nativeAmount),
+            gasRefundRecipient,
+            uint8(enableExpress ? 1 : 0),
+            bridgedTokenSymbol,
+            destinationChain,
+            destinationAddress,
+            payload
+        );
+    }
+
+    function encodeSquidRouterCallPartial(
+        address asset,
+        address gateway,
+        bytes memory bridgedTokenSymbol,
+        uint256 amount,
+        bytes memory destinationChain,
+        bytes memory destinationAddress,
+        bytes memory payload
+    )
+        internal
+        pure
+        returns (bytes memory)
+    {
+        return abi.encodePacked(
+            uint8(ComposerCommands.BRIDGING),
+            uint8(BridgeIds.SQUID_ROUTER),
+            gateway,
+            asset,
+            uint16(bridgedTokenSymbol.length),
+            uint16(destinationChain.length),
+            uint16(destinationAddress.length),
+            uint16(payload.length),
+            uint128(amount)
+        );
+    }
+
     //
     function encodePermit2TransferFrom(address token, address receiver, uint256 amount) internal pure returns (bytes memory) {
         return abi.encodePacked(uint8(ComposerCommands.TRANSFERS), uint8(TransferIds.PERMIT2_TRANSFER_FROM), token, receiver, uint128(amount));

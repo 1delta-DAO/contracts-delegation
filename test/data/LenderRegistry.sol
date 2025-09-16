@@ -5048,7 +5048,9 @@ contract LenderRegistry {
 }
 
 library Chains {
+    string internal constant TELOS_EVM_MAINNET = "TELOS_EVM_MAINNET";
     string internal constant CRONOS_MAINNET = "CRONOS_MAINNET";
+    string internal constant MORPH = "MORPH";
     string internal constant ETHEREUM_MAINNET = "ETHEREUM_MAINNET";
     string internal constant OP_MAINNET = "OP_MAINNET";
     string internal constant BNB_SMART_CHAIN_MAINNET = "BNB_SMART_CHAIN_MAINNET";

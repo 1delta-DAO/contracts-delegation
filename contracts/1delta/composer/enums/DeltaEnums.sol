@@ -94,4 +94,5 @@ library ComposerCommands {
 library BridgeIds {
     uint256 internal constant STARGATE_V2 = 0x00;
     uint256 internal constant ACROSS = 0x0A;
+    uint256 internal constant SQUID_ROUTER = 0x14;
 }
