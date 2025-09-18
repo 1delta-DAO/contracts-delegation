@@ -167,6 +167,14 @@ const config: HardhatUserConfig = {
                 },
             },
             {
+                network: "cronos",
+                chainId: 25,
+                urls: {
+                    browserURL: "https://xdcscan.com/",
+                    apiURL: "https://api.etherscan.io/v2/api?chainid=25",
+                },
+            },
+            {
                 network: "morph",
                 chainId: 2818,
                 urls: {
@@ -199,7 +207,7 @@ const config: HardhatUserConfig = {
             xdc: process.env.ETHERSCAN_API_KEY ?? "",
             morph: "XX",
             manta: "XX",
-            cronos: "XX",
+            cronos: process.env.ETHERSCAN_API_KEY ?? "",
             katana: process.env.ETHERSCAN_API_KEY ?? "",
             hyperevm: process.env.ETHERSCAN_API_KEY ?? "",
             core: process.env.CORESCAN_API_KEY ?? "",
@@ -428,7 +436,7 @@ const config: HardhatUserConfig = {
             live: true,
         },
         telos: {
-            url: "https://rpc.telos.net",
+            url: "https://1rpc.io/telos/evm",
             accounts,
             chainId: 40,
             live: true,

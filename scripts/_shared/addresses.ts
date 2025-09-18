@@ -3,7 +3,7 @@ import {Chain} from "@1delta/asset-registry";
 export const DEPLOY_FACTORY = "0x16c4Dc0f662E2bEceC91fC5E7aeeC6a25684698A";
 
 // forwarder: also deployed on all those chains
-export const FORWARDER = "0xfCa1154C643C32638AEe9a43eeE7f377f515c801";
+export const FORWARDER = "0xfCa11d8c816f8E52F55D5d9858dEEe78F152d903";
 
 export const COMPOSER_LOGICS = {
     [Chain.ARBITRUM_ONE]: "0xBB6Aa6200127EAe67ee4DA7B01CbCDec0a9f0E0e",

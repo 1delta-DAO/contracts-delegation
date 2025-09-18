@@ -1,5 +1,5 @@
 
-// npx hardhat verify --network arbitrum 0xfca11Db2b5DE60DF9a2C81233333a449983B4101 --contract contracts/1delta/composer/generic/CallForwarder.sol:CallForwarder 
+// npx hardhat verify --network arbitrum 0xfCa1154C643C32638AEe9a43eeE7f377f515c801 --contract contracts/1delta/composer/generic/CallForwarder.sol:CallForwarder 
 
 module.exports = [
     "0xCe434378adacC51d54312c872113D687Ac19B516", // impl
@@ -156,3 +156,6 @@ module.exports = [
 // npx hardhat verify --network morph 0x0bd7473CbBf81d9dD936c61117eD230d95006CA2 --contract contracts/1delta/composer/chains/morph/Composer.sol:OneDeltaComposerMorph
 // npx hardhat verify --network morph 0xcb6eb8df68153cebf60e1872273ef52075a5c297 --contract contracts/external-protocols/openzeppelin/proxy/transparent/TransparentUpgradeableProxy.sol:TransparentUpgradeableProxy  --constructor-args scripts/verify_fw.js
 
+
+// npx hardhat verify --network cronos 0x8E24CfC19c6C00c524353CB8816f5f1c2F33c201 --contract contracts/1delta/composer/chains/cronos/Composer.sol:OneDeltaComposerCronos
+// npx hardhat verify --network cronos 0xcb6eb8df68153cebf60e1872273ef52075a5c297 --contract contracts/external-protocols/openzeppelin/proxy/transparent/TransparentUpgradeableProxy.sol:TransparentUpgradeableProxy  --constructor-args scripts/verify_fw.js
