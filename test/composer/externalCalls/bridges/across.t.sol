@@ -40,7 +40,7 @@ contract AcrossTest is BaseTest {
     uint32 public FEE_PERCENTAGE = 10e7; // 10% (100% is 1e9)
 
     function setUp() public {
-        rpcOverrides[Chains.ARBITRUM_ONE] = "https://1rpc.io/arb";
+        rpcOverrides[Chains.ARBITRUM_ONE] = "https://api.zan.top/arb-one";
 
         _init(Chains.ARBITRUM_ONE, 0, true);
 
@@ -64,6 +64,7 @@ contract AcrossTest is BaseTest {
 
     function test_across_bridge_token_balance() public {
         bytes memory message = new bytes(0);
+        uint32 deadline = 1800;
 
         bytes memory forwarderCalldata = abi.encodePacked(
             CalldataLib.encodeApprove(USDC, SPOKE_POOL),
@@ -77,6 +78,7 @@ contract AcrossTest is BaseTest {
                 FEE_PERCENTAGE,
                 POLYGON_CHAIN_ID,
                 bytes32(uint256(uint160(user))),
+                deadline,
                 message
             ),
             CalldataLib.encodeSweep(USDC, user, 0, SweepType.VALIDATE)
@@ -99,6 +101,7 @@ contract AcrossTest is BaseTest {
 
     function test_across_bridge_token_amount() public {
         bytes memory message = hex"abababff";
+        uint32 deadline = 1800;
 
         bytes memory forwarderCalldata = abi.encodePacked(
             CalldataLib.encodeApprove(USDC, SPOKE_POOL),
@@ -112,6 +115,7 @@ contract AcrossTest is BaseTest {
                 FEE_PERCENTAGE,
                 POLYGON_CHAIN_ID,
                 bytes32(uint256(uint160(user))),
+                deadline,
                 message
             ),
             //CalldataLib.encodeApprove(WETH9_arb, SPOKE_POOL),
@@ -139,6 +143,7 @@ contract AcrossTest is BaseTest {
     function test_across_bridge_native_balance() public {
         uint256 eth_amount = 1 ether;
         uint128 fee = 0.001 ether;
+        uint32 deadline = 1800;
 
         bytes memory message = new bytes(0);
 
@@ -155,6 +160,7 @@ contract AcrossTest is BaseTest {
                 FEE_PERCENTAGE,
                 POLYGON_CHAIN_ID,
                 bytes32(uint256(uint160(user))),
+                deadline,
                 message
             ),
             CalldataLib.encodeSweep(address(0), user, 0, SweepType.VALIDATE) // sweep any remaining ETH
@@ -175,7 +181,7 @@ contract AcrossTest is BaseTest {
     function test_across_bridge_native_amount() public {
         uint256 eth_amount = 1 ether;
         uint128 fee = 0.001 ether;
-
+        uint32 deadline = 1800;
         bytes memory message = new bytes(0);
 
         deal(address(composer), eth_amount);
@@ -191,6 +197,7 @@ contract AcrossTest is BaseTest {
                 FEE_PERCENTAGE,
                 POLYGON_CHAIN_ID,
                 bytes32(uint256(uint160(user))),
+                deadline,
                 message
             ),
             CalldataLib.encodeSweep(address(0), user, 0, SweepType.VALIDATE) // sweep any remaining ETH
@@ -211,7 +218,7 @@ contract AcrossTest is BaseTest {
     function test_across_bridge_validate_params() public {
         uint256 eth_amount = 1 ether;
         uint128 fee = 0.001 ether;
-
+        uint32 deadline = 1800;
         bytes memory message = hex"1de17a0000abcdef0000";
 
         deal(address(composer), eth_amount);
@@ -222,6 +229,7 @@ contract AcrossTest is BaseTest {
             bytes32(uint256(uint160(WETH))),
             eth_amount,
             POLYGON_CHAIN_ID,
+            deadline,
             message
         );
 
@@ -236,6 +244,7 @@ contract AcrossTest is BaseTest {
                 FEE_PERCENTAGE,
                 POLYGON_CHAIN_ID,
                 bytes32(uint256(uint160(user))),
+                deadline,
                 message
             ),
             CalldataLib.encodeSweep(address(0), user, 0, SweepType.VALIDATE) // sweep any remaining ETH
@@ -262,6 +271,7 @@ contract mockSpokePool {
         bytes32 _outputToken,
         uint256 _inputAmount,
         uint256 _destinationChainId,
+        uint32 _fillDeadline,
         bytes memory _message
     ) {
         depositor = _depositor;
@@ -270,6 +280,7 @@ contract mockSpokePool {
         outputToken = _outputToken;
         inputAmount = _inputAmount;
         destinationChainId = _destinationChainId;
+        fillDeadline = _fillDeadline;
         message = keccak256(_message);
     }
 
@@ -279,6 +290,7 @@ contract mockSpokePool {
     bytes32 public outputToken;
     uint256 public inputAmount;
     uint256 public destinationChainId;
+    uint32 public fillDeadline;
     bytes32 public message;
 
     function deposit(
@@ -299,6 +311,9 @@ contract mockSpokePool {
         payable
         returns (bytes memory)
     {
+        // check fill deadline
+        require(_fillDeadline == fillDeadline + block.timestamp, "fill deadline mismatch");
+
         require(_depositor == depositor, "depositor mismatch");
         require(_recipient == recipient, "recipient mismatch");
         require(_inputToken == inputToken, "inputToken mismatch");

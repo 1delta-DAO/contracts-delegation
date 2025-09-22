@@ -182,6 +182,7 @@ library CalldataLib {
         uint32 feePercentage,
         uint32 destinationChainId,
         bytes32 receiver,
+        uint32 deadline,
         bytes memory message
     )
         internal
@@ -200,6 +201,7 @@ library CalldataLib {
             feePercentage,
             destinationChainId,
             receiver,
+            deadline,
             uint16(message.length),
             message
         );
@@ -217,6 +219,7 @@ library CalldataLib {
         uint32 feePercentage,
         uint32 destinationChainId,
         bytes32 receiver,
+        uint32 deadline,
         bytes memory message
     )
         internal
@@ -235,6 +238,7 @@ library CalldataLib {
             feePercentage,
             destinationChainId,
             receiver,
+            deadline,
             uint16(message.length),
             message
         );
