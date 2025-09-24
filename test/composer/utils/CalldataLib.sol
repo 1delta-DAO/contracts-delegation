@@ -298,6 +298,20 @@ library CalldataLib {
         );
     }
 
+    function encodeGasZipBridge(
+        address gasZipRouter,
+        address receiver,
+        uint256 amount,
+        uint256 destinationChainId
+    )
+        internal
+        pure
+        returns (bytes memory)
+    {
+        return
+            abi.encodePacked(uint8(ComposerCommands.BRIDGING), uint8(BridgeIds.GASZIP), gasZipRouter, receiver, uint128(amount), destinationChainId);
+    }
+
     //
     function encodePermit2TransferFrom(address token, address receiver, uint256 amount) internal pure returns (bytes memory) {
         return abi.encodePacked(uint8(ComposerCommands.TRANSFERS), uint8(TransferIds.PERMIT2_TRANSFER_FROM), token, receiver, uint128(amount));
