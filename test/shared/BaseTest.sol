@@ -20,6 +20,7 @@ contract BaseTest is Test {
     mapping(string => string) internal rpcOverrides;
 
     constructor() Test() {
+        rpcOverrides[Chains.ETHEREUM_MAINNET] = "https://ethereum.therpc.io";
         rpcOverrides[Chains.ARBITRUM_ONE] = "https://arbitrum.drpc.org";
         rpcOverrides[Chains.BNB_SMART_CHAIN_MAINNET] = "https://bsc-dataseed1.binance.org/";
         rpcOverrides[Chains.OP_MAINNET] = "https://optimism.api.onfinality.io/public";
