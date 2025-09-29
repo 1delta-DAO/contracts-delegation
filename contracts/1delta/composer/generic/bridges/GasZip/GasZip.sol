@@ -40,7 +40,7 @@ contract GasZip is BaseUtils {
             if eq(destinatinChainId, chainid()) { revertWith(INVALID_DESTINATION) }
 
             // check that receiver is nonzero
-            if eq(receiver, 0) { revertWith(INVALID_RECEIVER) }
+            if iszero(receiver) { revertWith(INVALID_RECEIVER) }
 
             let ptr := mload(0x40)
             // deposit(uint256 destinationChains, bytes32 to)
