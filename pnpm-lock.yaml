@@ -15,8 +15,8 @@ importers:
         specifier: ^0.0.8
         version: 0.0.8
       '@1delta/dex-registry':
-        specifier: ^0.0.80
-        version: 0.0.80
+        specifier: ^0.0.83
+        version: 0.0.83
       '@1delta/lender-registry':
         specifier: ^0.0.6
         version: 0.0.6
@@ -210,12 +210,8 @@ packages:
     resolution: {integrity: sha512-XWARNJ1kI7OzW7ZpxDS2RiceDhtNUJuIaGuiX3GK9aaVW8izYqDciz+jpwaHxwIgpgxIKsBIkBbhllWb2qFlrA==}
     engines: {node: '>=20'}
 
-  '@1delta/dex-registry@0.0.80':
-    resolution: {integrity: sha512-lnQmDg/S0TufZu4BmORG7iWFxJSuAzYz8kz8eavWjVS0iPPUvQVUUeSVdQ76WmSIDOtUMXeZWkiVrxbbDQv2mA==}
-    engines: {node: '>=20'}
-
-  '@1delta/lender-registry@0.0.5':
-    resolution: {integrity: sha512-/PsE+4bs5BWj2KI0XGd/h2YRgCAUIgnwtteYwAKlG/9naj1w8y2BuDFNUMcNUErCzmDz0G+XUBqM6sPVs/wNcA==}
+  '@1delta/dex-registry@0.0.83':
+    resolution: {integrity: sha512-CdCOY5XpaQreSJFs/8Zgl5I4ATydhYem9XANFkUf72xiZ0dRliqcC8xTXeoSiYQu8SGjiyhqO8/YL+MHAqGfzw==}
     engines: {node: '>=20'}
 
   '@1delta/lender-registry@0.0.6':
@@ -6870,12 +6866,10 @@ snapshots:
 
   '@1delta/data-sdk@0.0.8': {}
 
-  '@1delta/dex-registry@0.0.80':
+  '@1delta/dex-registry@0.0.83':
     dependencies:
       '@1delta/chain-registry': 0.0.2
-      '@1delta/lender-registry': 0.0.5
-
-  '@1delta/lender-registry@0.0.5': {}
+      '@1delta/lender-registry': 0.0.6
 
   '@1delta/lender-registry@0.0.6': {}
 

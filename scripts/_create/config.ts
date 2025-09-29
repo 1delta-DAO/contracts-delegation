@@ -34,6 +34,7 @@ export const CREATE_CHAIN_IDS = [
     Chain.MANTA_PACIFIC_MAINNET,
     Chain.TELOS_EVM_MAINNET,
     Chain.PLASMA_MAINNET,
+    Chain.MOONBEAM,
 ];
 
 export function sortForks<T>(arr: T[], field: keyof T) {

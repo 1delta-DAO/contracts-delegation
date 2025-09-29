@@ -32,6 +32,7 @@ import {DeployFactory__factory} from "../../types";
 // manta
 // telos
 // morph
+// moonbeam
 
 async function main() {
     const accounts = await ethers.getSigners();

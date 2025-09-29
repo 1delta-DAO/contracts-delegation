@@ -183,6 +183,14 @@ const config: HardhatUserConfig = {
                 },
             },
             {
+                network: "moonbeam",
+                chainId: 1284,
+                urls: {
+                    browserURL: "https://xdcscan.com/",
+                    apiURL: "https://api.etherscan.io/v2/api?chainid=1284",
+                },
+            },
+            {
                 network: "plasma",
                 chainId: 9745,
                 urls: {
@@ -215,6 +223,7 @@ const config: HardhatUserConfig = {
             xdai: process.env.GNOSISSCAN_API_KEY ?? "",
             blast: process.env.BLASTSCAN_API_KEY ?? "",
             base: process.env.BASESCAN_API_KEY ?? "",
+            moonbeam: process.env.ETHERSCAN_API_KEY ?? "",
             metis: "XX",
             avalanche: "XX",
             mode: "XX",
@@ -287,6 +296,11 @@ const config: HardhatUserConfig = {
             url: "https://rpc.taiko.xyz",
             accounts,
             chainId: 167000,
+        },
+        moonbeam: {
+            url: "https://rpc.api.moonbeam.network",
+            accounts,
+            chainId: 1284,
         },
         moonbase: {
             url: "https://rpc.testnet.moonbeam.network",
