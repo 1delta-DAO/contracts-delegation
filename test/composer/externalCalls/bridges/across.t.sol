@@ -64,7 +64,7 @@ contract AcrossTest is BaseTest {
 
     function test_across_bridge_token_balance() public {
         bytes memory message = new bytes(0);
-        uint32 deadline = 1800;
+        uint32 deadline = uint32(block.timestamp + 1800);
 
         bytes memory forwarderCalldata = abi.encodePacked(
             CalldataLib.encodeApprove(USDC, SPOKE_POOL),
@@ -101,7 +101,7 @@ contract AcrossTest is BaseTest {
 
     function test_across_bridge_token_amount() public {
         bytes memory message = hex"abababff";
-        uint32 deadline = 1800;
+        uint32 deadline = uint32(block.timestamp + 1800);
 
         bytes memory forwarderCalldata = abi.encodePacked(
             CalldataLib.encodeApprove(USDC, SPOKE_POOL),
@@ -143,7 +143,7 @@ contract AcrossTest is BaseTest {
     function test_across_bridge_native_balance() public {
         uint256 eth_amount = 1 ether;
         uint128 fee = 0.001 ether;
-        uint32 deadline = 1800;
+        uint32 deadline = uint32(block.timestamp + 1800);
 
         bytes memory message = new bytes(0);
 
@@ -181,7 +181,8 @@ contract AcrossTest is BaseTest {
     function test_across_bridge_native_amount() public {
         uint256 eth_amount = 1 ether;
         uint128 fee = 0.001 ether;
-        uint32 deadline = 1800;
+        uint32 deadline = uint32(block.timestamp + 1800);
+
         bytes memory message = new bytes(0);
 
         deal(address(composer), eth_amount);
@@ -218,7 +219,8 @@ contract AcrossTest is BaseTest {
     function test_across_bridge_validate_params() public {
         uint256 eth_amount = 1 ether;
         uint128 fee = 0.001 ether;
-        uint32 deadline = 1800;
+        uint32 deadline = uint32(block.timestamp + 1800);
+
         bytes memory message = hex"1de17a0000abcdef0000";
 
         deal(address(composer), eth_amount);
@@ -312,7 +314,7 @@ contract mockSpokePool {
         returns (bytes memory)
     {
         // check fill deadline
-        require(_fillDeadline == fillDeadline + block.timestamp, "fill deadline mismatch");
+        require(_fillDeadline == fillDeadline, "fill deadline mismatch");
 
         require(_depositor == depositor, "depositor mismatch");
         require(_recipient == recipient, "recipient mismatch");
