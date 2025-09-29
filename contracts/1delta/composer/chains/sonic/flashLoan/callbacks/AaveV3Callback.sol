@@ -14,7 +14,6 @@ contract AaveV3FlashLoanCallback is Masks, DeltaErrors {
     address private constant AVALON = 0x974E2B16ddbF0ae6F78b4534353c2871213f2Dc9;
     address private constant AVALON_USDA = 0xD33Ee43551167cdd15Ef9CF87ceecC0fF69Cc922;
     address private constant AVALON_BEETS = 0x6CCE1BC3fe54C9B1915e5f01ee076E4c4C3Cdd19;
-    address private constant MAGSIN = 0x73B635843352aF89278bDe2213866C457C94b271;
 
     /**
      * @dev Aave V3 style flash loan callback
@@ -48,7 +47,6 @@ contract AaveV3FlashLoanCallback is Masks, DeltaErrors {
             case 50 { pool := AVALON }
             case 55 { pool := AVALON_USDA }
             case 61 { pool := AVALON_BEETS }
-            case 84 { pool := MAGSIN }
             // We revert on any other id
             default {
                 mstore(0, INVALID_FLASH_LOAN)

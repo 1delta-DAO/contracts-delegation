@@ -1,0 +1,11 @@
+{
+  "lib/base64": {
+    "rev": "dcbf852ba545b3d15de0ac0ef88dce934c090c8e"
+  },
+  "lib/forge-std": {
+    "rev": "bf909b22fa55e244796dfa920c9639fdffa1c545"
+  },
+  "lib/openzeppelin-contracts": {
+    "rev": "9586aaf35241daf4b17e4858bf7c86edbb4b7247"
+  }
+}

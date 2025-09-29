@@ -9,17 +9,17 @@ importers:
   .:
     dependencies:
       '@1delta/asset-registry':
-        specifier: ^0.0.192
-        version: 0.0.192
+        specifier: ^0.0.193
+        version: 0.0.193
       '@1delta/data-sdk':
         specifier: ^0.0.8
         version: 0.0.8
       '@1delta/dex-registry':
-        specifier: ^0.0.79
-        version: 0.0.79
+        specifier: ^0.0.80
+        version: 0.0.80
       '@1delta/lender-registry':
-        specifier: ^0.0.5
-        version: 0.0.5
+        specifier: ^0.0.6
+        version: 0.0.6
       '@1delta/margin-fetcher':
         specifier: ^0.0.36
         version: 0.0.36
@@ -198,24 +198,28 @@ importers:
 
 packages:
 
-  '@1delta/asset-registry@0.0.192':
-    resolution: {integrity: sha512-tHlaOMI/QMnfnmkQ/rMc9CDV1z2TlO+PISqkZPrZwUCcqIzWUGrbKRL0sl9p+kE4dVVjoz6IzAbFuqQQjq3BuA==}
+  '@1delta/asset-registry@0.0.193':
+    resolution: {integrity: sha512-ZFvSWFR9RXUW94c+MzZvL6iIb4HiHoflsBK+l28CFG6ww/ZHa1GuoslVqqMBnqzTD8us7IYR2k7/YaDlG90ikg==}
     engines: {node: '>=20'}
 
-  '@1delta/chain-registry@0.0.1':
-    resolution: {integrity: sha512-7ubiYSwA4t3MTb1y3Pv7Cslk/nzDSMT2AU11DBhEY3WZD1zjm1KlDC7mujI1rDEsZ8rrOHPBo/my1m/RpxWmbw==}
+  '@1delta/chain-registry@0.0.2':
+    resolution: {integrity: sha512-zF0SxthRT3sQQ6evRR3TYqBJCKddfWuIeS2aFvsTVCKxNYGhlvY0O+PvXZElPFXiNgkWbTazuCLgQDCmnlJvYA==}
     engines: {node: '>=20'}
 
   '@1delta/data-sdk@0.0.8':
     resolution: {integrity: sha512-XWARNJ1kI7OzW7ZpxDS2RiceDhtNUJuIaGuiX3GK9aaVW8izYqDciz+jpwaHxwIgpgxIKsBIkBbhllWb2qFlrA==}
     engines: {node: '>=20'}
 
-  '@1delta/dex-registry@0.0.79':
-    resolution: {integrity: sha512-FeSc+Fm7Sn9fsQHPeRN7JnHyAUeUMt2000wGRe2gsXvsLV5GcV78erO6/sbCAzRwoYuZcEuGOniu6xV6qWpNsw==}
+  '@1delta/dex-registry@0.0.80':
+    resolution: {integrity: sha512-lnQmDg/S0TufZu4BmORG7iWFxJSuAzYz8kz8eavWjVS0iPPUvQVUUeSVdQ76WmSIDOtUMXeZWkiVrxbbDQv2mA==}
     engines: {node: '>=20'}
 
   '@1delta/lender-registry@0.0.5':
     resolution: {integrity: sha512-/PsE+4bs5BWj2KI0XGd/h2YRgCAUIgnwtteYwAKlG/9naj1w8y2BuDFNUMcNUErCzmDz0G+XUBqM6sPVs/wNcA==}
+    engines: {node: '>=20'}
+
+  '@1delta/lender-registry@0.0.6':
+    resolution: {integrity: sha512-3T+Tf9EtyB9vnz99rksP48E0AroxUcsdzZNMo08oqGusdpLY2cvV4BJ9+HN7xu6h5whPht3YQ2Czw3s0J1O+NQ==}
     engines: {node: '>=20'}
 
   '@1delta/margin-fetcher@0.0.36':
@@ -6860,18 +6864,20 @@ packages:
 
 snapshots:
 
-  '@1delta/asset-registry@0.0.192': {}
+  '@1delta/asset-registry@0.0.193': {}
 
-  '@1delta/chain-registry@0.0.1': {}
+  '@1delta/chain-registry@0.0.2': {}
 
   '@1delta/data-sdk@0.0.8': {}
 
-  '@1delta/dex-registry@0.0.79':
+  '@1delta/dex-registry@0.0.80':
     dependencies:
-      '@1delta/chain-registry': 0.0.1
+      '@1delta/chain-registry': 0.0.2
       '@1delta/lender-registry': 0.0.5
 
   '@1delta/lender-registry@0.0.5': {}
+
+  '@1delta/lender-registry@0.0.6': {}
 
   '@1delta/margin-fetcher@0.0.36': {}
 
@@ -7712,7 +7718,7 @@ snapshots:
     dependencies:
       '@ledgerhq/cryptoassets': 5.53.0
       '@ledgerhq/errors': 5.50.0
-      '@ledgerhq/hw-transport': 5.26.0
+      '@ledgerhq/hw-transport': 5.51.1
       bignumber.js: 9.3.1
       rlp: 2.2.7
 
@@ -7729,7 +7735,7 @@ snapshots:
     dependencies:
       '@ledgerhq/devices': 5.51.1
       '@ledgerhq/errors': 5.50.0
-      '@ledgerhq/hw-transport': 5.26.0
+      '@ledgerhq/hw-transport': 5.51.1
       '@ledgerhq/hw-transport-node-hid-noevents': 5.51.1
       '@ledgerhq/logs': 5.50.0
       lodash: 4.17.21
@@ -7740,7 +7746,7 @@ snapshots:
   '@ledgerhq/hw-transport-u2f@5.26.0':
     dependencies:
       '@ledgerhq/errors': 5.50.0
-      '@ledgerhq/hw-transport': 5.26.0
+      '@ledgerhq/hw-transport': 5.51.1
       '@ledgerhq/logs': 5.50.0
       u2f-api: 0.2.7
 
@@ -7755,7 +7761,6 @@ snapshots:
       '@ledgerhq/devices': 5.51.1
       '@ledgerhq/errors': 5.50.0
       events: 3.3.0
-    optional: true
 
   '@ledgerhq/logs@5.50.0': {}
 
@@ -15717,7 +15722,7 @@ snapshots:
 
   wide-align@1.1.5:
     dependencies:
-      string-width: 1.0.2
+      string-width: 4.2.3
     optional: true
 
   widest-line@3.1.0:

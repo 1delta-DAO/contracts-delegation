@@ -6,59 +6,49 @@ import {Masks} from "../../../../../shared/masks/Masks.sol";
 import {DeltaErrors} from "../../../../../shared/errors/Errors.sol";
 
 /**
- * @title Take an Aave V2 flash loan callback
+ * @title Take an Aave v3 flash loan callback
  */
-contract AaveV2FlashLoanCallback is Masks, DeltaErrors {
-    // Aave v2s
-    address private constant POLTER = 0x4dE3E7E8bE48D6094cFA34323e6cC22308D56b52;
-    address private constant MAGSIN = 0x73B635843352aF89278bDe2213866C457C94b271;
+contract AaveV3FlashLoanCallback is Masks, DeltaErrors {
+    // Aave V3 style lender pool addresses
+    address private constant AAVE_V3 = 0x925a2A7214Ed92428B5b1B090F80b25700095e12;
 
     /**
-     * @dev Aave V2 style flash loan callback
+     * @dev Aave V3 style flash loan callback
      */
     function executeOperation(
-        address[] calldata,
-        uint256[] calldata,
-        uint256[] calldata, // we assume that the data is known to the caller in advance
+        address,
+        uint256,
+        uint256,
         address initiator,
-        bytes calldata params
+        bytes calldata params // user params
     )
         external
         returns (bool)
     {
         address origCaller;
-        uint256 calldataOffset;
         uint256 calldataLength;
         assembly {
-            calldataOffset := params.offset
             calldataLength := params.length
+
             // validate caller
             // - extract id from params
-            let firstWord := calldataload(calldataOffset)
+            let firstWord := calldataload(196)
 
-            // Validate the caller
-            // We check that the caller is one of the lending pools
-            // This is a crucial check since this makes
-            // the initiator paramter the caller of flashLoan
-            let pool
             switch and(UINT8_MASK, shr(88, firstWord))
-            case 11 { pool := POLTER }
-            case 84 { pool := MAGSIN }
-            // We revert on any other id
+            case 0 {
+                if xor(caller(), AAVE_V3) {
+                    mstore(0, INVALID_CALLER)
+                    revert(0, 0x4)
+                }
+            }
             default {
                 mstore(0, INVALID_FLASH_LOAN)
                 revert(0, 0x4)
             }
-            // revert if caller is not a whitelisted pool
-            if xor(caller(), pool) {
-                mstore(0, INVALID_CALLER)
-                revert(0, 0x4)
-            }
-
             // We require to self-initiate
             // this prevents caller impersonation,
             // but ONLY if the caller address is
-            // an Aave V2 type lending pool
+            // an Aave V3 type lending pool
             if xor(address(), initiator) {
                 mstore(0, INVALID_INITIATOR)
                 revert(0, 0x4)
@@ -69,13 +59,15 @@ contract AaveV2FlashLoanCallback is Masks, DeltaErrors {
             // Otherwise, this would be a vulnerability
             origCaller := shr(96, firstWord)
             // shift / slice params
-            calldataOffset := add(calldataOffset, 21)
             calldataLength := sub(calldataLength, 21)
         }
         // within the flash loan, any compose operation
         // can be executed
-        // we pass the payAmount and loaned amount for consistent usage
-        _deltaComposeInternal(origCaller, calldataOffset, calldataLength);
+        _deltaComposeInternal(
+            origCaller,
+            217, // 196 +21 as constant offset
+            calldataLength
+        );
         return true;
     }
 
