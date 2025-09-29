@@ -105,7 +105,7 @@ const config: HardhatUserConfig = {
                 network: "sonic",
                 chainId: 146,
                 urls: {
-                    apiURL: "https://api.sonicscan.org/api",
+                    apiURL: "https://api.etherscan.io/v2/api?chainid=146",
                     browserURL: "https://sonicscan.org",
                 },
             },
@@ -175,6 +175,22 @@ const config: HardhatUserConfig = {
                 },
             },
             {
+                network: "bnb",
+                chainId: 56,
+                urls: {
+                    browserURL: "https://xdcscan.com/",
+                    apiURL: "https://api.etherscan.io/v2/api?chainid=56",
+                },
+            },
+            {
+                network: "plasma",
+                chainId: 9745,
+                urls: {
+                    apiURL: "https://api.routescan.io/v2/network/mainnet/evm/9745/etherscan",
+                    browserURL: "https://plasmaexplorer.io",
+                },
+            },
+            {
                 network: "morph",
                 chainId: 2818,
                 urls: {
@@ -192,8 +208,9 @@ const config: HardhatUserConfig = {
             taiko: process.env.TAIKOSCAN_API_KEY ?? "",
             linea: process.env.ETHERSCAN_API_KEY ?? "",
             optimisticEthereum: process.env.OPSCAN_API_KEY ?? "",
-            bnb: process.env.BSCSCAN_API_KEY ?? "",
-            bsc: process.env.BSCSCAN_API_KEY ?? "",
+            bnb: process.env.ETHERSCAN_API_KEY ?? "",
+            bsc: process.env.ETHERSCAN_API_KEY ?? "",
+            plasma: process.env.ETHERSCAN_API_KEY ?? "",
             gnosis: process.env.GNOSISSCAN_API_KEY ?? "",
             xdai: process.env.GNOSISSCAN_API_KEY ?? "",
             blast: process.env.BLASTSCAN_API_KEY ?? "",
@@ -211,7 +228,7 @@ const config: HardhatUserConfig = {
             katana: process.env.ETHERSCAN_API_KEY ?? "",
             hyperevm: process.env.ETHERSCAN_API_KEY ?? "",
             core: process.env.CORESCAN_API_KEY ?? "",
-            sonic: process.env.SONICSCAN_API_KEY ?? "",
+            sonic: process.env.ETHERSCAN_API_KEY ?? "",
             scroll: process.env.SCROLLSCAN_API_KEY ?? "",
             fantom: process.env.FANTOMSCAN_API_KEY ?? "",
         },
@@ -451,6 +468,12 @@ const config: HardhatUserConfig = {
             url: "https://rpc.morphl2.io",
             accounts,
             chainId: 2818,
+            live: true,
+        },
+        plasma: {
+            url: "https://rpc.plasma.to",
+            accounts,
+            chainId: 9745,
             live: true,
         },
         metis: {

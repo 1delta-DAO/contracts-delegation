@@ -35,6 +35,7 @@ import {OneDeltaComposerXdc} from "../../../contracts/1delta/composer//chains/xd
 import {OneDeltaComposerMorph} from "../../../contracts/1delta/composer//chains/morph/Composer.sol";
 import {OneDeltaComposerMantaPacific} from "../../../contracts/1delta/composer//chains/manta-pacific/Composer.sol";
 import {OneDeltaComposerTelosEvm} from "../../../contracts/1delta/composer//chains/telos-evm/Composer.sol";
+import {OneDeltaComposerPlasma} from "../../../contracts/1delta/composer//chains/plasma/Composer.sol";
 
 library ComposerPlugin {
     function getComposer(string memory chainName) public returns (IComposerLike) {
@@ -76,6 +77,7 @@ library ComposerPlugin {
             return IComposerLike(address(new OneDeltaComposerMantaPacific()));
         }
         if (keccak256(bytes(chainName)) == keccak256(bytes(Chains.TELOS_EVM_MAINNET))) return IComposerLike(address(new OneDeltaComposerTelosEvm()));
+        if (keccak256(bytes(chainName)) == keccak256(bytes(Chains.PLASMA_MAINNET))) return IComposerLike(address(new OneDeltaComposerPlasma()));
 
         revert("No composer for chain");
     }

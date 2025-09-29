@@ -17,4 +17,5 @@ export const CANCUN_OR_HIGHER = [
     Chain.TELOS_EVM_MAINNET,
     Chain.MANTA_PACIFIC_MAINNET,
     Chain.MORPH,
+    Chain.PLASMA_MAINNET,
 ];
