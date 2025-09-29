@@ -32,12 +32,6 @@ contract Across is BaseUtils {
                 revert(0, 4)
             }
 
-            function getBalance(token) -> b {
-                mstore(0, ERC20_BALANCE_OF)
-                mstore(0x04, address())
-                pop(staticcall(gas(), token, 0x0, 0x24, 0x0, 0x20))
-                b := mload(0x0)
-            }
             let inputTokenAddress := shr(96, calldataload(add(currentOffset, 40)))
 
             let amount := shr(128, calldataload(add(currentOffset, 92)))
@@ -58,7 +52,12 @@ contract Across is BaseUtils {
             switch iszero(amount)
             case 1 {
                 switch isNative
-                case 0 { amount := getBalance(inputTokenAddress) }
+                case 0 {
+                    mstore(0, ERC20_BALANCE_OF)
+                    mstore(0x04, address())
+                    pop(staticcall(gas(), inputTokenAddress, 0x0, 0x24, 0x0, 0x20))
+                    amount := mload(0x0)
+                }
                 default {
                     // get native balance
                     amount := selfbalance()
