@@ -300,7 +300,7 @@ library CalldataLib {
 
     function encodeGasZipBridge(
         address gasZipRouter,
-        address receiver,
+        bytes32 receiver,
         uint256 amount,
         uint256 destinationChainId
     )
@@ -310,6 +310,21 @@ library CalldataLib {
     {
         return
             abi.encodePacked(uint8(ComposerCommands.BRIDGING), uint8(BridgeIds.GASZIP), gasZipRouter, receiver, uint128(amount), destinationChainId);
+    }
+
+    function encodeGasZipEvmBridge(
+        address gasZipRouter,
+        address receiver,
+        uint256 amount,
+        uint256 destinationChainId
+    )
+        internal
+        pure
+        returns (bytes memory)
+    {
+        return abi.encodePacked(
+            uint8(ComposerCommands.BRIDGING), uint8(BridgeIds.GASZIP), gasZipRouter, rightPadZero(receiver), uint128(amount), destinationChainId
+        );
     }
 
     //
@@ -1418,5 +1433,11 @@ library CalldataLib {
         if (native) am = uint128((am & ~NATIVE_FLAG) | NATIVE_FLAG); // sets the first bit to 1
         if (useShares) am = uint128((am & ~USE_SHARES_FLAG) | USE_SHARES_FLAG); // sets the second bit to 1
         return am;
+    }
+
+    function rightPadZero(address addr) internal pure returns (bytes32 a) {
+        assembly {
+            a := shl(96, addr)
+        }
     }
 }

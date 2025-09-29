@@ -32,7 +32,7 @@ contract GasZipTest is BaseTest {
 
     function test_gaszip_bridge() public {
         deal(address(callForwarder), 1 ether);
-        bytes memory data = CalldataLib.encodeGasZipBridge(gasZipRouter, user, 1 ether, 10);
+        bytes memory data = CalldataLib.encodeGasZipEvmBridge(gasZipRouter, user, 1 ether, 10);
         data = CalldataLib.encodeExternalCall(address(callForwarder), 0, false, data);
 
         vm.prank(user);
@@ -44,7 +44,7 @@ contract GasZipTest is BaseTest {
 
     function test_gaszip_bridge_balance() public {
         deal(address(callForwarder), 1 ether);
-        bytes memory data = CalldataLib.encodeGasZipBridge(gasZipRouter, user, 0, 10);
+        bytes memory data = CalldataLib.encodeGasZipEvmBridge(gasZipRouter, user, 0, 10);
         data = CalldataLib.encodeExternalCall(address(callForwarder), 0, false, data);
 
         vm.prank(user);
@@ -58,7 +58,7 @@ contract GasZipTest is BaseTest {
         deal(address(callForwarder), 1 ether);
         GasZipMock gz = new GasZipMock(10, bytes32(bytes20(uint160(user))), 1 ether);
         vm.label(address(gz), "GasZipMock");
-        bytes memory data = CalldataLib.encodeGasZipBridge(address(gz), user, 1 ether, 10);
+        bytes memory data = CalldataLib.encodeGasZipEvmBridge(address(gz), user, 1 ether, 10);
         data = CalldataLib.encodeExternalCall(address(callForwarder), 0, false, data);
 
         vm.prank(user);

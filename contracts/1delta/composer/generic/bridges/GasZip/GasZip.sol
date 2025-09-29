@@ -11,9 +11,9 @@ contract GasZip is BaseUtils {
      * | Offset | Length (bytes) | Description                  |
      * |--------|----------------|------------------------------|
      * | 0      | 20             | gasZipRouter                 |
-     * | 20     | 20             | receiver                     |
-     * | 40     | 16             | amount                       |
-     * | 56     | 32             | destinatinChainId            |
+     * | 20     | 32             | receiver                     |
+     * | 52     | 16             | amount                       |
+     * | 68     | 32             | destinatinChainId            |
      */
     function _bridgeGasZip(uint256 currentOffset) internal returns (uint256) {
         assembly {
@@ -23,10 +23,10 @@ contract GasZip is BaseUtils {
             }
 
             let gasZipRouter := shr(96, calldataload(currentOffset))
-            let receiver := shl(96, shr(96, calldataload(add(currentOffset, 20)))) // right padded zeros
-            let amount := shr(128, calldataload(add(currentOffset, 40)))
-            let destinatinChainId := calldataload(add(currentOffset, 56))
-            currentOffset := add(currentOffset, 88)
+            let receiver := calldataload(add(currentOffset, 20))
+            let amount := shr(128, calldataload(add(currentOffset, 52)))
+            let destinatinChainId := calldataload(add(currentOffset, 68))
+            currentOffset := add(currentOffset, 100)
 
             // amount zero means sefbalance
             switch iszero(amount)
