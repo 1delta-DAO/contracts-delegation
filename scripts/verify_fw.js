@@ -25,7 +25,7 @@ module.exports = [
 
 
 // npx hardhat verify --network sonic 0x8E24CfC19c6C00c524353CB8816f5f1c2F33c201 --contract contracts/external-protocols/openzeppelin/proxy/transparent/TransparentUpgradeableProxy.sol:TransparentUpgradeableProxy  --constructor-args scripts/verify_fw.js
-// npx hardhat verify --network sonic 0x6Bc6aCB905c1216B0119C87Bf9E178ce298310FA --contract contracts/1delta/composer/chains/sonic/Composer.sol:OneDeltaComposerSonic
+// npx hardhat verify --network sonic 0x8a5b01FD188785D0eb4578899f1aECD74b4C3071 --contract contracts/1delta/composer/chains/sonic/Composer.sol:OneDeltaComposerSonic
 
 // npx hardhat verify --network arbitrum 0x492d53456Cc219A755Ac5a2d8598fFd6F47A9fD1 --contract contracts/external-protocols/openzeppelin/proxy/transparent/ProxyAdmin.sol:ProxyAdmin  --constructor-args scripts/verify_fw.js
 // npx hardhat verify --network optimism 0x9acc4fbbe3237e8f04173eca2c5b19c277305f56 --contract contracts/external-protocols/openzeppelin/proxy/transparent/ProxyAdmin.sol:ProxyAdmin  --constructor-args scripts/verify_fw.js

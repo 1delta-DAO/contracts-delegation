@@ -105,7 +105,7 @@ const config: HardhatUserConfig = {
                 network: "sonic",
                 chainId: 146,
                 urls: {
-                    apiURL: "https://api.sonicscan.org/api",
+                    apiURL: "https://api.etherscan.io/v2/api?chainid=146",
                     browserURL: "https://sonicscan.org",
                 },
             },
@@ -228,7 +228,7 @@ const config: HardhatUserConfig = {
             katana: process.env.ETHERSCAN_API_KEY ?? "",
             hyperevm: process.env.ETHERSCAN_API_KEY ?? "",
             core: process.env.CORESCAN_API_KEY ?? "",
-            sonic: process.env.SONICSCAN_API_KEY ?? "",
+            sonic: process.env.ETHERSCAN_API_KEY ?? "",
             scroll: process.env.SCROLLSCAN_API_KEY ?? "",
             fantom: process.env.FANTOMSCAN_API_KEY ?? "",
         },
