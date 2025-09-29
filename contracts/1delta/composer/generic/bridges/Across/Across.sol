@@ -21,15 +21,15 @@ contract Across is BaseUtils {
      * | 124    | 4              | FeePercentage                |
      * | 128    | 4              | destinationChainId           |
      * | 132    | 32             | receiver                     |
-     * | 164    | 2              | message.length: msgLen       |
-     * | 166    | msgLen         | message                      |
+     * | 164    | 4              | deadline                     |
+     * | 168    | 2              | message.length: msgLen       |
+     * | 170    | msgLen         | message                      |
      */
     function _bridgeAcross(uint256 currentOffset) internal returns (uint256) {
         assembly {
-            // Load key data from calldata
             let inputTokenAddress := shr(96, calldataload(add(currentOffset, 40)))
 
-            let amount := and(shr(128, calldataload(add(currentOffset, 92))), UINT128_MASK)
+            let amount := shr(128, calldataload(add(currentOffset, 92)))
 
             // whether to use native is indicated by the flag
             let isNative := and(NATIVE_FLAG, amount)
@@ -38,7 +38,7 @@ contract Across is BaseUtils {
             amount := and(amount, not(NATIVE_FLAG))
 
             // get the length as uint16
-            let messageLength := and(shr(240, calldataload(add(currentOffset, 164))), UINT16_MASK)
+            let messageLength := shr(240, calldataload(add(currentOffset, 168)))
 
             let requiredNativeValue := 0
 
@@ -48,12 +48,10 @@ contract Across is BaseUtils {
             case 1 {
                 switch isNative
                 case 0 {
-                    // Get token balance
-                    mstore(0x00, ERC20_BALANCE_OF)
+                    mstore(0, ERC20_BALANCE_OF)
                     mstore(0x04, address())
-                    // unsafe call of balanceOf
-                    pop(staticcall(gas(), inputTokenAddress, 0x00, 0x24, 0x00, 0x20))
-                    amount := mload(0x00) // return value of the balanceOf call
+                    pop(staticcall(gas(), inputTokenAddress, 0x0, 0x24, 0x0, 0x20))
+                    amount := mload(0x0)
                 }
                 default {
                     // get native balance
@@ -66,9 +64,8 @@ contract Across is BaseUtils {
                 if isNative {
                     // For native assets, check that hte contract holds enough
                     if gt(amount, selfbalance()) {
-                        // InsufficientValue error
-                        mstore(0x00, 0x1101129400000000000000000000000000000000000000000000000000000000) // InsufficientValue()
-                        revert(0x00, 0x04)
+                        mstore(0, INSUFFICIENT_VALUE)
+                        revert(0, 4)
                     }
                     requiredNativeValue := amount
                 }
@@ -96,11 +93,12 @@ contract Across is BaseUtils {
             mstore(add(ptr, 0x64), calldataload(add(currentOffset, 60))) // outputToken (32 bytes)
             mstore(add(ptr, 0x84), amount) // amount
             mstore(add(ptr, 0xa4), outputAmount) // outputAmount
-            mstore(add(ptr, 0xc4), and(shr(224, calldataload(add(currentOffset, 128))), UINT32_MASK)) // destinationChainId
+            mstore(add(ptr, 0xc4), shr(224, calldataload(add(currentOffset, 128)))) // destinationChainId
             mstore(add(ptr, 0xe4), 0) // exclusiveRelayer (zero address)
             mstore(add(ptr, 0x104), timestamp()) // quoteTimestamp (block timestamp)
-            mstore(add(ptr, 0x124), add(timestamp(), 1800)) // fillDeadline (block timestamp + 30 minutes)
-            mstore(add(ptr, 0x144), 0) // exclusivityDeadline (zero address)
+            // fillDeadline (exact deadline)
+            mstore(add(ptr, 0x124), shr(224, calldataload(add(currentOffset, 164))))
+            mstore(add(ptr, 0x144), 0) // exclusivityDeadline (zero)
             mstore(add(ptr, 0x164), 0x180) // message offset
             mstore(add(ptr, 0x184), messageLength) // message length
 
@@ -108,7 +106,7 @@ contract Across is BaseUtils {
             switch gt(messageLength, 0)
             case 1 {
                 // add the message from the calldata
-                calldatacopy(add(ptr, 0x1a4), add(currentOffset, 166), messageLength)
+                calldatacopy(add(ptr, 0x1a4), add(currentOffset, 170), messageLength)
 
                 // call and forward error
                 if iszero(
@@ -147,7 +145,7 @@ contract Across is BaseUtils {
 
                 mstore(0x40, add(ptr, 0x1a4)) // one word after the message
             }
-            currentOffset := add(currentOffset, add(166, messageLength))
+            currentOffset := add(currentOffset, add(170, messageLength))
         }
 
         return currentOffset;
