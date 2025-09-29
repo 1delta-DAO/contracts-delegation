@@ -28,17 +28,19 @@ contract GasZip is BaseUtils {
             let destinatinChainId := calldataload(add(currentOffset, 56))
             currentOffset := add(currentOffset, 88)
 
+            // amount zero means sefbalance
             switch iszero(amount)
             case 1 {
                 amount := selfbalance()
-                switch iszero(amount)
-                case 1 { revertWith(ZERO_BALANCE) }
+                // revert if no balance to send
+                if iszero(amount) { revertWith(ZERO_BALANCE) }
             }
 
-            switch eq(destinatinChainId, chainid())
-            case 1 { revertWith(INVALID_DESTINATION) }
-            switch or(receiver, 0)
-            case 0 { revertWith(INVALID_RECEIVER) }
+            // prevent same-chain
+            if eq(destinatinChainId, chainid()) { revertWith(INVALID_DESTINATION) }
+
+            // check that receiver is nonzero
+            if eq(receiver, 0) { revertWith(INVALID_RECEIVER) }
 
             let ptr := mload(0x40)
             // deposit(uint256 destinationChains, bytes32 to)
