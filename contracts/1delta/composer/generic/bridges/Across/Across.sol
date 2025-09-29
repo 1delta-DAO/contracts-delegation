@@ -27,11 +27,6 @@ contract Across is BaseUtils {
      */
     function _bridgeAcross(uint256 currentOffset) internal returns (uint256) {
         assembly {
-            function revertWith(code) {
-                mstore(0, code)
-                revert(0, 4)
-            }
-
             let inputTokenAddress := shr(96, calldataload(add(currentOffset, 40)))
 
             let amount := shr(128, calldataload(add(currentOffset, 92)))
@@ -68,7 +63,10 @@ contract Across is BaseUtils {
             default {
                 if isNative {
                     // For native assets, check that hte contract holds enough
-                    if gt(amount, selfbalance()) { revertWith(INSUFFICIENT_VALUE) }
+                    if gt(amount, selfbalance()) {
+                        mstore(0, INSUFFICIENT_VALUE)
+                        revert(0, 4)
+                    }
                     requiredNativeValue := amount
                 }
             }
