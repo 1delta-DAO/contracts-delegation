@@ -100,7 +100,7 @@ contract Across is BaseUtils {
             mstore(add(ptr, 0x104), timestamp()) // quoteTimestamp (block timestamp)
             // fillDeadline (exact deadline)
             mstore(add(ptr, 0x124), shr(224, calldataload(add(currentOffset, 164))))
-            mstore(add(ptr, 0x144), 0) // exclusivityDeadline (zero address)
+            mstore(add(ptr, 0x144), 0) // exclusivityDeadline (zero)
             mstore(add(ptr, 0x164), 0x180) // message offset
             mstore(add(ptr, 0x184), messageLength) // message length
 
