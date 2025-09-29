@@ -23,8 +23,11 @@ abstract contract UniV3Callbacks is V3Callbacker, Masks, DeltaErrors {
     bytes32 private constant SUSHISWAP_V3_FF_FACTORY = 0xff2ecd58F51819E8F8BA08A650BEA04Fc0DEa1d5230000000000000000000000;
     bytes32 private constant SUSHISWAP_V3_CODE_HASH = 0xe34f199b19b2b4f47f68442619d555527d244f78a3297ea89325f843f87b8b54;
 
-    bytes32 private constant STELLASWAP_FF_FACTORY = 0xff87a4F009f99E2F34A34A260bEa765877477c7EF9ffffffffffffffffffffff;
-    bytes32 private constant STELLASWAP_CODE_HASH = 0xb3fc09be5eb433d99b1ec89fd8435aaf5ffea75c1879e19028aa2414a14b3c85;
+    bytes32 private constant STELLASWAP_V3_FF_FACTORY = 0xff965A857955d868fd98482E9439b1aF297623fb94ffffffffffffffffffffff;
+    bytes32 private constant STELLASWAP_V3_CODE_HASH = 0x424896f6cdc5182412012e0779626543e1dc4b12e1c45ee5718ae92f10ad97f2;
+
+    bytes32 private constant STELLASWAP_V4_FF_FACTORY = 0xff87a4F009f99E2F34A34A260bEa765877477c7EF9ffffffffffffffffffffff;
+    bytes32 private constant STELLASWAP_V4_CODE_HASH = 0xb3fc09be5eb433d99b1ec89fd8435aaf5ffea75c1879e19028aa2414a14b3c85;
 
     /**
      * Generic UniswapV3 callback executor
@@ -58,9 +61,16 @@ abstract contract UniV3Callbacks is V3Callbacker, Masks, DeltaErrors {
                 default { amountToPay := calldataload(4) }
             }
             case 0x2c8958f600000000000000000000000000000000000000000000000000000000 {
-                ffFactoryAddress := STELLASWAP_FF_FACTORY
-                codeHash := STELLASWAP_CODE_HASH
-
+                switch and(UINT8_MASK, shr(88, calldataload(172)))
+                case 10 {
+                    ffFactoryAddress := STELLASWAP_V3_FF_FACTORY
+                    codeHash := STELLASWAP_V3_CODE_HASH
+                }
+                case 11 {
+                    ffFactoryAddress := STELLASWAP_V4_FF_FACTORY
+                    codeHash := STELLASWAP_V4_CODE_HASH
+                }
+                default { revert(0, 0) }
                 let _amount1 := calldataload(36)
                 switch sgt(_amount1, 0)
                 case 1 { amountToPay := _amount1 }

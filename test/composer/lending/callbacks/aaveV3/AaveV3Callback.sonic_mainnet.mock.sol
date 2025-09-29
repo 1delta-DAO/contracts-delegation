@@ -20,6 +20,7 @@ contract AaveV3FlashLoanCallbackTest is BaseTest, DeltaErrors {
     address private AVALON;
     address private AVALON_USDA;
     address private AVALON_BEETS;
+    address private MAGSIN;
 
     address private WETH;
 
@@ -87,6 +88,16 @@ contract AaveV3FlashLoanCallbackTest is BaseTest, DeltaErrors {
         oneDV2.deltaCompose(params);
     }
 
+    function test_flash_loan_aaveV3_type_magsin_pool_with_callbacks() public {
+        // mock implementation
+        replaceLendingPoolWithMock(MAGSIN);
+
+        bytes memory params = CalldataLib.encodeFlashLoan(WETH, 1e6, MAGSIN, uint8(2), uint8(84), sweepCall());
+
+        vm.prank(user);
+        oneDV2.deltaCompose(params);
+    }
+
     function test_flash_loan_aaveV3_type_wrongCaller_revert() public {
         for (uint256 i = 0; i < validPools.length; i++) {
             bytes memory params = CalldataLib.encodeFlashLoan(WETH, 1e6, address(mockPool), uint8(2), uint8(validPools[0].poolId), sweepCall());
@@ -131,6 +142,7 @@ contract AaveV3FlashLoanCallbackTest is BaseTest, DeltaErrors {
         AVALON = chain.getLendingController(Lenders.AVALON);
         AVALON_USDA = chain.getLendingController(Lenders.AVALON_USDA);
         AVALON_BEETS = chain.getLendingController(Lenders.AVALON_BEETS);
+        MAGSIN = chain.getLendingController(Lenders.MAGSIN);
 
         // Get token addresses
         WETH = chain.getTokenAddress(Tokens.WETH);
@@ -141,6 +153,7 @@ contract AaveV3FlashLoanCallbackTest is BaseTest, DeltaErrors {
         validPools.push(PoolCase({poolId: 50, poolAddr: AVALON, asset: WETH}));
         validPools.push(PoolCase({poolId: 55, poolAddr: AVALON_USDA, asset: WETH}));
         validPools.push(PoolCase({poolId: 61, poolAddr: AVALON_BEETS, asset: WETH}));
+        validPools.push(PoolCase({poolId: 84, poolAddr: MAGSIN, asset: WETH}));
     }
 
     function mockERC20FunctionsForAllTokens() internal {
