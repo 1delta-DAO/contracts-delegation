@@ -9,6 +9,7 @@ yarn-error.log
 # Compiler files
 cache/
 out/
+/scripts/_shared/scrape.ts
 
 # Ignores development broadcast logs
 !/broadcast
