@@ -107,6 +107,9 @@ async function main() {
     let compoundV3s: string[] = [];
     let compoundV2s: string[] = [];
 
+    // manual overrides for chains
+    chainIdsCovered.push("1284"); // add Moonbeam
+
     // aave
     Object.entries(aavePools()).forEach(([lender, maps]) => {
         lendersCovered.push(lender);

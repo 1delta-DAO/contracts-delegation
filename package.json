@@ -51,6 +51,7 @@
         "solidity-coverage": "^0.7.15",
         "ts-generator": "^0.1.1",
         "ts-node": "^10.0.0",
+        "tsx": "^4.20.6",
         "typechain": "^6.0.2",
         "typescript": "^4.3.2"
     },
