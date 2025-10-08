@@ -191,26 +191,10 @@ library CalldataLib {
         pure
         returns (bytes memory)
     {
-        bytes memory bridgeData = abi.encodePacked(
-            uint8(ComposerCommands.BRIDGING),
-            uint8(BridgeIds.ACROSS),
-            spokePool,
-            depositor,
-            sendingAssetId,
-            receivingAssetId,
-            generateAmountBitmap(uint128(amount), false, false),
-            fixedFee,
-            feePercentage,
-            destinationChainId,
-            fromTokenDecimals,
-            toTokenDecimals,
-            receiver,
-            deadline,
-            uint16(message.length),
-            message
+        return abi.encodePacked(
+            encodeAcrossHeader(spokePool, depositor, sendingAssetId, receivingAssetId, amount, false),
+            encodeAcrossParams(fixedFee, feePercentage, destinationChainId, fromTokenDecimals, toTokenDecimals, receiver, deadline, message)
         );
-
-        return bridgeData;
     }
 
     function encodeAcrossBridgeNative(
@@ -232,26 +216,52 @@ library CalldataLib {
         pure
         returns (bytes memory)
     {
-        bytes memory bridgeData = abi.encodePacked(
+        return abi.encodePacked(
+            encodeAcrossHeader(spokePool, depositor, sendingAssetId, receivingAssetId, amount, true),
+            encodeAcrossParams(fixedFee, feePercentage, destinationChainId, fromTokenDecimals, toTokenDecimals, receiver, deadline, message)
+        );
+    }
+
+    function encodeAcrossHeader(
+        address spokePool,
+        address depositor,
+        address sendingAssetId,
+        bytes32 receivingAssetId,
+        uint256 amount,
+        bool isNative
+    )
+        internal
+        pure
+        returns (bytes memory)
+    {
+        return abi.encodePacked(
             uint8(ComposerCommands.BRIDGING),
             uint8(BridgeIds.ACROSS),
             spokePool,
             depositor,
             sendingAssetId,
             receivingAssetId,
-            generateAmountBitmap(uint128(amount), false, true),
-            fixedFee,
-            feePercentage,
-            destinationChainId,
-            fromTokenDecimals,
-            toTokenDecimals,
-            receiver,
-            deadline,
-            uint16(message.length),
-            message
+            generateAmountBitmap(uint128(amount), false, isNative)
         );
+    }
 
-        return bridgeData;
+    function encodeAcrossParams(
+        uint128 fixedFee,
+        uint32 feePercentage,
+        uint32 destinationChainId,
+        uint8 fromTokenDecimals,
+        uint8 toTokenDecimals,
+        bytes32 receiver,
+        uint32 deadline,
+        bytes memory message
+    )
+        internal
+        pure
+        returns (bytes memory)
+    {
+        return abi.encodePacked(
+            fixedFee, feePercentage, destinationChainId, fromTokenDecimals, toTokenDecimals, receiver, deadline, uint16(message.length), message
+        );
     }
 
     function encodeSquidRouterCall(
