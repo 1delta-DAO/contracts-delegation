@@ -20,10 +20,12 @@ contract Across is BaseUtils {
      * | 108    | 16             | FixedFee                     |
      * | 124    | 4              | FeePercentage                |
      * | 128    | 4              | destinationChainId           |
-     * | 132    | 32             | receiver                     |
-     * | 164    | 4              | deadline                     |
-     * | 168    | 2              | message.length: msgLen       |
-     * | 170    | msgLen         | message                      |
+     * | 132    | 1              | fromTokenDecimals            |
+     * | 133    | 1              | toTokenDecimals              |
+     * | 134    | 32             | receiver                     |
+     * | 166    | 4              | deadline                     |
+     * | 170    | 2              | message.length: msgLen       |
+     * | 172    | msgLen         | message                      |
      */
     function _bridgeAcross(uint256 currentOffset) internal returns (uint256) {
         assembly {
@@ -38,7 +40,7 @@ contract Across is BaseUtils {
             amount := and(amount, not(NATIVE_FLAG))
 
             // get the length as uint16
-            let messageLength := shr(240, calldataload(add(currentOffset, 168)))
+            let messageLength := shr(240, calldataload(add(currentOffset, 170)))
 
             let requiredNativeValue := 0
 
@@ -71,6 +73,11 @@ contract Across is BaseUtils {
                 }
             }
 
+            let fromTokenDecimals := calldataload(add(currentOffset, 132))
+            let toTokenDecimals := and(shr(240, fromTokenDecimals), UINT8_MASK)
+            fromTokenDecimals := shr(248, fromTokenDecimals)
+            let decimalDiff := sub(toTokenDecimals, fromTokenDecimals)
+
             let outputAmount :=
                 div(
                     mul(
@@ -83,12 +90,32 @@ contract Across is BaseUtils {
                     FEE_DENOMINATOR
                 )
 
+            let decimalAdjustment := 1
+
+            if xor(fromTokenDecimals, toTokenDecimals) {
+                // abs(decimalDiff)
+                let mask := shr(255, decimalDiff)
+                let absDiff := sub(xor(decimalDiff, mask), mask)
+
+                switch absDiff
+                case 12 { decimalAdjustment := 1000000000000 }
+                default {
+                    {
+                        for { let i := 0 } lt(i, absDiff) { i := add(i, 1) } { decimalAdjustment := mul(decimalAdjustment, 10) }
+                    }
+                }
+            }
+
+            // apply decimal adjustment
+            switch lt(toTokenDecimals, fromTokenDecimals)
+            case 1 { outputAmount := div(outputAmount, decimalAdjustment) }
+            default { outputAmount := mul(outputAmount, decimalAdjustment) } // also handles the case where decimals are the same
             let ptr := mload(0x40)
 
             // deposit function selector
             mstore(ptr, 0xad5425c600000000000000000000000000000000000000000000000000000000)
             mstore(add(ptr, 0x04), shr(96, calldataload(add(currentOffset, 20)))) // depositor
-            mstore(add(ptr, 0x24), calldataload(add(currentOffset, 132))) // recipient (32 bytes)
+            mstore(add(ptr, 0x24), calldataload(add(currentOffset, 134))) // recipient (32 bytes)
             mstore(add(ptr, 0x44), inputTokenAddress) // inputToken
             mstore(add(ptr, 0x64), calldataload(add(currentOffset, 60))) // outputToken (32 bytes)
             mstore(add(ptr, 0x84), amount) // amount
@@ -97,7 +124,7 @@ contract Across is BaseUtils {
             mstore(add(ptr, 0xe4), 0) // exclusiveRelayer (zero address)
             mstore(add(ptr, 0x104), timestamp()) // quoteTimestamp (block timestamp)
             // fillDeadline (exact deadline)
-            mstore(add(ptr, 0x124), shr(224, calldataload(add(currentOffset, 164))))
+            mstore(add(ptr, 0x124), shr(224, calldataload(add(currentOffset, 166))))
             mstore(add(ptr, 0x144), 0) // exclusivityDeadline (zero)
             mstore(add(ptr, 0x164), 0x180) // message offset
             mstore(add(ptr, 0x184), messageLength) // message length
@@ -106,7 +133,7 @@ contract Across is BaseUtils {
             switch gt(messageLength, 0)
             case 1 {
                 // add the message from the calldata
-                calldatacopy(add(ptr, 0x1a4), add(currentOffset, 170), messageLength)
+                calldatacopy(add(ptr, 0x1a4), add(currentOffset, 172), messageLength)
 
                 // call and forward error
                 if iszero(
@@ -145,7 +172,7 @@ contract Across is BaseUtils {
 
                 mstore(0x40, add(ptr, 0x1a4)) // one word after the message
             }
-            currentOffset := add(currentOffset, add(170, messageLength))
+            currentOffset := add(currentOffset, add(172, messageLength))
         }
 
         return currentOffset;
