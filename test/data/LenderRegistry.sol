@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: BUSL-1.1
+// solhint-disable max-line-length
 
 pragma solidity ^0.8.28;
 
@@ -28,6 +29,7 @@ contract LenderRegistry {
 
     constructor() {
         chainInfo[Chains.MOONBEAM] = ChainInfo("https://rpc.api.moonbeam.network", 1284);
+        chainInfo[Chains.CRONOS_MAINNET] = ChainInfo("https://evm.cronos.org", 25);
         chainInfo[Chains.ETHEREUM_MAINNET] = ChainInfo("https://api.mycryptoapi.com/eth", 1);
         chainInfo[Chains.OP_MAINNET] = ChainInfo("https://mainnet.optimism.io", 10);
         chainInfo[Chains.BNB_SMART_CHAIN_MAINNET] = ChainInfo("https://bsc-dataseed1.bnbchain.org", 56);
@@ -5392,6 +5394,7 @@ contract LenderRegistry {
 
 library Chains {
     string internal constant MOONBEAM = "MOONBEAM";
+    string internal constant CRONOS_MAINNET = "CRONOS_MAINNET";
     string internal constant ETHEREUM_MAINNET = "ETHEREUM_MAINNET";
     string internal constant OP_MAINNET = "OP_MAINNET";
     string internal constant BNB_SMART_CHAIN_MAINNET = "BNB_SMART_CHAIN_MAINNET";
