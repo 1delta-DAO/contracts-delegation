@@ -78,27 +78,23 @@ contract Across is BaseUtils {
             fromTokenDecimals := shr(248, fromTokenDecimals)
             let decimalDiff := sub(toTokenDecimals, fromTokenDecimals)
 
-            let outputAmount :=
-                div(
-                    mul(
-                        amount,
-                        sub(
-                            FEE_DENOMINATOR,
-                            and(shr(224, calldataload(add(currentOffset, 124))), UINT32_MASK) // extract the fee from calldata
-                        )
-                    ),
-                    FEE_DENOMINATOR
-                )
+            let outputAmount := 0
 
             let decimalAdjustment := 1
 
             if xor(fromTokenDecimals, toTokenDecimals) {
                 // abs(decimalDiff)
-                let mask := shr(255, decimalDiff)
+                let mask := sar(255, decimalDiff)
                 let absDiff := sub(xor(decimalDiff, mask), mask)
 
                 switch absDiff
                 case 12 { decimalAdjustment := 1000000000000 }
+                case 11 { decimalAdjustment := 100000000000 }
+                case 10 { decimalAdjustment := 10000000000 }
+                case 9 { decimalAdjustment := 1000000000 }
+                case 8 { decimalAdjustment := 100000000 }
+                case 7 { decimalAdjustment := 10000000 }
+                case 6 { decimalAdjustment := 1000000 }
                 default {
                     {
                         for { let i := 0 } lt(i, absDiff) { i := add(i, 1) } { decimalAdjustment := mul(decimalAdjustment, 10) }
@@ -108,8 +104,20 @@ contract Across is BaseUtils {
 
             // apply decimal adjustment
             switch lt(toTokenDecimals, fromTokenDecimals)
-            case 1 { outputAmount := div(outputAmount, decimalAdjustment) }
-            default { outputAmount := mul(outputAmount, decimalAdjustment) } // also handles the case where decimals are the same
+            case 1 {
+                outputAmount :=
+                    div(
+                        mul(amount, sub(FEE_DENOMINATOR, and(shr(224, calldataload(add(currentOffset, 124))), UINT32_MASK))),
+                        mul(FEE_DENOMINATOR, decimalAdjustment)
+                    )
+            }
+            default {
+                outputAmount :=
+                    div(
+                        mul(decimalAdjustment, mul(amount, sub(FEE_DENOMINATOR, and(shr(224, calldataload(add(currentOffset, 124))), UINT32_MASK)))),
+                        FEE_DENOMINATOR
+                    )
+            } // also handles the case where decimals are the same
             let ptr := mload(0x40)
 
             // deposit function selector
