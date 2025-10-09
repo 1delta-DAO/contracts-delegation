@@ -88,6 +88,7 @@ contract Across is BaseUtils {
                 let absDiff := sub(xor(decimalDiff, mask), mask)
 
                 switch absDiff
+                // shorthands
                 case 12 { decimalAdjustment := 1000000000000 }
                 case 11 { decimalAdjustment := 100000000000 }
                 case 10 { decimalAdjustment := 10000000000 }
@@ -95,14 +96,11 @@ contract Across is BaseUtils {
                 case 8 { decimalAdjustment := 100000000 }
                 case 7 { decimalAdjustment := 10000000 }
                 case 6 { decimalAdjustment := 1000000 }
-                default {
-                    {
-                        for { let i := 0 } lt(i, absDiff) { i := add(i, 1) } { decimalAdjustment := mul(decimalAdjustment, 10) }
-                    }
-                }
+                // arbitrary loop
+                default { for { let i := 0 } lt(i, absDiff) { i := add(i, 1) } { decimalAdjustment := mul(decimalAdjustment, 10) } }
             }
 
-            // apply decimal adjustment
+            // apply decimal adjustment (input has less)
             switch lt(toTokenDecimals, fromTokenDecimals)
             case 1 {
                 outputAmount :=
@@ -111,6 +109,7 @@ contract Across is BaseUtils {
                         mul(FEE_DENOMINATOR, decimalAdjustment)
                     )
             }
+            // none or output has less
             default {
                 outputAmount :=
                     div(
