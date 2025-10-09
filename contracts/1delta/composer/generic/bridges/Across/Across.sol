@@ -100,7 +100,7 @@ contract Across is BaseUtils {
                 default { for { let i := 0 } lt(i, absDiff) { i := add(i, 1) } { decimalAdjustment := mul(decimalAdjustment, 10) } }
             }
 
-            // apply decimal adjustment (input has less)
+            // apply decimal adjustment (input has more decimal)
             switch lt(toTokenDecimals, fromTokenDecimals)
             case 1 {
                 outputAmount :=
@@ -109,7 +109,7 @@ contract Across is BaseUtils {
                         mul(FEE_DENOMINATOR, decimalAdjustment)
                     )
             }
-            // none or output has less
+            // none or output has more decimals
             default {
                 outputAmount :=
                     div(
