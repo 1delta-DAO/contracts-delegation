@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: BUSL-1.1
+// solhint-disable max-line-length
 
 pragma solidity ^0.8.28;
 
@@ -27,6 +28,8 @@ contract LenderRegistry {
     mapping(string => ChainInfo) chainInfo;
 
     constructor() {
+        chainInfo[Chains.MOONBEAM] = ChainInfo("https://rpc.api.moonbeam.network", 1284);
+        chainInfo[Chains.CRONOS_MAINNET] = ChainInfo("https://evm.cronos.org", 25);
         chainInfo[Chains.ETHEREUM_MAINNET] = ChainInfo("https://api.mycryptoapi.com/eth", 1);
         chainInfo[Chains.OP_MAINNET] = ChainInfo("https://mainnet.optimism.io", 10);
         chainInfo[Chains.BNB_SMART_CHAIN_MAINNET] = ChainInfo("https://bsc-dataseed1.bnbchain.org", 56);
@@ -1665,6 +1668,9 @@ contract LenderRegistry {
         lendingTokens[Chains.HYPEREVM][Lenders.HYPURRFI][0xb88339CB7199b77E23DB6E890353E22632Ba630f] = LenderTokens(
             0x280535137Dd84080d97d0826c577B4019d8e1BEb, 0x27949Aaed7FA3231fAd190B7C035f557f82Dabdc, 0x4Cb411281a87dBFA7c25b09D8094926828b13cDc
         );
+        lendingTokens[Chains.HYPEREVM][Lenders.HYPURRFI][0x111111a1a0667d36bD57c0A9f569b98057111111] = LenderTokens(
+            0x5F137306A1692207624FB0f012ac19fD42698756, 0x1BD8616684219578F6E95c31be6Eb0e34914c959, 0x3c034A601602aa449b7B54929afF590fa5436ff4
+        );
         lendingControllers[Chains.HYPEREVM][Lenders.HYPURRFI] = 0xceCcE0EB9DD2Ef7996e01e25DD70e461F918A14b;
         lendingTokens[Chains.HYPEREVM][Lenders.HYPERYIELD][0x5555555555555555555555555555555555555555] = LenderTokens(
             0xA3F4962B4dE6c0CC2BFf758a4CF4F5A8A310fAdE, 0x9Ff84cb719E9f73B4C3D40a016414f7E8c099c1A, 0xadF24989b681C68aE7b2640822748Ec2D27EC839
@@ -1824,23 +1830,20 @@ contract LenderRegistry {
         lendingControllers[Chains.BNB_SMART_CHAIN_MAINNET][Lenders.RADIANT_V2] = 0xCcf31D54C3A94f67b8cEFF8DD771DE5846dA032c;
         lendingControllers[Chains.BASE][Lenders.RADIANT_V2] = 0x30798cFe2CCa822321ceed7e6085e633aAbC492F;
         lendingControllers[Chains.ARBITRUM_ONE][Lenders.RADIANT_V2] = 0xE23B4AE3624fB6f7cDEF29bC8EAD912f1Ede6886;
+        lendingTokens[Chains.ETHEREUM_MAINNET][Lenders.AVALON_SOLVBTC][0x7A56E1C57C7475CCf742a1832B028F0456652F97] = LenderTokens(
+            0xd6890176e8d912142AC489e8B5D8D93F8dE74D60, 0xc319b085c78b55683BbDbE717a3aeb6858D5BAc3, 0xB05b8D868153d656EB40444b0333Fb0DaD464Fb8
+        );
+        lendingTokens[Chains.ETHEREUM_MAINNET][Lenders.AVALON_SOLVBTC][0xC96dE26018A54D51c097160568752c4E3BD6C364] = LenderTokens(
+            0x5E007Ed35c7d89f5889eb6FD0cdCAa38059560ef, 0xf7d1F417712205D51350aE9585E0A277695D9dee, 0xaf84eb227e51Dbbb5560f7Cf507e3101ef98147b
+        );
         lendingTokens[Chains.ETHEREUM_MAINNET][Lenders.AVALON_SOLVBTC][0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599] = LenderTokens(
-            0x822790Ffcce58EaF79D869404402378C05Bc2c69, 0x3cc219F53d813054DD5F5a6126404E6a029006A6, 0x6e26bF6122b68Ee15d54E7D486E6242d0688Ec92
+            0x81392304A5bE58e1eb72053A47798b9285Eb948E, 0x33D54cdD544bFDB408dabD916Af6736Ea5be867D, 0xd684C4B6abeeaa5cA79F30D346719c727D2072D3
         );
-        lendingTokens[Chains.ETHEREUM_MAINNET][Lenders.AVALON_SOLVBTC][0x657e8C867D8B37dCC18fA4Caead9C45EB088C642] = LenderTokens(
-            0x3C9f186f1c11d28d28cDfbfbb74fe311baE9C059, 0x9E1Bfcb533104b5Aa1F80b33e10BEbdbd78f0637, 0x1D76FD1466a356d6A823408f3139669DEa21cb23
+        lendingTokens[Chains.ETHEREUM_MAINNET][Lenders.AVALON_SOLVBTC][0xd9D920AA40f578ab794426F5C90F6C731D159DEf] = LenderTokens(
+            0x2E6500A7Add9a788753a897e4e3477f651c612eb, 0x5ee930400cc7675B301d57E38AE627822CafDF68, 0xe8fD5c5f889cd7fb67Ea2b58E9246131Fb2aBb6A
         );
-        lendingTokens[Chains.ETHEREUM_MAINNET][Lenders.AVALON_SOLVBTC][0x332A8ee60EdFf0a11CF3994b1b846BBC27d3DcD6] = LenderTokens(
-            0x243744653A4Cf96e974A3B9C19C93bFF287727ec, 0x682A2B28E94BD3B52140feaEBBd4EfEc02082a48, 0x27B58833BB08Dd478d12Bb93Ae0dDa012FE7468a
-        );
-        lendingTokens[Chains.ETHEREUM_MAINNET][Lenders.AVALON_SOLVBTC][0xB997B3418935A1Df0F914Ee901ec83927c1509A0] = LenderTokens(
-            0x442252245af0e6F7410F1a79E0F186e2d91907CB, 0xD350e7DAcdBe19008D2530Fb256b5B6C8a583033, 0x128321c3fA48B47BA4E4BD1648F829F5F6048FFA
-        );
-        lendingTokens[Chains.ETHEREUM_MAINNET][Lenders.AVALON_SOLVBTC][0xEc5a52C685CC3Ad79a6a347aBACe330d69e0b1eD] = LenderTokens(
-            0x950Ab8C438099dda466020986c4aD74F0747441B, 0x87423FCA4EEf5F4144fD8dF95f158C8579C0eE52, 0x7216b99E42c2537DD0f1E36FBB5ce0336b225a95
-        );
-        lendingTokens[Chains.ETHEREUM_MAINNET][Lenders.AVALON_SOLVBTC][0x8236a87084f8B84306f72007F36F2618A5634494] = LenderTokens(
-            0x8ae0014964227fE378bC1C4Cc27982e6b4351a65, 0xba835C7e44d522814486CeaedDad030aDD6c00F0, 0x37D07BDd191e77ee5538BF6446a3e77A3158FF79
+        lendingTokens[Chains.ETHEREUM_MAINNET][Lenders.AVALON_SOLVBTC][0x23e479ddcda990E8523494895759bD98cD2fDBF6] = LenderTokens(
+            0xc6AB82fc782E29B385E775Aa0D12C3278358c9e2, 0x6effd87a9fB070eeCBcEbdC68AeF055cAeD6EFf5, 0x539DB87e80c706fA3789Cf55d743b5FDf61aCE49
         );
         lendingTokens[Chains.BNB_SMART_CHAIN_MAINNET][Lenders.AVALON_SOLVBTC][0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c] = LenderTokens(
             0xB74eb18445A5CDe001fdfcC74DdbA368CF4C6f2F, 0xfb6950161d274aD71E60A133a026809ba3aE76eD, 0x4568911872E6aD1f641eF59a5C3962aef4fCE46E
@@ -1893,7 +1896,7 @@ contract LenderRegistry {
         lendingTokens[Chains.CORN][Lenders.AVALON_SOLVBTC][0x541FD749419CA806a8bc7da8ac23D346f2dF8B77] = LenderTokens(
             0xa5E99997DAffaAfd74e2F521c5DcFc5ac37CFe6a, 0x172E6af1202d6753Edf7CbA82f34C3aa412Dd11D, 0x75733A2Eb3e3466e09F8FEc9f92524167dEd99d0
         );
-        lendingControllers[Chains.ETHEREUM_MAINNET][Lenders.AVALON_SOLVBTC] = 0xCfe357D2dE5aa5dAB5fEf255c911D150d0246423;
+        lendingControllers[Chains.ETHEREUM_MAINNET][Lenders.AVALON_SOLVBTC] = 0x35B3F1BFe7cbE1e95A3DC2Ad054eB6f0D4c879b6;
         lendingControllers[Chains.BNB_SMART_CHAIN_MAINNET][Lenders.AVALON_SOLVBTC] = 0xf9278C7c4AEfAC4dDfd0D496f7a1C39cA6BCA6d4;
         lendingControllers[Chains.MODE][Lenders.AVALON_SOLVBTC] = 0x7454E4ACC4B7294F740e33B81224f50C28C29301;
         lendingControllers[Chains.TAIKO_ALETHIA][Lenders.AVALON_SOLVBTC] = 0x9dd29AA2BD662E6b569524ba00C55be39e7B00fB;
@@ -4618,11 +4621,14 @@ contract LenderRegistry {
         tokens[Chains.ETHEREUM_MAINNET][Tokens.CVX] = 0x4e3FBD56CD56c3e72c1403e103b45Db9da5B9D2B;
         tokens[Chains.ETHEREUM_MAINNET][Tokens.GNO] = 0x6810e776880C02933D47DB1b9fc05908e5386b96;
         tokens[Chains.ETHEREUM_MAINNET][Tokens.SUSDS] = 0xa3931d71877C0E7a3148CB7Eb4463524FEc27fbD;
+        tokens[Chains.ETHEREUM_MAINNET][Tokens.SOLVBTC] = 0x7A56E1C57C7475CCf742a1832B028F0456652F97;
+        tokens[Chains.ETHEREUM_MAINNET][Tokens.XSOLVBTC] = 0xd9D920AA40f578ab794426F5C90F6C731D159DEf;
+        tokens[Chains.ETHEREUM_MAINNET][Tokens.PT_CORN_SOLVBTC_BBN_26DEC2024] = 0x23e479ddcda990E8523494895759bD98cD2fDBF6;
+        tokens[Chains.ETHEREUM_MAINNET][Tokens.PUMPBTC] = 0xF469fBD2abcd6B9de8E169d128226C0Fc90a012e;
+        tokens[Chains.ETHEREUM_MAINNET][Tokens.SWBTC] = 0x8DB2350D78aBc13f5673A411D4700BCF87864dDE;
         tokens[Chains.ETHEREUM_MAINNET][Tokens.PT_CORNLBTC_26DEC2024] = 0x332A8ee60EdFf0a11CF3994b1b846BBC27d3DcD6;
         tokens[Chains.ETHEREUM_MAINNET][Tokens.PT_EBTC_26DEC2024] = 0xB997B3418935A1Df0F914Ee901ec83927c1509A0;
         tokens[Chains.ETHEREUM_MAINNET][Tokens.PT_LBTC_27MAR2025] = 0xEc5a52C685CC3Ad79a6a347aBACe330d69e0b1eD;
-        tokens[Chains.ETHEREUM_MAINNET][Tokens.PUMPBTC] = 0xF469fBD2abcd6B9de8E169d128226C0Fc90a012e;
-        tokens[Chains.ETHEREUM_MAINNET][Tokens.SWBTC] = 0x8DB2350D78aBc13f5673A411D4700BCF87864dDE;
         tokens[Chains.ETHEREUM_MAINNET][Tokens.PUFETH] = 0xD9A442856C234a39a81a089C06451EBAa4306a72;
         tokens[Chains.ETHEREUM_MAINNET][Tokens.USD0] = 0x73A15FeD60Bf67631dC6cd7Bc5B6e8da8190aCF5;
         tokens[Chains.ETHEREUM_MAINNET][Tokens.USDZ] = 0x69000405f9DcE69BD4Cbf4f2865b79144A69BFE0;
@@ -4643,7 +4649,6 @@ contract LenderRegistry {
         tokens[Chains.ETHEREUM_MAINNET][Tokens.PZETH] = 0x8c9532a60E0E7C6BbD2B2c1303F63aCE1c3E9811;
         tokens[Chains.ETHEREUM_MAINNET][Tokens.PT_RSETH_26SEP2024] = 0x7bAf258049cc8B9A78097723dc19a8b103D4098F;
         tokens[Chains.ETHEREUM_MAINNET][Tokens.PT_EZETH_26DEC2024] = 0xf7906F274c174A52d444175729E3fa98f9bde285;
-        tokens[Chains.ETHEREUM_MAINNET][Tokens.XSOLVBTC] = 0xd9D920AA40f578ab794426F5C90F6C731D159DEf;
         tokens[Chains.ETHEREUM_MAINNET][Tokens.M_BTC] = 0x2F913C820ed3bEb3a67391a6eFF64E70c4B20b19;
         tokens[Chains.ETHEREUM_MAINNET][Tokens.PT_CORN_EBTC_27MAR2025] = 0x44A7876cA99460ef3218bf08b5f52E2dbE199566;
         tokens[Chains.ETHEREUM_MAINNET][Tokens.COMP] = 0xc00e94Cb662C3520282E6f5717214004A7f26888;
@@ -4946,6 +4951,7 @@ contract LenderRegistry {
         tokens[Chains.HYPEREVM][Tokens.FEUSD] = 0x02c6a2fA58cC01A18B8D9E00eA48d65E4dF26c70;
         tokens[Chains.HYPEREVM][Tokens.XAUT0] = 0xf4D9235269a96aaDaFc9aDAe454a0618eBE37949;
         tokens[Chains.HYPEREVM][Tokens.THBILL] = 0xfDD22Ce6D1F66bc0Ec89b20BF16CcB6670F55A5a;
+        tokens[Chains.HYPEREVM][Tokens.USDH] = 0x111111a1a0667d36bD57c0A9f569b98057111111;
         tokens[Chains.HYPEREVM][Tokens.PURR] = 0x9b498C3c8A0b8CD8BA1D9851d40D186F1872b44E;
         tokens[Chains.METIS_ANDROMEDA_MAINNET][Tokens.DAI] = 0x4c078361FC9BbB78DF910800A991C7c3DD2F6ce0;
         tokens[Chains.METIS_ANDROMEDA_MAINNET][Tokens.METIS] = 0xDeadDeAddeAddEAddeadDEaDDEAdDeaDDeAD0000;
@@ -5387,8 +5393,9 @@ contract LenderRegistry {
 }
 
 library Chains {
-    string internal constant ETHEREUM_MAINNET = "ETHEREUM_MAINNET";
+    string internal constant MOONBEAM = "MOONBEAM";
     string internal constant CRONOS_MAINNET = "CRONOS_MAINNET";
+    string internal constant ETHEREUM_MAINNET = "ETHEREUM_MAINNET";
     string internal constant OP_MAINNET = "OP_MAINNET";
     string internal constant BNB_SMART_CHAIN_MAINNET = "BNB_SMART_CHAIN_MAINNET";
     string internal constant GNOSIS = "GNOSIS";
@@ -5534,11 +5541,14 @@ library Tokens {
     string internal constant CVX = "CVX";
     string internal constant GNO = "GNO";
     string internal constant SUSDS = "SUSDS";
+    string internal constant SOLVBTC = "SOLVBTC";
+    string internal constant XSOLVBTC = "XSOLVBTC";
+    string internal constant PT_CORN_SOLVBTC_BBN_26DEC2024 = "PT_CORN_SOLVBTC_BBN_26DEC2024";
+    string internal constant PUMPBTC = "PUMPBTC";
+    string internal constant SWBTC = "SWBTC";
     string internal constant PT_CORNLBTC_26DEC2024 = "PT_CORNLBTC_26DEC2024";
     string internal constant PT_EBTC_26DEC2024 = "PT_EBTC_26DEC2024";
     string internal constant PT_LBTC_27MAR2025 = "PT_LBTC_27MAR2025";
-    string internal constant PUMPBTC = "PUMPBTC";
-    string internal constant SWBTC = "SWBTC";
     string internal constant PUFETH = "PUFETH";
     string internal constant USD0 = "USD0";
     string internal constant USDZ = "USDZ";
@@ -5558,7 +5568,6 @@ library Tokens {
     string internal constant PZETH = "PZETH";
     string internal constant PT_RSETH_26SEP2024 = "PT_RSETH_26SEP2024";
     string internal constant PT_EZETH_26DEC2024 = "PT_EZETH_26DEC2024";
-    string internal constant XSOLVBTC = "XSOLVBTC";
     string internal constant M_BTC = "M_BTC";
     string internal constant PT_CORN_EBTC_27MAR2025 = "PT_CORN_EBTC_27MAR2025";
     string internal constant COMP = "COMP";
@@ -5597,7 +5606,6 @@ library Tokens {
     string internal constant BTCB = "BTCB";
     string internal constant FDUSD = "FDUSD";
     string internal constant WBETH = "WBETH";
-    string internal constant SOLVBTC = "SOLVBTC";
     string internal constant SOLVBTC_ENA = "SOLVBTC_ENA";
     string internal constant PT_SOLVBTC_BBN_27MAR2025 = "PT_SOLVBTC_BBN_27MAR2025";
     string internal constant UNIBTC = "UNIBTC";
@@ -5722,6 +5730,7 @@ library Tokens {
     string internal constant FEUSD = "FEUSD";
     string internal constant XAUT0 = "XAUT0";
     string internal constant THBILL = "THBILL";
+    string internal constant USDH = "USDH";
     string internal constant PURR = "PURR";
     string internal constant METIS = "METIS";
     string internal constant M_USDC = "M_USDC";

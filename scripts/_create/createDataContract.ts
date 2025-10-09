@@ -18,6 +18,7 @@ import {uniq} from "lodash";
 
 const contractHeader = () => `
 // SPDX-License-Identifier: BUSL-1.1
+// solhint-disable max-line-length
 
 pragma solidity ^0.8.28;
 
@@ -106,6 +107,10 @@ async function main() {
     let aaves: string[] = [];
     let compoundV3s: string[] = [];
     let compoundV2s: string[] = [];
+
+    // manual overrides for chains
+    chainIdsCovered.push("1284"); // Moonbeam
+    chainIdsCovered.push("25"); // cronos
 
     // aave
     Object.entries(aavePools()).forEach(([lender, maps]) => {
