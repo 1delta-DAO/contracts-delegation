@@ -73,7 +73,7 @@ module.exports = [
 // npx hardhat verify --network fantom 0xf9438f2b1c63D8dAC24311256F5483D7f7575863 --contract contracts/1delta/composer/chains/fantom-opera/Composer.sol:OneDeltaComposerFantomOpera
 // npx hardhat verify --network fantom 0x816EBC5cb8A5651C902Cb06659907A93E574Db0B --contract contracts/external-protocols/openzeppelin/proxy/transparent/TransparentUpgradeableProxy.sol:TransparentUpgradeableProxy  --constructor-args scripts/verify_fw.js
 
-// npx hardhat verify --network mantle 0x8b3f4a85b6d29b7133f1609b2aab5d6b260b1e72 --contract contracts/1delta/composer/chains/mantle/Composer.sol:OneDeltaComposerMantle
+// npx hardhat verify --network mantle 0x9Dbb103F8C24345D103aBE3F7298dc73865B436C --contract contracts/1delta/composer/chains/mantle/Composer.sol:OneDeltaComposerMantle
 // npx hardhat verify --network mantle 0x5c019a146758287c614fe654caec1ba1caf05f4e --contract contracts/external-protocols/openzeppelin/proxy/transparent/TransparentUpgradeableProxy.sol:TransparentUpgradeableProxy  --constructor-args scripts/verify_fw.js
 
 // npx hardhat verify --network linea 0xCe434378adacC51d54312c872113D687Ac19B516 --contract contracts/1delta/composer/chains/linea/Composer.sol:OneDeltaComposerLinea

@@ -206,10 +206,18 @@ const config: HardhatUserConfig = {
                     browserURL: "https://katanascan.com/",
                 },
             },
+            {
+                network: "mantle",
+                chainId: 5000,
+                urls: {
+                    apiURL: "https://api.etherscan.io/v2/api?chainid=5000",
+                    browserURL: "https://katanascan.com/",
+                },
+            },
         ],
         // apiKey: process.env.ETHERSCAN_API_KEY ?? "",
         apiKey: {
-            mantle: process.env.MANTLESCAN_API_KEY ?? "abc",
+            mantle: process.env.ETHERSCAN_API_KEY ?? "abc",
             arbitrumOne: process.env.ARBISCAN_API_KEY ?? "",
             mainnet: process.env.ETHERSCAN_API_KEY ?? "",
             polygon: process.env.POLYGONSCAN_API_KEY ?? "",
@@ -898,7 +906,7 @@ const config: HardhatUserConfig = {
                 settings: {
                     optimizer: {
                         enabled: true,
-                        runs: 2_000,
+                        runs: 1_500,
                     },
                     evmVersion: "shanghai",
                 },

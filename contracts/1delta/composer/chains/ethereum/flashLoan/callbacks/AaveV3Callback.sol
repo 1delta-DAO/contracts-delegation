@@ -18,7 +18,7 @@ contract AaveV3FlashLoanCallback is Masks, DeltaErrors {
     address private constant ZEROLEND_STABLECOINS_RWA = 0xD3a4DA66EC15a001466F324FA08037f3272BDbE8;
     address private constant ZEROLEND_ETH_LRTS = 0x3BC3D34C32cc98bf098D832364Df8A222bBaB4c0;
     address private constant ZEROLEND_BTC_LRTS = 0xCD2b31071119D7eA449a9D211AC8eBF7Ee97F987;
-    address private constant AVALON_SOLVBTC = 0xCfe357D2dE5aa5dAB5fEf255c911D150d0246423;
+    address private constant AVALON_SOLVBTC = 0x35B3F1BFe7cbE1e95A3DC2Ad054eB6f0D4c879b6;
     address private constant AVALON_SWELLBTC = 0xE0E468687703dD02BEFfB0BE13cFB109529F38e0;
     address private constant AVALON_PUMPBTC = 0x1c8091b280650aFc454939450699ECAA67C902d9;
     address private constant AVALON_EBTC_LBTC = 0xCfe357D2dE5aa5dAB5fEf255c911D150d0246423;

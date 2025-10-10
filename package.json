@@ -82,8 +82,8 @@
     "dependencies": {
         "@1delta/asset-registry": "^0.0.193",
         "@1delta/data-sdk": "^0.0.8",
-        "@1delta/dex-registry": "^0.0.86",
-        "@1delta/lender-registry": "^0.0.6",
+        "@1delta/dex-registry": "^0.0.87",
+        "@1delta/lender-registry": "^0.0.7",
         "@1delta/margin-fetcher": "^0.0.36",
         "@chainlink/contracts": "^0.6.1",
         "@defi-wonderland/smock": "^2.0.7",
