@@ -38,7 +38,7 @@ abstract contract SlimLending is EulerLending, DeltaErrors {
          */
         if (lendingOperation == LenderOps.REPAY) {
             if (lender < LenderIds.UP_TO_EULER) {
-                return _repayToEuler(currentOffset);
+                return _repayToEulerV2(currentOffset);
             }
         } else {
             _invalidOperation();

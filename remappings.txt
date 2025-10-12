@@ -7,3 +7,4 @@ hardhat/=node_modules/hardhat/
 light/=contracts/1delta/composer/
 plugins/=test/shared/composers/
 modules/=contracts/1delta/modules/
+ethereum-vault-connector/=lib/ethereum-vault-connector/src/
