@@ -3,7 +3,7 @@
 pragma solidity ^0.8.16;
 
 import "./Context.sol";
-import "../proxy/interfaces/IERC20.sol";
+import "./IERC20.sol";
 
 /**
  * @dev Implementation of the {IERC20} interface.
