@@ -12,7 +12,7 @@
 	url = https://github.com/Brechtpd/base64
 [submodule "lib/ethereum-vault-connector"]
 	path = lib/ethereum-vault-connector
-	url = https://github.com/euler-xyz/ethereum-vault-connector
+	url = git@github.com:euler-xyz/ethereum-vault-connector.git
 [submodule "ethereum-vault-connector"]
 	path = ethereum-vault-connector
 	url = git@github.com:euler-xyz/ethereum-vault-connector.git
