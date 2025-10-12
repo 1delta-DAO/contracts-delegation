@@ -6,7 +6,6 @@ import {CallForwarder} from "../../contracts/1delta/composer/generic/CallForward
 import {IERC20All} from "../shared/interfaces/IERC20All.sol";
 import {BaseTest} from "../shared/BaseTest.sol";
 import {Chains, Tokens, Lenders} from "../data/LenderRegistry.sol";
-import "../../contracts/1delta/test/TrivialMockRouter.sol";
 import {SweepType} from "contracts/1delta/composer/enums/MiscEnums.sol";
 import {ComposerPlugin, IComposerLike} from "plugins/ComposerPlugin.sol";
 import {CalldataLib} from "./utils/CalldataLib.sol";
@@ -29,7 +28,6 @@ contract ExternalCallsTest is BaseTest {
     CallForwarder cf;
 
     IComposerLike oneDV2;
-    TrivialMockRouter router;
 
     uint256 internal constant forkBlock = 26696865;
     address internal USDC;
