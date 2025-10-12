@@ -76,7 +76,7 @@ abstract contract UniversalLending is AaveLending, CompoundV3Lending, CompoundV2
          */
         else if (lendingOperation == LenderOps.REPAY) {
             if (lender < LenderIds.UP_TO_AAVE_V2) {
-                return _repayToAave(currentOffset, callerAddress);
+                return _repayToAave(currentOffset);
             } else if (lender < LenderIds.UP_TO_COMPOUND_V3) {
                 return _repayToCompoundV3(currentOffset);
             } else if (lender < LenderIds.UP_TO_COMPOUND_V2) {

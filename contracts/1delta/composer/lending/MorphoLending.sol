@@ -9,9 +9,6 @@ import {Masks} from "../../shared/masks/Masks.sol";
  * @notice Lending base contract that wraps Morpho Blue
  */
 abstract contract MorphoLending is ERC20Selectors, Masks {
-    /// @dev Constant MorphoB address
-    // address internal constant MORPHO_BLUE = 0xBBBBBbbBBb9cC5e90e3b3Af64bdAF62C37EEFFCb;
-
     /// @dev  position(...)
     bytes32 private constant MORPHO_POSITION = 0x93c5206200000000000000000000000000000000000000000000000000000000;
 
