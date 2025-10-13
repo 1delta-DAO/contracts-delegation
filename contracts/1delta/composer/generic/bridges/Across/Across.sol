@@ -17,7 +17,7 @@ contract Across is BaseUtils {
      * | 40     | 20             | inputTokenAddress            |
      * | 60     | 32             | receivingAssetId             |
      * | 92     | 16             | amount                       |
-     * | 108    | 16             | FixedFee                     |
+     * | 108    | 16             | FixedFee (in input decimals) |
      * | 124    | 4              | FeePercentage                |
      * | 128    | 4              | destinationChainId           |
      * | 132    | 1              | fromTokenDecimals            |
