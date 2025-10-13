@@ -6,14 +6,14 @@ import {keccak256} from "ethers/lib/utils";
 /**
 export FACTORY="0x16c4Dc0f662E2bEceC91fC5E7aeeC6a25684698A"
 export CALLER="0x16c4Dc0f662E2bEceC91fC5E7aeeC6a25684698A"
-export INIT_CODE_HASH="0xef99898e103157bbb5524b3caac121c5030dbb37a94e432a3f2fa84c7da5ffb9"
+export INIT_CODE_HASH="0x9e19eb4ac607396efc7cc2388e79b9409fc94a75fb92b83b42162ea8274f1149"
 export GPU_DEVICE=255
 export ADDRESS_START_WITH="fca11"
-export ADDRESS_END_WITH="04"
+export ADDRESS_END_WITH="05"
 cargo run --release $FACTORY $CALLER $INIT_CODE_HASH $GPU_DEVICE $ADDRESS_START_WITH $ADDRESS_END_WITH
  */
 
-// 0x16c4dc0f662e2becec91fc5e7aeec6a25684698ad8a8c12ea9f7f4038e82e82e => 0xfCa11d0E353C5c91D62AA5feC05cE39af9393204 (1 / 0)
+// 0x16c4dc0f662e2becec91fc5e7aeec6a25684698ad0ba6d5ad2ba7f02868a8faf => 0xfCa1150eA45ba50323C27a7d5E823d92D2e59A05 (1 / 0)
 
 async function main() {
     const accounts = await ethers.getSigners();
@@ -27,8 +27,8 @@ async function main() {
 
     console.log("Get deploy factory");
 
-    const salt = "0x16c4dc0f662e2becec91fc5e7aeec6a25684698ad8a8c12ea9f7f4038e82e82e";
-    //  deploys to 0xfCa11d0E353C5c91D62AA5feC05cE39af9393204
+    const salt = "0x16c4dc0f662e2becec91fc5e7aeec6a25684698ad0ba6d5ad2ba7f02868a8faf";
+    //  deploys to 0xfCa1150eA45ba50323C27a7d5E823d92D2e59A05
     const bytecode = CallForwarder__factory.bytecode;
     console.log("bytecode", bytecode);
     const initCode = keccak256(bytecode);

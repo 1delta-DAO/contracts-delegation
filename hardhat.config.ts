@@ -214,6 +214,14 @@ const config: HardhatUserConfig = {
                     browserURL: "https://katanascan.com/",
                 },
             },
+            {
+                network: "unichain",
+                chainId: 130,
+                urls: {
+                    apiURL: "https://api.etherscan.io/v2/api?chainid=130",
+                    browserURL: "https://katanascan.com/",
+                },
+            },
         ],
         // apiKey: process.env.ETHERSCAN_API_KEY ?? "",
         apiKey: {
@@ -238,6 +246,7 @@ const config: HardhatUserConfig = {
             hemi: "XX",
             berachain: "XX",
             soneium: "XX",
+            kaia: "XX",
             xdc: process.env.ETHERSCAN_API_KEY ?? "",
             morph: "XX",
             manta: "XX",
