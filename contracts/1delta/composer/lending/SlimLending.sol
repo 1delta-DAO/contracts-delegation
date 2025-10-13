@@ -4,13 +4,12 @@ pragma solidity ^0.8.28;
 
 import {EulerLending} from "./EulerLending.sol";
 import {LenderIds, LenderOps} from "../enums/DeltaEnums.sol";
-import {DeltaErrors} from "contracts/1delta/shared/errors/Errors.sol";
 
 /**
  * @notice Minimalistic lending operator to be used in external batchers like Euler's EVC
  * Can be safley used in forwarders as it does not rely on the caller address
  */
-abstract contract SlimLending is EulerLending, DeltaErrors {
+abstract contract SlimLending is EulerLending {
     /**
      * execute ANY lending operation across various lenders
      * | Offset | Length (bytes) | Description                     |

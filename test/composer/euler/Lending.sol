@@ -2,7 +2,6 @@
 pragma solidity ^0.8.19;
 
 import {console} from "forge-std/console.sol";
-import {MorphoMathLib} from "test/composer/lending/utils/MathLib.sol";
 import {MarketParams, IMorphoEverything} from "test/composer/lending/utils/Morpho.sol";
 
 import {IERC20All} from "test/shared/interfaces/IERC20All.sol";
@@ -17,37 +16,40 @@ import {ComposerPlugin, IComposerLike} from "plugins/ComposerPlugin.sol";
  */
 contract EulerLendingTest is BaseTest {
     using CalldataLib for bytes;
-    using MorphoMathLib for uint256;
 
     IComposerLike oneD;
 
-    uint256 internal constant forkBlock = 26696865;
+    uint256 internal constant forkBlock = 0;
 
-    address internal USDC;
+    // address internal USDC;
     address internal WETH;
-    address internal constant META_MORPHO_USDC = 0x7BfA7C4f149E7415b73bdeDfe609237e29CBF34A;
+    // address internal constant USDC_VAULT = 0xe0a80d35bB6618CBA260120b279d357978c42BCE;
+    address internal constant SUSDE_VAULT = 0x498c014dE23f19700F51e85a384AB1B059F0672e;
+    address internal constant USDC_VAULT = 0x9bD52F2805c6aF014132874124686e7b248c2Cbb;
 
     address internal constant MORPHO = 0xBBBBBbbBBb9cC5e90e3b3Af64bdAF62C37EEFFCb;
 
-    address internal constant USDM = 0x59D9356E565Ab3A36dD77763Fc0d87fEaf85508C;
-    address internal constant WUSDM = 0x57F5E098CaD7A3D1Eed53991D4d66C45C9AF7812;
+    address internal SUSDE;
+    address internal USDC;
 
     function setUp() public virtual {
         // initialize the chain
-        string memory chainName = Chains.BASE;
+        string memory chainName = Chains.ETHEREUM_MAINNET;
 
         _init(chainName, forkBlock, true);
 
         USDC = chain.getTokenAddress(Tokens.USDC);
         WETH = chain.getTokenAddress(Tokens.WETH);
+        SUSDE = chain.getTokenAddress(Tokens.SUSDE);
+        USDC = chain.getTokenAddress(Tokens.USDC);
 
         oneD = ComposerPlugin.getComposer(chainName);
     }
 
-    function test_light_morpho_deposit_to_erc4626() external {
+    function test_light_euler_deposit() external {
         deal(USDC, user, 300_000.0e6);
 
-        address vault = META_MORPHO_USDC;
+        address vault = USDC_VAULT;
         address asset = USDC;
 
         uint256 assets = 100.0e6;
@@ -81,11 +83,11 @@ contract EulerLendingTest is BaseTest {
         deal(USDC, user, 300_000.0e6);
 
         address asset = USDC;
-        address vault = META_MORPHO_USDC;
+        address vault = USDC_VAULT;
 
         uint256 desiredShares = 10.0e8;
 
-        uint256 assets = IERC20All(META_MORPHO_USDC).convertToAssets(desiredShares);
+        uint256 assets = IERC20All(USDC_VAULT).convertToAssets(desiredShares);
 
         bytes memory transferTo = CalldataLib.encodeTransferIn(
             asset,
@@ -122,7 +124,7 @@ contract EulerLendingTest is BaseTest {
 
         bytes memory deposit = CalldataLib.encodeErc4646Deposit(
             asset,
-            META_MORPHO_USDC, //
+            USDC_VAULT, //
             false,
             assets,
             userAddress
@@ -139,7 +141,7 @@ contract EulerLendingTest is BaseTest {
 
         uint256 assets = 100.0e6;
         address underlying = USDC;
-        address vault = META_MORPHO_USDC;
+        address vault = USDC_VAULT;
 
         depositToMetaMorpho(user, USDC, assets);
 
