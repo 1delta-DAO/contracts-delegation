@@ -72,6 +72,14 @@ contract Across is BaseUtils {
                     requiredNativeValue := amount
                 }
             }
+            // ff is the fixed fee here, then it becomes the amount with fixed fee realized
+            let ff := shr(128, calldataload(add(currentOffset, 108)))
+            switch gt(amount, ff)
+            case 1 { ff := sub(amount, ff) }
+            default {
+                mstore(0, INSUFFICIENT_AMOUNT)
+                revert(0, 4)
+            }
 
             let fromTokenDecimals := calldataload(add(currentOffset, 132))
             let toTokenDecimals := and(shr(240, fromTokenDecimals), UINT8_MASK)
@@ -100,23 +108,25 @@ contract Across is BaseUtils {
                 default { for { let i := 0 } lt(i, absDiff) { i := add(i, 1) } { decimalAdjustment := mul(decimalAdjustment, 10) } }
             }
 
-            // apply decimal adjustment (input has more decimal)
+            // calculate percentage fee with decimal adjustment
             switch lt(toTokenDecimals, fromTokenDecimals)
             case 1 {
-                outputAmount :=
-                    div(
-                        mul(amount, sub(FEE_DENOMINATOR, and(shr(224, calldataload(add(currentOffset, 124))), UINT32_MASK))),
-                        mul(FEE_DENOMINATOR, decimalAdjustment)
-                    )
+                outputAmount := div(mul(amount, shr(224, calldataload(add(currentOffset, 124)))), mul(FEE_DENOMINATOR, decimalAdjustment))
+                ff := div(ff, decimalAdjustment) // apply decimal adjustment on amount with fixed fee
             }
             // none or output has more decimals
             default {
-                outputAmount :=
-                    div(
-                        mul(decimalAdjustment, mul(amount, sub(FEE_DENOMINATOR, and(shr(224, calldataload(add(currentOffset, 124))), UINT32_MASK)))),
-                        FEE_DENOMINATOR
-                    )
+                outputAmount := div(mul(decimalAdjustment, mul(amount, shr(224, calldataload(add(currentOffset, 124))))), FEE_DENOMINATOR)
+                ff := mul(ff, decimalAdjustment) // apply decimal adjustment on amount with fixed fee
             } // also handles the case where decimals are the same
+
+            switch gt(ff, outputAmount)
+            case 1 { outputAmount := sub(ff, outputAmount) }
+            default {
+                mstore(0, INSUFFICIENT_AMOUNT)
+                revert(0, 4)
+            }
+
             let ptr := mload(0x40)
 
             // deposit function selector
