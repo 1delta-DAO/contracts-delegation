@@ -346,7 +346,7 @@ abstract contract CompoundV2Lending is ERC20Selectors, Masks {
                 let ptr := mload(0x40)
 
                 switch iszero(useMint)
-                case 0 {
+                case 1 {
                     // selector for mintBehalf(address,uint256)
                     mstore(ptr, 0x23323e0300000000000000000000000000000000000000000000000000000000)
                     mstore(add(ptr, 0x04), receiver)

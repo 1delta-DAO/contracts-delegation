@@ -6,6 +6,8 @@ import {BaseTest} from "test/shared/BaseTest.sol";
 import {Chains, Tokens, Lenders} from "test/data/LenderRegistry.sol";
 import "test/composer/utils/CalldataLib.sol";
 import {ComposerPlugin, IComposerLike} from "plugins/ComposerPlugin.sol";
+import "test/shared/chains/ChainInitializer.sol";
+import "test/shared/chains/ChainFactory.sol";
 
 contract CompoundV2ComposerLightTest is BaseTest {
     uint16 internal constant COMPOUND_V2_ID = 3000;
@@ -61,6 +63,48 @@ contract CompoundV2ComposerLightTest is BaseTest {
 
         // Get balances after deposit
         uint256 collateralAfter = chain.getCollateralBalance(user, token, lender);
+        uint256 underlyingAfter = IERC20All(token).balanceOf(user);
+
+        // Assert collateral balance increased by amount
+        assertApproxEqAbs(collateralAfter - collateralBefore, amount, 1);
+        // Assert underlying balance decreased by amount
+        assertApproxEqAbs(underlyingBefore - underlyingAfter, amount, 1);
+    }
+
+    function test_light_lending_compoundV2_deposit_with_use_mint() external {
+        vm.assume(user != address(0));
+
+        IChain base = chainFactory.getChain(Chains.BASE);
+
+        vm.createSelectFork(base.getRpcUrl());
+
+        address token = 0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913;
+        uint256 amount = 100.0e6;
+        deal(token, user, amount);
+
+        address cToken = 0xEdc817A28E8B93B03976FBd4a3dDBc9f7D176c22;
+        IComposerLike oneDBase = ComposerPlugin.getComposer(Chains.BASE);
+
+        vm.prank(user);
+        IERC20All(token).approve(address(oneDBase), type(uint256).max);
+
+        // Get balances before deposit
+        uint256 collateralBefore = ILendingTools(cToken).balanceOfUnderlying(user);
+        uint256 underlyingBefore = IERC20All(token).balanceOf(user);
+
+        bytes memory transferTo = CalldataLib.encodeTransferIn(
+            token,
+            address(oneDBase),
+            amount //
+        );
+
+        bytes memory d = CalldataLib.encodeCompoundV2Deposit(token, amount, user, cToken, true);
+
+        vm.prank(user);
+        oneDBase.deltaCompose(abi.encodePacked(transferTo, d));
+
+        // Get balances after deposit
+        uint256 collateralAfter = ILendingTools(cToken).balanceOfUnderlying(user);
         uint256 underlyingAfter = IERC20All(token).balanceOf(user);
 
         // Assert collateral balance increased by amount
