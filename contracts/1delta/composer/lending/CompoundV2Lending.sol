@@ -65,17 +65,16 @@ abstract contract CompoundV2Lending is ERC20Selectors, Masks {
                     // Check for ERC20 success. ERC20 tokens should return a boolean,
                     // but some don't. We accept 0-length return data as success, or at
                     // least 32 bytes that starts with a 32-byte boolean true.
-                    success :=
-                        and(
-                            success, // call itself succeeded
-                            or(
-                                iszero(rdsize), // no return data, or
-                                and(
-                                    gt(rdsize, 31), // at least 32 bytes
-                                    eq(mload(ptr), 1) // starts with uint256(1)
-                                )
+                    success := and(
+                        success, // call itself succeeded
+                        or(
+                            iszero(rdsize), // no return data, or
+                            and(
+                                gt(rdsize, 31), // at least 32 bytes
+                                eq(mload(ptr), 1) // starts with uint256(1)
                             )
                         )
+                    )
 
                     if iszero(success) {
                         returndatacopy(0, 0, rdsize)
@@ -229,17 +228,16 @@ abstract contract CompoundV2Lending is ERC20Selectors, Masks {
                 // Check for ERC20 success. ERC20 tokens should return a boolean,
                 // but some don't. We accept 0-length return data as success, or at
                 // least 32 bytes that starts with a 32-byte boolean true.
-                success :=
-                    and(
-                        success, // call itself succeeded
-                        or(
-                            iszero(rdsize), // no return data, or
-                            and(
-                                gt(rdsize, 31), // at least 32 bytes
-                                eq(mload(ptr), 1) // starts with uint256(1)
-                            )
+                success := and(
+                    success, // call itself succeeded
+                    or(
+                        iszero(rdsize), // no return data, or
+                        and(
+                            gt(rdsize, 31), // at least 32 bytes
+                            eq(mload(ptr), 1) // starts with uint256(1)
                         )
                     )
+                )
 
                 if iszero(success) {
                     returndatacopy(0, 0, rdsize)
@@ -330,9 +328,9 @@ abstract contract CompoundV2Lending is ERC20Selectors, Masks {
             }
             // erc20 case
             default {
-                let amount
+                let amount := and(UINT120_MASK, amountData)
+                let useMint := and(1, shr(125, amountData)) // third bit of amountData
 
-                amount := and(UINT120_MASK, amountData)
                 // zero is this balance
                 if iszero(amount) {
                     // selector for balanceOf(address)
@@ -347,14 +345,65 @@ abstract contract CompoundV2Lending is ERC20Selectors, Masks {
 
                 let ptr := mload(0x40)
 
-                // selector for mintBehalf(address,uint256)
-                mstore(ptr, 0x23323e0300000000000000000000000000000000000000000000000000000000)
-                mstore(add(ptr, 0x04), receiver)
-                mstore(add(ptr, 0x24), amount)
+                switch iszero(useMint)
+                case 0 {
+                    // selector for mintBehalf(address,uint256)
+                    mstore(ptr, 0x23323e0300000000000000000000000000000000000000000000000000000000)
+                    mstore(add(ptr, 0x04), receiver)
+                    mstore(add(ptr, 0x24), amount)
 
-                if iszero(call(gas(), cToken, 0x0, ptr, 0x44, 0x0, 0x0)) {
-                    returndatacopy(0, 0, returndatasize())
-                    revert(0, returndatasize())
+                    if iszero(call(gas(), cToken, 0x0, ptr, 0x44, 0x0, 0x0)) {
+                        returndatacopy(0, 0, returndatasize())
+                        revert(0, returndatasize())
+                    }
+                }
+                default {
+                    // selector for mint(uint)
+                    mstore(ptr, 0xa0712d6800000000000000000000000000000000000000000000000000000000)
+                    mstore(add(ptr, 0x04), amount)
+
+                    if iszero(call(gas(), cToken, 0x0, ptr, 0x24, 0x0, 0x0)) {
+                        returndatacopy(0, 0, returndatasize())
+                        revert(0, returndatasize())
+                    }
+
+                    // need to transfer collateral to receiver
+                    if xor(receiver, address()) {
+                        // selector for balanceOf(address)
+                        mstore(0, ERC20_BALANCE_OF)
+                        // add this address as parameter
+                        mstore(0x04, address())
+                        // call to token
+                        pop(staticcall(gas(), cToken, 0x0, 0x24, 0x0, 0x20))
+                        // load the retrieved balance
+                        let cBalance := mload(0x0)
+
+                        // TRANSFER COLLATERAL
+                        // selector for transfer(address,uint256)
+                        mstore(ptr, ERC20_TRANSFER)
+                        mstore(add(ptr, 0x04), receiver)
+                        mstore(add(ptr, 0x24), cBalance)
+
+                        let success := call(gas(), cToken, 0, ptr, 0x44, ptr, 32)
+
+                        let rdsize := returndatasize()
+
+                        if iszero(
+                            and(
+                                success, // call itself succeeded
+                                or(
+                                    iszero(rdsize), // no return data, or
+                                    and(
+                                        gt(rdsize, 31), // at least 32 bytes
+                                        eq(mload(ptr), 1) // starts with uint256(1)
+                                    )
+                                )
+                            )
+                        ) {
+                            returndatacopy(0, 0, rdsize)
+                            revert(0, rdsize)
+                        }
+                    }
                 }
             }
         }
