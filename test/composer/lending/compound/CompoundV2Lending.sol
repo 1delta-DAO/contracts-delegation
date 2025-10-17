@@ -54,7 +54,7 @@ contract CompoundV2ComposerLightTest is BaseTest {
             amount //
         );
 
-        bytes memory d = CalldataLib.encodeCompoundV2Deposit(token, amount, user, cToken);
+        bytes memory d = CalldataLib.encodeCompoundV2Deposit(token, amount, user, cToken, false);
 
         vm.prank(user);
         oneDV2.deltaCompose(abi.encodePacked(transferTo, d));
@@ -80,7 +80,7 @@ contract CompoundV2ComposerLightTest is BaseTest {
         uint256 amount = 1.0e18;
         deal(token, user, amount);
 
-        depositToCompoundV2(depositToken, user, amount, comptroller);
+        depositToCompoundV2(depositToken, user, amount, comptroller, false);
 
         approveBorrowDelegation(user, token, address(oneDV2), lender);
 
@@ -112,7 +112,7 @@ contract CompoundV2ComposerLightTest is BaseTest {
         uint256 amount = 100.0e6;
         deal(token, user, amount);
 
-        depositToCompoundV2(token, user, amount, comptroller);
+        depositToCompoundV2(token, user, amount, comptroller, false);
 
         address cToken = _getCollateralToken(token);
 
@@ -148,7 +148,7 @@ contract CompoundV2ComposerLightTest is BaseTest {
         uint256 amount = 1.0e18;
         deal(token, user, amount);
 
-        depositToCompoundV2(depositToken, user, amount, comptroller);
+        depositToCompoundV2(depositToken, user, amount, comptroller, false);
 
         uint256 amountToBorrow = 10.0e6;
         borrowFromCompoundV2(token, user, amountToBorrow, comptroller);
@@ -194,7 +194,7 @@ contract CompoundV2ComposerLightTest is BaseTest {
         uint256 amount = 1.0e18;
         deal(token, user, amount);
 
-        depositToCompoundV2(depositToken, user, amount, comptroller);
+        depositToCompoundV2(depositToken, user, amount, comptroller, false);
 
         uint256 amountToBorrow = 10.0e6;
         borrowFromCompoundV2(token, user, amountToBorrow, comptroller);
@@ -240,7 +240,7 @@ contract CompoundV2ComposerLightTest is BaseTest {
         uint256 amount = 1.0e18;
         deal(token, user, amount);
 
-        depositToCompoundV2(depositToken, user, amount, comptroller);
+        depositToCompoundV2(depositToken, user, amount, comptroller, false);
 
         uint256 amountToBorrow = 10.0e6;
         borrowFromCompoundV2(token, user, amountToBorrow, comptroller);
@@ -273,7 +273,7 @@ contract CompoundV2ComposerLightTest is BaseTest {
         assertApproxEqAbs(debtAfter, 1.0e6, 0);
     }
 
-    function depositToCompoundV2(address token, address userAddress, uint256 amount, address comptroller) internal {
+    function depositToCompoundV2(address token, address userAddress, uint256 amount, address comptroller, bool useMint) internal {
         deal(token, userAddress, amount);
 
         address[] memory cTokens = new address[](1);
@@ -292,7 +292,7 @@ contract CompoundV2ComposerLightTest is BaseTest {
         );
 
         address cToken = _getCollateralToken(token);
-        bytes memory d = CalldataLib.encodeCompoundV2Deposit(token, amount, userAddress, cToken);
+        bytes memory d = CalldataLib.encodeCompoundV2Deposit(token, amount, userAddress, cToken, useMint);
 
         vm.prank(userAddress);
         oneDV2.deltaCompose(abi.encodePacked(transferTo, d));
