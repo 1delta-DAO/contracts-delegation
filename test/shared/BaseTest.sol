@@ -21,7 +21,7 @@ contract BaseTest is Test {
 
     constructor() {
         rpcOverrides[Chains.ETHEREUM_MAINNET] = "https://ethereum.therpc.io";
-        rpcOverrides[Chains.ARBITRUM_ONE] = "https://arbitrum.drpc.org";
+        rpcOverrides[Chains.ARBITRUM_ONE] = "https://arb1.lava.build";
         rpcOverrides[Chains.BNB_SMART_CHAIN_MAINNET] = "https://bsc-dataseed1.binance.org/";
         rpcOverrides[Chains.OP_MAINNET] = "https://optimism.api.onfinality.io/public";
         rpcOverrides[Chains.POLYGON_MAINNET] = "https://polygon-rpc.com";
@@ -82,17 +82,19 @@ contract BaseTest is Test {
         if (Lenders.isAave(lender)) {
             address instance = chain.getLendingTokens(underlying, lender).debt;
             vm.prank(_user);
-            ILendingTools(instance).approveDelegation(
-                spender, //
-                type(uint256).max
-            );
+            ILendingTools(instance)
+                .approveDelegation(
+                    spender, //
+                    type(uint256).max
+                );
         } else if (Lenders.isCompoundV2(lender)) {
             address instance = chain.getLendingController(lender);
             vm.prank(_user);
-            ILendingTools(instance).updateDelegate(
-                spender,
-                true //
-            );
+            ILendingTools(instance)
+                .updateDelegate(
+                    spender,
+                    true //
+                );
         } else if (Lenders.isCompoundV3(lender)) {
             address base = chain.getCometToBase(lender);
             if (underlying == base) {
@@ -100,10 +102,11 @@ contract BaseTest is Test {
             }
             address instance = chain.getLendingController(lender);
             vm.prank(_user);
-            ILendingTools(instance).allow(
-                spender,
-                true //
-            );
+            ILendingTools(instance)
+                .allow(
+                    spender,
+                    true //
+                );
         }
     }
 
@@ -114,10 +117,11 @@ contract BaseTest is Test {
         if (Lenders.isAave(lender)) {
             address instance = chain.getLendingTokens(underlying, lender).collateral;
             vm.prank(_user);
-            ILendingTools(instance).approve(
-                spender, //
-                type(uint256).max
-            );
+            ILendingTools(instance)
+                .approve(
+                    spender, //
+                    type(uint256).max
+                );
         } else if (Lenders.isCompoundV2(lender)) {
             address instance = chain.getLendingTokens(underlying, lender).collateral;
             vm.prank(_user);
@@ -125,10 +129,11 @@ contract BaseTest is Test {
         } else if (Lenders.isCompoundV3(lender)) {
             address instance = chain.getLendingController(lender);
             vm.prank(_user);
-            ILendingTools(instance).allow(
-                spender,
-                true //
-            );
+            ILendingTools(instance)
+                .allow(
+                    spender,
+                    true //
+                );
         }
     }
 

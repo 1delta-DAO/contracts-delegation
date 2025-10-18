@@ -329,7 +329,7 @@ abstract contract CompoundV2Lending is ERC20Selectors, Masks {
             // erc20 case
             default {
                 let amount := and(UINT120_MASK, amountData)
-                let useMint := and(1, shr(125, amountData)) // third bit of amountData
+                let altSelector := and(UINT8_MASK, shr(120, amountData))
 
                 // zero is this balance
                 if iszero(amount) {
@@ -345,8 +345,8 @@ abstract contract CompoundV2Lending is ERC20Selectors, Masks {
 
                 let ptr := mload(0x40)
 
-                switch iszero(useMint)
-                case 1 {
+                switch altSelector
+                case 0 {
                     // selector for mintBehalf(address,uint256)
                     mstore(ptr, 0x23323e0300000000000000000000000000000000000000000000000000000000)
                     mstore(add(ptr, 0x04), receiver)
@@ -357,7 +357,7 @@ abstract contract CompoundV2Lending is ERC20Selectors, Masks {
                         revert(0, returndatasize())
                     }
                 }
-                default {
+                case 1 {
                     // selector for mint(uint)
                     mstore(ptr, 0xa0712d6800000000000000000000000000000000000000000000000000000000)
                     mstore(add(ptr, 0x04), amount)

@@ -74,7 +74,8 @@ contract ExpectedOutputGen is BaseTest {
 
         aaveV3DepositData = CalldataLib.encodeAaveDeposit(USDC, TEST_AMOUNT, TEST_RECEIVER, AAVE_V3_POOL);
 
-        compoundV2DepositData = CalldataLib.encodeCompoundV2Deposit(USDC, TEST_AMOUNT, TEST_RECEIVER, COMPOUND_V2_CTOKEN, false);
+        compoundV2DepositData =
+            CalldataLib.encodeCompoundV2Deposit(USDC, TEST_AMOUNT, TEST_RECEIVER, COMPOUND_V2_CTOKEN, uint8(CompoundV2Selector.MINT_BEHALF));
 
         compoundV3DepositData = CalldataLib.encodeCompoundV3Deposit(USDC, TEST_AMOUNT, TEST_RECEIVER, COMPOUND_V3_COMET_WETH);
     }
