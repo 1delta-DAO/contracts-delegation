@@ -74,7 +74,8 @@ contract ExpectedOutputGen is BaseTest {
 
         aaveV3DepositData = CalldataLib.encodeAaveDeposit(USDC, TEST_AMOUNT, TEST_RECEIVER, AAVE_V3_POOL);
 
-        compoundV2DepositData = CalldataLib.encodeCompoundV2Deposit(USDC, TEST_AMOUNT, TEST_RECEIVER, COMPOUND_V2_CTOKEN);
+        compoundV2DepositData =
+            CalldataLib.encodeCompoundV2Deposit(USDC, TEST_AMOUNT, TEST_RECEIVER, COMPOUND_V2_CTOKEN, uint8(CompoundV2Selector.MINT_BEHALF));
 
         compoundV3DepositData = CalldataLib.encodeCompoundV3Deposit(USDC, TEST_AMOUNT, TEST_RECEIVER, COMPOUND_V3_COMET_WETH);
     }
@@ -119,14 +120,15 @@ contract ExpectedOutputGen is BaseTest {
         address aaveV2StableDebtToken = polygon.getLendingTokens(polygonUSDT, aaveV2Lender).stableDebt;
         address aaveV3DebtToken = chain.getLendingTokens(USDC, aaveV3Lender).debt;
 
-        aaveV2RepayData = CalldataLib.encodeAaveV2Repay(
-            polygonUSDT,
-            TEST_AMOUNT,
-            TEST_RECEIVER,
-            2, // Variable interest mode
-            aaveV2DebtToken,
-            AAVE_V2_POOL
-        );
+        aaveV2RepayData =
+            CalldataLib.encodeAaveV2Repay(
+                polygonUSDT,
+                TEST_AMOUNT,
+                TEST_RECEIVER,
+                2, // Variable interest mode
+                aaveV2DebtToken,
+                AAVE_V2_POOL
+            );
 
         aaveV3RepayData = CalldataLib.encodeAaveRepay(
             USDC,
