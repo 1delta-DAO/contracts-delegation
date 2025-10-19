@@ -1399,6 +1399,41 @@ library CalldataLib {
         );
     }
 
+    function encodeSiloV2Deposit(
+        address token,
+        uint256 amount,
+        address receiver,
+        address silo,
+        uint8 collateralMode
+    )
+        internal
+        pure
+        returns (bytes memory)
+    {
+        return abi.encodePacked(
+            // no approves for native
+            token == address(0) ? new bytes(0) : encodeApprove(token, silo),
+            uint8(ComposerCommands.LENDING),
+            uint8(LenderOps.DEPOSIT),
+            uint16(LenderIds.UP_TO_SILO_V2 - 1),
+            token,
+            encodeSiloV2CollateralMode(uint128(amount), collateralMode),
+            receiver,
+            silo //
+        );
+    }
+
+    function encodeSiloV2Borrow(uint256 amount, address receiver, address silo) internal pure returns (bytes memory) {
+        return abi.encodePacked(
+            uint8(ComposerCommands.LENDING),
+            uint8(LenderOps.BORROW),
+            uint16(LenderIds.UP_TO_SILO_V2 - 1),
+            uint128(amount),
+            receiver,
+            silo //
+        );
+    }
+
     function encodeCompoundV2Borrow(address token, uint256 amount, address receiver, address cToken) internal pure returns (bytes memory) {
         return abi.encodePacked(
             uint8(ComposerCommands.LENDING),
@@ -1485,5 +1520,9 @@ library CalldataLib {
 
     function encodeCompoundV2SelectorId(uint128 amount, uint8 selectorId) internal pure returns (uint128 am) {
         am = amount | (uint128(selectorId) << 120);
+    }
+
+    function encodeSiloV2CollateralMode(uint128 amount, uint8 mode) internal pure returns (uint128 am) {
+        am = amount | (uint128(mode) << 120);
     }
 }

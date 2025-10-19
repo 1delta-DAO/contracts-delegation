@@ -106,3 +106,8 @@ library CompoundV2Selector {
     uint256 internal constant REDEEM = 0;
     uint256 internal constant REDEEM_BEHALF = 1;
 }
+
+library SiloV2CollateralType {
+    uint256 internal constant PROTECTED = 0;
+    uint256 internal constant COLLATERAL = 1;
+}

@@ -149,12 +149,12 @@ abstract contract SiloV2Lending is ERC20Selectors, Masks {
             // by assets
             case 0 {
                 // selector borrow(uint256,address,address)
-                mstore(ptr, 0x1d5d723700000000000000000000000000000000000000000000000000000000)
+                mstore(ptr, BORROW)
             }
             // by shares
             default {
                 // selector borrowShares(uint256,address,address)
-                mstore(ptr, 0xa415bcad00000000000000000000000000000000000000000000000000000000)
+                mstore(ptr, BORROW_SHARES)
             }
             // the rest is he same for both cases
             mstore(add(ptr, 0x4), amount)
