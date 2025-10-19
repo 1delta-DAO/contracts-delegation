@@ -20,7 +20,7 @@ abstract contract CompoundV2Lending is ERC20Selectors, Masks {
      * | 0      | 20             | underlying                      |
      * | 20     | 16             | amount                          |
      * | 36     | 20             | receiver                        |
-     * | 76     | 20             | cToken                          |
+     * | 56     | 20             | cToken                          |
      */
     function _borrowFromCompoundV2(uint256 currentOffset, address callerAddress) internal returns (uint256) {
         assembly {
