@@ -163,7 +163,42 @@ contract CompoundV2ComposerLightTest is BaseTest {
         approveWithdrawalDelegation(user, token, address(oneDV2), lender);
 
         uint256 amountToWithdraw = 10.0e6;
-        bytes memory d = CalldataLib.encodeCompoundV2Withdraw(token, amountToWithdraw, user, cToken);
+        bytes memory d = CalldataLib.encodeCompoundV2Withdraw(token, amountToWithdraw, user, cToken, uint8(CompoundV2Selector.REDEEM));
+
+        // Check balances before withdrawal
+        uint256 collateralBefore = chain.getCollateralBalance(user, token, lender);
+        uint256 underlyingBefore = IERC20All(token).balanceOf(user);
+
+        vm.prank(user);
+        oneDV2.deltaCompose(d);
+
+        // Check balances after withdrawal
+        uint256 collateralAfter = chain.getCollateralBalance(user, token, lender);
+        uint256 underlyingAfter = IERC20All(token).balanceOf(user);
+
+        // Assert collateral decreased by withdrawn amount
+        assertApproxEqAbs(collateralBefore - collateralAfter, amountToWithdraw, 1);
+        // Assert underlying increased by withdrawn amount
+        assertApproxEqAbs(underlyingAfter - underlyingBefore, amountToWithdraw, 1);
+    }
+
+    function test_light_lending_compoundV2_withdraw_behalf() external {
+        vm.assume(user != address(0));
+
+        address token = USDC;
+        address comptroller = VENUS_COMPTROLLER;
+        uint256 amount = 100.0e6;
+        deal(token, user, amount);
+
+        depositToCompoundV2(token, user, amount, comptroller, uint8(CompoundV2Selector.MINT_BEHALF));
+
+        address cToken = _getCollateralToken(token);
+
+        // redeemBehalf needs borrow delegaion (general one) for venus
+        approveBorrowDelegation(user, token, address(oneDV2), lender);
+
+        uint256 amountToWithdraw = 10.0e6;
+        bytes memory d = CalldataLib.encodeCompoundV2Withdraw(token, amountToWithdraw, user, cToken, uint8(CompoundV2Selector.REDEEM_BEHALF));
 
         // Check balances before withdrawal
         uint256 collateralBefore = chain.getCollateralBalance(user, token, lender);
