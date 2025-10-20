@@ -41,7 +41,6 @@ contract SiloV2ComposerLightTest is BaseTest {
     address internal WEETH;
     address internal WETH;
     address internal SILO_LENS = 0xF0B0218153633e6154c201d5A5d81128B0539336;
-    address internal WEETH = 0x35751007a407ca6FEFfE80b3cB397736D2cf4dbe;
     address internal SILO_WEETH = 0x038722A3b78A10816Ae0EDC6afA768B03048a0cC;
     address internal SILO_WEETH_COLLATERAL_SHARE = 0xc8A7491Bc887d4f19bA7fa9dBf19ECfE2bFb4e3a;
     address internal SILO_WETH_DEBT_SHARE = 0x4155f07B12f35db4264cCe0257e8Bc0912C8Fc32;
