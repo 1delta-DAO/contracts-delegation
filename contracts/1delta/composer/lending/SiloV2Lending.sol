@@ -11,8 +11,8 @@ import {Masks} from "../../shared/masks/Masks.sol";
  * @notice Lending base contract that wraps Silos (v2).
  */
 abstract contract SiloV2Lending is ERC20Selectors, Masks {
-    bytes32 private constant WITHDRAW = 0x6e553f6500000000000000000000000000000000000000000000000000000000;
-    bytes32 private constant WITHDRAW_WITH_COLLATERAL_TYPE = 0xb7ec8d4b00000000000000000000000000000000000000000000000000000000;
+    bytes32 private constant WITHDRAW = 0xb460af9400000000000000000000000000000000000000000000000000000000;
+    bytes32 private constant WITHDRAW_WITH_COLLATERAL_TYPE = 0xb8337c2a00000000000000000000000000000000000000000000000000000000;
 
     bytes32 private constant REDEEM = 0xba08765200000000000000000000000000000000000000000000000000000000;
     bytes32 private constant REDEEM_WITH_COLLATERAL_TYPE = 0xda53766000000000000000000000000000000000000000000000000000000000;
@@ -307,7 +307,7 @@ abstract contract SiloV2Lending is ERC20Selectors, Masks {
 
             // selector repay(uint256,address)
             mstore(ptr, REPAY)
-            mstore(add(ptr, 0x04), underlying)
+            mstore(add(ptr, 0x04), amount)
             mstore(add(ptr, 0x24), receiver)
             // call silo
             if iszero(call(gas(), silo, 0x0, ptr, 0x44, 0x0, 0x0)) {

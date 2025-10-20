@@ -1482,6 +1482,31 @@ library CalldataLib {
         );
     }
 
+    function encodeSiloV2Withdraw(uint256 amount, address receiver, address silo, uint8 collateralMode) internal pure returns (bytes memory) {
+        return abi.encodePacked(
+            uint8(ComposerCommands.LENDING),
+            uint8(LenderOps.WITHDRAW),
+            uint16(LenderIds.UP_TO_SILO_V2 - 1),
+            encodeSiloV2CollateralMode(uint128(amount), collateralMode),
+            receiver,
+            silo //
+        );
+    }
+
+    function encodeSiloV2Repay(address token, uint256 amount, address receiver, address silo) internal pure returns (bytes memory) {
+        return abi.encodePacked(
+            // no approves for native
+            token == address(0) ? new bytes(0) : encodeApprove(token, silo),
+            uint8(ComposerCommands.LENDING),
+            uint8(LenderOps.REPAY),
+            uint16(LenderIds.UP_TO_SILO_V2 - 1),
+            token,
+            uint128(amount),
+            receiver,
+            silo //
+        );
+    }
+
     /**
      * get the collateral asset from a packed Morpho market
      */
