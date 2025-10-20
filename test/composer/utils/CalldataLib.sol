@@ -1004,7 +1004,7 @@ library CalldataLib {
             encodeApprove(getMorphoCollateral(market), morphoB), // always approve
             uint8(ComposerCommands.LENDING), // 1
             uint8(LenderOps.DEPOSIT), // 1
-            uint16(LenderIds.UP_TO_MORPHO), // 2
+            uint16(LenderIds.UP_TO_MORPHO - 1), // 2
             market, // 4 * 20 + 16
             uint128(assets), // 16
             receiver,
@@ -1031,7 +1031,7 @@ library CalldataLib {
             encodeApprove(getMorphoLoanAsset(market), morphoB), // always approve
             uint8(ComposerCommands.LENDING), // 1
             uint8(LenderOps.DEPOSIT_LENDING_TOKEN), // 1
-            uint16(LenderIds.UP_TO_MORPHO), // 2
+            uint16(LenderIds.UP_TO_MORPHO - 1), // 2
             market, // 4 * 20 + 16
             generateAmountBitmap(uint128(assets), isShares, false),
             receiver,
@@ -1096,7 +1096,7 @@ library CalldataLib {
         return abi.encodePacked(
             uint8(ComposerCommands.LENDING), // 1
             uint8(LenderOps.WITHDRAW_LENDING_TOKEN), // 1
-            uint16(LenderIds.UP_TO_MORPHO), // 2
+            uint16(LenderIds.UP_TO_MORPHO - 1), // 2
             market, // 4 * 20 + 16
             generateAmountBitmap(uint128(assets), isShares, false),
             receiver, // 20
@@ -1117,7 +1117,7 @@ library CalldataLib {
         return abi.encodePacked(
             uint8(ComposerCommands.LENDING), // 1
             uint8(LenderOps.WITHDRAW), // 1
-            uint16(LenderIds.UP_TO_MORPHO), // 2
+            uint16(LenderIds.UP_TO_MORPHO - 1), // 2
             market, // 4 * 20 + 16
             uint128(assets), // 16
             receiver, // 20
@@ -1139,7 +1139,7 @@ library CalldataLib {
         return abi.encodePacked(
             uint8(ComposerCommands.LENDING), // 1
             uint8(LenderOps.BORROW), // 1
-            uint16(LenderIds.UP_TO_MORPHO), // 2
+            uint16(LenderIds.UP_TO_MORPHO - 1), // 2
             market, // 4 * 20 + 16
             generateAmountBitmap(uint128(assets), isShares, false),
             receiver,
@@ -1164,7 +1164,7 @@ library CalldataLib {
             encodeApprove(getMorphoLoanAsset(market), morphoB), // always approve
             uint8(ComposerCommands.LENDING), // 1
             uint8(LenderOps.REPAY), // 1
-            uint16(LenderIds.UP_TO_MORPHO), // 2
+            uint16(LenderIds.UP_TO_MORPHO - 1), // 2
             market, // 4 * 20 + 16
             generateAmountBitmap(uint128(assets), isShares, false),
             receiver,
