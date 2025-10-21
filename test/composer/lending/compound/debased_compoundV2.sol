@@ -53,6 +53,12 @@ contract CompoundV2ComposerLightTest is BaseTest {
         uint256 amount = 1e12; // 1 million
         deal(USDC, user, amount);
 
+        address[] memory cTokens = new address[](1);
+        cTokens[0] = USDC_CTOKEN;
+
+        vm.prank(user);
+        IERC20All(VENUS_COMPTROLLER).enterMarkets(cTokens);
+
         vm.prank(user);
         IERC20All(USDC).approve(address(oneDV2), amount);
 
