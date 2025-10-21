@@ -24,7 +24,7 @@ abstract contract SiloV2Lending is ERC20Selectors, Masks {
      * | 16     | 20             | receiver                        |
      * | 36     | 20             | silo                            |
      */
-    /// @notice Withdraw from lender lastgiven user address and lender Id
+    /// @notice Withdraw from lender given caller address
     function _withdrawFromSiloV2(uint256 currentOffset, address callerAddress) internal returns (uint256) {
         assembly {
             let ptr := mload(0x40)
@@ -279,9 +279,7 @@ abstract contract SiloV2Lending is ERC20Selectors, Masks {
             currentOffset := add(currentOffset, 76)
 
             switch amount
-            case 0 {
-                amount := _balanceOf(underlying, address())
-            }
+            case 0 { amount := _balanceOf(underlying, address()) }
             // safe repay maximum: fetch contract balance and user debt and take minimum
             case 0xffffffffffffffffffffffffffff {
                 amount := _balanceOf(underlying, address())
