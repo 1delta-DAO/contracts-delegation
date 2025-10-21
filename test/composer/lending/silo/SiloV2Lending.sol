@@ -114,9 +114,6 @@ contract SiloV2ComposerLightTest is BaseTest {
         vm.prank(user);
         ISilo(debtShareToken).setReceiveApproval(address(oneDV2), type(uint256).max);
 
-        // vm.prank(user);
-        // ISilo(collateralSilo).switchCollateralToThisSilo();
-
         uint256 amountToBorrow = 0.5e18;
         bytes memory composerCall = CalldataLib.encodeSiloV2Borrow(amountToBorrow, user, borrowSilo);
 
@@ -196,7 +193,6 @@ contract SiloV2ComposerLightTest is BaseTest {
         oneDV2.deltaCompose(d);
 
         // Check balances after withdrawal
-        // Check balances after withdrawal
         uint256 collateralAfter = _getAssetBalance(collateralSilo, user);
         uint256 underlyingAfter = IERC20All(depositToken).balanceOf(user);
 
@@ -221,9 +217,6 @@ contract SiloV2ComposerLightTest is BaseTest {
 
         vm.prank(user);
         ISilo(debtShareToken).setReceiveApproval(address(oneDV2), type(uint256).max);
-
-        // vm.prank(user);
-        // ISilo(collateralSilo).switchCollateralToThisSilo();
 
         uint256 amountToBorrow = 0.5e18;
         bytes memory composerCall = CalldataLib.encodeSiloV2Borrow(amountToBorrow, user, borrowSilo);
@@ -274,9 +267,6 @@ contract SiloV2ComposerLightTest is BaseTest {
 
         vm.prank(user);
         ISilo(debtShareToken).setReceiveApproval(address(oneDV2), type(uint256).max);
-
-        // vm.prank(user);
-        // ISilo(collateralSilo).switchCollateralToThisSilo();
 
         uint256 amountToBorrow = 0.5e18;
         bytes memory composerCall = CalldataLib.encodeSiloV2Borrow(amountToBorrow, user, borrowSilo);
