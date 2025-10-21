@@ -17,8 +17,8 @@ abstract contract AaveLending is ERC20Selectors, Masks {
      * | 0      | 20             | underlying                      |
      * | 20     | 16             | amount                          |
      * | 36     | 20             | receiver                        |
-     * | 76     | 20             | aToken                          |
-     * | 96     | 20             | pool                            |
+     * | 56     | 20             | aToken                          |
+     * | 76     | 20             | pool                            |
      */
     /// @notice Withdraw from lender lastgiven user address and lender Id
     function _withdrawFromAave(uint256 currentOffset, address callerAddress) internal returns (uint256) {
@@ -248,7 +248,7 @@ abstract contract AaveLending is ERC20Selectors, Masks {
      * | 0      | 20             | underlying                      |
      * | 20     | 16             | amount                          |
      * | 36     | 20             | receiver                        |
-     * | 76     | 20             | pool                            |
+     * | 56     | 20             | pool                            |
      */
     /// @notice Withdraw from lender lastgiven user address and lender Id
     function _depositToAaveV2(uint256 currentOffset) internal returns (uint256) {
@@ -311,7 +311,7 @@ abstract contract AaveLending is ERC20Selectors, Masks {
      * | 77     | 20             | debtToken                       |
      * | 97     | 20             | pool                            |
      */
-    function _repayToAave(uint256 currentOffset, address callerAddress) internal returns (uint256) {
+    function _repayToAave(uint256 currentOffset) internal returns (uint256) {
         assembly {
             let underlying := shr(96, calldataload(currentOffset))
             // offset for amount at lower bytes
@@ -346,7 +346,7 @@ abstract contract AaveLending is ERC20Selectors, Masks {
                 amount := mload(0x4)
 
                 // add caller address as parameter
-                mstore(0x04, callerAddress)
+                mstore(0x04, receiver)
                 // call to debt token
                 pop(staticcall(gas(), shr(96, calldataload(add(currentOffset, 57))), 0x0, 0x24, 0x0, 0x20))
                 // load the retrieved balance

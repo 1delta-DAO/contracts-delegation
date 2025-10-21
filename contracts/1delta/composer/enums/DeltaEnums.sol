@@ -32,6 +32,7 @@ library LenderIds {
     uint256 internal constant UP_TO_COMPOUND_V3 = 3000;
     uint256 internal constant UP_TO_COMPOUND_V2 = 4000;
     uint256 internal constant UP_TO_MORPHO = 5000;
+    uint256 internal constant UP_TO_SILO_V2 = 6000;
 }
 
 /**
@@ -104,4 +105,9 @@ library CompoundV2Selector {
 
     uint256 internal constant REDEEM = 0;
     uint256 internal constant REDEEM_BEHALF = 1;
+}
+
+library SiloV2CollateralType {
+    uint256 internal constant PROTECTED = 0;
+    uint256 internal constant COLLATERAL = 1;
 }
