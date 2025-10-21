@@ -132,9 +132,8 @@ abstract contract SiloV2Lending is ERC20Selectors, Masks {
         assembly {
             // offset for amount at lower bytes
             let amountData := shr(128, calldataload(currentOffset))
-            let receiverAndMode := calldataload(add(currentOffset, 16))
             // receiver
-            let receiver := shr(96, receiverAndMode)
+            let receiver := shr(96, calldataload(add(currentOffset, 16)))
             // get silo
             let silo := shr(96, calldataload(add(currentOffset, 36)))
             // skip silo (end of data)
@@ -181,7 +180,7 @@ abstract contract SiloV2Lending is ERC20Selectors, Masks {
      * | 36     | 20             | receiver                        |
      * | 56     | 20             | silo                            |
      */
-    /// @notice Withdraw from lender lastgiven user address and lender Id
+    /// @notice deposit to Silo
     function _depositToSiloV2(uint256 currentOffset) internal returns (uint256) {
         assembly {
             let underlying := shr(96, calldataload(currentOffset))
@@ -209,7 +208,7 @@ abstract contract SiloV2Lending is ERC20Selectors, Masks {
 
             let ptr := mload(0x40)
 
-            // store common pram
+            // store common param
             mstore(add(ptr, 0x24), receiver)
 
             let cType := and(UINT8_MASK, shr(120, amountData))
@@ -257,6 +256,17 @@ abstract contract SiloV2Lending is ERC20Selectors, Masks {
 
     function _repayToSiloV2(uint256 currentOffset) internal returns (uint256) {
         assembly {
+            function _balanceOf(t, u) -> b {
+                // selector for balanceOf(address)
+                mstore(0, ERC20_BALANCE_OF)
+                // add this address as parameter (u)
+                mstore(0x04, u)
+                // call to token
+                pop(staticcall(gas(), t, 0x0, 0x24, 0x0, 0x20))
+                // load the balance and return it
+                b := mload(0x0)
+            }
+
             let underlying := shr(96, calldataload(currentOffset))
             // offset for amount at lower bytes
             let amount := and(UINT120_MASK, shr(128, calldataload(add(currentOffset, 20))))
@@ -265,28 +275,16 @@ abstract contract SiloV2Lending is ERC20Selectors, Masks {
             // get silo
             let silo := shr(96, calldataload(add(currentOffset, 56)))
 
+            // skip silo (end of data)
+            currentOffset := add(currentOffset, 76)
+
             switch amount
             case 0 {
-                // selector for balanceOf(address)
-                mstore(0, ERC20_BALANCE_OF)
-                // add this address as parameter
-                mstore(0x04, address())
-                // call to token
-                pop(staticcall(gas(), underlying, 0x0, 0x24, 0x0, 0x20))
-                // load the retrieved balance
-                amount := mload(0x0)
+                amount := _balanceOf(underlying, address())
             }
             // safe repay maximum: fetch contract balance and user debt and take minimum
             case 0xffffffffffffffffffffffffffff {
-                // selector for balanceOf(address)
-                mstore(0, ERC20_BALANCE_OF)
-
-                // add this address as parameter
-                mstore(0x04, address())
-                // call to token
-                pop(staticcall(gas(), underlying, 0x0, 0x24, 0x4, 0x20))
-                // load the retrieved balance
-                amount := mload(0x4)
+                amount := _balanceOf(underlying, address())
 
                 // call maxRepay(address) to get maxrepayable assets
                 mstore(0, MAX_REPAY)
@@ -299,9 +297,6 @@ abstract contract SiloV2Lending is ERC20Selectors, Masks {
                 // if borrow balance is less than the amount, select borrow balance
                 if lt(borrowBalance, amount) { amount := borrowBalance }
             }
-
-            // skip silo (end of data)
-            currentOffset := add(currentOffset, 76)
 
             let ptr := mload(0x40)
 
