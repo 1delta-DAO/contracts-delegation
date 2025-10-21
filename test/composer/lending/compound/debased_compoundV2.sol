@@ -57,10 +57,8 @@ contract CompoundV2ComposerLightTest is BaseTest {
         cTokens[0] = WETH_CTOKEN;
 
         vm.startPrank(user);
-        IERC20All(WETH).approve(address(oneDV2), type(uint256).max);
         IERC20All(USDT).approve(address(oneDV2), type(uint256).max);
         IERC20All(WETH_CTOKEN).approve(address(oneDV2), type(uint256).max);
-        IERC20All(USDT_CTOKEN).approve(address(oneDV2), type(uint256).max);
         IERC20All(VENUS_COMPTROLLER).enterMarkets(cTokens);
         IERC20All(VENUS_COMPTROLLER).updateDelegate(address(oneDV2), true);
         (cTokens);
