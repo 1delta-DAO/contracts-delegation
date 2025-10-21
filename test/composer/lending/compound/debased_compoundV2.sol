@@ -24,7 +24,9 @@ contract CompoundV2ComposerLightTest is BaseTest {
     address internal VENUS_COMPTROLLER;
     string internal lender;
 
-    uint256 internal constant forkBlock = 290934482;
+    address internal MORPHO_BLUE = 0x6c247b1F6182318877311737BaC0844bAa518F5e;
+
+    uint256 internal constant forkBlock = 391949445;
 
     function setUp() public virtual {
         string memory chainName = Chains.ARBITRUM_ONE;
@@ -46,66 +48,52 @@ contract CompoundV2ComposerLightTest is BaseTest {
         vm.label(user, "user");
         vm.label(WETH_CTOKEN, "WETH_CTOKEN");
         vm.label(USDT_CTOKEN, "USDT_CTOKEN");
+        vm.label(MORPHO_BLUE, "MORPHO_BLUE");
     }
 
     function test_debased() external {
-        uint256 amount = 100 ether;
-        deal(WETH, user, amount);
-
+        // required approvals
         address[] memory cTokens = new address[](1);
         cTokens[0] = WETH_CTOKEN;
 
-        vm.prank(user);
+        vm.startPrank(user);
+        IERC20All(WETH).approve(address(oneDV2), type(uint256).max);
+        IERC20All(USDT).approve(address(oneDV2), type(uint256).max);
+        IERC20All(WETH_CTOKEN).approve(address(oneDV2), type(uint256).max);
+        IERC20All(USDT_CTOKEN).approve(address(oneDV2), type(uint256).max);
         IERC20All(VENUS_COMPTROLLER).enterMarkets(cTokens);
+        IERC20All(VENUS_COMPTROLLER).updateDelegate(address(oneDV2), true);
+        (cTokens);
+        vm.stopPrank();
 
-        vm.prank(user);
-        IERC20All(WETH).approve(address(oneDV2), amount);
+        uint256 amount = 49 ether;
+        uint256 compensationAmount = 1e9;
 
-        bytes memory depositCallData = CalldataLib.encodeTransferIn(WETH, address(oneDV2), amount);
+        vm.deal(user, 1 ether);
 
-        depositCallData = abi.encodePacked(
-            depositCallData, CalldataLib.encodeCompoundV2Deposit(WETH, amount, user, WETH_CTOKEN, uint8(CompoundV2Selector.MINT_BEHALF))
-        );
+        uint256 initialUserBalance = user.balance;
 
-        vm.prank(user);
-        oneDV2.deltaCompose(depositCallData);
-
-        approveBorrowDelegation(user, WETH, address(oneDV2), lender);
+        bytes memory innerCalldata = CalldataLib.encodeCompoundV2Deposit(WETH, amount, user, WETH_CTOKEN, uint8(CompoundV2Selector.MINT_BEHALF));
 
         uint256 amountToBorrow = 100000e6;
-        bytes memory borrowCallData = CalldataLib.encodeCompoundV2Borrow(USDT, amountToBorrow, user, USDT_CTOKEN);
-        vm.prank(user);
-        oneDV2.deltaCompose(borrowCallData);
+        innerCalldata = abi.encodePacked(innerCalldata, CalldataLib.encodeCompoundV2Borrow(USDT, amountToBorrow, user, USDT_CTOKEN));
 
-        // uint256 bb = 0;
-        // (bool success, bytes memory data) = USDT_CTOKEN.call(abi.encodeWithSelector(0x17bfdfbc, user));
-        // if (success) {
-        //     bb = abi.decode(data, (uint256));
-        // }
-        // console.log("bb", bb);
+        innerCalldata = abi.encodePacked(innerCalldata, CalldataLib.encodeTransferIn(USDT, address(oneDV2), amountToBorrow));
 
-        vm.prank(user);
-        IERC20All(USDT).approve(address(oneDV2), type(uint256).max);
-        bytes memory transferTo = CalldataLib.encodeTransferIn(
-            USDT,
-            address(oneDV2),
-            amountToBorrow //
+        innerCalldata = abi.encodePacked(innerCalldata, CalldataLib.encodeCompoundV2Repay(USDT, type(uint112).max, user, USDT_CTOKEN));
+
+        innerCalldata = abi.encodePacked(
+            innerCalldata,
+            CalldataLib.encodeCompoundV2Withdraw(WETH, type(uint112).max, address(oneDV2), WETH_CTOKEN, uint8(CompoundV2Selector.REDEEM_BEHALF)),
+            CalldataLib.encodeWrap(compensationAmount, WETH)
         );
 
-        bytes memory d = CalldataLib.encodeCompoundV2Repay(USDT, type(uint112).max, user, USDT_CTOKEN);
-        vm.prank(user);
-        oneDV2.deltaCompose(abi.encodePacked(transferTo, d));
+        bytes memory sweep = CalldataLib.encodeSweep(WETH, user, 0, SweepType.VALIDATE);
+
+        bytes memory flashLoanCalldata = CalldataLib.encodeFlashLoan(WETH, amount, MORPHO_BLUE, uint8(0), uint8(0), innerCalldata);
 
         vm.prank(user);
-        IERC20All(WETH_CTOKEN).approve(address(oneDV2), type(uint256).max);
-
-        vm.prank(user);
-        oneDV2.deltaCompose(
-            CalldataLib.encodeCompoundV2Withdraw(WETH, type(uint112).max, address(oneDV2), WETH_CTOKEN, uint8(CompoundV2Selector.REDEEM))
-        );
-
-        uint256 bb = IERC20All(WETH).balanceOf(address(oneDV2));
-        console.log("Difference", amount - bb);
+        oneDV2.deltaCompose{value: compensationAmount}(abi.encodePacked(flashLoanCalldata, sweep));
     }
 
     function _getCollateralToken(address token) internal view returns (address) {
