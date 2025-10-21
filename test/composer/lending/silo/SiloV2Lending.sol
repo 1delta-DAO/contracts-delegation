@@ -314,6 +314,50 @@ contract SiloV2ComposerLightTest is BaseTest {
         assertApproxEqAbs(underlyingBefore - underlyingAfter, borrowBalanceBefore, 1);
     }
 
+    function test_light_lending_siloV2_repay_max_borrow_balance_less_than_contract_balance() external {
+        address depositToken = WEETH;
+        address token = WETH;
+        address collateralSilo = SILO_WEETH;
+        address borrowSilo = SILO_WETH;
+        address debtShareToken = SILO_WETH_DEBT_SHARE;
+
+        uint256 amount = 1.0e18;
+
+        depositToSiloV2(depositToken, user, amount, collateralSilo, uint8(SiloV2CollateralType.COLLATERAL));
+
+        vm.prank(user);
+        ISilo(debtShareToken).setReceiveApproval(address(oneDV2), type(uint256).max);
+
+        uint256 amountToBorrow = 0.3e18;
+        bytes memory composerCall = CalldataLib.encodeSiloV2Borrow(amountToBorrow, user, borrowSilo);
+
+        vm.prank(user);
+        oneDV2.deltaCompose(composerCall);
+
+        deal(token, address(oneDV2), 1.0e18);
+        deal(token, user, 0.1e18);
+
+        vm.prank(user);
+        IERC20All(token).approve(address(oneDV2), 0.1e18);
+
+        bytes memory transferTo = CalldataLib.encodeTransferIn(token, address(oneDV2), 0.1e18);
+
+        composerCall = CalldataLib.encodeSiloV2Repay(token, type(uint112).max, user, borrowSilo);
+
+        uint256 borrowBalanceBefore = _getDebtBalance(borrowSilo, user);
+        uint256 underlyingBefore = IERC20All(token).balanceOf(user);
+
+        vm.prank(user);
+        oneDV2.deltaCompose(abi.encodePacked(transferTo, composerCall));
+
+        uint256 borrowBalanceAfter = _getDebtBalance(borrowSilo, user);
+        uint256 underlyingAfter = IERC20All(token).balanceOf(user);
+
+        assertApproxEqAbs(borrowBalanceAfter, 0, 0);
+        assertApproxEqAbs(borrowBalanceBefore - borrowBalanceAfter, amountToBorrow, 1);
+        assertApproxEqAbs(underlyingBefore - underlyingAfter, 0.1e18, 1);
+    }
+
     function depositToSiloV2(address token, address userAddress, uint256 amount, address silo, uint8 collateralMode) internal {
         deal(token, userAddress, amount);
 
