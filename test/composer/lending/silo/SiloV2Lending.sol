@@ -304,7 +304,7 @@ contract SiloV2ComposerLightTest is BaseTest {
         assertApproxEqAbs(underlyingBefore - underlyingAfter, borrowBalanceBefore, 1);
     }
 
-    function test_light_lending_siloV2_repay_max_borrow_balance_less_than_contract_balance() external {
+    function test_light_lending_siloV2_repay_all_repay_less() external {
         address depositToken = WEETH;
         address token = WETH;
         address collateralSilo = SILO_WEETH;
@@ -324,13 +324,14 @@ contract SiloV2ComposerLightTest is BaseTest {
         vm.prank(user);
         oneDV2.deltaCompose(composerCall);
 
-        deal(token, address(oneDV2), 1.0e18);
-        deal(token, user, 0.1e18);
+        uint256 amountToRepay = 0.1e18;
+
+        deal(token, user, amountToRepay);
 
         vm.prank(user);
-        IERC20All(token).approve(address(oneDV2), 0.1e18);
+        IERC20All(token).approve(address(oneDV2), amountToRepay);
 
-        bytes memory transferTo = CalldataLib.encodeTransferIn(token, address(oneDV2), 0.1e18);
+        bytes memory transferTo = CalldataLib.encodeTransferIn(token, address(oneDV2), amountToRepay);
 
         composerCall = CalldataLib.encodeSiloV2Repay(token, type(uint112).max, user, borrowSilo);
 
@@ -343,9 +344,8 @@ contract SiloV2ComposerLightTest is BaseTest {
         uint256 borrowBalanceAfter = _getDebtBalance(borrowSilo, user);
         uint256 underlyingAfter = IERC20All(token).balanceOf(user);
 
-        assertApproxEqAbs(borrowBalanceAfter, 0, 0);
-        assertApproxEqAbs(borrowBalanceBefore - borrowBalanceAfter, amountToBorrow, 1);
-        assertApproxEqAbs(underlyingBefore - underlyingAfter, 0.1e18, 1);
+        assertApproxEqAbs(borrowBalanceBefore - borrowBalanceAfter, amountToRepay, 1);
+        assertApproxEqAbs(underlyingBefore - underlyingAfter, amountToRepay, 1);
     }
 
     function depositToSiloV2(address token, address userAddress, uint256 amount, address silo, uint8 collateralMode) internal {
