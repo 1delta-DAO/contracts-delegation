@@ -179,40 +179,45 @@ abstract contract CompoundV2Lending is ERC20Selectors, Masks {
             // floor to the balance
             if gt(cTokenTransferAmount, refAmount) { cTokenTransferAmount := refAmount }
 
-            // 2) TRANSFER VTOKENS
+            // siwtch-case over selectorId
+            switch and(UINT8_MASK, shr(120, amountData))
+            case 0 {
+                // 2) TRANSFER VTOKENS
 
-            // selector for transferFrom(address,address,uint256)
-            mstore(ptr, ERC20_TRANSFER_FROM)
-            mstore(add(ptr, 0x04), callerAddress) // from user
-            mstore(add(ptr, 0x24), address()) // to this address
-            mstore(add(ptr, 0x44), cTokenTransferAmount)
+                // selector for transferFrom(address,address,uint256)
+                mstore(ptr, ERC20_TRANSFER_FROM)
+                mstore(add(ptr, 0x04), callerAddress) // from user
+                mstore(add(ptr, 0x24), address()) // to this address
+                mstore(add(ptr, 0x44), cTokenTransferAmount)
 
-            let success := call(gas(), cToken, 0, ptr, 0x64, ptr, 32)
+                if iszero(call(gas(), cToken, 0, ptr, 0x64, ptr, 32)) {
+                    returndatacopy(0, 0, returndatasize())
+                    revert(0, returndatasize())
+                }
 
-            if iszero(success) {
-                returndatacopy(0, 0, returndatasize())
-                revert(0, returndatasize())
+                // 3) REDEEM
+                // selector for redeem(uint256)
+                mstore(0, 0xdb006a7500000000000000000000000000000000000000000000000000000000)
+                mstore(0x4, cTokenTransferAmount)
+
+                if iszero(call(gas(), cToken, 0x0, 0x0, 0x24, 0x0, 0x0)) {
+                    returndatacopy(0, 0, returndatasize())
+                    revert(0, returndatasize())
+                }
             }
+            case 1 {
+                // 2/3) REDEEM BEHALF (Venus only) - requires composer being the operator (cheaper version)
+                // selector for redeemBehalf(address,uint256) - sends tokens to msg.sender
+                mstore(ptr, 0x210bc05200000000000000000000000000000000000000000000000000000000)
+                mstore(add(ptr, 0x4), callerAddress)
+                mstore(add(ptr, 0x24), cTokenTransferAmount)
 
-            // 3) REDEEM
-            // selector for redeem(uint256)
-            mstore(0, 0xdb006a7500000000000000000000000000000000000000000000000000000000)
-            mstore(0x4, cTokenTransferAmount)
-
-            if iszero(
-                call(
-                    gas(),
-                    cToken,
-                    0x0,
-                    0x0, // input = selector
-                    0x24, // input selector + uint256
-                    0x0, // output
-                    0x0 // output size = zero
-                )
-            ) {
-                returndatacopy(0, 0, returndatasize())
-                revert(0, returndatasize())
+                if iszero(call(gas(), cToken, 0x0, ptr, 0x44, 0x0, 0x0)) {
+                    returndatacopy(0, 0, returndatasize())
+                    revert(0, returndatasize())
+                }
             }
+            default { revert(0, 0) }
 
             // transfer tokens only if the receiver is not this address
             if xor(address(), receiver) {
@@ -222,7 +227,7 @@ abstract contract CompoundV2Lending is ERC20Selectors, Masks {
                 mstore(add(ptr, 0x04), receiver)
                 mstore(add(ptr, 0x24), amount)
 
-                success := call(gas(), underlying, 0, ptr, 0x44, ptr, 32)
+                let success := call(gas(), underlying, 0, ptr, 0x44, ptr, 32)
 
                 let rdsize := returndatasize()
 
@@ -330,9 +335,8 @@ abstract contract CompoundV2Lending is ERC20Selectors, Masks {
             }
             // erc20 case
             default {
-                let amount
+                let amount := and(UINT120_MASK, amountData)
 
-                amount := and(UINT120_MASK, amountData)
                 // zero is this balance
                 if iszero(amount) {
                     // selector for balanceOf(address)
@@ -347,15 +351,68 @@ abstract contract CompoundV2Lending is ERC20Selectors, Masks {
 
                 let ptr := mload(0x40)
 
-                // selector for mintBehalf(address,uint256)
-                mstore(ptr, 0x23323e0300000000000000000000000000000000000000000000000000000000)
-                mstore(add(ptr, 0x04), receiver)
-                mstore(add(ptr, 0x24), amount)
+                // switch-case over selectorId
+                switch and(UINT8_MASK, shr(120, amountData))
+                case 0 {
+                    // selector for mintBehalf(address,uint256)
+                    mstore(ptr, 0x23323e0300000000000000000000000000000000000000000000000000000000)
+                    mstore(add(ptr, 0x04), receiver)
+                    mstore(add(ptr, 0x24), amount)
 
-                if iszero(call(gas(), cToken, 0x0, ptr, 0x44, 0x0, 0x0)) {
-                    returndatacopy(0, 0, returndatasize())
-                    revert(0, returndatasize())
+                    if iszero(call(gas(), cToken, 0x0, ptr, 0x44, 0x0, 0x0)) {
+                        returndatacopy(0, 0, returndatasize())
+                        revert(0, returndatasize())
+                    }
                 }
+                case 1 {
+                    // selector for mint(uint)
+                    mstore(ptr, 0xa0712d6800000000000000000000000000000000000000000000000000000000)
+                    mstore(add(ptr, 0x04), amount)
+
+                    if iszero(call(gas(), cToken, 0x0, ptr, 0x24, 0x0, 0x0)) {
+                        returndatacopy(0, 0, returndatasize())
+                        revert(0, returndatasize())
+                    }
+
+                    // need to transfer collateral to receiver
+                    if xor(receiver, address()) {
+                        // selector for balanceOf(address)
+                        mstore(0, ERC20_BALANCE_OF)
+                        // add this address as parameter
+                        mstore(0x04, address())
+                        // call to token
+                        pop(staticcall(gas(), cToken, 0x0, 0x24, 0x0, 0x20))
+                        // load the retrieved balance
+                        let cBalance := mload(0x0)
+
+                        // TRANSFER COLLATERAL
+                        // selector for transfer(address,uint256)
+                        mstore(ptr, ERC20_TRANSFER)
+                        mstore(add(ptr, 0x04), receiver)
+                        mstore(add(ptr, 0x24), cBalance)
+
+                        let success := call(gas(), cToken, 0, ptr, 0x44, ptr, 32)
+
+                        let rdsize := returndatasize()
+
+                        if iszero(
+                            and(
+                                success, // call itself succeeded
+                                or(
+                                    iszero(rdsize), // no return data, or
+                                    and(
+                                        gt(rdsize, 31), // at least 32 bytes
+                                        eq(mload(ptr), 1) // starts with uint256(1)
+                                    )
+                                )
+                            )
+                        ) {
+                            returndatacopy(0, 0, rdsize)
+                            revert(0, rdsize)
+                        }
+                    }
+                }
+                default { revert(0, 0) }
             }
         }
         return currentOffset;

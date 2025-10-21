@@ -6,6 +6,8 @@ import {BaseTest} from "test/shared/BaseTest.sol";
 import {Chains, Tokens, Lenders} from "test/data/LenderRegistry.sol";
 import "test/composer/utils/CalldataLib.sol";
 import {ComposerPlugin, IComposerLike} from "plugins/ComposerPlugin.sol";
+import "test/shared/chains/ChainInitializer.sol";
+import "test/shared/chains/ChainFactory.sol";
 
 contract CompoundV2ComposerLightTest is BaseTest {
     uint16 internal constant COMPOUND_V2_ID = 3000;
@@ -54,13 +56,55 @@ contract CompoundV2ComposerLightTest is BaseTest {
             amount //
         );
 
-        bytes memory d = CalldataLib.encodeCompoundV2Deposit(token, amount, user, cToken);
+        bytes memory d = CalldataLib.encodeCompoundV2Deposit(token, amount, user, cToken, uint8(CompoundV2Selector.MINT_BEHALF));
 
         vm.prank(user);
         oneDV2.deltaCompose(abi.encodePacked(transferTo, d));
 
         // Get balances after deposit
         uint256 collateralAfter = chain.getCollateralBalance(user, token, lender);
+        uint256 underlyingAfter = IERC20All(token).balanceOf(user);
+
+        // Assert collateral balance increased by amount
+        assertApproxEqAbs(collateralAfter - collateralBefore, amount, 1);
+        // Assert underlying balance decreased by amount
+        assertApproxEqAbs(underlyingBefore - underlyingAfter, amount, 1);
+    }
+
+    function test_light_lending_compoundV2_deposit_with_use_mint() external {
+        vm.assume(user != address(0));
+
+        IChain base = chainFactory.getChain(Chains.BASE);
+
+        vm.createSelectFork(base.getRpcUrl());
+
+        address token = 0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913;
+        uint256 amount = 100.0e6;
+        deal(token, user, amount);
+
+        address cToken = 0xEdc817A28E8B93B03976FBd4a3dDBc9f7D176c22;
+        IComposerLike oneDBase = ComposerPlugin.getComposer(Chains.BASE);
+
+        vm.prank(user);
+        IERC20All(token).approve(address(oneDBase), type(uint256).max);
+
+        // Get balances before deposit
+        uint256 collateralBefore = ILendingTools(cToken).balanceOfUnderlying(user);
+        uint256 underlyingBefore = IERC20All(token).balanceOf(user);
+
+        bytes memory transferTo = CalldataLib.encodeTransferIn(
+            token,
+            address(oneDBase),
+            amount //
+        );
+
+        bytes memory d = CalldataLib.encodeCompoundV2Deposit(token, amount, user, cToken, uint8(CompoundV2Selector.MINT));
+
+        vm.prank(user);
+        oneDBase.deltaCompose(abi.encodePacked(transferTo, d));
+
+        // Get balances after deposit
+        uint256 collateralAfter = ILendingTools(cToken).balanceOfUnderlying(user);
         uint256 underlyingAfter = IERC20All(token).balanceOf(user);
 
         // Assert collateral balance increased by amount
@@ -80,7 +124,7 @@ contract CompoundV2ComposerLightTest is BaseTest {
         uint256 amount = 1.0e18;
         deal(token, user, amount);
 
-        depositToCompoundV2(depositToken, user, amount, comptroller);
+        depositToCompoundV2(depositToken, user, amount, comptroller, uint8(CompoundV2Selector.MINT_BEHALF));
 
         approveBorrowDelegation(user, token, address(oneDV2), lender);
 
@@ -112,14 +156,49 @@ contract CompoundV2ComposerLightTest is BaseTest {
         uint256 amount = 100.0e6;
         deal(token, user, amount);
 
-        depositToCompoundV2(token, user, amount, comptroller);
+        depositToCompoundV2(token, user, amount, comptroller, uint8(CompoundV2Selector.MINT_BEHALF));
 
         address cToken = _getCollateralToken(token);
 
         approveWithdrawalDelegation(user, token, address(oneDV2), lender);
 
         uint256 amountToWithdraw = 10.0e6;
-        bytes memory d = CalldataLib.encodeCompoundV2Withdraw(token, amountToWithdraw, user, cToken);
+        bytes memory d = CalldataLib.encodeCompoundV2Withdraw(token, amountToWithdraw, user, cToken, uint8(CompoundV2Selector.REDEEM));
+
+        // Check balances before withdrawal
+        uint256 collateralBefore = chain.getCollateralBalance(user, token, lender);
+        uint256 underlyingBefore = IERC20All(token).balanceOf(user);
+
+        vm.prank(user);
+        oneDV2.deltaCompose(d);
+
+        // Check balances after withdrawal
+        uint256 collateralAfter = chain.getCollateralBalance(user, token, lender);
+        uint256 underlyingAfter = IERC20All(token).balanceOf(user);
+
+        // Assert collateral decreased by withdrawn amount
+        assertApproxEqAbs(collateralBefore - collateralAfter, amountToWithdraw, 1);
+        // Assert underlying increased by withdrawn amount
+        assertApproxEqAbs(underlyingAfter - underlyingBefore, amountToWithdraw, 1);
+    }
+
+    function test_light_lending_compoundV2_withdraw_behalf() external {
+        vm.assume(user != address(0));
+
+        address token = USDC;
+        address comptroller = VENUS_COMPTROLLER;
+        uint256 amount = 100.0e6;
+        deal(token, user, amount);
+
+        depositToCompoundV2(token, user, amount, comptroller, uint8(CompoundV2Selector.MINT_BEHALF));
+
+        address cToken = _getCollateralToken(token);
+
+        // redeemBehalf needs borrow delegaion (general one) for venus
+        approveBorrowDelegation(user, token, address(oneDV2), lender);
+
+        uint256 amountToWithdraw = 10.0e6;
+        bytes memory d = CalldataLib.encodeCompoundV2Withdraw(token, amountToWithdraw, user, cToken, uint8(CompoundV2Selector.REDEEM_BEHALF));
 
         // Check balances before withdrawal
         uint256 collateralBefore = chain.getCollateralBalance(user, token, lender);
@@ -148,7 +227,7 @@ contract CompoundV2ComposerLightTest is BaseTest {
         uint256 amount = 1.0e18;
         deal(token, user, amount);
 
-        depositToCompoundV2(depositToken, user, amount, comptroller);
+        depositToCompoundV2(depositToken, user, amount, comptroller, uint8(CompoundV2Selector.MINT_BEHALF));
 
         uint256 amountToBorrow = 10.0e6;
         borrowFromCompoundV2(token, user, amountToBorrow, comptroller);
@@ -194,7 +273,7 @@ contract CompoundV2ComposerLightTest is BaseTest {
         uint256 amount = 1.0e18;
         deal(token, user, amount);
 
-        depositToCompoundV2(depositToken, user, amount, comptroller);
+        depositToCompoundV2(depositToken, user, amount, comptroller, uint8(CompoundV2Selector.MINT_BEHALF));
 
         uint256 amountToBorrow = 10.0e6;
         borrowFromCompoundV2(token, user, amountToBorrow, comptroller);
@@ -240,7 +319,7 @@ contract CompoundV2ComposerLightTest is BaseTest {
         uint256 amount = 1.0e18;
         deal(token, user, amount);
 
-        depositToCompoundV2(depositToken, user, amount, comptroller);
+        depositToCompoundV2(depositToken, user, amount, comptroller, uint8(CompoundV2Selector.MINT_BEHALF));
 
         uint256 amountToBorrow = 10.0e6;
         borrowFromCompoundV2(token, user, amountToBorrow, comptroller);
@@ -273,7 +352,7 @@ contract CompoundV2ComposerLightTest is BaseTest {
         assertApproxEqAbs(debtAfter, 1.0e6, 0);
     }
 
-    function depositToCompoundV2(address token, address userAddress, uint256 amount, address comptroller) internal {
+    function depositToCompoundV2(address token, address userAddress, uint256 amount, address comptroller, uint8 altSelector) internal {
         deal(token, userAddress, amount);
 
         address[] memory cTokens = new address[](1);
@@ -292,7 +371,7 @@ contract CompoundV2ComposerLightTest is BaseTest {
         );
 
         address cToken = _getCollateralToken(token);
-        bytes memory d = CalldataLib.encodeCompoundV2Deposit(token, amount, userAddress, cToken);
+        bytes memory d = CalldataLib.encodeCompoundV2Deposit(token, amount, userAddress, cToken, altSelector);
 
         vm.prank(userAddress);
         oneDV2.deltaCompose(abi.encodePacked(transferTo, d));

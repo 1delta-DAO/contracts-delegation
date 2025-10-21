@@ -9,6 +9,8 @@ import {ComposerPlugin, IComposerLike} from "plugins/ComposerPlugin.sol";
 import {console} from "forge-std/console.sol";
 import {IChain} from "test/shared/chains/ChainInitializer.sol";
 
+// solhint-disable no-console
+
 contract ExpectedOutputGen is BaseTest {
     address internal constant TEST_RECEIVER = 0x1De17a0000000000000000000000000000003333;
     uint256 internal constant TEST_AMOUNT = 1000e6;
@@ -74,7 +76,8 @@ contract ExpectedOutputGen is BaseTest {
 
         aaveV3DepositData = CalldataLib.encodeAaveDeposit(USDC, TEST_AMOUNT, TEST_RECEIVER, AAVE_V3_POOL);
 
-        compoundV2DepositData = CalldataLib.encodeCompoundV2Deposit(USDC, TEST_AMOUNT, TEST_RECEIVER, COMPOUND_V2_CTOKEN);
+        compoundV2DepositData =
+            CalldataLib.encodeCompoundV2Deposit(USDC, TEST_AMOUNT, TEST_RECEIVER, COMPOUND_V2_CTOKEN, uint8(CompoundV2Selector.MINT_BEHALF));
 
         compoundV3DepositData = CalldataLib.encodeCompoundV3Deposit(USDC, TEST_AMOUNT, TEST_RECEIVER, COMPOUND_V3_COMET_WETH);
     }
@@ -87,7 +90,8 @@ contract ExpectedOutputGen is BaseTest {
 
         aaveV3WithdrawData = CalldataLib.encodeAaveWithdraw(USDC, TEST_AMOUNT, TEST_RECEIVER, aaveV3DebtToken, AAVE_V3_POOL);
 
-        compoundV2WithdrawData = CalldataLib.encodeCompoundV2Withdraw(USDC, TEST_AMOUNT, TEST_RECEIVER, COMPOUND_V2_CTOKEN);
+        compoundV2WithdrawData =
+            CalldataLib.encodeCompoundV2Withdraw(USDC, TEST_AMOUNT, TEST_RECEIVER, COMPOUND_V2_CTOKEN, uint8(CompoundV2Selector.REDEEM));
 
         compoundV3WithdrawData = CalldataLib.encodeCompoundV3Withdraw(USDC, TEST_AMOUNT, TEST_RECEIVER, COMPOUND_V3_COMET_WETH, false);
     }

@@ -50,7 +50,7 @@ contract CompoundV2NativeComposerLightTest is BaseTest {
         uint256 collateralBefore = chain.getCollateralBalance(user, token, lender);
         uint256 underlyingBefore = user.balance; // IERC20All(token).balanceOf(user);
 
-        bytes memory d = CalldataLib.encodeCompoundV2Deposit(token, amount, user, cToken);
+        bytes memory d = CalldataLib.encodeCompoundV2Deposit(token, amount, user, cToken, uint8(CompoundV2Selector.MINT_BEHALF));
 
         vm.prank(user);
         oneDV2.deltaCompose{value: amount}(d);
@@ -119,7 +119,7 @@ contract CompoundV2NativeComposerLightTest is BaseTest {
         );
 
         address cToken = _getCollateralToken(token);
-        bytes memory d = CalldataLib.encodeCompoundV2Deposit(token, amount, userAddress, cToken);
+        bytes memory d = CalldataLib.encodeCompoundV2Deposit(token, amount, userAddress, cToken, uint8(CompoundV2Selector.MINT_BEHALF));
 
         vm.prank(userAddress);
         oneDV2.deltaCompose(abi.encodePacked(transferTo, d));

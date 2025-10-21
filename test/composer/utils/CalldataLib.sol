@@ -1375,7 +1375,17 @@ library CalldataLib {
         );
     }
 
-    function encodeCompoundV2Deposit(address token, uint256 amount, address receiver, address cToken) internal pure returns (bytes memory) {
+    function encodeCompoundV2Deposit(
+        address token,
+        uint256 amount,
+        address receiver,
+        address cToken,
+        uint8 selectorId
+    )
+        internal
+        pure
+        returns (bytes memory)
+    {
         return abi.encodePacked(
             // no approves for native
             token == address(0) ? new bytes(0) : encodeApprove(token, cToken),
@@ -1383,7 +1393,7 @@ library CalldataLib {
             uint8(LenderOps.DEPOSIT),
             uint16(LenderIds.UP_TO_COMPOUND_V2 - 1),
             token,
-            uint128(amount),
+            encodeCompoundV2SelectorId(uint128(amount), selectorId),
             receiver,
             cToken //
         );
@@ -1415,13 +1425,23 @@ library CalldataLib {
         );
     }
 
-    function encodeCompoundV2Withdraw(address token, uint256 amount, address receiver, address cToken) internal pure returns (bytes memory) {
+    function encodeCompoundV2Withdraw(
+        address token,
+        uint256 amount,
+        address receiver,
+        address cToken,
+        uint8 selectorId
+    )
+        internal
+        pure
+        returns (bytes memory)
+    {
         return abi.encodePacked(
             uint8(ComposerCommands.LENDING),
             uint8(LenderOps.WITHDRAW),
             uint16(LenderIds.UP_TO_COMPOUND_V2 - 1),
             token,
-            uint128(amount),
+            encodeCompoundV2SelectorId(uint128(amount), selectorId),
             receiver,
             cToken //
         );
@@ -1446,9 +1466,9 @@ library CalldataLib {
     }
 
     /// @dev Mask for using the injected amount
-    uint256 private constant NATIVE_FLAG = 1 << 127;
+    uint128 private constant NATIVE_FLAG = 1 << 127;
     /// @dev Mask for shares
-    uint256 private constant USE_SHARES_FLAG = 1 << 126;
+    uint128 private constant USE_SHARES_FLAG = 1 << 126;
 
     function generateAmountBitmap(uint128 amount, bool useShares, bool native) internal pure returns (uint128 am) {
         am = amount;
@@ -1461,5 +1481,9 @@ library CalldataLib {
         assembly {
             a := shl(96, addr)
         }
+    }
+
+    function encodeCompoundV2SelectorId(uint128 amount, uint8 selectorId) internal pure returns (uint128 am) {
+        am = amount | (uint128(selectorId) << 120);
     }
 }

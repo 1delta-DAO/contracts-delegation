@@ -97,3 +97,11 @@ library BridgeIds {
     uint256 internal constant SQUID_ROUTER = 0x14;
     uint256 internal constant GASZIP = 0x1E;
 }
+
+library CompoundV2Selector {
+    uint256 internal constant MINT_BEHALF = 0;
+    uint256 internal constant MINT = 1;
+
+    uint256 internal constant REDEEM = 0;
+    uint256 internal constant REDEEM_BEHALF = 1;
+}
