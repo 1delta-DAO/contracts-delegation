@@ -1,4 +1,4 @@
-export const templateMorphoBlue = (addressContants: string, switchCaseContent: string) => `
+export const templateMoolahBlue = (addressContants: string, switchCaseContent: string) => `
 // SPDX-License-Identifier: BUSL-1.1
 
 pragma solidity 0.8.28;
@@ -16,28 +16,28 @@ contract MoolahFlashLoanCallback is Masks, DeltaErrors {
 
     /// @dev Moolah flash loan
     function onMoolahFlashLoan(uint256, bytes calldata) external {
-        _onMorphoCallback();
+        _onMoolahCallback();
     }
 
     /// @dev Moolah supply callback
     function onMoolahSupply(uint256, bytes calldata) external {
-        _onMorphoCallback();
+        _onMoolahCallback();
     }
 
     /// @dev Moolah repay callback
     function onMoolahRepay(uint256, bytes calldata) external {
-        _onMorphoCallback();
+        _onMoolahCallback();
     }
 
     /// @dev Moolah supply collateral callback
     function onMoolahSupplyCollateral(uint256, bytes calldata) external {
-        _onMorphoCallback();
+        _onMoolahCallback();
     }
 
     /// @dev Moolah is immutable and their flash loans are callbacks to msg.sender,
     /// Since it is universal batching and the same validation for all
-    /// Morpho callbacks, we can use the same logic everywhere
-    function _onMorphoCallback() internal {
+    /// Moolah callbacks, we can use the same logic everywhere
+    function _onMoolahCallback() internal {
         address origCaller;
         uint256 calldataLength;
         assembly {
