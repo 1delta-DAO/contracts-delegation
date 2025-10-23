@@ -181,6 +181,7 @@ contract MorphoLens {
         return data;
     }
 
+    /// @notice use to get the market data for Moolah protocol
     function getMoolahMarketDataCompact(address morpho, bytes32[] calldata marketsIds) external view returns (bytes memory data) {
         // each entry makes 4*20 (addresses) + 16 (lltv) + 32 (loanPrice) + 32 (collateralPrice) + 32 (rateAtTarget)
         // + 96 bytes (market) (=288) in size. The return data is therfore implicitly indexed
