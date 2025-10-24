@@ -199,16 +199,17 @@ contract MorphoLens {
             ) = IMorpho(morpho).idToMarketParams(id);
 
             // get prices from moolah oracle for both loan and collateral tokens
+            bytes memory temp;
             if (oracle != address(0)) {
                 try IMoolahOracle(oracle).peek(loanToken) returns (uint256 _loanPrice) {
-                    data = abi.encodePacked(_loanPrice);
+                    temp = abi.encodePacked(_loanPrice);
                 } catch {
-                    data = abi.encodePacked(uint256(0));
+                    temp = abi.encodePacked(uint256(0));
                 }
                 try IMoolahOracle(oracle).peek(collateralToken) returns (uint256 _collateralPrice) {
-                    data = abi.encodePacked(data, _collateralPrice);
+                    temp = abi.encodePacked(temp, _collateralPrice);
                 } catch {
-                    data = abi.encodePacked(data, uint256(0));
+                    temp = abi.encodePacked(temp, uint256(0));
                 }
             }
             // get rate
@@ -220,7 +221,7 @@ contract MorphoLens {
             }
 
             // progressively pack the data
-            data = abi.encodePacked(data, loanToken, collateralToken, oracle, irm, uint128(lltv), data, rateAtTarget, market);
+            data = abi.encodePacked(data, loanToken, collateralToken, oracle, irm, uint128(lltv), temp, rateAtTarget, market);
         }
 
         return data;
