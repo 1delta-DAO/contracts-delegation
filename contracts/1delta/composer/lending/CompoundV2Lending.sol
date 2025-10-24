@@ -12,6 +12,9 @@ import {Masks} from "../../shared/masks/Masks.sol";
  * Most effective for Venus
  */
 abstract contract CompoundV2Lending is ERC20Selectors, Masks {
+    // NativeTransferFailed()
+    bytes4 private constant NATIVE_TRANSFER_FAILED = 0xf4b3b1bc;
+
     /*
      * Note this is for Venus Finance only as other Compound forks
      * do not have this feature.
@@ -38,7 +41,7 @@ abstract contract CompoundV2Lending is ERC20Selectors, Masks {
 
             let amount := and(UINT120_MASK, amountData)
 
-            // selector for borrowBehlaf(address,uint256)
+            // selector for borrowBehalf(address,uint256)
             mstore(ptr, 0x856e5bb300000000000000000000000000000000000000000000000000000000)
             mstore(add(ptr, 0x4), callerAddress) // user
             mstore(add(ptr, 0x24), amount) // to this address
@@ -65,16 +68,17 @@ abstract contract CompoundV2Lending is ERC20Selectors, Masks {
                     // Check for ERC20 success. ERC20 tokens should return a boolean,
                     // but some don't. We accept 0-length return data as success, or at
                     // least 32 bytes that starts with a 32-byte boolean true.
-                    success := and(
-                        success, // call itself succeeded
-                        or(
-                            iszero(rdsize), // no return data, or
-                            and(
-                                gt(rdsize, 31), // at least 32 bytes
-                                eq(mload(ptr), 1) // starts with uint256(1)
+                    success :=
+                        and(
+                            success, // call itself succeeded
+                            or(
+                                iszero(rdsize), // no return data, or
+                                and(
+                                    gt(rdsize, 31), // at least 32 bytes
+                                    eq(mload(ptr), 1) // starts with uint256(1)
+                                )
                             )
                         )
-                    )
 
                     if iszero(success) {
                         returndatacopy(0, 0, rdsize)
@@ -222,7 +226,12 @@ abstract contract CompoundV2Lending is ERC20Selectors, Masks {
             if xor(address(), receiver) {
                 switch underlying
                 // native case
-                case 0 { if iszero(call(gas(), receiver, amount, 0, 0, 0, 0)) { revert(0, 0) } }
+                case 0 {
+                    if iszero(call(gas(), receiver, amount, 0, 0, 0, 0)) {
+                        mstore(0, NATIVE_TRANSFER_FAILED)
+                        revert(0, 0x4) // revert when native transfer fails
+                    }
+                }
                 // erc20 case
                 default {
                     // 4) TRANSFER TO RECIPIENT
@@ -238,16 +247,17 @@ abstract contract CompoundV2Lending is ERC20Selectors, Masks {
                     // Check for ERC20 success. ERC20 tokens should return a boolean,
                     // but some don't. We accept 0-length return data as success, or at
                     // least 32 bytes that starts with a 32-byte boolean true.
-                    success := and(
-                        success, // call itself succeeded
-                        or(
-                            iszero(rdsize), // no return data, or
-                            and(
-                                gt(rdsize, 31), // at least 32 bytes
-                                eq(mload(ptr), 1) // starts with uint256(1)
+                    success :=
+                        and(
+                            success, // call itself succeeded
+                            or(
+                                iszero(rdsize), // no return data, or
+                                and(
+                                    gt(rdsize, 31), // at least 32 bytes
+                                    eq(mload(ptr), 1) // starts with uint256(1)
+                                )
                             )
                         )
-                    )
 
                     if iszero(success) {
                         returndatacopy(0, 0, rdsize)
