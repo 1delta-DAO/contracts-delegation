@@ -65,17 +65,16 @@ abstract contract CompoundV2Lending is ERC20Selectors, Masks {
                     // Check for ERC20 success. ERC20 tokens should return a boolean,
                     // but some don't. We accept 0-length return data as success, or at
                     // least 32 bytes that starts with a 32-byte boolean true.
-                    success :=
-                        and(
-                            success, // call itself succeeded
-                            or(
-                                iszero(rdsize), // no return data, or
-                                and(
-                                    gt(rdsize, 31), // at least 32 bytes
-                                    eq(mload(ptr), 1) // starts with uint256(1)
-                                )
+                    success := and(
+                        success, // call itself succeeded
+                        or(
+                            iszero(rdsize), // no return data, or
+                            and(
+                                gt(rdsize, 31), // at least 32 bytes
+                                eq(mload(ptr), 1) // starts with uint256(1)
                             )
                         )
+                    )
 
                     if iszero(success) {
                         returndatacopy(0, 0, rdsize)
@@ -221,21 +220,25 @@ abstract contract CompoundV2Lending is ERC20Selectors, Masks {
 
             // transfer tokens only if the receiver is not this address
             if xor(address(), receiver) {
-                // 4) TRANSFER TO RECIPIENT
-                // selector for transfer(address,uint256)
-                mstore(ptr, ERC20_TRANSFER)
-                mstore(add(ptr, 0x04), receiver)
-                mstore(add(ptr, 0x24), amount)
+                switch underlying
+                // native case
+                case 0 { if iszero(call(gas(), receiver, amount, 0, 0, 0, 0)) { revert(0, 0) } }
+                // erc20 case
+                default {
+                    // 4) TRANSFER TO RECIPIENT
+                    // selector for transfer(address,uint256)
+                    mstore(ptr, ERC20_TRANSFER)
+                    mstore(add(ptr, 0x04), receiver)
+                    mstore(add(ptr, 0x24), amount)
 
-                let success := call(gas(), underlying, 0, ptr, 0x44, ptr, 32)
+                    let success := call(gas(), underlying, 0, ptr, 0x44, ptr, 32)
 
-                let rdsize := returndatasize()
+                    let rdsize := returndatasize()
 
-                // Check for ERC20 success. ERC20 tokens should return a boolean,
-                // but some don't. We accept 0-length return data as success, or at
-                // least 32 bytes that starts with a 32-byte boolean true.
-                success :=
-                    and(
+                    // Check for ERC20 success. ERC20 tokens should return a boolean,
+                    // but some don't. We accept 0-length return data as success, or at
+                    // least 32 bytes that starts with a 32-byte boolean true.
+                    success := and(
                         success, // call itself succeeded
                         or(
                             iszero(rdsize), // no return data, or
@@ -246,9 +249,10 @@ abstract contract CompoundV2Lending is ERC20Selectors, Masks {
                         )
                     )
 
-                if iszero(success) {
-                    returndatacopy(0, 0, rdsize)
-                    revert(0, rdsize)
+                    if iszero(success) {
+                        returndatacopy(0, 0, rdsize)
+                        revert(0, rdsize)
+                    }
                 }
             }
         }
