@@ -111,17 +111,7 @@ abstract contract CompoundV2Lending is ERC20Selectors, Masks {
                 // add caller address as parameter
                 mstore(0x04, callerAddress)
                 // call to token
-                pop(
-                    call(
-                        gas(),
-                        cToken, // collateral token
-                        0x0,
-                        0x0,
-                        0x24,
-                        0x0,
-                        0x20
-                    )
-                )
+                pop(call(gas(), cToken, 0x0, 0x0, 0x24, 0x0, 0x20))
                 // load the retrieved balance
                 amount := mload(0x0)
             }
@@ -135,17 +125,7 @@ abstract contract CompoundV2Lending is ERC20Selectors, Masks {
             )
             // call to collateralToken
             // accrues interest. No real risk of failure.
-            pop(
-                call(
-                    gas(),
-                    cToken,
-                    0x0,
-                    0x0,
-                    0x24,
-                    0x0, // store back to ptr
-                    0x20
-                )
-            )
+            pop(call(gas(), cToken, 0x0, 0x0, 0x24, 0x0, 0x20))
 
             // load the retrieved protocol share
             let refAmount := mload(0x0)
