@@ -28,16 +28,12 @@ abstract contract CompoundV2Lending is ERC20Selectors, Masks {
     function _borrowFromCompoundV2(uint256 currentOffset, address callerAddress) internal returns (uint256) {
         assembly {
             let ptr := mload(0x40)
-            // Compound V3 types need to trasfer collateral tokens
-            let underlying := shr(96, calldataload(currentOffset))
             // offset for amount at lower bytes
             let amountData := shr(128, calldataload(add(currentOffset, 20)))
             // receiver
             let receiver := shr(96, calldataload(add(currentOffset, 36)))
 
             let cToken := shr(96, calldataload(add(currentOffset, 56)))
-
-            currentOffset := add(currentOffset, 76)
 
             let amount := and(UINT120_MASK, amountData)
 
@@ -50,6 +46,7 @@ abstract contract CompoundV2Lending is ERC20Selectors, Masks {
                 revert(0, returndatasize())
             }
             if xor(address(), receiver) {
+                let underlying := shr(96, calldataload(currentOffset))
                 // native case should not exist here
                 if iszero(underlying) { revert(0, 0) }
 
@@ -83,6 +80,8 @@ abstract contract CompoundV2Lending is ERC20Selectors, Masks {
                     revert(0, rdsize)
                 }
             }
+            // skip calldata
+            currentOffset := add(currentOffset, 76)
         }
         return currentOffset;
     }
@@ -98,16 +97,12 @@ abstract contract CompoundV2Lending is ERC20Selectors, Masks {
     function _withdrawFromCompoundV2(uint256 currentOffset, address callerAddress) internal returns (uint256) {
         assembly {
             let ptr := mload(0x40)
-            // Compound V2 types need to trasfer collateral tokens
-            let underlying := shr(96, calldataload(currentOffset))
             // offset for amount at lower bytes
             let amountData := shr(128, calldataload(add(currentOffset, 20)))
             // receiver
             let receiver := shr(96, calldataload(add(currentOffset, 36)))
 
             let cToken := shr(96, calldataload(add(currentOffset, 56)))
-
-            currentOffset := add(currentOffset, 76)
 
             let amount := and(UINT120_MASK, amountData)
             if eq(amount, 0xffffffffffffffffffffffffffff) {
@@ -221,6 +216,7 @@ abstract contract CompoundV2Lending is ERC20Selectors, Masks {
 
             // transfer tokens only if the receiver is not this address
             if xor(address(), receiver) {
+                let underlying := shr(96, calldataload(currentOffset))
                 switch underlying
                 // native case
                 case 0 {
@@ -262,6 +258,8 @@ abstract contract CompoundV2Lending is ERC20Selectors, Masks {
                     }
                 }
             }
+            // skip calldata
+            currentOffset := add(currentOffset, 76)
         }
         return currentOffset;
     }

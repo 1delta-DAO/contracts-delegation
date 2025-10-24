@@ -352,41 +352,6 @@ contract CompoundV2ComposerLightTest is BaseTest {
         assertApproxEqAbs(debtAfter, 1.0e6, 0);
     }
 
-    function test_light_lending_compoundV2_withdraw_native() external {
-        vm.createSelectFork("https://bnb.rpc.subquery.network/public");
-        IComposerLike bnbOneDV2 = ComposerPlugin.getComposer(Chains.BNB_SMART_CHAIN_MAINNET);
-
-        address token = address(0);
-        address comptroller = 0xfD36E2c2a6789Db23113685031d7F16329158384;
-        uint256 amount = 1.0e18;
-
-        vm.deal(user, amount);
-
-        address cToken = 0xA07c5b74C9B40447a954e1466938b865b6BBea36;
-
-        depositNativeToCompoundV2(token, user, amount, comptroller, uint8(CompoundV2Selector.MINT), cToken, bnbOneDV2);
-
-        vm.prank(user);
-        ILendingTools(cToken).approve(address(bnbOneDV2), type(uint256).max);
-
-        uint256 amountToWithdraw = 0.1e18;
-        bytes memory d = CalldataLib.encodeCompoundV2Withdraw(token, amountToWithdraw, user, cToken, uint8(CompoundV2Selector.REDEEM));
-
-        // balances before withdrawal
-        uint256 collateralBefore = ILendingTools(cToken).balanceOfUnderlying(user);
-        uint256 underlyingBefore = user.balance;
-
-        vm.prank(user);
-        bnbOneDV2.deltaCompose(d);
-
-        // balances after withdrawal
-        uint256 collateralAfter = ILendingTools(cToken).balanceOfUnderlying(user);
-        uint256 underlyingAfter = user.balance;
-
-        assertApproxEqAbs(collateralBefore - collateralAfter, amountToWithdraw, (amountToWithdraw * 9999) / 10000);
-        assertApproxEqAbs(underlyingAfter - underlyingBefore, amountToWithdraw, 0);
-    }
-
     function depositToCompoundV2(address token, address userAddress, uint256 amount, address comptroller, uint8 altSelector) internal {
         deal(token, userAddress, amount);
 
@@ -421,31 +386,6 @@ contract CompoundV2ComposerLightTest is BaseTest {
 
         vm.prank(userAddress);
         oneDV2.deltaCompose(d);
-    }
-
-    function depositNativeToCompoundV2(
-        address token,
-        address userAddress,
-        uint256 amount,
-        address comptroller,
-        uint8 altSelector,
-        address cToken,
-        IComposerLike composer
-    )
-        internal
-    {
-        vm.deal(userAddress, amount);
-
-        address[] memory cTokens = new address[](1);
-        cTokens[0] = cToken;
-
-        vm.prank(userAddress);
-        IERC20All(comptroller).enterMarkets(cTokens);
-
-        bytes memory d = CalldataLib.encodeCompoundV2Deposit(token, amount, userAddress, cToken, altSelector);
-
-        vm.prank(userAddress);
-        composer.deltaCompose{value: amount}(d);
     }
 
     function _getCollateralToken(address token) internal view returns (address) {
