@@ -12,6 +12,9 @@ import {Masks} from "../../shared/masks/Masks.sol";
  * Most effective for Venus
  */
 abstract contract CompoundV2Lending is ERC20Selectors, Masks {
+    // NativeTransferFailed()
+    bytes4 private constant NATIVE_TRANSFER_FAILED = 0xf4b3b1bc;
+
     /*
      * Note this is for Venus Finance only as other Compound forks
      * do not have this feature.
@@ -25,8 +28,6 @@ abstract contract CompoundV2Lending is ERC20Selectors, Masks {
     function _borrowFromCompoundV2(uint256 currentOffset, address callerAddress) internal returns (uint256) {
         assembly {
             let ptr := mload(0x40)
-            // Compound V3 types need to trasfer collateral tokens
-            let underlying := shr(96, calldataload(currentOffset))
             // offset for amount at lower bytes
             let amountData := shr(128, calldataload(add(currentOffset, 20)))
             // receiver
@@ -34,11 +35,9 @@ abstract contract CompoundV2Lending is ERC20Selectors, Masks {
 
             let cToken := shr(96, calldataload(add(currentOffset, 56)))
 
-            currentOffset := add(currentOffset, 76)
-
             let amount := and(UINT120_MASK, amountData)
 
-            // selector for borrowBehlaf(address,uint256)
+            // selector for borrowBehalf(address,uint256)
             mstore(ptr, 0x856e5bb300000000000000000000000000000000000000000000000000000000)
             mstore(add(ptr, 0x4), callerAddress) // user
             mstore(add(ptr, 0x24), amount) // to this address
@@ -47,42 +46,42 @@ abstract contract CompoundV2Lending is ERC20Selectors, Masks {
                 revert(0, returndatasize())
             }
             if xor(address(), receiver) {
-                switch underlying
-                // native case
-                case 0 { if iszero(call(gas(), receiver, amount, 0, 0, 0, 0)) { revert(0, 0) } }
-                // erc20 case
-                default {
-                    // 4) TRANSFER TO RECIPIENT
-                    // selector for transfer(address,uint256)
-                    mstore(ptr, ERC20_TRANSFER)
-                    mstore(add(ptr, 0x04), receiver)
-                    mstore(add(ptr, 0x24), amount)
+                let underlying := shr(96, calldataload(currentOffset))
+                // native case should not exist here
+                if iszero(underlying) { revert(0, 0) }
 
-                    let success := call(gas(), underlying, 0, ptr, 0x44, ptr, 32)
+                // 4) TRANSFER TO RECIPIENT
+                // selector for transfer(address,uint256)
+                mstore(ptr, ERC20_TRANSFER)
+                mstore(add(ptr, 0x04), receiver)
+                mstore(add(ptr, 0x24), amount)
 
-                    let rdsize := returndatasize()
+                let success := call(gas(), underlying, 0, ptr, 0x44, ptr, 32)
 
-                    // Check for ERC20 success. ERC20 tokens should return a boolean,
-                    // but some don't. We accept 0-length return data as success, or at
-                    // least 32 bytes that starts with a 32-byte boolean true.
-                    success :=
-                        and(
-                            success, // call itself succeeded
-                            or(
-                                iszero(rdsize), // no return data, or
-                                and(
-                                    gt(rdsize, 31), // at least 32 bytes
-                                    eq(mload(ptr), 1) // starts with uint256(1)
-                                )
+                let rdsize := returndatasize()
+
+                // Check for ERC20 success. ERC20 tokens should return a boolean,
+                // but some don't. We accept 0-length return data as success, or at
+                // least 32 bytes that starts with a 32-byte boolean true.
+                success :=
+                    and(
+                        success, // call itself succeeded
+                        or(
+                            iszero(rdsize), // no return data, or
+                            and(
+                                gt(rdsize, 31), // at least 32 bytes
+                                eq(mload(ptr), 1) // starts with uint256(1)
                             )
                         )
+                    )
 
-                    if iszero(success) {
-                        returndatacopy(0, 0, rdsize)
-                        revert(0, rdsize)
-                    }
+                if iszero(success) {
+                    returndatacopy(0, 0, rdsize)
+                    revert(0, rdsize)
                 }
             }
+            // skip calldata
+            currentOffset := add(currentOffset, 76)
         }
         return currentOffset;
     }
@@ -98,16 +97,12 @@ abstract contract CompoundV2Lending is ERC20Selectors, Masks {
     function _withdrawFromCompoundV2(uint256 currentOffset, address callerAddress) internal returns (uint256) {
         assembly {
             let ptr := mload(0x40)
-            // Compound V2 types need to trasfer collateral tokens
-            let underlying := shr(96, calldataload(currentOffset))
             // offset for amount at lower bytes
             let amountData := shr(128, calldataload(add(currentOffset, 20)))
             // receiver
             let receiver := shr(96, calldataload(add(currentOffset, 36)))
 
             let cToken := shr(96, calldataload(add(currentOffset, 56)))
-
-            currentOffset := add(currentOffset, 76)
 
             let amount := and(UINT120_MASK, amountData)
             if eq(amount, 0xffffffffffffffffffffffffffff) {
@@ -116,17 +111,7 @@ abstract contract CompoundV2Lending is ERC20Selectors, Masks {
                 // add caller address as parameter
                 mstore(0x04, callerAddress)
                 // call to token
-                pop(
-                    call(
-                        gas(),
-                        cToken, // collateral token
-                        0x0,
-                        0x0,
-                        0x24,
-                        0x0,
-                        0x20
-                    )
-                )
+                pop(call(gas(), cToken, 0x0, 0x0, 0x24, 0x0, 0x20))
                 // load the retrieved balance
                 amount := mload(0x0)
             }
@@ -140,17 +125,7 @@ abstract contract CompoundV2Lending is ERC20Selectors, Masks {
             )
             // call to collateralToken
             // accrues interest. No real risk of failure.
-            pop(
-                call(
-                    gas(),
-                    cToken,
-                    0x0,
-                    0x0,
-                    0x24,
-                    0x0, // store back to ptr
-                    0x20
-                )
-            )
+            pop(call(gas(), cToken, 0x0, 0x0, 0x24, 0x0, 0x20))
 
             // load the retrieved protocol share
             let refAmount := mload(0x0)
@@ -221,36 +196,50 @@ abstract contract CompoundV2Lending is ERC20Selectors, Masks {
 
             // transfer tokens only if the receiver is not this address
             if xor(address(), receiver) {
-                // 4) TRANSFER TO RECIPIENT
-                // selector for transfer(address,uint256)
-                mstore(ptr, ERC20_TRANSFER)
-                mstore(add(ptr, 0x04), receiver)
-                mstore(add(ptr, 0x24), amount)
+                let underlying := shr(96, calldataload(currentOffset))
+                switch underlying
+                // native case
+                case 0 {
+                    if iszero(call(gas(), receiver, amount, 0, 0, 0, 0)) {
+                        mstore(0, NATIVE_TRANSFER_FAILED)
+                        revert(0, 0x4) // revert when native transfer fails
+                    }
+                }
+                // erc20 case
+                default {
+                    // 4) TRANSFER TO RECIPIENT
+                    // selector for transfer(address,uint256)
+                    mstore(ptr, ERC20_TRANSFER)
+                    mstore(add(ptr, 0x04), receiver)
+                    mstore(add(ptr, 0x24), amount)
 
-                let success := call(gas(), underlying, 0, ptr, 0x44, ptr, 32)
+                    let success := call(gas(), underlying, 0, ptr, 0x44, ptr, 32)
 
-                let rdsize := returndatasize()
+                    let rdsize := returndatasize()
 
-                // Check for ERC20 success. ERC20 tokens should return a boolean,
-                // but some don't. We accept 0-length return data as success, or at
-                // least 32 bytes that starts with a 32-byte boolean true.
-                success :=
-                    and(
-                        success, // call itself succeeded
-                        or(
-                            iszero(rdsize), // no return data, or
-                            and(
-                                gt(rdsize, 31), // at least 32 bytes
-                                eq(mload(ptr), 1) // starts with uint256(1)
+                    // Check for ERC20 success. ERC20 tokens should return a boolean,
+                    // but some don't. We accept 0-length return data as success, or at
+                    // least 32 bytes that starts with a 32-byte boolean true.
+                    success :=
+                        and(
+                            success, // call itself succeeded
+                            or(
+                                iszero(rdsize), // no return data, or
+                                and(
+                                    gt(rdsize, 31), // at least 32 bytes
+                                    eq(mload(ptr), 1) // starts with uint256(1)
+                                )
                             )
                         )
-                    )
 
-                if iszero(success) {
-                    returndatacopy(0, 0, rdsize)
-                    revert(0, rdsize)
+                    if iszero(success) {
+                        returndatacopy(0, 0, rdsize)
+                        revert(0, rdsize)
+                    }
                 }
             }
+            // skip calldata
+            currentOffset := add(currentOffset, 76)
         }
         return currentOffset;
     }
