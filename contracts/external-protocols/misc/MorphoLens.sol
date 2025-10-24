@@ -86,6 +86,10 @@ interface IOracle {
     function price() external view returns (uint256);
 }
 
+interface IMoolahOracle {
+    function peek(address asset) external view returns (uint256);
+}
+
 contract MorphoLens {
     /**
      * Get the user data if exists as packed bytes (len, data[]), data = (id,sShares,bShares,sAssets,bAssets,collateral)
@@ -105,8 +109,7 @@ contract MorphoLens {
                 uint128 totalSupplyAssets,
                 uint128 totalSupplyShares, //
                 uint128 totalBorrowAssets,
-                uint128 totalBorrowShares,
-                ,
+                uint128 totalBorrowShares,,
             ) = IMorpho(morpho).market(id);
             // progressively pack the data
             data = abi.encodePacked(
@@ -173,6 +176,51 @@ contract MorphoLens {
 
             // progressively pack the data
             data = abi.encodePacked(data, loanToken, collateralToken, oracle, irm, uint128(lltv), price, rateAtTarget, market);
+        }
+
+        return data;
+    }
+
+    /// @notice use to get the market data for Moolah protocol
+    function getMoolahMarketDataCompact(address morpho, bytes32[] calldata marketsIds) external view returns (bytes memory data) {
+        // each entry makes 4*20 (addresses) + 16 (lltv) + 32 (loanPrice) + 32 (collateralPrice) + 32 (rateAtTarget)
+        // + 96 bytes (market) (=288) in size. The return data is therfore implicitly indexed
+        for (uint256 i; i < marketsIds.length; i++) {
+            bytes32 id = marketsIds[i];
+            // pack market supply statuses
+            bytes memory market = getPackedMarket(morpho, id);
+            // get metadata
+            (
+                address loanToken,
+                address collateralToken, //
+                address oracle,
+                address irm,
+                uint256 lltv
+            ) = IMorpho(morpho).idToMarketParams(id);
+
+            // get prices from moolah oracle for both loan and collateral tokens
+            if (oracle != address(0)) {
+                try IMoolahOracle(oracle).peek(loanToken) returns (uint256 _loanPrice) {
+                    data = abi.encodePacked(_loanPrice);
+                } catch {
+                    data = abi.encodePacked(uint256(0));
+                }
+                try IMoolahOracle(oracle).peek(collateralToken) returns (uint256 _collateralPrice) {
+                    data = abi.encodePacked(data, _collateralPrice);
+                } catch {
+                    data = abi.encodePacked(data, uint256(0));
+                }
+            }
+            // get rate
+            uint256 rateAtTarget;
+            if (irm != address(0)) {
+                try IAdaptiveCurveIrm(irm).rateAtTarget(id) returns (int256 _rateAtTarget) {
+                    rateAtTarget = uint256(_rateAtTarget);
+                } catch {}
+            }
+
+            // progressively pack the data
+            data = abi.encodePacked(data, loanToken, collateralToken, oracle, irm, uint128(lltv), data, rateAtTarget, market);
         }
 
         return data;
