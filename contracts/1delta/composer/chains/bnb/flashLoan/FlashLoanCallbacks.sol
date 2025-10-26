@@ -4,6 +4,7 @@ pragma solidity 0.8.28;
 
 import {AaveV2FlashLoanCallback} from "./callbacks/AaveV2Callback.sol";
 import {AaveV3FlashLoanCallback} from "./callbacks/AaveV3Callback.sol";
+import {MoolahFlashLoanCallback} from "./callbacks/MoolahCallback.sol";
 import {MorphoFlashLoanCallback} from "./callbacks/MorphoCallback.sol";
 import {BalancerV2FlashLoanCallback} from "./callbacks/BalancerV2Callback.sol";
 
@@ -14,6 +15,7 @@ import {BalancerV2FlashLoanCallback} from "./callbacks/BalancerV2Callback.sol";
 contract FlashLoanCallbacks is
     AaveV2FlashLoanCallback,
     AaveV3FlashLoanCallback,
+    MoolahFlashLoanCallback,
     MorphoFlashLoanCallback,
     BalancerV2FlashLoanCallback //
 {
@@ -28,6 +30,7 @@ contract FlashLoanCallbacks is
         override(
             AaveV2FlashLoanCallback,
             AaveV3FlashLoanCallback,
+            MoolahFlashLoanCallback,
             MorphoFlashLoanCallback,
             BalancerV2FlashLoanCallback //
         )

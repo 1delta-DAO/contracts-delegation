@@ -1,4 +1,4 @@
-export const templateFlashLoan = (hasAaveV2: boolean, hasAaveV3: boolean, hasMorpho: boolean, hasBalancerV2: boolean) => {
+export const templateFlashLoan = (hasAaveV2: boolean, hasAaveV3: boolean, hasMorpho: boolean, hasBalancerV2: boolean, hasLista = false) => {
     let cbs: {imports: string; name: string}[] = [];
 
     if (hasAaveV2) {
@@ -12,6 +12,13 @@ export const templateFlashLoan = (hasAaveV2: boolean, hasAaveV3: boolean, hasMor
         cbs.push({
             imports: `import {AaveV3FlashLoanCallback} from "./callbacks/AaveV3Callback.sol";`,
             name: "AaveV3FlashLoanCallback",
+        });
+    }
+
+    if (hasLista) {
+        cbs.push({
+            imports: `import {MoolahFlashLoanCallback} from "./callbacks/MoolahCallback.sol";`,
+            name: "MoolahFlashLoanCallback",
         });
     }
 
