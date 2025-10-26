@@ -840,16 +840,6 @@ const config: HardhatUserConfig = {
                     evmVersion: "cancun",
                 },
             },
-            // "contracts/1delta/composer/chains/manta/Composer.sol": {
-            //     version: "0.8.28",
-            //     settings: {
-            //         optimizer: {
-            //             enabled: true,
-            //             runs: 1_500,
-            //         },
-            //         evmVersion: "cancun",
-            //     },
-            // },
             "contracts/1delta/composer/chains/telos-evm/Composer.sol": {
                 version: "0.8.28",
                 settings: {
@@ -860,16 +850,16 @@ const config: HardhatUserConfig = {
                     evmVersion: "cancun",
                 },
             },
-            // "contracts/1delta/composer/chains/morph/Composer.sol": {
-            //     version: "0.8.28",
-            //     settings: {
-            //         optimizer: {
-            //             enabled: true,
-            //             runs: 1_500,
-            //         },
-            //         evmVersion: "cancun",
-            //     },
-            // },
+            "contracts/1delta/composer/chains/morph/Composer.sol": {
+                version: "0.8.28",
+                settings: {
+                    optimizer: {
+                        enabled: true,
+                        runs: 50_000,
+                    },
+                    evmVersion: "cancun",
+                },
+            },
             "contracts/1delta/composer/chains/metis-andromeda/Composer.sol": {
                 version: "0.8.28",
                 settings: {

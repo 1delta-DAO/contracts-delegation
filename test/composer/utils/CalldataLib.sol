@@ -1543,11 +1543,13 @@ library CalldataLib {
         }
     }
 
+    uint256 private constant UPPER_128BITS = 120;
+
     function encodeCompoundV2SelectorId(uint128 amount, uint8 selectorId) internal pure returns (uint128 am) {
-        am = amount | (uint128(selectorId) << 120);
+        am = amount | (uint128(selectorId) << UPPER_128BITS);
     }
 
     function encodeSiloV2CollateralMode(uint128 amount, uint8 mode) internal pure returns (uint128 am) {
-        am = amount | (uint128(mode) << 120);
+        am = amount | (uint128(mode) << UPPER_128BITS);
     }
 }

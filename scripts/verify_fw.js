@@ -84,9 +84,9 @@ module.exports = [
 
 
 
-// npx hardhat verify --network optimism 0x05f3f58716a88A52493Be45aA0871c55b3748f18 --contract contracts/1delta/composer/chains/op/Composer.sol:OneDeltaComposerOp
+// npx hardhat verify --network optimism 0xEd29226700F1466E07a21fdd1215980E41A36785 --contract contracts/1delta/composer/chains/op/Composer.sol:OneDeltaComposerOp
 
-// npx hardhat verify --network arbitrum 0xBB6Aa6200127EAe67ee4DA7B01CbCDec0a9f0E0e --contract contracts/1delta/composer/chains/arbitrum-one/Composer.sol:OneDeltaComposerArbitrumOne
+// npx hardhat verify --network arbitrum 0xe40667C540eA548AE1358E61637d0269458D7a77 --contract contracts/1delta/composer/chains/arbitrum-one/Composer.sol:OneDeltaComposerArbitrumOne
 
 // npx hardhat verify --network polygon 0x1663F7e1199ccf47d6583707412858444b429E78 --contract contracts/1delta/composer/chains/polygon/Composer.sol:OneDeltaComposerPolygon
 
