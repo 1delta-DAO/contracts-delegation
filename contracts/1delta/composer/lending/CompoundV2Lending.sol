@@ -448,10 +448,11 @@ abstract contract CompoundV2Lending is ERC20Selectors, Masks {
                     mstore(0x04, receiver)
                     // call to token
                     pop(call(gas(), cToken, 0x0, 0x0, 0x24, 0x0, 0x20))
-
+                    // need the exact borrow balance here
+                    let borrowBal := mload(0x0)
                     // borrow balance smaller than amount available - use max
                     // otherwise, repay whatever is in the contract
-                    if lt(mload(0x0), amount) { amount := MAX_UINT256 }
+                    if lt(borrowBal, amount) { amount := borrowBal }
                 }
 
                 // selector for repayBorrowBehalf(address)
