@@ -118,7 +118,7 @@ module.exports = [
 
 // npx hardhat verify --network blast 0x7a59ddbB76521E8982Fa3A08598C9a83b14A6C07 --contract contracts/1delta/composer/chains/blast/Composer.sol:OneDeltaComposerBlast
 
-// npx hardhat verify --network bnb 0x4b5458BB47dCBC1a41B31b41e1a8773dE312BE9d --contract contracts/1delta/composer/chains/bnb/Composer.sol:OneDeltaComposerBnb
+// npx hardhat verify --network bnb 0x8a5b01FD188785D0eb4578899f1aECD74b4C3071 --contract contracts/1delta/composer/chains/bnb/Composer.sol:OneDeltaComposerBnb
 
 
 // npx hardhat verify --network katana 0x816EBC5cb8A5651C902Cb06659907A93E574Db0B --contract contracts/1delta/composer/chains/katana/Composer.sol:OneDeltaComposerKatana
@@ -127,7 +127,7 @@ module.exports = [
 // npx hardhat verify --network hyperevm 0x4b5458BB47dCBC1a41B31b41e1a8773dE312BE9d --contract contracts/1delta/composer/chains/hyperevm/Composer.sol:OneDeltaComposerHyperevm
 // npx hardhat verify --network hyperevm 0xcb6eb8df68153cebf60e1872273ef52075a5c297 --contract contracts/external-protocols/openzeppelin/proxy/transparent/TransparentUpgradeableProxy.sol:TransparentUpgradeableProxy  --constructor-args scripts/verify_fw.js
 
-// npx hardhat verify --network mainnet 0x7a59ddbB76521E8982Fa3A08598C9a83b14A6C07 --contract contracts/1delta/composer/chains/ethereum/Composer.sol:OneDeltaComposerEthereum
+// npx hardhat verify --network mainnet 0x97648606fcc22Bd96F87345Ac83Bd6cFCdF0ACBa --contract contracts/1delta/composer/chains/ethereum/Composer.sol:OneDeltaComposerEthereum
 // npx hardhat verify --network mainnet 0x8E24CfC19c6C00c524353CB8816f5f1c2F33c201 --contract contracts/external-protocols/openzeppelin/proxy/transparent/TransparentUpgradeableProxy.sol:TransparentUpgradeableProxy  --constructor-args scripts/verify_fw.js
 
 // npx hardhat verify --network bnb 0x816EBC5cb8A5651C902Cb06659907A93E574Db0B --contract contracts/external-protocols/openzeppelin/proxy/transparent/TransparentUpgradeableProxy.sol:TransparentUpgradeableProxy  --constructor-args scripts/verify_fw.js
