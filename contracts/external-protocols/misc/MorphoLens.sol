@@ -90,6 +90,13 @@ interface IMoolahOracle {
     function peek(address asset) external view returns (uint256);
 }
 
+interface IMoolah {
+    /// @notice Returns `true` if `account` is whitelisted of market `id`.
+    function isWhiteList(bytes32 id, address account) external view returns (bool);
+    /// @notice get the provider for the market.
+    function providers(bytes32 id, address token) external view returns (address);
+}
+
 contract MorphoLens {
     /**
      * Get the user data if exists as packed bytes (len, data[]), data = (id,sShares,bShares,sAssets,bAssets,collateral)
@@ -184,7 +191,7 @@ contract MorphoLens {
     /// @notice use to get the market data for Moolah protocol
     function getMoolahMarketDataCompact(address morpho, bytes32[] calldata marketsIds) external view returns (bytes memory data) {
         // each entry makes 4*20 (addresses) + 16 (lltv) + 32 (loanPrice) + 32 (collateralPrice) + 32 (rateAtTarget)
-        // + 96 bytes (market) (=288) in size. The return data is therfore implicitly indexed
+        // + 96 bytes (market) + 1 byte (hasWhitelist) + 1 byte (hasProvider)(=290) in size. The return data is therfore implicitly indexed
         for (uint256 i; i < marketsIds.length; i++) {
             bytes32 id = marketsIds[i];
             // pack market supply statuses
@@ -212,16 +219,31 @@ contract MorphoLens {
                     temp = abi.encodePacked(temp, uint256(0));
                 }
             }
-            // get rate
-            uint256 rateAtTarget;
+            // encode rate and market
             if (irm != address(0)) {
                 try IAdaptiveCurveIrm(irm).rateAtTarget(id) returns (int256 _rateAtTarget) {
-                    rateAtTarget = uint256(_rateAtTarget);
-                } catch {}
+                    temp = abi.encodePacked(temp, uint256(_rateAtTarget), market);
+                } catch {
+                    temp = abi.encodePacked(temp, uint256(0), market);
+                }
+            }
+            // encode hasWhitelist
+            if (irm != address(0)) {
+                try IMoolah(morpho).isWhiteList(id, 0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045) returns (bool _isWhitelisted) {
+                    temp = abi.encodePacked(temp, !_isWhitelisted);
+                } catch {
+                    temp = abi.encodePacked(temp, bytes1(0));
+                }
+            }
+            // encode hasProvider
+            try IMoolah(morpho).providers(id, collateralToken) returns (address provider) {
+                temp = abi.encodePacked(temp, provider != address(0));
+            } catch {
+                temp = abi.encodePacked(temp, bytes1(0));
             }
 
             // progressively pack the data
-            data = abi.encodePacked(data, loanToken, collateralToken, oracle, irm, uint128(lltv), temp, rateAtTarget, market);
+            data = abi.encodePacked(data, loanToken, collateralToken, oracle, irm, uint128(lltv), temp);
         }
 
         return data;
