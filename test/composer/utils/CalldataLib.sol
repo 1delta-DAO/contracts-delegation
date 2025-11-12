@@ -46,6 +46,57 @@ library CalldataLib {
             catchData
         );
     }
+
+    function encodeExternalCallWithReplace(
+        address target,
+        uint256 value,
+        bool useSelfBalance,
+        address token,
+        uint16 replaceOffset,
+        bytes memory data
+    )
+        internal
+        pure
+        returns (bytes memory)
+    {
+        return abi.encodePacked(
+            uint8(ComposerCommands.EXT_CALL_WITH_REPLACE),
+            target,
+            generateAmountBitmap(uint128(value), false, useSelfBalance),
+            token,
+            replaceOffset,
+            uint16(data.length),
+            data
+        );
+    }
+
+    function encodeTryExternalCallWithReplace(
+        address target,
+        uint256 value,
+        bool useSelfBalance,
+        address token,
+        uint16 replaceOffset,
+        bytes memory data,
+        bool rOnFailure,
+        bytes memory catchData
+    )
+        internal
+        pure
+        returns (bytes memory)
+    {
+        return abi.encodePacked(
+            uint8(ComposerCommands.EXT_TRY_CALL_WITH_REPLACE),
+            target,
+            generateAmountBitmap(uint128(value), false, useSelfBalance),
+            token,
+            replaceOffset,
+            uint16(data.length),
+            uint8(rOnFailure ? 0 : 1),
+            uint16(catchData.length),
+            data,
+            catchData
+        );
+    }
     // StargateV2 bridging
 
     function encodeStargateV2Bridge(
