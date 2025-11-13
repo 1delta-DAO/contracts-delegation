@@ -128,16 +128,17 @@ abstract contract ExternalCallsGeneric is BaseUtils {
 
             // copy calldata
             calldatacopy(ptr, currentOffset, dataLength)
-            success := call(
-                gas(),
-                target,
-                callValue,
-                ptr, //
-                dataLength,
-                // the length must be correct or the call will fail
-                0x0, // output = empty
-                0x0 // output size = zero
-            )
+            success :=
+                call(
+                    gas(),
+                    target,
+                    callValue,
+                    ptr, //
+                    dataLength,
+                    // the length must be correct or the call will fail
+                    0x0, // output = empty
+                    0x0 // output size = zero
+                )
 
             // increment offset by data length
             currentOffset := add(currentOffset, dataLength)
@@ -215,7 +216,7 @@ abstract contract ExternalCallsGeneric is BaseUtils {
 
             // validate replaceOffset is within calldata bounds
             if gt(add(add(replaceOffset, 32), 4), dataLength) {
-                mstore(0x0, INVALID_CALLDATA)
+                mstore(0x0, REPLACE_OFFSET_OUT_OF_BOUNDS)
                 revert(0x0, 0x4)
             }
 
@@ -228,17 +229,15 @@ abstract contract ExternalCallsGeneric is BaseUtils {
 
             calldatacopy(ptr, currentOffset, dataLength)
 
-            let replacementValue := 0
             // only replace if token is not zero
             if gt(token, 0) {
                 // erc20 balance of this
                 mstore(0x0, ERC20_BALANCE_OF)
                 mstore(0x04, address())
                 pop(staticcall(gas(), token, 0x0, 0x24, 0x0, 0x20))
-                replacementValue := mload(0x0)
 
-                // offset to replace amount in calldata (4 bytes for function selector)
-                mstore(add(add(ptr, 4), replaceOffset), replacementValue)
+                // offset to replace amount (mload(0)) in calldata (4 bytes for function selector)
+                mstore(add(add(ptr, 4), replaceOffset), mload(0x0))
             }
 
             // prevent transferFrom selector
@@ -299,7 +298,7 @@ abstract contract ExternalCallsGeneric is BaseUtils {
 
             // validate replaceOffset is within calldata bounds
             if gt(add(add(replaceOffset, 32), 4), dataLength) {
-                mstore(0x0, INVALID_CALLDATA)
+                mstore(0x0, REPLACE_OFFSET_OUT_OF_BOUNDS)
                 revert(0x0, 0x4)
             }
 
@@ -312,17 +311,15 @@ abstract contract ExternalCallsGeneric is BaseUtils {
 
             calldatacopy(ptr, currentOffset, dataLength)
 
-            let replacementValue := 0
             // only replace if token is not zero
             if gt(token, 0) {
                 // erc20 balance of this
                 mstore(0x0, ERC20_BALANCE_OF)
                 mstore(0x04, address())
                 pop(staticcall(gas(), token, 0x0, 0x24, 0x0, 0x20))
-                replacementValue := mload(0x0)
 
-                // offset to replace amount in calldata (4 bytes for function selector)
-                mstore(add(add(ptr, 4), replaceOffset), replacementValue)
+                // offset to replace amount (mload(0)) in calldata (4 bytes for function selector)
+                mstore(add(add(ptr, 4), replaceOffset), mload(0x0))
             }
 
             // prevent transferFrom selector
