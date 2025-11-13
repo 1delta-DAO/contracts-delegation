@@ -10,14 +10,11 @@ import {ComposerPlugin, IComposerLike} from "plugins/ComposerPlugin.sol";
 import {IERC20} from "lib/openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
 import {SweepType} from "contracts/1delta/composer/enums/MiscEnums.sol";
 
-error ShouldRevert();
-
 contract ExtTryCatchWithReplace is BaseTest {
     using CalldataLib for bytes;
 
     CallForwarder private callForwarder;
     IComposerLike private composer;
-    // MockContract private mockContract;
 
     address private constant XCDOT = 0xFfFFfFff1FcaCBd218EDc0EbA20Fc2308C778080;
     address private constant STELLA_STDOT = 0xbc7E02c4178a7dF7d3E564323a5c359dc96C4db4;
@@ -331,6 +328,89 @@ contract ExtTryCatchWithReplace is BaseTest {
         bytes memory composerCalldata = abi.encodePacked(
             transferInCalldata,
             CalldataLib.encodeExternalCall(address(callForwarder), uint256(0), false, abi.encodePacked(approveCalldata, callCalldata))
+        );
+
+        vm.startPrank(user);
+        vm.expectRevert();
+        composer.deltaCompose(composerCalldata);
+        vm.stopPrank();
+    }
+
+    function test_tryCallExternalWithReplace_catch_executes_on_failure() public {
+        uint256 amount = 1 ether; // this amount reverts when trying to stake on stella
+        _fundUserWithToken(XCDOT, amount);
+        vm.prank(user);
+        IERC20(XCDOT).approve(address(composer), type(uint256).max);
+
+        bytes memory transferInCalldata = CalldataLib.encodeTransferIn(XCDOT, address(callForwarder), amount);
+
+        bytes memory approveCalldata = CalldataLib.encodeApprove(XCDOT, STELLA_STDOT);
+
+        bytes memory catchCalldata = CalldataLib.encodeSweep(XCDOT, user, 0, SweepType.VALIDATE);
+
+        bytes memory tryCallCalldata = CalldataLib.encodeTryExternalCallWithReplace(
+            STELLA_STDOT, //
+            0,
+            false,
+            XCDOT,
+            0,
+            DEPOSIT_CALLDATA,
+            false,
+            catchCalldata
+        );
+
+        bytes memory composerCalldata = abi.encodePacked(
+            transferInCalldata,
+            CalldataLib.encodeExternalCall(
+                address(callForwarder),
+                uint256(0),
+                false,
+                abi.encodePacked(approveCalldata, tryCallCalldata, CalldataLib.encodeSweep(STELLA_STDOT, user, 0, SweepType.VALIDATE))
+            )
+        );
+
+        vm.startPrank(user);
+        composer.deltaCompose(composerCalldata);
+        vm.stopPrank();
+
+        uint256 forwarderBalanceAfter = IERC20(XCDOT).balanceOf(address(callForwarder));
+        uint256 ba = IERC20(STELLA_STDOT).balanceOf(user);
+        assertEq(ba, 0);
+        assertEq(forwarderBalanceAfter, 0);
+        assertEq(IERC20(XCDOT).balanceOf(user), amount);
+    }
+
+    function test_tryCallExternalWithReplace_catch_reverts_on_failure() public {
+        uint256 amount = 1 ether; // this amount reverts when trying to stake on stella
+        _fundUserWithToken(XCDOT, amount);
+        vm.prank(user);
+        IERC20(XCDOT).approve(address(composer), type(uint256).max);
+
+        bytes memory transferInCalldata = CalldataLib.encodeTransferIn(XCDOT, address(callForwarder), amount);
+
+        bytes memory approveCalldata = CalldataLib.encodeApprove(XCDOT, STELLA_STDOT);
+
+        bytes memory catchCalldata = CalldataLib.encodeSweep(XCDOT, user, 0, SweepType.VALIDATE);
+
+        bytes memory tryCallCalldata = CalldataLib.encodeTryExternalCallWithReplace(
+            STELLA_STDOT, //
+            0,
+            false,
+            XCDOT,
+            0,
+            DEPOSIT_CALLDATA,
+            true,
+            catchCalldata
+        );
+
+        bytes memory composerCalldata = abi.encodePacked(
+            transferInCalldata,
+            CalldataLib.encodeExternalCall(
+                address(callForwarder),
+                uint256(0),
+                false,
+                abi.encodePacked(approveCalldata, tryCallCalldata, CalldataLib.encodeSweep(STELLA_STDOT, user, 0, SweepType.VALIDATE))
+            )
         );
 
         vm.startPrank(user);
