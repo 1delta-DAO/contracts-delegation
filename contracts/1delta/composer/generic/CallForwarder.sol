@@ -45,14 +45,19 @@ contract CallForwarder is Transfers, ExternalCallsGeneric, BridgeForwarder {
                 currentOffset := add(1, currentOffset)
             }
 
-            if (operation == ComposerCommands.EXT_CALL) {
-                currentOffset = _callExternal(currentOffset);
-            } else if (operation == ComposerCommands.EXT_TRY_CALL) {
-                currentOffset = _tryCallExternal(currentOffset, callerAddress);
-            } else if (operation == ComposerCommands.EXT_CALL_WITH_REPLACE) {
-                currentOffset = _callExternalWithReplace(currentOffset);
-            } else if (operation == ComposerCommands.EXT_TRY_CALL_WITH_REPLACE) {
-                currentOffset = _tryCallExternalWithReplace(currentOffset, callerAddress);
+            // external call blocks
+            if (operation < ComposerCommands.TRANSFERS) {
+                if (operation == ComposerCommands.EXT_CALL) {
+                    currentOffset = _callExternal(currentOffset);
+                } else if (operation == ComposerCommands.EXT_TRY_CALL) {
+                    currentOffset = _tryCallExternal(currentOffset, callerAddress);
+                } else if (operation == ComposerCommands.EXT_CALL_WITH_REPLACE) {
+                    currentOffset = _callExternalWithReplace(currentOffset);
+                } else if (operation == ComposerCommands.EXT_TRY_CALL_WITH_REPLACE) {
+                    currentOffset = _tryCallExternalWithReplace(currentOffset, callerAddress);
+                } else {
+                    _invalidOperation();
+                }
             } else if (operation == ComposerCommands.TRANSFERS) {
                 currentOffset = _transfers(currentOffset, callerAddress);
             } else if (operation == ComposerCommands.BRIDGING) {
