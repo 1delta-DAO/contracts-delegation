@@ -17,7 +17,7 @@ contract ExtTryCatchWithReplace is BaseTest {
 
     CallForwarder private callForwarder;
     IComposerLike private composer;
-    MockContract private mockContract;
+    // MockContract private mockContract;
 
     address private constant XCDOT = 0xFfFFfFff1FcaCBd218EDc0EbA20Fc2308C778080;
     address private constant STELLA_STDOT = 0xbc7E02c4178a7dF7d3E564323a5c359dc96C4db4;
@@ -31,11 +31,11 @@ contract ExtTryCatchWithReplace is BaseTest {
         _init(Chains.MOONBEAM, 13320695, true);
 
         callForwarder = new CallForwarder();
-        mockContract = new MockContract();
+        //mockContract = new MockContract();
         composer = ComposerPlugin.getComposer(Chains.MOONBEAM);
 
         vm.label(address(callForwarder), "CallForwarder");
-        vm.label(address(mockContract), "MockContract");
+        //vm.label(address(mockContract), "MockContract");
         vm.label(address(composer), "Composer");
         vm.label(address(user), "User");
         vm.label(XCDOT, "xcDOT");
@@ -117,32 +117,226 @@ contract ExtTryCatchWithReplace is BaseTest {
         assertGt(ba, bb);
         assertEq(forwarderBalanceAfter, 900);
     }
-}
 
-contract MockContract {
-    bool public shouldFail;
-    bool public called;
-    bool public catchCalled;
+    function test_tryCallExternalWithReplace_revertsOnInvalidReplaceOffset() public {
+        uint256 amount = 1000;
+        _fundUserWithToken(XCDOT, amount);
+        vm.prank(user);
+        IERC20(XCDOT).approve(address(composer), type(uint256).max);
 
-    function setShouldFail(bool _shouldFail) external {
-        shouldFail = _shouldFail;
+        bytes memory transferInCalldata = CalldataLib.encodeTransferIn(XCDOT, address(callForwarder), amount);
+
+        bytes memory approveCalldata = CalldataLib.encodeApprove(XCDOT, STELLA_STDOT);
+
+        bytes memory catchCalldata = CalldataLib.encodeSweep(XCDOT, user, 0, SweepType.VALIDATE);
+
+        bytes memory tryCallCalldata =
+            CalldataLib.encodeTryExternalCallWithReplace(STELLA_STDOT, 0, false, XCDOT, 100, DEPOSIT_CALLDATA, false, catchCalldata);
+
+        bytes memory composerCalldata = abi.encodePacked(
+            transferInCalldata,
+            CalldataLib.encodeExternalCall(address(callForwarder), uint256(0), false, abi.encodePacked(approveCalldata, tryCallCalldata))
+        );
+
+        vm.startPrank(user);
+        vm.expectRevert();
+        composer.deltaCompose(composerCalldata);
+        vm.stopPrank();
     }
 
-    function testCall() external {
-        called = true;
+    function test_tryCallExternalWithReplace_revertsOnTransferFromSelector() public {
+        uint256 amount = 1000;
+        _fundUserWithToken(XCDOT, amount);
+        vm.prank(user);
+        IERC20(XCDOT).approve(address(composer), type(uint256).max);
 
-        if (shouldFail) {
-            revert ShouldRevert();
-        }
+        bytes memory transferInCalldata = CalldataLib.encodeTransferIn(XCDOT, address(callForwarder), amount);
+
+        bytes memory approveCalldata = CalldataLib.encodeApprove(XCDOT, STELLA_STDOT);
+
+        bytes memory transferFromCalldata = abi.encodeWithSelector(TRANSFER_FROM_SELECTOR, address(0), address(0), uint256(0));
+
+        bytes memory catchCalldata = CalldataLib.encodeSweep(XCDOT, user, 0, SweepType.VALIDATE);
+
+        bytes memory tryCallCalldata =
+            CalldataLib.encodeTryExternalCallWithReplace(STELLA_STDOT, 0, false, XCDOT, 0, transferFromCalldata, false, catchCalldata);
+
+        bytes memory composerCalldata = abi.encodePacked(
+            transferInCalldata,
+            CalldataLib.encodeExternalCall(address(callForwarder), uint256(0), false, abi.encodePacked(approveCalldata, tryCallCalldata))
+        );
+
+        vm.startPrank(user);
+        vm.expectRevert();
+        composer.deltaCompose(composerCalldata);
+        vm.stopPrank();
     }
 
-    function catchBlock() external {
-        catchCalled = true;
+    function test_tryCallExternalWithReplace_revertsOnPermit2Target() public {
+        uint256 amount = 1000;
+        _fundUserWithToken(XCDOT, amount);
+        vm.prank(user);
+        IERC20(XCDOT).approve(address(composer), type(uint256).max);
+
+        bytes memory transferInCalldata = CalldataLib.encodeTransferIn(XCDOT, address(callForwarder), amount);
+
+        bytes memory approveCalldata = CalldataLib.encodeApprove(XCDOT, STELLA_STDOT);
+
+        bytes memory catchCalldata = CalldataLib.encodeSweep(XCDOT, user, 0, SweepType.VALIDATE);
+
+        bytes memory tryCallCalldata =
+            CalldataLib.encodeTryExternalCallWithReplace(PERMIT2, 0, false, XCDOT, 0, DEPOSIT_CALLDATA, false, catchCalldata);
+
+        bytes memory composerCalldata = abi.encodePacked(
+            transferInCalldata,
+            CalldataLib.encodeExternalCall(address(callForwarder), uint256(0), false, abi.encodePacked(approveCalldata, tryCallCalldata))
+        );
+
+        vm.startPrank(user);
+        vm.expectRevert();
+        composer.deltaCompose(composerCalldata);
+        vm.stopPrank();
     }
 
-    function reset() external {
-        called = false;
-        catchCalled = false;
+    function test_callExternalWithReplace_replacesBalance() public {
+        uint256 amount = 1000;
+        _fundUserWithToken(XCDOT, amount);
+        vm.prank(user);
+        IERC20(XCDOT).approve(address(composer), type(uint256).max);
+
+        bytes memory transferInCalldata = CalldataLib.encodeTransferIn(XCDOT, address(callForwarder), amount);
+
+        bytes memory approveCalldata = CalldataLib.encodeApprove(XCDOT, STELLA_STDOT);
+
+        bytes memory callCalldata = CalldataLib.encodeExternalCallWithReplace(STELLA_STDOT, 0, false, XCDOT, 0, DEPOSIT_CALLDATA);
+
+        bytes memory composerCalldata = abi.encodePacked(
+            transferInCalldata,
+            CalldataLib.encodeExternalCall(
+                address(callForwarder),
+                uint256(0),
+                false,
+                abi.encodePacked(approveCalldata, callCalldata, CalldataLib.encodeSweep(STELLA_STDOT, user, 0, SweepType.VALIDATE))
+            )
+        );
+
+        uint256 bb = IERC20(STELLA_STDOT).balanceOf(user);
+
+        vm.startPrank(user);
+        composer.deltaCompose(composerCalldata);
+        vm.stopPrank();
+
+        uint256 forwarderBalanceAfter = IERC20(XCDOT).balanceOf(address(callForwarder));
+        uint256 ba = IERC20(STELLA_STDOT).balanceOf(user);
+        assertGt(ba, bb);
+        assertEq(forwarderBalanceAfter, 0);
+    }
+
+    function test_callExternalWithReplace_skipReplace_whenTokenIsZero() public {
+        uint256 amount = 1000;
+        _fundUserWithToken(XCDOT, amount);
+        vm.prank(user);
+        IERC20(XCDOT).approve(address(composer), type(uint256).max);
+
+        bytes memory transferInCalldata = CalldataLib.encodeTransferIn(XCDOT, address(callForwarder), 500);
+
+        bytes memory approveCalldata = CalldataLib.encodeApprove(XCDOT, STELLA_STDOT);
+
+        bytes memory depositCalldata = abi.encodeWithSelector(DEPOSIT_SELECTOR, 500);
+
+        bytes memory callCalldata = CalldataLib.encodeExternalCallWithReplace(STELLA_STDOT, 0, false, address(0), 0, depositCalldata);
+
+        bytes memory composerCalldata = abi.encodePacked(
+            transferInCalldata,
+            CalldataLib.encodeExternalCall(
+                address(callForwarder),
+                uint256(0),
+                false,
+                abi.encodePacked(approveCalldata, callCalldata, CalldataLib.encodeSweep(STELLA_STDOT, user, 0, SweepType.VALIDATE))
+            )
+        );
+
+        uint256 bb = IERC20(STELLA_STDOT).balanceOf(user);
+
+        vm.startPrank(user);
+        composer.deltaCompose(composerCalldata);
+        vm.stopPrank();
+
+        uint256 forwarderBalanceAfter = IERC20(XCDOT).balanceOf(address(callForwarder));
+        uint256 ba = IERC20(STELLA_STDOT).balanceOf(user);
+        assertGt(ba, bb);
+        assertEq(forwarderBalanceAfter, 0);
+    }
+
+    function test_callExternalWithReplace_revertsOnInvalidReplaceOffset() public {
+        uint256 amount = 1000;
+        _fundUserWithToken(XCDOT, amount);
+        vm.prank(user);
+        IERC20(XCDOT).approve(address(composer), type(uint256).max);
+
+        bytes memory transferInCalldata = CalldataLib.encodeTransferIn(XCDOT, address(callForwarder), amount);
+
+        bytes memory approveCalldata = CalldataLib.encodeApprove(XCDOT, STELLA_STDOT);
+
+        bytes memory callCalldata = CalldataLib.encodeExternalCallWithReplace(STELLA_STDOT, 0, false, XCDOT, 100, DEPOSIT_CALLDATA);
+
+        bytes memory composerCalldata = abi.encodePacked(
+            transferInCalldata,
+            CalldataLib.encodeExternalCall(address(callForwarder), uint256(0), false, abi.encodePacked(approveCalldata, callCalldata))
+        );
+
+        vm.startPrank(user);
+        vm.expectRevert();
+        composer.deltaCompose(composerCalldata);
+        vm.stopPrank();
+    }
+
+    function test_callExternalWithReplace_revertsOnTransferFromSelector() public {
+        uint256 amount = 1000;
+        _fundUserWithToken(XCDOT, amount);
+        vm.prank(user);
+        IERC20(XCDOT).approve(address(composer), type(uint256).max);
+
+        bytes memory transferInCalldata = CalldataLib.encodeTransferIn(XCDOT, address(callForwarder), amount);
+
+        bytes memory approveCalldata = CalldataLib.encodeApprove(XCDOT, STELLA_STDOT);
+
+        bytes memory transferFromCalldata = abi.encodeWithSelector(TRANSFER_FROM_SELECTOR, address(0), address(0), uint256(0));
+
+        bytes memory callCalldata = CalldataLib.encodeExternalCallWithReplace(STELLA_STDOT, 0, false, XCDOT, 0, transferFromCalldata);
+
+        bytes memory composerCalldata = abi.encodePacked(
+            transferInCalldata,
+            CalldataLib.encodeExternalCall(address(callForwarder), uint256(0), false, abi.encodePacked(approveCalldata, callCalldata))
+        );
+
+        vm.startPrank(user);
+        vm.expectRevert();
+        composer.deltaCompose(composerCalldata);
+        vm.stopPrank();
+    }
+
+    function test_callExternalWithReplace_revertsOnPermit2Target() public {
+        uint256 amount = 1000;
+        _fundUserWithToken(XCDOT, amount);
+        vm.prank(user);
+        IERC20(XCDOT).approve(address(composer), type(uint256).max);
+
+        bytes memory transferInCalldata = CalldataLib.encodeTransferIn(XCDOT, address(callForwarder), amount);
+
+        bytes memory approveCalldata = CalldataLib.encodeApprove(XCDOT, STELLA_STDOT);
+
+        bytes memory callCalldata = CalldataLib.encodeExternalCallWithReplace(PERMIT2, 0, false, XCDOT, 0, DEPOSIT_CALLDATA);
+
+        bytes memory composerCalldata = abi.encodePacked(
+            transferInCalldata,
+            CalldataLib.encodeExternalCall(address(callForwarder), uint256(0), false, abi.encodePacked(approveCalldata, callCalldata))
+        );
+
+        vm.startPrank(user);
+        vm.expectRevert();
+        composer.deltaCompose(composerCalldata);
+        vm.stopPrank();
     }
 }
 
