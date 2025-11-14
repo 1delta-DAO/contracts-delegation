@@ -27,7 +27,7 @@ library CalldataLib {
         address target,
         uint256 value,
         bool useSelfBalance,
-        bool revertOnFailure,
+        bool rOnFailure,
         bytes memory data,
         bytes memory catchData
     )
@@ -41,7 +41,7 @@ library CalldataLib {
             generateAmountBitmap(uint128(value), false, useSelfBalance),
             uint16(data.length),
             data,
-            uint8(revertOnFailure ? 0 : 1),
+            uint8(rOnFailure ? 0 : 1),
             uint16(catchData.length),
             catchData
         );
@@ -70,7 +70,7 @@ library CalldataLib {
         address token,
         uint16 replaceOffset,
         bytes memory data,
-        bool revertOnFailure,
+        bool rOnFailure,
         bytes memory catchData
     )
         internal
@@ -84,7 +84,7 @@ library CalldataLib {
             token,
             replaceOffset,
             uint16(data.length),
-            uint8(revertOnFailure ? 0 : 1),
+            uint8(rOnFailure ? 0 : 1),
             uint16(catchData.length),
             data,
             catchData
