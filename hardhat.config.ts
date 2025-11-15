@@ -215,6 +215,14 @@ const config: HardhatUserConfig = {
                 },
             },
             {
+                network: "sei",
+                chainId: 1329,
+                urls: {
+                    apiURL: "https://api.etherscan.io/v2/api?chainid=1329",
+                    browserURL: "https://katanascan.com/",
+                },
+            },
+            {
                 network: "unichain",
                 chainId: 130,
                 urls: {
@@ -236,6 +244,7 @@ const config: HardhatUserConfig = {
         //     mantle: process.env.ETHERSCAN_API_KEY ?? "abc",
         //     arbitrumOne: process.env.ARBISCAN_API_KEY ?? "",
         //     mainnet: process.env.ETHERSCAN_API_KEY ?? "",
+        //     sei: process.env.ETHERSCAN_API_KEY ?? "",
         //     polygon: process.env.POLYGONSCAN_API_KEY ?? "",
         //     taiko: process.env.TAIKOSCAN_API_KEY ?? "",
         //     linea: process.env.ETHERSCAN_API_KEY ?? "",
@@ -364,6 +373,12 @@ const config: HardhatUserConfig = {
             chainId: 1116,
             live: true,
         },
+        sei: {
+            url: "https://sei.drpc.org",
+            accounts,
+            chainId: 1329,
+            live: true,
+        },
         scroll: {
             url: "https://rpc.scroll.io",
             accounts,
@@ -474,7 +489,7 @@ const config: HardhatUserConfig = {
             live: true,
         },
         cronos: {
-            url: "https://rpc.vvs.finance",
+            url: "https://1rpc.io/cro",
             accounts,
             chainId: 25,
             live: true,
@@ -779,6 +794,16 @@ const config: HardhatUserConfig = {
                 },
             },
             "contracts/1delta/composer/chains/pulsechain/Composer.sol": {
+                version: "0.8.28",
+                settings: {
+                    optimizer: {
+                        enabled: true,
+                        runs: 10_000,
+                    },
+                    evmVersion: "cancun",
+                },
+            },
+            "contracts/1delta/composer/chains/sei/Composer.sol": {
                 version: "0.8.28",
                 settings: {
                     optimizer: {

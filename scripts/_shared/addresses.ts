@@ -3,7 +3,7 @@ import {Chain} from "@1delta/asset-registry";
 export const DEPLOY_FACTORY = "0x16c4Dc0f662E2bEceC91fC5E7aeeC6a25684698A";
 
 // forwarder: also deployed on all those chains
-export const FORWARDER = "0xfCa1150eA45ba50323C27a7d5E823d92D2e59A05";
+export const FORWARDER = "0xfCa11b85ac641f1ba215259566d579A45519e506";
 // npx hardhat run /home/axtar/contracts-delegation/scripts/_shared/composers/moonbeam.ts --network moonbeam
 export const COMPOSER_LOGICS = {
     [Chain.ARBITRUM_ONE]: "0x82Fe9a74a04eEd6189E493231D8511c3E2fe4cb3",
@@ -38,6 +38,7 @@ export const COMPOSER_LOGICS = {
     [Chain.MORPH]: "0x7e2D250E4FD0EeD6BD2cB3DC525A2b9f12508152",
     [Chain.PLASMA_MAINNET]: "0x91549bad7A081742dEC72E2CF55a2477A880a798",
     [Chain.MOONBEAM]: "0x7e2D250E4FD0EeD6BD2cB3DC525A2b9f12508152",
+    [Chain.SEI_NETWORK]: "0x816EBC5cb8A5651C902Cb06659907A93E574Db0B",
 };
 
 export const COMPOSER_PROXIES = {
@@ -73,6 +74,7 @@ export const COMPOSER_PROXIES = {
     [Chain.MORPH]: "0xcB6Eb8df68153cebF60E1872273Ef52075a5C297",
     [Chain.PLASMA_MAINNET]: "0x8E24CfC19c6C00c524353CB8816f5f1c2F33c201",
     [Chain.MOONBEAM]: "0x8E24CfC19c6C00c524353CB8816f5f1c2F33c201",
+    [Chain.SEI_NETWORK]: "0x8E24CfC19c6C00c524353CB8816f5f1c2F33c201",
 };
 
 export const PROXY_ADMINS = {
@@ -108,4 +110,5 @@ export const PROXY_ADMINS = {
     [Chain.MORPH]: "0x36908c085e96782e67d4aebff6900e77da415570",
     [Chain.PLASMA_MAINNET]: "0xbb7eaaaf2c7208384f6297c2b73935d257698c78",
     [Chain.MOONBEAM]: "0xbb7eaaaf2c7208384f6297c2b73935d257698c78",
+    [Chain.SEI_NETWORK]: "0xbb7eaaaf2c7208384f6297c2b73935d257698c78",
 };

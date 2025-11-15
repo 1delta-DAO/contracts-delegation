@@ -419,4 +419,3 @@ contract ExtTryCatchWithReplace is BaseTest {
         vm.stopPrank();
     }
 }
-
