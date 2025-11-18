@@ -26,6 +26,9 @@ abstract contract UniV2Callbacks is Masks, DeltaErrors {
     bytes32 private constant ZENLINK_FF_FACTORY = 0xff079710316b06BBB2c0FF4bEFb7D2DaC206c716A00000000000000000000000;
     bytes32 private constant ZENLINK_CODE_HASH = 0x4d57d13eb6abe5cc425bd08deb1f15f0562098dddc340a700527b4d98f95f4dd;
 
+    bytes32 private constant BEAMSWAP_V2_FF_FACTORY = 0xff985BcA32293A7A496300a48081947321177a86FD0000000000000000000000;
+    bytes32 private constant BEAMSWAP_V2_CODE_HASH = 0xe31da4209ffcce713230a74b5287fa8ec84797c9e77e1f7cfeccea015cdc97ea;
+
     bytes32 private constant SUSHISWAP_V2_FF_FACTORY = 0xffc35DADB65012eC5796536bD9864eD8773aBc74C40000000000000000000000;
     bytes32 private constant SUSHISWAP_V2_CODE_HASH = 0x96e8ac4277198ff8b6f785478aa9a39f403cb768dd02cbee326c3e7da348845f;
 
@@ -64,6 +67,12 @@ abstract contract UniV2Callbacks is Masks, DeltaErrors {
 
                 ffFactoryAddress := ZENLINK_FF_FACTORY
                 codeHash := ZENLINK_CODE_HASH
+            }
+            case 0x99f9fa5100000000000000000000000000000000000000000000000000000000 {
+                forkId := and(UINT8_MASK, shr(88, outData))
+
+                ffFactoryAddress := BEAMSWAP_V2_FF_FACTORY
+                codeHash := BEAMSWAP_V2_CODE_HASH
             }
             case 0x10d1e85c00000000000000000000000000000000000000000000000000000000 {
                 forkId := and(UINT8_MASK, shr(88, outData))
