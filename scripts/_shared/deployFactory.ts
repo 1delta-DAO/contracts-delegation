@@ -34,6 +34,7 @@ import {DeployFactory__factory} from "../../types";
 // morph
 // moonbeam
 // sei
+// monad
 
 async function main() {
     const accounts = await ethers.getSigners();
