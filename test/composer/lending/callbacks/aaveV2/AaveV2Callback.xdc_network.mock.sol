@@ -15,9 +15,7 @@ contract AaveV2FlashLoanCallbackTest is BaseTest, DeltaErrors {
     IComposerLike oneDV2;
     AaveV2MockPool mockPool;
 
-    address private AAVE_V2;
-    address private GRANARY;
-    address private RADIANT_V2;
+    address private PRIME_FI;
 
     address private USDC;
 
@@ -30,7 +28,7 @@ contract AaveV2FlashLoanCallbackTest is BaseTest, DeltaErrors {
     PoolCase[] validPools;
 
     function setUp() public virtual {
-        string memory chainName = Chains.ETHEREUM_MAINNET;
+        string memory chainName = Chains.XDC_NETWORK;
 
         // Initialize chain (for token info) with no forking
         _init(chainName, 0, false);
@@ -45,35 +43,17 @@ contract AaveV2FlashLoanCallbackTest is BaseTest, DeltaErrors {
         mockPool = new AaveV2MockPool();
     }
 
-    function test_flash_loan_aaveV2_type_aave_v2_pool_with_callbacks() public {
-        replaceLendingPoolWithMock(AAVE_V2);
+    function test_flash_loan_aaveV2_type_prime_fi_pool_with_callbacks() public {
+        replaceLendingPoolWithMock(PRIME_FI);
 
-        bytes memory params = CalldataLib.encodeFlashLoan(USDC, 1e6, AAVE_V2, uint8(3), uint8(0), sweepCall());
-
-        vm.prank(user);
-        oneDV2.deltaCompose(params);
-    }
-
-    function test_flash_loan_aaveV2_type_granary_pool_with_callbacks() public {
-        replaceLendingPoolWithMock(GRANARY);
-
-        bytes memory params = CalldataLib.encodeFlashLoan(USDC, 1e6, GRANARY, uint8(3), uint8(7), sweepCall());
-
-        vm.prank(user);
-        oneDV2.deltaCompose(params);
-    }
-
-    function test_flash_loan_aaveV2_type_radiant_v2_pool_with_callbacks() public {
-        replaceLendingPoolWithMock(RADIANT_V2);
-
-        bytes memory params = CalldataLib.encodeFlashLoan(USDC, 1e6, RADIANT_V2, uint8(3), uint8(20), sweepCall());
+        bytes memory params = CalldataLib.encodeFlashLoan(USDC, 1e6, PRIME_FI, uint8(3), uint8(21), sweepCall());
 
         vm.prank(user);
         oneDV2.deltaCompose(params);
     }
 
     function test_flash_loan_aaveV2_type_wrongCaller_revert() public {
-        bytes memory params = CalldataLib.encodeFlashLoan(USDC, 1e6, address(mockPool), uint8(3), uint8(0), sweepCall());
+        bytes memory params = CalldataLib.encodeFlashLoan(USDC, 1e6, address(mockPool), uint8(3), uint8(21), sweepCall());
 
         vm.prank(user);
         vm.expectRevert(DeltaErrors.INVALID_CALLER);
@@ -100,12 +80,12 @@ contract AaveV2FlashLoanCallbackTest is BaseTest, DeltaErrors {
     }
 
     function test_flash_loan_aaveV2_type_fuzz_invalidPoolIds(uint8 poolId) public {
-        replaceLendingPoolWithMock(AAVE_V2);
+        replaceLendingPoolWithMock(PRIME_FI);
 
         for (uint256 i = 0; i < validPools.length; i++) {
             if (poolId == validPools[i].poolId) return;
         }
-        bytes memory params = CalldataLib.encodeFlashLoan(USDC, 1e6, AAVE_V2, uint8(3), uint8(poolId), sweepCall());
+        bytes memory params = CalldataLib.encodeFlashLoan(USDC, 1e6, PRIME_FI, uint8(3), uint8(poolId), sweepCall());
         vm.prank(user);
         vm.expectRevert(DeltaErrors.INVALID_FLASH_LOAN);
         oneDV2.deltaCompose(params);
@@ -117,18 +97,14 @@ contract AaveV2FlashLoanCallbackTest is BaseTest, DeltaErrors {
     }
 
     function getAddressFromRegistry() internal {
-        AAVE_V2 = chain.getLendingController(Lenders.AAVE_V2);
-        GRANARY = chain.getLendingController(Lenders.GRANARY);
-        RADIANT_V2 = chain.getLendingController(Lenders.RADIANT_V2);
+        PRIME_FI = chain.getLendingController(Lenders.PRIME_FI);
 
         // Get token addresses
         USDC = chain.getTokenAddress(Tokens.USDC);
     }
 
     function populateValidPools() internal {
-        validPools.push(PoolCase({poolId: 0, poolAddr: AAVE_V2, asset: USDC}));
-        validPools.push(PoolCase({poolId: 7, poolAddr: GRANARY, asset: USDC}));
-        validPools.push(PoolCase({poolId: 20, poolAddr: RADIANT_V2, asset: USDC}));
+        validPools.push(PoolCase({poolId: 21, poolAddr: PRIME_FI, asset: USDC}));
     }
 
     function mockERC20FunctionsForAllTokens() internal {

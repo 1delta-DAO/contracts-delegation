@@ -151,6 +151,14 @@ const config: HardhatUserConfig = {
                 },
             },
             {
+                network: "monad",
+                chainId: 143,
+                urls: {
+                    browserURL: "https://xdcscan.com/",
+                    apiURL: "https://api.etherscan.io/v2/api?chainid=143",
+                },
+            },
+            {
                 network: "soneium",
                 chainId: 1868,
                 urls: {
@@ -438,6 +446,12 @@ const config: HardhatUserConfig = {
             url: "https://mainnet.mode.network",
             accounts,
             chainId: 34443,
+            live: true,
+        },
+        monad: {
+            url: "https://rpc-mainnet.monadinfra.com",
+            accounts,
+            chainId: 143,
             live: true,
         },
         avalanche: {
@@ -1049,6 +1063,16 @@ const config: HardhatUserConfig = {
                     optimizer: {
                         enabled: true,
                         runs: 500,
+                    },
+                    evmVersion: "cancun",
+                },
+            },
+            "contracts/1delta/composer/chains/monad/Composer.sol": {
+                version: "0.8.28",
+                settings: {
+                    optimizer: {
+                        enabled: true,
+                        runs: 10_000,
                     },
                     evmVersion: "cancun",
                 },

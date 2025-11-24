@@ -1,4 +1,5 @@
-import {Chain, CHAIN_INFO} from "@1delta/asset-registry";
+import {Chain} from "@1delta/chain-registry";
+import {chains} from "@1delta/data-sdk";
 
 export const CREATE_CHAIN_IDS = [
     Chain.ARBITRUM_ONE,
@@ -36,6 +37,7 @@ export const CREATE_CHAIN_IDS = [
     Chain.PLASMA_MAINNET,
     Chain.MOONBEAM,
     Chain.SEI_NETWORK,
+    Chain.MONAD_MAINNET,
 ];
 
 export function sortForks<T>(arr: T[], field: keyof T) {
@@ -61,5 +63,5 @@ export function toCamelCaseWithFirstUpper(str: string) {
     return camel.charAt(0).toUpperCase() + camel.slice(1);
 }
 
-export const getChainKey = (chainId: string) => CHAIN_INFO[chainId].key!;
-export const getChainEnum = (chainId: string) => CHAIN_INFO[chainId].enum!;
+export const getChainKey = (chainId: string) => chains()[chainId].key!;
+export const getChainEnum = (chainId: string) => chains()[chainId].enum!;

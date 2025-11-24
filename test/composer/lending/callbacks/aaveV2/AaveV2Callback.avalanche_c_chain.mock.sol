@@ -15,6 +15,7 @@ contract AaveV2FlashLoanCallbackTest is BaseTest, DeltaErrors {
     IComposerLike oneDV2;
     AaveV2MockPool mockPool;
 
+    address private AAVE_V2;
     address private NEREUS;
     address private GRANARY;
 
@@ -44,6 +45,15 @@ contract AaveV2FlashLoanCallbackTest is BaseTest, DeltaErrors {
         mockPool = new AaveV2MockPool();
     }
 
+    function test_flash_loan_aaveV2_type_aave_v2_pool_with_callbacks() public {
+        replaceLendingPoolWithMock(AAVE_V2);
+
+        bytes memory params = CalldataLib.encodeFlashLoan(USDC, 1e6, AAVE_V2, uint8(3), uint8(0), sweepCall());
+
+        vm.prank(user);
+        oneDV2.deltaCompose(params);
+    }
+
     function test_flash_loan_aaveV2_type_nereus_pool_with_callbacks() public {
         replaceLendingPoolWithMock(NEREUS);
 
@@ -63,7 +73,7 @@ contract AaveV2FlashLoanCallbackTest is BaseTest, DeltaErrors {
     }
 
     function test_flash_loan_aaveV2_type_wrongCaller_revert() public {
-        bytes memory params = CalldataLib.encodeFlashLoan(USDC, 1e6, address(mockPool), uint8(3), uint8(6), sweepCall());
+        bytes memory params = CalldataLib.encodeFlashLoan(USDC, 1e6, address(mockPool), uint8(3), uint8(0), sweepCall());
 
         vm.prank(user);
         vm.expectRevert(DeltaErrors.INVALID_CALLER);
@@ -90,12 +100,12 @@ contract AaveV2FlashLoanCallbackTest is BaseTest, DeltaErrors {
     }
 
     function test_flash_loan_aaveV2_type_fuzz_invalidPoolIds(uint8 poolId) public {
-        replaceLendingPoolWithMock(NEREUS);
+        replaceLendingPoolWithMock(AAVE_V2);
 
         for (uint256 i = 0; i < validPools.length; i++) {
             if (poolId == validPools[i].poolId) return;
         }
-        bytes memory params = CalldataLib.encodeFlashLoan(USDC, 1e6, NEREUS, uint8(3), uint8(poolId), sweepCall());
+        bytes memory params = CalldataLib.encodeFlashLoan(USDC, 1e6, AAVE_V2, uint8(3), uint8(poolId), sweepCall());
         vm.prank(user);
         vm.expectRevert(DeltaErrors.INVALID_FLASH_LOAN);
         oneDV2.deltaCompose(params);
@@ -107,6 +117,7 @@ contract AaveV2FlashLoanCallbackTest is BaseTest, DeltaErrors {
     }
 
     function getAddressFromRegistry() internal {
+        AAVE_V2 = chain.getLendingController(Lenders.AAVE_V2);
         NEREUS = chain.getLendingController(Lenders.NEREUS);
         GRANARY = chain.getLendingController(Lenders.GRANARY);
 
@@ -115,6 +126,7 @@ contract AaveV2FlashLoanCallbackTest is BaseTest, DeltaErrors {
     }
 
     function populateValidPools() internal {
+        validPools.push(PoolCase({poolId: 0, poolAddr: AAVE_V2, asset: USDC}));
         validPools.push(PoolCase({poolId: 6, poolAddr: NEREUS, asset: USDC}));
         validPools.push(PoolCase({poolId: 7, poolAddr: GRANARY, asset: USDC}));
     }

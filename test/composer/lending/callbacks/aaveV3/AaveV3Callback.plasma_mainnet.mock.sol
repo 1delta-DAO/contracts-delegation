@@ -16,10 +16,7 @@ contract AaveV3FlashLoanCallbackTest is BaseTest, DeltaErrors {
     IComposerLike oneDV2;
     AaveMockPool mockPool;
 
-    address private AVALON;
-    address private AVALON_USDA;
-    address private YEI;
-    address private YEI_SOLV;
+    address private AAVE_V3;
 
     address private USDC;
 
@@ -32,7 +29,7 @@ contract AaveV3FlashLoanCallbackTest is BaseTest, DeltaErrors {
     PoolCase[] validPools;
 
     function setUp() public virtual {
-        string memory chainName = Chains.SEI_NETWORK;
+        string memory chainName = Chains.PLASMA_MAINNET;
 
         // Initialize chain (for token info) with no forking
         _init(chainName, 0, false);
@@ -47,41 +44,11 @@ contract AaveV3FlashLoanCallbackTest is BaseTest, DeltaErrors {
         mockPool = new AaveMockPool();
     }
 
-    function test_flash_loan_aaveV3_type_avalon_pool_with_callbacks() public {
+    function test_flash_loan_aaveV3_type_aave_v3_pool_with_callbacks() public {
         // mock implementation
-        replaceLendingPoolWithMock(AVALON);
+        replaceLendingPoolWithMock(AAVE_V3);
 
-        bytes memory params = CalldataLib.encodeFlashLoan(USDC, 1e6, AVALON, uint8(2), uint8(50), sweepCall());
-
-        vm.prank(user);
-        oneDV2.deltaCompose(params);
-    }
-
-    function test_flash_loan_aaveV3_type_avalon_usda_pool_with_callbacks() public {
-        // mock implementation
-        replaceLendingPoolWithMock(AVALON_USDA);
-
-        bytes memory params = CalldataLib.encodeFlashLoan(USDC, 1e6, AVALON_USDA, uint8(2), uint8(55), sweepCall());
-
-        vm.prank(user);
-        oneDV2.deltaCompose(params);
-    }
-
-    function test_flash_loan_aaveV3_type_yei_pool_with_callbacks() public {
-        // mock implementation
-        replaceLendingPoolWithMock(YEI);
-
-        bytes memory params = CalldataLib.encodeFlashLoan(USDC, 1e6, YEI, uint8(2), uint8(102), sweepCall());
-
-        vm.prank(user);
-        oneDV2.deltaCompose(params);
-    }
-
-    function test_flash_loan_aaveV3_type_yei_solv_pool_with_callbacks() public {
-        // mock implementation
-        replaceLendingPoolWithMock(YEI_SOLV);
-
-        bytes memory params = CalldataLib.encodeFlashLoan(USDC, 1e6, YEI_SOLV, uint8(2), uint8(103), sweepCall());
+        bytes memory params = CalldataLib.encodeFlashLoan(USDC, 1e6, AAVE_V3, uint8(2), uint8(0), sweepCall());
 
         vm.prank(user);
         oneDV2.deltaCompose(params);
@@ -110,12 +77,12 @@ contract AaveV3FlashLoanCallbackTest is BaseTest, DeltaErrors {
     }
 
     function test_flash_loan_aaveV3_type_fuzz_invalidPoolIds(uint8 poolId) public {
-        replaceLendingPoolWithMock(AVALON);
+        replaceLendingPoolWithMock(AAVE_V3);
 
         for (uint256 i = 0; i < validPools.length; i++) {
             if (poolId == validPools[i].poolId) return;
         }
-        bytes memory params = CalldataLib.encodeFlashLoan(USDC, 1e6, AVALON, uint8(2), uint8(poolId), sweepCall());
+        bytes memory params = CalldataLib.encodeFlashLoan(USDC, 1e6, AAVE_V3, uint8(2), uint8(poolId), sweepCall());
         vm.prank(user);
         vm.expectRevert(DeltaErrors.INVALID_FLASH_LOAN);
         oneDV2.deltaCompose(params);
@@ -127,20 +94,14 @@ contract AaveV3FlashLoanCallbackTest is BaseTest, DeltaErrors {
     }
 
     function getAddressFromRegistry() internal {
-        AVALON = chain.getLendingController(Lenders.AVALON);
-        AVALON_USDA = chain.getLendingController(Lenders.AVALON_USDA);
-        YEI = chain.getLendingController(Lenders.YEI);
-        YEI_SOLV = chain.getLendingController(Lenders.YEI_SOLV);
+        AAVE_V3 = chain.getLendingController(Lenders.AAVE_V3);
 
         // Get token addresses
         USDC = chain.getTokenAddress(Tokens.USDC);
     }
 
     function populateValidPools() internal {
-        validPools.push(PoolCase({poolId: 50, poolAddr: AVALON, asset: USDC}));
-        validPools.push(PoolCase({poolId: 55, poolAddr: AVALON_USDA, asset: USDC}));
-        validPools.push(PoolCase({poolId: 102, poolAddr: YEI, asset: USDC}));
-        validPools.push(PoolCase({poolId: 103, poolAddr: YEI_SOLV, asset: USDC}));
+        validPools.push(PoolCase({poolId: 0, poolAddr: AAVE_V3, asset: USDC}));
     }
 
     function mockERC20FunctionsForAllTokens() internal {

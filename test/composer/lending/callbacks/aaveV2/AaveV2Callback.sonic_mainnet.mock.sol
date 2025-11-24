@@ -16,6 +16,7 @@ contract AaveV2FlashLoanCallbackTest is BaseTest, DeltaErrors {
     AaveV2MockPool mockPool;
 
     address private POLTER;
+    address private MAGSIN;
 
     address private WETH;
 
@@ -47,6 +48,15 @@ contract AaveV2FlashLoanCallbackTest is BaseTest, DeltaErrors {
         replaceLendingPoolWithMock(POLTER);
 
         bytes memory params = CalldataLib.encodeFlashLoan(WETH, 1e6, POLTER, uint8(3), uint8(11), sweepCall());
+
+        vm.prank(user);
+        oneDV2.deltaCompose(params);
+    }
+
+    function test_flash_loan_aaveV2_type_magsin_pool_with_callbacks() public {
+        replaceLendingPoolWithMock(MAGSIN);
+
+        bytes memory params = CalldataLib.encodeFlashLoan(WETH, 1e6, MAGSIN, uint8(3), uint8(84), sweepCall());
 
         vm.prank(user);
         oneDV2.deltaCompose(params);
@@ -98,6 +108,7 @@ contract AaveV2FlashLoanCallbackTest is BaseTest, DeltaErrors {
 
     function getAddressFromRegistry() internal {
         POLTER = chain.getLendingController(Lenders.POLTER);
+        MAGSIN = chain.getLendingController(Lenders.MAGSIN);
 
         // Get token addresses
         WETH = chain.getTokenAddress(Tokens.WETH);
@@ -105,6 +116,7 @@ contract AaveV2FlashLoanCallbackTest is BaseTest, DeltaErrors {
 
     function populateValidPools() internal {
         validPools.push(PoolCase({poolId: 11, poolAddr: POLTER, asset: WETH}));
+        validPools.push(PoolCase({poolId: 84, poolAddr: MAGSIN, asset: WETH}));
     }
 
     function mockERC20FunctionsForAllTokens() internal {

@@ -1,8 +1,9 @@
-import {ASSET_META, CHAIN_INFO} from "@1delta/asset-registry";
+import {ASSET_META} from "@1delta/asset-registry";
 import {
     aavePools,
     aaveReserves,
     aaveTokens,
+    chains,
     compoundV2Pools,
     compoundV2Reserves,
     compoundV2Tokens,
@@ -69,15 +70,15 @@ const isCompoundV2 = (arr: string[]) => {
 };
 
 function getChainString(s: any) {
-    return CHAIN_INFO[s].enum;
+    return chains()[s].enum;
 }
 
 function getChainId(s: any) {
-    return CHAIN_INFO[s].chainId;
+    return chains()[s].chainId;
 }
 
 function getChainRpc(s: any) {
-    return CHAIN_INFO[s].rpc?.filter((rpc) => !rpc.includes("$"))[0] || ""; // filter out the ones with env vars
+    return chains()[s].rpc?.filter((rpc) => !rpc.includes("$"))[0] || ""; // filter out the ones with env vars
 }
 
 const chainLibHeader = () => `
@@ -182,7 +183,7 @@ async function main() {
     // 3. Create token symbols library
     ///////////////////////////////////////////////////////////////
     let tokenSymbols: string[] = [];
-    Object.entries(chainToToken).forEach(([chain, tokenList]) => {
+    Object.entries(chainToToken ?? {}).forEach(([chain, tokenList]) => {
         const _tokenListClean = uniq(tokenList);
         _tokenListClean.forEach((token) => {
             const meta = ASSET_META[chain]?.[token];
@@ -238,7 +239,7 @@ async function main() {
         const tokens = aaveTokens()[lender];
 
         // add aave tokens
-        Object.entries(tokens).forEach(([chainId, tokens]) => {
+        Object.entries(tokens ?? {}).forEach(([chainId, tokens]) => {
             const chainConstant = `Chains.${getChainString(chainId)}`;
             const lenderConstant = `Lenders.${lender}`;
 
