@@ -26,6 +26,9 @@ abstract contract UniV2Callbacks is Masks, DeltaErrors {
     bytes32 private constant SUSHISWAP_V2_FF_FACTORY = 0xffB45e53277a7e0F1D35f2a77160e91e25507f17630000000000000000000000;
     bytes32 private constant SUSHISWAP_V2_CODE_HASH = 0x96e8ac4277198ff8b6f785478aa9a39f403cb768dd02cbee326c3e7da348845f;
 
+    bytes32 private constant GLYPH_FF_FACTORY = 0xff3E723C7B6188E8Ef638DB9685Af45c7CB66f77B90000000000000000000000;
+    bytes32 private constant GLYPH_CODE_HASH = 0xee028118a054757b5daded92bc998b195fc653d33f3214aaabeec98d7599f6b8;
+
     /**
      * Generic Uniswap v2 style callbck executor
      */
@@ -55,6 +58,12 @@ abstract contract UniV2Callbacks is Masks, DeltaErrors {
 
                 ffFactoryAddress := SUSHISWAP_V2_FF_FACTORY
                 codeHash := SUSHISWAP_V2_CODE_HASH
+            }
+            case 0xdf9aee6800000000000000000000000000000000000000000000000000000000 {
+                forkId := and(UINT8_MASK, shr(88, outData))
+
+                ffFactoryAddress := GLYPH_FF_FACTORY
+                codeHash := GLYPH_CODE_HASH
             }
         }
 
