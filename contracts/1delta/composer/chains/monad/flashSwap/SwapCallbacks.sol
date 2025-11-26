@@ -2,6 +2,7 @@
 
 pragma solidity 0.8.28;
 
+import {UniV4Callbacks} from "./callbacks/UniV4Callback.sol";
 import {UniV3Callbacks, V3Callbacker} from "./callbacks/UniV3Callback.sol";
 import {UniV2Callbacks} from "./callbacks/UniV2Callback.sol";
 
@@ -10,6 +11,7 @@ import {UniV2Callbacks} from "./callbacks/UniV2Callback.sol";
  * @author 1delta Labs AG
  */
 contract SwapCallbacks is
+    UniV4Callbacks,
     UniV3Callbacks,
     UniV2Callbacks //
 {
@@ -22,6 +24,7 @@ contract SwapCallbacks is
         internal
         virtual
         override(
+            UniV4Callbacks,
             V3Callbacker,
             UniV2Callbacks //
         )

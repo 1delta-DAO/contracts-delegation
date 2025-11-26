@@ -12,7 +12,7 @@ npx hardhat verify --network sonic 0xB7ea94340e65CC68d1274aE483dfBE593fD6f21e --
 
 npx hardhat verify --network hemi 0xbaEe36c9ef69b0F8454e379314c7CBA628Fc6B61 --contract contracts/1delta/composer/chains/hemi/Composer.sol:OneDeltaComposerHemi
 
-npx hardhat verify --network taiko 0xA15fd23A1F1bdE0a5fe05025C24628eBA2E1D25f --contract contracts/1delta/composer/chains/taiko/Composer.sol:OneDeltaComposerTaiko
+npx hardhat verify --network taiko 0xb5D7E44438e7b8c94b4FE3aB466259cC6d2ab0B8 --contract contracts/1delta/composer/chains/taiko/Composer.sol:OneDeltaComposerTaiko
 
 npx hardhat verify --network metis 0x13D9c35f4901491Ac4FFebd3100238BBfFBD7181 --contract contracts/1delta/composer/chains/metis-andromeda/Composer.sol:OneDeltaComposerMetisAndromeda
 

@@ -23,6 +23,9 @@ abstract contract UniV3Callbacks is V3Callbacker, Masks, DeltaErrors {
     bytes32 private constant DTX_FF_FACTORY = 0xfffCA1AEf282A99390B62Ca8416a68F5747716260c0000000000000000000000;
     bytes32 private constant DTX_CODE_HASH = 0xe34f199b19b2b4f47f68442619d555527d244f78a3297ea89325f843f87b8b54;
 
+    bytes32 private constant TAIKOSWAP_V3_FF_FACTORY = 0xff826D713e30f0bF09Dd3219494A508E6B30327d4f0000000000000000000000;
+    bytes32 private constant TAIKOSWAP_V3_CODE_HASH = 0xe34f199b19b2b4f47f68442619d555527d244f78a3297ea89325f843f87b8b54;
+
     bytes32 private constant UNAGI_V3_FF_FACTORY = 0xff78172691DD3B8ADa7aEbd9bFfB487FB11D735DB20000000000000000000000;
     bytes32 private constant UNAGI_V3_CODE_HASH = 0x5ccd5621c1bb9e44ce98cef8b90d31eb2423dec3793b6239232cefae976936ea;
 
@@ -65,6 +68,10 @@ abstract contract UniV3Callbacks is V3Callbacker, Masks, DeltaErrors {
                 case 10 {
                     ffFactoryAddress := DTX_FF_FACTORY
                     codeHash := DTX_CODE_HASH
+                }
+                case 11 {
+                    ffFactoryAddress := TAIKOSWAP_V3_FF_FACTORY
+                    codeHash := TAIKOSWAP_V3_CODE_HASH
                 }
                 case 20 {
                     ffFactoryAddress := UNAGI_V3_FF_FACTORY
