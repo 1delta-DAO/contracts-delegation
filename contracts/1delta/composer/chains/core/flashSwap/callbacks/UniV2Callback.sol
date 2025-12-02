@@ -26,6 +26,9 @@ abstract contract UniV2Callbacks is Masks, DeltaErrors {
     bytes32 private constant SUSHISWAP_V2_FF_FACTORY = 0xffB45e53277a7e0F1D35f2a77160e91e25507f17630000000000000000000000;
     bytes32 private constant SUSHISWAP_V2_CODE_HASH = 0x96e8ac4277198ff8b6f785478aa9a39f403cb768dd02cbee326c3e7da348845f;
 
+    bytes32 private constant ICECREAM_V2_FF_FACTORY = 0xff9E6d21E759A7A288b80eef94E4737D313D31c13f0000000000000000000000;
+    bytes32 private constant ICECREAM_V2_CODE_HASH = 0x58c1b429d0ffdb4407396ae8118c58fed54898473076d0394163ea2198f7c4a3;
+
     bytes32 private constant GLYPH_FF_FACTORY = 0xff3E723C7B6188E8Ef638DB9685Af45c7CB66f77B90000000000000000000000;
     bytes32 private constant GLYPH_CODE_HASH = 0xee028118a054757b5daded92bc998b195fc653d33f3214aaabeec98d7599f6b8;
 
@@ -41,13 +44,13 @@ abstract contract UniV2Callbacks is Masks, DeltaErrors {
         assembly {
             outData := calldataload(204)
             switch selector
-            case 0xabe68bdc00000000000000000000000000000000000000000000000000000000 {
+            case 0x835962f900000000000000000000000000000000000000000000000000000000 {
                 forkId := and(UINT8_MASK, shr(88, outData))
 
                 ffFactoryAddress := SHADOW_CORE_FF_FACTORY
                 codeHash := SHADOW_CORE_CODE_HASH
             }
-            case 0xb9f03bd800000000000000000000000000000000000000000000000000000000 {
+            case 0xe4dd2fec00000000000000000000000000000000000000000000000000000000 {
                 forkId := and(UINT8_MASK, shr(88, outData))
 
                 ffFactoryAddress := ARCHERSWAP_FF_FACTORY
@@ -55,9 +58,16 @@ abstract contract UniV2Callbacks is Masks, DeltaErrors {
             }
             case 0x10d1e85c00000000000000000000000000000000000000000000000000000000 {
                 forkId := and(UINT8_MASK, shr(88, outData))
-
-                ffFactoryAddress := SUSHISWAP_V2_FF_FACTORY
-                codeHash := SUSHISWAP_V2_CODE_HASH
+                switch forkId
+                case 1 {
+                    ffFactoryAddress := SUSHISWAP_V2_FF_FACTORY
+                    codeHash := SUSHISWAP_V2_CODE_HASH
+                }
+                case 20 {
+                    ffFactoryAddress := ICECREAM_V2_FF_FACTORY
+                    codeHash := ICECREAM_V2_CODE_HASH
+                }
+                default { revert(0, 0) }
             }
             case 0xdf9aee6800000000000000000000000000000000000000000000000000000000 {
                 forkId := and(UINT8_MASK, shr(88, outData))

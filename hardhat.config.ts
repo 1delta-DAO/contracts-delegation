@@ -304,36 +304,6 @@ const config: HardhatUserConfig = {
             live: false,
             accounts,
         },
-        hardhat: {
-            mining: {
-                // auto: false,
-                // interval: 0
-            },
-            // allowUnlimitedContractSize: true,
-
-            // forking: {
-            //   blockNumber: 53244031,
-            //   url: `https://rpc.ankr.com/polygon`,
-            // },
-            // forking:{
-            //   blockNumber: 18748428,
-            //   url: 'https://rpc.ankr.com/eth'
-            // },
-            forking: {
-                blockNumber: 320071,
-                url: `https://rpc.ankr.com/taiko`,
-            },
-            // forking: {
-            //   blockNumber: 35180036,
-            //   url: `https://rpc.ankr.com/bsc`,
-            // },
-        },
-        rinkeby: {
-            url: `https://rinkeby.infura.io/v3/${process.env.INFURA_API_KEY}`,
-            accounts,
-            chainId: 4,
-            live: true,
-        },
         taiko: {
             url: "https://rpc.taiko.xyz",
             accounts,
@@ -343,13 +313,6 @@ const config: HardhatUserConfig = {
             url: "https://rpc.api.moonbeam.network",
             accounts,
             chainId: 1284,
-        },
-        moonbase: {
-            url: "https://rpc.testnet.moonbeam.network",
-            accounts,
-            chainId: 1287,
-            live: true,
-            gas: 5198000,
         },
         fantom: {
             url: "https://rpcapi.fantom.network",

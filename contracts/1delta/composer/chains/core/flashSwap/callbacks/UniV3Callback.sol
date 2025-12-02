@@ -23,6 +23,9 @@ abstract contract UniV3Callbacks is V3Callbacker, Masks, DeltaErrors {
     bytes32 private constant COREX_FF_FACTORY = 0xff526190295AFB6b8736B14E4b42744FBd95203A3a0000000000000000000000;
     bytes32 private constant COREX_CODE_HASH = 0xe34f199b19b2b4f47f68442619d555527d244f78a3297ea89325f843f87b8b54;
 
+    bytes32 private constant ICECREAM_V3_FF_FACTORY = 0xffa8a3AAD4f592b7f30d6514ee9A863A4cEFF6531D0000000000000000000000;
+    bytes32 private constant ICECREAM_V3_CODE_HASH = 0x0c6b99bf88dc3398a8573e3192de0eb19c858afd9ac36e33030e16c4f569e598;
+
     bytes32 private constant MOLTEN_FF_FACTORY = 0xff24196b3f35E1B8313016b9f6641D605dCf48A76affffffffffffffffffffff;
     bytes32 private constant MOLTEN_CODE_HASH = 0xf96d2474815c32e070cd63233f06af5413efc5dcb430aee4ff18cc29007c562d;
 
@@ -55,6 +58,15 @@ abstract contract UniV3Callbacks is V3Callbacker, Masks, DeltaErrors {
                     codeHash := COREX_CODE_HASH
                 }
                 default { revert(0, 0) }
+                let _amount1 := calldataload(36)
+                switch sgt(_amount1, 0)
+                case 1 { amountToPay := _amount1 }
+                default { amountToPay := calldataload(4) }
+            }
+            case 0x23a69e7500000000000000000000000000000000000000000000000000000000 {
+                ffFactoryAddress := ICECREAM_V3_FF_FACTORY
+                codeHash := ICECREAM_V3_CODE_HASH
+
                 let _amount1 := calldataload(36)
                 switch sgt(_amount1, 0)
                 case 1 { amountToPay := _amount1 }

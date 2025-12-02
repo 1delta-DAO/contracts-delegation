@@ -24,7 +24,7 @@ npx hardhat verify --network mode 0x85D682FA4115f6a1Ed91170E705A50D532e3B6BD --c
 
 npx hardhat verify --network scroll 0x97648606fcc22Bd96F87345Ac83Bd6cFCdF0ACBa --contract contracts/1delta/composer/chains/scroll/Composer.sol:OneDeltaComposerScroll
 
-npx hardhat verify --network core 0xb8F4283733588E8036273F06fB375dF59ee5e258 --contract contracts/1delta/composer/chains/core/Composer.sol:OneDeltaComposerCore
+npx hardhat verify --network core 0xCDef0A216fcEF809258aA4f341dB1A5aB296ea72 --contract contracts/1delta/composer/chains/core/Composer.sol:OneDeltaComposerCore
 
 npx hardhat verify --network fantom 0xA453ba397c61B0c292EA3959A858821145B2707F --contract contracts/1delta/composer/chains/fantom-opera/Composer.sol:OneDeltaComposerFantomOpera
 
