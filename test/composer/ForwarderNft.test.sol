@@ -9,13 +9,14 @@ import {CallForwarder} from "contracts/1delta/composer/generic/CallForwarder.sol
 
 contract ForwarderNftTest is BaseTest {
     using CalldataLib for bytes;
+
     IComposerLike oneDV2;
     IERC721 PPGNft = IERC721(0xBd3531dA5CF5857e7CfAA92426877b022e612cf8);
     address ppg_owner = 0x621C70De47c35BE4622c891555a6016cDe2E1a61; // #524
     CallForwarder forwarder;
 
     function setUp() public virtual {
-        rpcOverrides[Chains.ETHEREUM_MAINNET] = "https://eth.llamarpc.com";
+        rpcOverrides[Chains.ETHEREUM_MAINNET] = "https://eth1.lava.build";
         _init(Chains.ETHEREUM_MAINNET, 23847194, true);
 
         forwarder = new CallForwarder();
@@ -52,4 +53,3 @@ interface IERC721 {
     function setApprovalForAll(address operator, bool _approved) external;
     function ownerOf(uint256 tokenId) external view returns (address);
 }
-
