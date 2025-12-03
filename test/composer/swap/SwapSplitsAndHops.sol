@@ -5,7 +5,7 @@ import {console} from "forge-std/console.sol";
 import {IERC20All} from "../../shared/interfaces/IERC20All.sol";
 import {BaseTest} from "../../shared/BaseTest.sol";
 import {Chains, Tokens, Lenders} from "../../data/LenderRegistry.sol";
-import "../utils/CalldataLib.sol";
+import "contracts/utils/CalldataLib.sol";
 import {ComposerPlugin, IComposerLike} from "plugins/ComposerPlugin.sol";
 
 interface IF {
@@ -210,7 +210,7 @@ contract SwapsSplitsAndHopsLightTest is BaseTest {
         //
     }
 
-    function test_light_swap_v3_splits_with_route() external {
+    function test_unit_swap_v3_splits_with_route() external {
         vm.assume(user != address(0));
 
         address tokenIn = USDC;

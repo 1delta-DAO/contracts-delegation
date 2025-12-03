@@ -9,7 +9,7 @@ import {Chains, Tokens, Lenders} from "../data/LenderRegistry.sol";
 import "../../contracts/1delta/test/TrivialMockRouter.sol";
 import {SweepType} from "contracts/1delta/composer/enums/MiscEnums.sol";
 import {ComposerPlugin, IComposerLike} from "plugins/ComposerPlugin.sol";
-import {CalldataLib} from "./utils/CalldataLib.sol";
+import {CalldataLib} from "contracts/utils/CalldataLib.sol";
 
 // solhint-disable max-line-length
 

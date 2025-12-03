@@ -78,10 +78,7 @@ interface IMorphoEverything {
 
     function setAuthorization(address authorized, bool newIsAuthorized) external;
 
-    function position(
-        bytes32 id,
-        address user
-    )
+    function position(bytes32 id, address user)
         external
         view
         returns (

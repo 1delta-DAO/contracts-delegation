@@ -8,7 +8,7 @@ import {MarketParams, IMorphoEverything} from "test/composer/lending/utils/Morph
 import {IERC20All} from "test/shared/interfaces/IERC20All.sol";
 import {BaseTest} from "test/shared/BaseTest.sol";
 import {Chains, Tokens, Lenders} from "test/data/LenderRegistry.sol";
-import "test/composer/utils/CalldataLib.sol";
+import "contracts/utils/CalldataLib.sol";
 import {ComposerPlugin, IComposerLike} from "plugins/ComposerPlugin.sol";
 
 /**
@@ -44,7 +44,7 @@ contract ERC4626Test is BaseTest {
         oneD = ComposerPlugin.getComposer(chainName);
     }
 
-    function test_light_morpho_deposit_to_erc4626() external {
+    function test_unit_erc4626_morpho_deposit_basic() external {
         deal(USDC, user, 300_000.0e6);
 
         address vault = META_MORPHO_USDC;
@@ -77,7 +77,7 @@ contract ERC4626Test is BaseTest {
         assertApproxEqAbs(assets, assetsInVault, 1); // adjust for rounding
     }
 
-    function test_light_morpho_deposit_shares_to_erc4626() external {
+    function test_unit_erc4626_morpho_deposit_shares() external {
         deal(USDC, user, 300_000.0e6);
 
         address asset = USDC;
@@ -134,7 +134,7 @@ contract ERC4626Test is BaseTest {
         oneD.deltaCompose(abi.encodePacked(transferTo, deposit));
     }
 
-    function test_light_morpho_withdraw_from_erc4626() external {
+    function test_unit_erc4626_morpho_withdraw_basic() external {
         deal(USDC, user, 300_000.0e6);
 
         uint256 assets = 100.0e6;
@@ -168,7 +168,7 @@ contract ERC4626Test is BaseTest {
         assertApproxEqAbs(underlyingAfter - underlyingBefore, withdrawAssets, 1);
     }
 
-    function test_light_morpho_withdraw_shares_from_erc4626() external {
+    function test_unit_erc4626_morpho_withdraw_shares() external {
         deal(USDC, user, 300_000.0e6);
 
         address underlying = USDC;
@@ -228,7 +228,7 @@ contract ERC4626Test is BaseTest {
         );
     }
 
-    function test_light_wrap_redeem_single() external {
+    function test_unit_erc4626_wrap_redeem_single() external {
         vm.assume(user != address(0));
 
         address tokenIn = WUSDM;
@@ -256,7 +256,7 @@ contract ERC4626Test is BaseTest {
 
     // this one is a bit weird as we
     // forge cannot mint USDM, only WUSDM
-    function test_light_wrap_deposit_single() external {
+    function test_unit_erc4626_wrap_deposit_single() external {
         vm.assume(user != address(0));
 
         address tokenIn = WUSDM;
@@ -312,7 +312,7 @@ contract ERC4626Test is BaseTest {
         );
     }
 
-    function test_light_wrap_native_single() external {
+    function test_unit_erc4626_wrap_native_single() external {
         vm.assume(user != address(0));
 
         address tokenOut = WETH;
@@ -351,7 +351,7 @@ contract ERC4626Test is BaseTest {
         );
     }
 
-    function test_light_wrap_wnative_single() external {
+    function test_unit_erc4626_wrap_wnative_single() external {
         vm.assume(user != address(0));
 
         address tokenIn = WETH;

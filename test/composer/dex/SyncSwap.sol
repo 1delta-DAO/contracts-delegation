@@ -6,7 +6,7 @@ import "../../../contracts/1delta/composer//quoter/QuoterLight.sol";
 import {IERC20All} from "../../shared/interfaces/IERC20All.sol";
 import {BaseTest} from "../../shared/BaseTest.sol";
 import {Chains, Tokens, Lenders} from "../../data/LenderRegistry.sol";
-import "../utils/CalldataLib.sol";
+import "contracts/utils/CalldataLib.sol";
 import {DexPayConfig} from "contracts/1delta/composer/enums/MiscEnums.sol";
 import {ComposerPlugin, IComposerLike} from "plugins/ComposerPlugin.sol";
 /**
@@ -54,7 +54,7 @@ contract SyncSwapLightTest is BaseTest {
         );
     }
 
-    function test_light_swap_sync_single() external {
+    function test_unit_dex_sync_single() external {
         vm.assume(user != address(0));
 
         address tokenIn = WETH;

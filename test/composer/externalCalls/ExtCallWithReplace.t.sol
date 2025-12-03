@@ -4,7 +4,7 @@ pragma solidity 0.8.28;
 import {BaseTest} from "test/shared/BaseTest.sol";
 import {console} from "forge-std/console.sol";
 import {CallForwarder} from "contracts/1delta/composer/generic/CallForwarder.sol";
-import {CalldataLib} from "test/composer/utils/CalldataLib.sol";
+import {CalldataLib} from "contracts/utils/CalldataLib.sol";
 import {Chains, Tokens} from "test/data/LenderRegistry.sol";
 import {ComposerPlugin, IComposerLike} from "plugins/ComposerPlugin.sol";
 import {IERC20} from "lib/openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
@@ -39,7 +39,7 @@ contract ExtTryCatchWithReplace is BaseTest {
         vm.label(STELLA_STDOT, "Stella Staking");
     }
 
-    function test_tryCallExternalWithReplace_replacesBalance() public {
+    function test_unit_externalCall_tryCallExternalWithReplace_replacesBalance() public {
         uint256 amount = 1000;
         _fundUserWithToken(XCDOT, amount);
         vm.prank(user);
@@ -76,7 +76,7 @@ contract ExtTryCatchWithReplace is BaseTest {
         assertEq(forwarderBalanceAfter, 0);
     }
 
-    function test_tryCallExternalWithReplace_skipReplace_whenTokenIsZero() public {
+    function test_unit_externalCall_tryCallExternalWithReplace_skipReplace_whenTokenIsZero() public {
         uint256 amount = 1000;
         _fundUserWithToken(XCDOT, amount);
         vm.prank(user);
@@ -115,7 +115,7 @@ contract ExtTryCatchWithReplace is BaseTest {
         assertEq(forwarderBalanceAfter, 900);
     }
 
-    function test_tryCallExternalWithReplace_revertsOnInvalidReplaceOffset() public {
+    function test_unit_externalCall_tryCallExternalWithReplace_revertsOnInvalidReplaceOffset() public {
         uint256 amount = 1000;
         _fundUserWithToken(XCDOT, amount);
         vm.prank(user);
@@ -141,7 +141,7 @@ contract ExtTryCatchWithReplace is BaseTest {
         vm.stopPrank();
     }
 
-    function test_tryCallExternalWithReplace_revertsOnTransferFromSelector() public {
+    function test_unit_externalCall_tryCallExternalWithReplace_revertsOnTransferFromSelector() public {
         uint256 amount = 1000;
         _fundUserWithToken(XCDOT, amount);
         vm.prank(user);
@@ -169,7 +169,7 @@ contract ExtTryCatchWithReplace is BaseTest {
         vm.stopPrank();
     }
 
-    function test_tryCallExternalWithReplace_revertsOnPermit2Target() public {
+    function test_unit_externalCall_tryCallExternalWithReplace_revertsOnPermit2Target() public {
         uint256 amount = 1000;
         _fundUserWithToken(XCDOT, amount);
         vm.prank(user);
@@ -195,7 +195,7 @@ contract ExtTryCatchWithReplace is BaseTest {
         vm.stopPrank();
     }
 
-    function test_callExternalWithReplace_replacesBalance() public {
+    function test_unit_externalCall_callExternalWithReplace_replacesBalance() public {
         uint256 amount = 1000;
         _fundUserWithToken(XCDOT, amount);
         vm.prank(user);
@@ -229,7 +229,7 @@ contract ExtTryCatchWithReplace is BaseTest {
         assertEq(forwarderBalanceAfter, 0);
     }
 
-    function test_callExternalWithReplace_skipReplace_whenTokenIsZero() public {
+    function test_unit_externalCall_callExternalWithReplace_skipReplace_whenTokenIsZero() public {
         uint256 amount = 1000;
         _fundUserWithToken(XCDOT, amount);
         vm.prank(user);
@@ -265,7 +265,7 @@ contract ExtTryCatchWithReplace is BaseTest {
         assertEq(forwarderBalanceAfter, 0);
     }
 
-    function test_callExternalWithReplace_revertsOnInvalidReplaceOffset() public {
+    function test_unit_externalCall_callExternalWithReplace_revertsOnInvalidReplaceOffset() public {
         uint256 amount = 1000;
         _fundUserWithToken(XCDOT, amount);
         vm.prank(user);
@@ -288,7 +288,7 @@ contract ExtTryCatchWithReplace is BaseTest {
         vm.stopPrank();
     }
 
-    function test_callExternalWithReplace_revertsOnTransferFromSelector() public {
+    function test_unit_externalCall_callExternalWithReplace_revertsOnTransferFromSelector() public {
         uint256 amount = 1000;
         _fundUserWithToken(XCDOT, amount);
         vm.prank(user);
@@ -313,7 +313,7 @@ contract ExtTryCatchWithReplace is BaseTest {
         vm.stopPrank();
     }
 
-    function test_callExternalWithReplace_revertsOnPermit2Target() public {
+    function test_unit_externalCall_callExternalWithReplace_revertsOnPermit2Target() public {
         uint256 amount = 1000;
         _fundUserWithToken(XCDOT, amount);
         vm.prank(user);
@@ -336,7 +336,7 @@ contract ExtTryCatchWithReplace is BaseTest {
         vm.stopPrank();
     }
 
-    function test_tryCallExternalWithReplace_catch_executes_on_failure() public {
+    function test_unit_externalCall_tryCallExternalWithReplace_catch_executes_on_failure() public {
         uint256 amount = 1 ether; // this amount reverts when trying to stake on stella
         _fundUserWithToken(XCDOT, amount);
         vm.prank(user);
@@ -380,7 +380,7 @@ contract ExtTryCatchWithReplace is BaseTest {
         assertEq(IERC20(XCDOT).balanceOf(user), amount);
     }
 
-    function test_tryCallExternalWithReplace_catch_reverts_on_failure() public {
+    function test_unit_externalCall_tryCallExternalWithReplace_catch_reverts_on_failure() public {
         uint256 amount = 1 ether; // this amount reverts when trying to stake on stella
         _fundUserWithToken(XCDOT, amount);
         vm.prank(user);

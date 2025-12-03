@@ -8,7 +8,7 @@ import {MarketParams, IMorphoEverything} from "test/composer/lending/utils/Morph
 import {IERC20All} from "test/shared/interfaces/IERC20All.sol";
 import {BaseTest} from "test/shared/BaseTest.sol";
 import {Chains, Tokens, Lenders} from "test/data/LenderRegistry.sol";
-import "test/composer/utils/CalldataLib.sol";
+import "contracts/utils/CalldataLib.sol";
 import {SweepType} from "contracts/1delta/composer/enums/MiscEnums.sol";
 import {ComposerPlugin, IComposerLike} from "plugins/ComposerPlugin.sol";
 
@@ -47,7 +47,7 @@ contract FlashLoanLightTest is BaseTest {
 
     uint256 internal constant UPPER_BIT = 1 << 255;
 
-    function test_light_flash_loan_morpho() external {
+    function test_unit_lending_flashloans_morpho_basic() external {
         address asset = WETH;
         uint256 sweepAm = 30.0e18;
         vm.deal(address(oneD), sweepAm);
@@ -73,7 +73,7 @@ contract FlashLoanLightTest is BaseTest {
         oneD.onMorphoFlashLoan(0, d);
     }
 
-    function test_light_flash_loan_aaveV3() external {
+    function test_unit_lending_flashloans_aaveV3_basic() external {
         address asset = WETH;
         uint256 sweepAm = 30.0e18;
         vm.deal(address(oneD), sweepAm);
@@ -103,7 +103,7 @@ contract FlashLoanLightTest is BaseTest {
         oneD.executeOperation(asset, 0, 9, user, d);
     }
 
-    function test_light_flash_loan_aaveV2() external {
+    function test_unit_lending_flashloans_aaveV2_basic() external {
         address asset = WETH;
         uint256 sweepAm = 30.0e18;
         vm.deal(address(oneD), sweepAm);
@@ -130,7 +130,7 @@ contract FlashLoanLightTest is BaseTest {
         oneD.executeOperation(asset, 0, 9, user, d);
     }
 
-    function test_light_flash_loan_balancerV2() external {
+    function test_unit_lending_flashloans_balancerV2_basic() external {
         address asset = WETH;
         uint256 sweepAm = 30.0e18;
         vm.deal(address(oneD), sweepAm);
@@ -185,7 +185,7 @@ contract FlashLoanLightTest is BaseTest {
         );
     }
 
-    function test_light_flash_loan_balancerV3() external {
+    function test_unit_lending_flashloans_balancerV3_basic() external {
         address assetFlash = USDC;
         uint256 sweepAm = 30.0e18;
         vm.deal(address(oneD), sweepAm);
@@ -231,7 +231,7 @@ contract FlashLoanLightTest is BaseTest {
         oneD.balancerUnlockCallback(abi.encodePacked(address(99), uint8(0), dp));
     }
 
-    function test_light_flash_loan_uniswapV4() external {
+    function test_unit_lending_flashloans_uniswapV4_basic() external {
         address assetFlash = USDC;
         uint256 sweepAm = 30.0e18;
         vm.deal(address(oneD), sweepAm);

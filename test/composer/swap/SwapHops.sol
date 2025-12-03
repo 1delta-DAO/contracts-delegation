@@ -6,7 +6,7 @@ import {OneDeltaComposerBase} from "../../../contracts/1delta/composer//chains/b
 import {IERC20All} from "../../shared/interfaces/IERC20All.sol";
 import {BaseTest} from "../../shared/BaseTest.sol";
 import {Chains, Tokens, Lenders} from "../../data/LenderRegistry.sol";
-import "../utils/CalldataLib.sol";
+import "contracts/utils/CalldataLib.sol";
 import {ComposerPlugin, IComposerLike} from "plugins/ComposerPlugin.sol";
 
 interface IF {
@@ -154,7 +154,7 @@ contract SwapHopsLightTest is BaseTest {
         );
     }
 
-    function test_light_swap_v3_route_no_splits() external {
+    function test_unit_swap_v3_route_no_splits() external {
         vm.assume(user != address(0));
 
         address tokenIn = USDC;

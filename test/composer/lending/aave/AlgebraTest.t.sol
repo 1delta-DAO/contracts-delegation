@@ -6,7 +6,7 @@ import {console} from "forge-std/console.sol";
 import {IERC20All} from "test/shared/interfaces/IERC20All.sol";
 import {BaseTest} from "test/shared/BaseTest.sol";
 import {Chains, Tokens, Lenders} from "test/data/LenderRegistry.sol";
-import "test/composer/utils/CalldataLib.sol";
+import "contracts/utils/CalldataLib.sol";
 import {SweepType} from "contracts/1delta/composer/enums/MiscEnums.sol";
 import {ComposerPlugin, IComposerLike} from "plugins/ComposerPlugin.sol";
 import {Masks} from "contracts/1delta/shared/masks/Masks.sol";
@@ -116,17 +116,7 @@ contract AlgebraTest is BaseTest, Masks {
         return address(uint160(((uint256(factory) << 8) >> 88)));
     }
 
-    function _createSwapData(
-        address pool,
-        address tokenIn,
-        address tokenOut,
-        address receiver,
-        uint256 amount
-    )
-        internal
-        view
-        returns (bytes memory)
-    {
+    function _createSwapData(address pool, address tokenIn, address tokenOut, address receiver, uint256 amount) internal view returns (bytes memory) {
         return _createSwapDataWithConfig(pool, tokenIn, tokenOut, receiver, amount, DexPayConfig.CALLER_PAYS);
     }
 

@@ -46,14 +46,13 @@ library MorphoMathLib {
     function toAssetsDown(uint256 shares, uint256 totalAssets, uint256 totalShares) internal pure returns (uint256 a) {
         // return mulDivDown(shares, totalAssets + VIRTUAL_ASSETS, totalShares + VIRTUAL_SHARES);
         assembly {
-            a :=
-                div(
-                    mul(
-                        shares,
-                        add(totalAssets, VIRTUAL_ASSETS) //
-                    ),
-                    add(totalShares, VIRTUAL_SHARES)
-                ) //
+            a := div(
+                mul(
+                    shares,
+                    add(totalAssets, VIRTUAL_ASSETS) //
+                ),
+                add(totalShares, VIRTUAL_SHARES)
+            ) //
         }
     }
 
@@ -61,14 +60,13 @@ library MorphoMathLib {
     function mulDivUp(uint256 x, uint256 y, uint256 d) internal pure returns (uint256 a) {
         // return (x * y + (d - 1)) / d;
         assembly {
-            a :=
-                div(
-                    add(
-                        mul(x, y),
-                        sub(d, 1) //
-                    ),
-                    d //
-                )
+            a := div(
+                add(
+                    mul(x, y),
+                    sub(d, 1) //
+                ),
+                d //
+            )
         }
     }
 
@@ -77,14 +75,13 @@ library MorphoMathLib {
         // return mulDivUp(shares, totalAssets + VIRTUAL_ASSETS, totalShares + VIRTUAL_SHARES);
         assembly {
             let d := add(totalShares, VIRTUAL_SHARES)
-            a :=
-                div(
-                    add(
-                        mul(shares, add(totalAssets, 1)),
-                        sub(d, 1) //
-                    ),
-                    d //
-                )
+            a := div(
+                add(
+                    mul(shares, add(totalAssets, 1)),
+                    sub(d, 1) //
+                ),
+                d //
+            )
         }
     }
 

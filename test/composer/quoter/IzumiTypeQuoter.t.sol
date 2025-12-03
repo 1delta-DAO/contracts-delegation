@@ -6,7 +6,7 @@ import "../../../contracts/1delta/composer//quoter/QuoterLight.sol";
 import "../../shared/BaseTest.sol";
 import {Chains, Tokens, Lenders} from "../../data/LenderRegistry.sol";
 import {DexTypeMappings} from "../../../contracts/1delta/composer//swappers/dex/DexTypeMappings.sol";
-import {CalldataLib} from "../utils/CalldataLib.sol";
+import {CalldataLib} from "contracts/utils/CalldataLib.sol";
 import {DexPayConfig} from "contracts/1delta/composer/enums/MiscEnums.sol";
 import {ComposerPlugin, IComposerLike} from "plugins/ComposerPlugin.sol";
 
@@ -90,7 +90,7 @@ contract IzumiQuoterTest is BaseTest {
     /**
      * END OF CALLDATA UTILS
      */
-    function test_light_quoter_simple_swap_izi() public {
+    function test_unit_quoter_simple_swap_izi() public {
         /**
          * WETH -> USDC (0,0)
          */
@@ -164,7 +164,7 @@ contract IzumiQuoterTest is BaseTest {
         return data;
     }
 
-    function test_light_quoter_multihop_swap() public {
+    function test_unit_quoter_multihop_swap() public {
         /**
          * USDC -> WETH -> cbETH (1,0) - two hops
          */
@@ -208,7 +208,7 @@ contract IzumiQuoterTest is BaseTest {
         console.log("Actual amount:", actualAmountOut);
     }
 
-    function test_light_quoter_split_swap() public {
+    function test_unit_quoter_split_swap() public {
         /**
          * WETH -> USDC (2 splits with different fees, 50/50)
          */

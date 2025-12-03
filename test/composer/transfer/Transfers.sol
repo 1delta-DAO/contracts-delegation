@@ -5,7 +5,7 @@ import {console} from "forge-std/console.sol";
 import {IERC20All} from "test/shared/interfaces/IERC20All.sol";
 import {BaseTest} from "test/shared/BaseTest.sol";
 import {Chains, Tokens, Lenders} from "test/data/LenderRegistry.sol";
-import "test/composer/utils/CalldataLib.sol";
+import "contracts/utils/CalldataLib.sol";
 import {DeltaErrors} from "contracts/1delta/shared/errors/Errors.sol";
 import {StdStyle as S} from "forge-std/StdStyle.sol";
 import {MorphoMathLib} from "test/composer/lending/utils/MathLib.sol";
@@ -48,7 +48,7 @@ contract TransfersLightTest is BaseTest, DeltaErrors {
     // sweep tests
     // ------------------------------------------------------------------------
 
-    function test_light_sweep_token_amount() external {
+    function test_unit_transfer_token_sweep_token_amount() external {
         address asset = WETH;
         uint256 sweepAm = 30.0e18;
         deal(asset, address(oneD), sweepAm);
@@ -68,7 +68,7 @@ contract TransfersLightTest is BaseTest, DeltaErrors {
         assertApproxEqAbs(balanceAfter - balanceBefore, sweepAm, 0, "Sweep failed");
     }
 
-    function test_light_sweep_validate() external {
+    function test_unit_transfer_token_sweep_validate() external {
         console.log(S.bold(S.blue("test sweep validate")));
         uint256 initialAmount = 1000e6;
         uint256 minBalance = 500e6;
@@ -89,7 +89,7 @@ contract TransfersLightTest is BaseTest, DeltaErrors {
         console.log(S.green("--------------------------------"));
     }
 
-    function test_light_sweep_validate_reverts() external {
+    function test_unit_transfer_token_sweep_validate_reverts() external {
         uint256 initialAmount = 499e6;
         uint256 minBalance = 500e6;
 
@@ -105,7 +105,7 @@ contract TransfersLightTest is BaseTest, DeltaErrors {
         assertEq(IERC20All(USDC).balanceOf(address(oneD)), initialAmount);
     }
 
-    function test_light_sweep_balance() external {
+    function test_unit_transfer_token_sweep_balance() external {
         uint256 initialAmount = 1000e6;
         deal(USDC, address(oneD), initialAmount);
 
@@ -123,7 +123,7 @@ contract TransfersLightTest is BaseTest, DeltaErrors {
         assertEq(IERC20All(USDC).balanceOf(address(oneD)), 0);
     }
 
-    function test_light_sweep_native_balance() external {
+    function test_unit_transfer_token_sweep_native_balance() external {
         uint256 initialAmount = 1 ether;
         vm.deal(address(oneD), initialAmount);
         uint256 userInitialBalance = user.balance;
@@ -143,7 +143,7 @@ contract TransfersLightTest is BaseTest, DeltaErrors {
         assertEq(address(oneD).balance, 0);
     }
 
-    function test_light_sweep_native_amount() external {
+    function test_unit_transfer_token_sweep_native_amount() external {
         uint256 initialAmount = 1 ether;
         uint256 sweepAmount = 0.5 ether;
         vm.deal(address(oneD), initialAmount);
@@ -158,7 +158,7 @@ contract TransfersLightTest is BaseTest, DeltaErrors {
         assertEq(address(oneD).balance, initialAmount - sweepAmount);
     }
 
-    function test_light_sweep_native_amount_reverts_amount_mode() external {
+    function test_unit_transfer_token_sweep_native_amount_reverts_amount_mode() external {
         uint256 initialAmount = 1 ether;
         uint256 sweepAmount = 5 ether;
         vm.deal(address(oneD), initialAmount);
@@ -170,7 +170,7 @@ contract TransfersLightTest is BaseTest, DeltaErrors {
         oneD.deltaCompose(data);
     }
 
-    function test_light_sweep_native_amount_reverts_validate_mode() external {
+    function test_unit_transfer_token_sweep_native_amount_reverts_validate_mode() external {
         uint256 initialAmount = 1 ether;
         uint256 sweepAmount = 5 ether;
         vm.deal(address(oneD), initialAmount);
@@ -186,7 +186,7 @@ contract TransfersLightTest is BaseTest, DeltaErrors {
     // transfer tests
     // ------------------------------------------------------------------------
 
-    function test_light_transfer_transferIn_zero() external {
+    function test_unit_transfer_token_transferIn_zero() external {
         // zero means entire balance
         uint256 initialAmount = 1000e6;
         deal(USDC, user, initialAmount);
@@ -203,7 +203,7 @@ contract TransfersLightTest is BaseTest, DeltaErrors {
         assertEq(IERC20All(USDC).balanceOf(address(oneD)), initialAmount);
     }
 
-    function test_light_transfer_transferIn_specific() external {
+    function test_unit_transfer_token_transferIn_specific() external {
         uint256 initialAmount = 1000e6;
         uint256 transferAmount = 500e6;
         deal(USDC, user, initialAmount);
@@ -224,7 +224,7 @@ contract TransfersLightTest is BaseTest, DeltaErrors {
     // wrap/unwrap tests
     // ------------------------------------------------------------------------
 
-    function test_light_transfer_wrap_unwrap() external {
+    function test_unit_transfer_native_wrapUnwrap() external {
         // wrap
         uint256 initialAmount = 1 ether;
         vm.deal(address(oneD), initialAmount);
@@ -253,7 +253,7 @@ contract TransfersLightTest is BaseTest, DeltaErrors {
     // approval tests
     // ------------------------------------------------------------------------
 
-    function test_light_transfer_approve() external {
+    function test_unit_transfer_token_approve_basic() external {
         uint256 initialAmount = 1000e6;
         deal(USDC, address(oneD), initialAmount);
 

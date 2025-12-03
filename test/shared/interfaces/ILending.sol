@@ -5,7 +5,6 @@ interface ILending {
     /**
      * LENDING GENERAL
      */
-
     // deposit ERC20 to Aave types on behalf of recipient
     function deposit(address asset, address recipient, uint8 lenderId) external payable;
 

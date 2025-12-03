@@ -4,7 +4,7 @@ pragma solidity ^0.8.19;
 import {IERC20All} from "test/shared/interfaces/IERC20All.sol";
 import {BaseTest} from "test/shared/BaseTest.sol";
 import {Chains, Tokens, Lenders} from "test/data/LenderRegistry.sol";
-import "test/composer/utils/CalldataLib.sol";
+import "contracts/utils/CalldataLib.sol";
 import {ComposerPlugin, IComposerLike} from "plugins/ComposerPlugin.sol";
 
 /**
@@ -32,7 +32,7 @@ contract AaveV3NoModesLightTest is BaseTest {
         oneDV2 = ComposerPlugin.getComposer(chainName);
     }
 
-    function test_light_lending_yldr_borrow() external {
+    function test_unit_lending_aave_borrow_noMode() external {
         vm.assume(user != address(0));
 
         address token = USDC;
@@ -63,7 +63,7 @@ contract AaveV3NoModesLightTest is BaseTest {
         assertApproxEqAbs(underlyingAfter - underlyingBefore, amountToBorrow, 0);
     }
 
-    function test_light_lending_yldr_repay() external {
+    function test_unit_lending_aave_repay_noMode() external {
         vm.assume(user != address(0));
 
         address token = USDC;

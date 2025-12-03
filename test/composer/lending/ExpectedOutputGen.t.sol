@@ -3,7 +3,7 @@ pragma solidity ^0.8.19;
 
 import {BaseTest} from "test/shared/BaseTest.sol";
 import {Chains, Tokens, Lenders} from "test/data/LenderRegistry.sol";
-import "test/composer/utils/CalldataLib.sol";
+import "contracts/utils/CalldataLib.sol";
 import {IERC20All} from "test/shared/interfaces/IERC20All.sol";
 import {ComposerPlugin, IComposerLike} from "plugins/ComposerPlugin.sol";
 import {console} from "forge-std/console.sol";

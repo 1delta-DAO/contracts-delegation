@@ -7,12 +7,12 @@ import {console} from "forge-std/console.sol";
 import {CallForwarder} from "contracts/1delta/composer/generic/CallForwarder.sol";
 import {BaseUtils} from "contracts/1delta/composer/generic/BaseUtils.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import {CalldataLib} from "test/composer/utils/CalldataLib.sol";
+import {CalldataLib} from "contracts/utils/CalldataLib.sol";
 import {Chains, Tokens} from "test/data/LenderRegistry.sol";
 import {ComposerPlugin, IComposerLike} from "plugins/ComposerPlugin.sol";
 import {IStargate} from "contracts/1delta/composer/generic/bridges/StargateV2/IStargate.sol";
 import {SweepType} from "contracts/1delta/composer/enums/MiscEnums.sol";
-import {MockStargate} from "./MockStargate.sol";
+import {MockStargate} from "test/mocks/MockStargate.sol";
 
 // solhint-disable max-line-length
 
@@ -61,7 +61,7 @@ contract StargateV2Test is BaseTest {
         vm.label(user, "User");
     }
 
-    function test_stargate_v2_bridge_taxi_native_balance() public {
+    function test_unit_externalCall_stargate_v2_bridge_taxi_native_balance() public {
         uint32 baseId = 30184;
         address nativePool = address(STARGATE_MOCK);
         // 1. quote the fee
@@ -111,7 +111,7 @@ contract StargateV2Test is BaseTest {
         vm.stopPrank();
     }
 
-    function test_stargate_v2_bridge_taxi_token_amount() public {
+    function test_unit_externalCall_stargate_v2_bridge_taxi_token_amount() public {
         // 1. quote the fee
         (
             uint256 fee,
@@ -170,7 +170,7 @@ contract StargateV2Test is BaseTest {
         vm.stopPrank();
     }
 
-    function test_stargate_v2_bridge_taxi_token_balance() public {
+    function test_unit_externalCall_stargate_v2_bridge_taxi_token_balance() public {
         // 1. quote the fee
         (
             uint256 fee,
@@ -227,7 +227,7 @@ contract StargateV2Test is BaseTest {
         vm.stopPrank();
     }
 
-    function test_stargate_v2_bridge_taxi_revert_slippage() public {
+    function test_unit_externalCall_stargate_v2_bridge_taxi_revert_slippage() public {
         // 1. quote the fee
         uint256 fee;
         int256 sgFee;
@@ -291,7 +291,7 @@ contract StargateV2Test is BaseTest {
         vm.stopPrank();
     }
 
-    function test_stargate_v2_bridge_bus_token_amount() public {
+    function test_unit_externalCall_stargate_v2_bridge_bus_token_amount() public {
         // 1. quote the fee
         (
             uint256 fee,
@@ -366,7 +366,7 @@ contract StargateV2Test is BaseTest {
         vm.stopPrank();
     }
 
-    function test_stargate_v2_bridge_bus_token_balance() public {
+    function test_unit_externalCall_stargate_v2_bridge_bus_token_balance() public {
         // 1. quote the fee
         (
             uint256 fee,
@@ -423,7 +423,7 @@ contract StargateV2Test is BaseTest {
         vm.stopPrank();
     }
 
-    function test_stargate_v2_fork_bridge_taxi_balance() public {
+    function test_unit_externalCall_stargate_v2_fork_bridge_taxi_balance() public {
         // 1. quote the fee
         (uint256 fee, int256 sgFee,,) = _quote(false, 1);
 

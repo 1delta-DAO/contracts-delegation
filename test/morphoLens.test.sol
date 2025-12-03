@@ -19,7 +19,7 @@ contract MorphoLensTest is Test {
         morphoLens = new MorphoLens();
     }
 
-    function test_getUserDataCompact() public {
+    function test_unit_morphoLens_getUserDataCompact() public {
         bytes32[] memory marketIds = new bytes32[](5);
         marketIds[0] = id1;
         marketIds[1] = id2;

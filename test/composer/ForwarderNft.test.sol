@@ -4,7 +4,7 @@ pragma solidity ^0.8.28;
 import {BaseTest} from "test/shared/BaseTest.sol";
 import {Chains} from "test/data/LenderRegistry.sol";
 import {ComposerPlugin, IComposerLike} from "plugins/ComposerPlugin.sol";
-import {CalldataLib} from "test/composer/utils/CalldataLib.sol";
+import {CalldataLib} from "contracts/utils/CalldataLib.sol";
 import {CallForwarder} from "contracts/1delta/composer/generic/CallForwarder.sol";
 
 contract ForwarderNftTest is BaseTest {
@@ -24,7 +24,7 @@ contract ForwarderNftTest is BaseTest {
         oneDV2 = IComposerLike(0x97648606fcc22Bd96F87345Ac83Bd6cFCdF0ACBa);
     }
 
-    function test_receive_nft() public {
+    function test_unit_forwarder_nft_receive() public {
         vm.prank(ppg_owner);
         PPGNft.approve(address(forwarder), 524);
         PPGNft.setApprovalForAll(address(forwarder), true);
