@@ -87,16 +87,7 @@ contract MockStargate is IStargate {
         return address(0);
     }
 
-    function send(
-        SendParam calldata,
-        MessagingFee calldata,
-        address
-    )
-        external
-        payable
-        override
-        returns (MessagingReceipt memory, OFTReceipt memory)
-    {
+    function send(SendParam calldata, MessagingFee calldata, address) external payable override returns (MessagingReceipt memory, OFTReceipt memory) {
         revert("Not implemented in mock");
     }
 

@@ -4,7 +4,7 @@ pragma solidity ^0.8.19;
 import {IERC20All} from "test/shared/interfaces/IERC20All.sol";
 import {BaseTest} from "test/shared/BaseTest.sol";
 import {Chains, Tokens, Lenders} from "test/data/LenderRegistry.sol";
-import "test/composer/utils/CalldataLib.sol";
+import "contracts/utils/CalldataLib.sol";
 import "../../../contracts/1delta/composer//quoter/QuoterLight.sol";
 import {console} from "forge-std/console.sol";
 import {ComposerPlugin, IComposerLike} from "plugins/ComposerPlugin.sol";
