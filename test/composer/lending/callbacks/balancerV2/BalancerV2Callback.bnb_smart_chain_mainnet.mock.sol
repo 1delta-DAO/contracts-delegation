@@ -6,7 +6,7 @@ import {Vm} from "forge-std/Vm.sol";
 import {Chains, Lenders, Tokens} from "test/data/LenderRegistry.sol";
 import {DeltaErrors} from "contracts/1delta/shared/errors/Errors.sol";
 import {ComposerPlugin, IComposerLike} from "plugins/ComposerPlugin.sol";
-import {CalldataLib} from "test/composer/utils/CalldataLib.sol";
+import {CalldataLib} from "contracts/utils/CalldataLib.sol";
 import {BaseTest} from "test/shared/BaseTest.sol";
 import {Slots} from "contracts/1delta/composer/slots/Slots.sol";
 import {BalancerV2MockVault, IVault} from "test/mocks/BalancerV2MockVault.sol";
@@ -44,7 +44,7 @@ contract BalancerV2FlashLoanCallbackTest is BaseTest, DeltaErrors, Slots {
         mockVault = new BalancerV2MockVault();
     }
 
-    function test_flash_loan_balancerV2_type_wrongCaller_revert() public {
+    function test_unit_lending_flashloans_balancerV2_callback_wrongCaller_revert() public {
         replaceLendingPoolWithMock(validPools[0].poolAddr);
 
         address[] memory tokens = new address[](1);
@@ -58,7 +58,7 @@ contract BalancerV2FlashLoanCallbackTest is BaseTest, DeltaErrors, Slots {
         IVault(validPools[0].poolAddr).flashLoan(address(oneDV2), tokens, amounts, abi.encodePacked(address(user), uint8(validPools[0].poolId)));
     }
 
-    function test_flash_loan_balancerV2_type_fuzz_invalidPoolIds(uint8 poolId) public {
+    function test_unit_lending_flashloans_balancerV2_callback_fuzz_invalidPoolIds(uint8 poolId) public {
         replaceLendingPoolWithMock(SWAAP);
 
         for (uint256 i = 0; i < validPools.length; i++) {
