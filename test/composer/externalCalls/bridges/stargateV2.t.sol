@@ -38,7 +38,6 @@ contract StargateV2Test is BaseTest {
     uint256 public BRIDGE_AMOUNT = 1000 * 1e6;
 
     function setUp() public {
-        rpcOverrides[Chains.ARBITRUM_ONE] = "https://arbitrum.blockpi.network/v1/rpc/public";
         _init(Chains.ARBITRUM_ONE, 333862337, true);
 
         callForwarder = new CallForwarder();
