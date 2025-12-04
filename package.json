@@ -77,7 +77,8 @@
         "fork:dev": "node ./_scripts.js fork:dev",
         "fork:node": "node ./_scripts.js fork:node",
         "fork:test": "node ./_scripts.js fork:test",
-        "build": "export NODE_OPTIONS=--openssl-legacy-provider; gatsby build"
+        "build": "export NODE_OPTIONS=--openssl-legacy-provider; gatsby build",
+        "verify-bytecode": "tsx scripts/verify-bytecode.ts"
     },
     "dependencies": {
         "@1delta/asset-registry": "^0.0.193",
