@@ -37,7 +37,7 @@ contract CompoundV2NativeComposerLightTest is BaseTest {
         oneDV2 = ComposerPlugin.getComposer(Chains.BASE);
     }
 
-    function test_unit_lending_compoundV2_deposit_native() external {
+    function test_integ_lending_compoundV2_deposit_native() external {
         vm.assume(user != address(0));
 
         address token = address(0);
@@ -65,7 +65,7 @@ contract CompoundV2NativeComposerLightTest is BaseTest {
         assertApproxEqAbs(underlyingBefore - underlyingAfter, amount, 0);
     }
 
-    function test_unit_lending_compoundV2_repay_native() external {
+    function test_integ_lending_compoundV2_repay_native() external {
         vm.assume(user != address(0));
 
         address depositToken = USDC;
@@ -100,7 +100,7 @@ contract CompoundV2NativeComposerLightTest is BaseTest {
         assertApproxEqAbs(underlyingBefore - underlyingAfter, amountToRepay, 1);
     }
 
-    function test_unit_lending_compoundV2_withdraw_native() external {
+    function test_integ_lending_compoundV2_withdraw_native() external {
         address token = address(0);
         address comptroller = VENUS_COMPTROLLER;
         uint256 amount = 1.0e18;

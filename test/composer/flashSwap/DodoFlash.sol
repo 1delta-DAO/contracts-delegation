@@ -72,7 +72,7 @@ contract DodoLightTest is BaseTest {
         );
     }
 
-    function test_unit_flashSwap_flash_swap_dodo_single() external {
+    function test_integ_flashSwap_flash_swap_dodo_single() external {
         vm.assume(user != address(0));
 
         address tokenIn = WETH;

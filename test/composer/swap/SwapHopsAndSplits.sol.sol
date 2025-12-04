@@ -297,7 +297,7 @@ contract SwapHopsAndSplitsLightTest is BaseTest {
         ); //
     }
 
-    function test_unit_swap_v3_route_splits_with_route() external {
+    function test_integ_swap_v3_route_splits_with_route() external {
         vm.assume(user != address(0));
 
         address tokenIn = USDC;
@@ -328,7 +328,7 @@ contract SwapHopsAndSplitsLightTest is BaseTest {
         console.log("received", balAfter - balBefore);
     }
 
-    function test_unit_swap_v3_route_splits_with_v2_route() external {
+    function test_integ_swap_v3_route_splits_with_v2_route() external {
         vm.assume(user != address(0));
 
         address tokenIn = USDC;

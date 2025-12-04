@@ -85,7 +85,7 @@ contract SwapSingleTest is BaseTest {
         );
     }
 
-    function test_unit_swap_v3_single_basic() external {
+    function test_integ_swap_v3_single_basic() external {
         vm.assume(user != address(0));
 
         address tokenIn = USDC;

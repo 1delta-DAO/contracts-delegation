@@ -59,7 +59,7 @@ contract SiloV2ComposerLightTest is BaseTest {
         oneDV2 = ComposerPlugin.getComposer(chainName);
     }
 
-    function test_unit_lending_siloV2_deposit() external {
+    function test_integ_lending_siloV2_deposit() external {
         vm.assume(user != address(0));
 
         address siloCollateralShare = SILO_WEETH_COLLATERAL_SHARE;
@@ -98,7 +98,7 @@ contract SiloV2ComposerLightTest is BaseTest {
         assertApproxEqAbs(underlyingBefore - underlyingAfter, amount, 1);
     }
 
-    function test_unit_lending_siloV2_borrow() external {
+    function test_integ_lending_siloV2_borrow() external {
         vm.assume(user != address(0));
 
         address depositToken = WEETH;
@@ -134,7 +134,7 @@ contract SiloV2ComposerLightTest is BaseTest {
         assertApproxEqAbs(underlyingAfter - underlyingBefore, amountToBorrow, 0);
     }
 
-    function test_unit_lending_siloV2_withdraw() external {
+    function test_integ_lending_siloV2_withdraw() external {
         vm.assume(user != address(0));
 
         address depositToken = WEETH;
@@ -168,7 +168,7 @@ contract SiloV2ComposerLightTest is BaseTest {
         assertApproxEqAbs(underlyingAfter - underlyingBefore, amountToWithdraw, 1);
     }
 
-    function test_unit_lending_siloV2_withdraw_all() external {
+    function test_integ_lending_siloV2_withdraw_all() external {
         vm.assume(user != address(0));
 
         address depositToken = WEETH;
@@ -202,7 +202,7 @@ contract SiloV2ComposerLightTest is BaseTest {
         assertApproxEqAbs(underlyingAfter - underlyingBefore, collateralBefore, 1);
     }
 
-    function test_unit_lending_siloV2_repay() external {
+    function test_integ_lending_siloV2_repay() external {
         vm.assume(user != address(0));
 
         address depositToken = WEETH;
@@ -252,7 +252,7 @@ contract SiloV2ComposerLightTest is BaseTest {
         assertApproxEqAbs(underlyingBefore - underlyingAfter, amountToRepay, 1);
     }
 
-    function test_unit_lending_siloV2_repay_all() external {
+    function test_integ_lending_siloV2_repay_all() external {
         vm.assume(user != address(0));
 
         address depositToken = WEETH;
@@ -304,7 +304,7 @@ contract SiloV2ComposerLightTest is BaseTest {
         assertApproxEqAbs(underlyingBefore - underlyingAfter, borrowBalanceBefore, 1);
     }
 
-    function test_unit_lending_siloV2_repay_all_repay_less() external {
+    function test_integ_lending_siloV2_repay_all_repay_less() external {
         address depositToken = WEETH;
         address token = WETH;
         address collateralSilo = SILO_WEETH;

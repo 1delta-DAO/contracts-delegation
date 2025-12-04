@@ -87,7 +87,7 @@ contract WooQuoterTest is BaseTest {
     /**
      * END OF CALLDATA UTILS
      */
-    function test_unit_quoter_simple_woo() public {
+    function test_integ_quoter_simple_woo() public {
         /**
          * WETH -> USDC (0,0)
          */

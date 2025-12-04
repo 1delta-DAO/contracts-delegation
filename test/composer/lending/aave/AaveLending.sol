@@ -29,7 +29,7 @@ contract AaveLightTest is BaseTest {
         oneDV2 = ComposerPlugin.getComposer(chainName);
     }
 
-    function test_unit_lending_aave_deposit_basic() external {
+    function test_integ_lending_aave_deposit_basic() external {
         vm.assume(user != address(0));
 
         address token = USDC;
@@ -65,7 +65,7 @@ contract AaveLightTest is BaseTest {
         assertApproxEqAbs(underlyingBefore - underlyingAfter, amount, 1);
     }
 
-    function test_unit_lending_aave_borrow_basic() external {
+    function test_integ_lending_aave_borrow_basic() external {
         vm.assume(user != address(0));
 
         address token = USDC;
@@ -97,7 +97,7 @@ contract AaveLightTest is BaseTest {
         assertApproxEqAbs(underlyingAfter - underlyingBefore, amountToBorrow, 0);
     }
 
-    function test_unit_lending_aave_withdraw_basic() external {
+    function test_integ_lending_aave_withdraw_basic() external {
         vm.assume(user != address(0));
 
         address token = USDC;
@@ -131,7 +131,7 @@ contract AaveLightTest is BaseTest {
         assertApproxEqAbs(underlyingAfter - underlyingBefore, amountToWithdraw, 1);
     }
 
-    function test_unit_lending_aave_repay_basic() external {
+    function test_integ_lending_aave_repay_basic() external {
         vm.assume(user != address(0));
 
         address token = USDC;
@@ -176,7 +176,7 @@ contract AaveLightTest is BaseTest {
         assertApproxEqAbs(underlyingBefore - underlyingAfter, amountToRepay, 1);
     }
 
-    function test_unit_lending_aave_repay_tryMax() external {
+    function test_integ_lending_aave_repay_tryMax() external {
         vm.assume(user != address(0));
 
         address token = USDC;
@@ -224,7 +224,7 @@ contract AaveLightTest is BaseTest {
         assertApproxEqAbs(underlyingBefore - underlyingAfter, amountToRepay, 1);
     }
 
-    function test_unit_lending_aave_repayMax_basic() external {
+    function test_integ_lending_aave_repayMax_basic() external {
         vm.assume(user != address(0));
 
         address token = USDC;

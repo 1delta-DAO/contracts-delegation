@@ -91,7 +91,7 @@ contract MoeV1Test is BaseTest {
     /**
      * Flash swap open on aave v3 using Velodrome V2
      */
-    function test_light_aave_flash_swap_moe1_single() external {
+    function test_integ_swap_moeV1_aaveFlashSwapSingle() external {
         vm.assume(user != address(0));
 
         address tokenIn = USDC;

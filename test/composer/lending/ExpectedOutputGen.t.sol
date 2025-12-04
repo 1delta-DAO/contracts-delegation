@@ -71,7 +71,7 @@ contract ExpectedOutputGen is BaseTest {
         COMPOUND_V3_COMET_WETH = chain.getLendingController(compoundV3Lender_WETH);
     }
 
-    function test_generate_deposit_expected_outputs() public {
+    function test_unit_lending_expectedOutputs_generate_deposit() public {
         aaveV2DepositData = CalldataLib.encodeAaveV2Deposit(polygonUSDT, TEST_AMOUNT, TEST_RECEIVER, AAVE_V2_POOL);
 
         aaveV3DepositData = CalldataLib.encodeAaveDeposit(USDC, TEST_AMOUNT, TEST_RECEIVER, AAVE_V3_POOL);
@@ -82,7 +82,7 @@ contract ExpectedOutputGen is BaseTest {
         compoundV3DepositData = CalldataLib.encodeCompoundV3Deposit(USDC, TEST_AMOUNT, TEST_RECEIVER, COMPOUND_V3_COMET_WETH);
     }
 
-    function test_generate_withdraw_expected_outputs() public {
+    function test_unit_lending_expectedOutputs_generate_withdraw() public {
         address aaveV2DebtToken = polygon.getLendingTokens(polygonUSDT, aaveV2Lender).debt;
         address aaveV3DebtToken = chain.getLendingTokens(USDC, aaveV3Lender).debt;
 
@@ -96,7 +96,7 @@ contract ExpectedOutputGen is BaseTest {
         compoundV3WithdrawData = CalldataLib.encodeCompoundV3Withdraw(USDC, TEST_AMOUNT, TEST_RECEIVER, COMPOUND_V3_COMET_WETH, false);
     }
 
-    function test_generate_borrow_expected_outputs() public {
+    function test_unit_lending_expectedOutputs_generate_borrow() public {
         aaveV2BorrowData = CalldataLib.encodeAaveV2Borrow(
             polygonUSDT,
             TEST_AMOUNT,
@@ -118,7 +118,7 @@ contract ExpectedOutputGen is BaseTest {
         compoundV3BorrowData = CalldataLib.encodeCompoundV3Borrow(USDC, TEST_AMOUNT, TEST_RECEIVER, COMPOUND_V3_COMET_USDC);
     }
 
-    function test_generate_repay_expected_outputs() public {
+    function test_unit_lending_expectedOutputs_generate_repay() public {
         address aaveV2DebtToken = polygon.getLendingTokens(polygonUSDT, aaveV2Lender).debt;
         address aaveV2StableDebtToken = polygon.getLendingTokens(polygonUSDT, aaveV2Lender).stableDebt;
         address aaveV3DebtToken = chain.getLendingTokens(USDC, aaveV3Lender).debt;
@@ -146,11 +146,11 @@ contract ExpectedOutputGen is BaseTest {
         compoundV3RepayData = CalldataLib.encodeCompoundV3Repay(USDC, TEST_AMOUNT, TEST_RECEIVER, COMPOUND_V3_COMET_USDC);
     }
 
-    function test_generate_typescript_structure() public {
-        test_generate_deposit_expected_outputs();
-        test_generate_withdraw_expected_outputs();
-        test_generate_borrow_expected_outputs();
-        test_generate_repay_expected_outputs();
+    function test_unit_lending_expectedOutputs_generate_typescript_structure() public {
+        test_unit_lending_expectedOutputs_generate_deposit();
+        test_unit_lending_expectedOutputs_generate_withdraw();
+        test_unit_lending_expectedOutputs_generate_borrow();
+        test_unit_lending_expectedOutputs_generate_repay();
 
         console.log("const expectedOutputs = {");
 

@@ -24,7 +24,7 @@ contract ForwarderNftTest is BaseTest {
         oneDV2 = IComposerLike(0x97648606fcc22Bd96F87345Ac83Bd6cFCdF0ACBa);
     }
 
-    function test_unit_forwarder_nft_receive() public {
+    function test_integ_externalCall_forwarder_nft_receive() public {
         vm.prank(ppg_owner);
         PPGNft.approve(address(forwarder), 524);
         PPGNft.setApprovalForAll(address(forwarder), true);

@@ -210,7 +210,7 @@ contract SwapsSplitsAndHopsLightTest is BaseTest {
         //
     }
 
-    function test_unit_swap_v3_splits_with_route() external {
+    function test_integ_swap_v3_splits_with_route() external {
         vm.assume(user != address(0));
 
         address tokenIn = USDC;

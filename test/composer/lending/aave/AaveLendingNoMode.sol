@@ -32,7 +32,7 @@ contract AaveV3NoModesLightTest is BaseTest {
         oneDV2 = ComposerPlugin.getComposer(chainName);
     }
 
-    function test_unit_lending_aave_borrow_noMode() external {
+    function test_integ_lending_aave_borrow_noMode() external {
         vm.assume(user != address(0));
 
         address token = USDC;
@@ -63,7 +63,7 @@ contract AaveV3NoModesLightTest is BaseTest {
         assertApproxEqAbs(underlyingAfter - underlyingBefore, amountToBorrow, 0);
     }
 
-    function test_unit_lending_aave_repay_noMode() external {
+    function test_integ_lending_aave_repay_noMode() external {
         vm.assume(user != address(0));
 
         address token = USDC;

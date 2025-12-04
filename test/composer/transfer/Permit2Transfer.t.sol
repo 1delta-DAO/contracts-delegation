@@ -41,7 +41,7 @@ contract Permit2TransferTest is BaseTest, DeltaErrors {
     // Tests
     // ------------------------------------------------------------------------
 
-    function test_light_permit2_transfer_from() public {
+    function test_integ_transfer_permit2_transferFrom() public {
         uint256 initialAmount = 1000e6;
         uint256 transferAmount = 500e6;
         deal(USDC, user, initialAmount);

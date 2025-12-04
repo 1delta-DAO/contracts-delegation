@@ -64,7 +64,7 @@ contract V3QuoterTest is BaseTest {
     /**
      * END OF CALLDATA UTILS
      */
-    function test_unit_quoter_simple_swap_v3() public {
+    function test_integ_quoter_simple_swap_v3() public {
         /**
          * WETH -> USDC (0,0)
          */
@@ -139,7 +139,7 @@ contract V3QuoterTest is BaseTest {
         return data;
     }
 
-    function test_unit_quoter_multihop_swap() public {
+    function test_integ_quoter_multihop_swap() public {
         /**
          * USDC -> WETH -> cbETH (1,0) - two hops
          */
@@ -183,7 +183,7 @@ contract V3QuoterTest is BaseTest {
         console.log("Actual amount:", actualAmountOut);
     }
 
-    function test_unit_quoter_split_swap() public {
+    function test_integ_quoter_split_swap() public {
         /**
          * WETH -> USDC (2 splits with different fees, 50/50)
          */

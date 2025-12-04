@@ -34,22 +34,22 @@ contract AlgebraTest is BaseTest, Masks {
         oneDV2 = ComposerPlugin.getComposer(chainName);
     }
 
-    function test_valid_camelot_pool() public {
+    function test_integ_swap_algebra_validPool() public {
         address pool = _getPool(USDC, WETH);
         _testSwap(pool, USDC, WETH, user, 1000e6);
     }
 
-    function test_valid_camelot_pool_reverse() public {
+    function test_integ_swap_algebra_validPoolReverse() public {
         address pool = _getPool(WETH, USDC);
         _testSwap(pool, WETH, USDC, user, 1e18);
     }
 
-    function test_valid_camelot_pool_different_tokens() public {
+    function test_integ_swap_algebra_validPoolDifferentTokens() public {
         address pool = _getPool(WETH, ARB);
         _testSwap(pool, WETH, ARB, user, 0.1e18);
     }
 
-    function test_zero_amount_swap() public {
+    function test_integ_swap_algebra_zeroAmount() public {
         address pool = _getPool(USDC, WETH);
 
         vm.startPrank(user);
@@ -58,7 +58,7 @@ contract AlgebraTest is BaseTest, Masks {
         vm.stopPrank();
     }
 
-    function test_insufficient_allowance() public {
+    function test_integ_swap_algebra_insufficientAllowance() public {
         address pool = _getPool(USDC, WETH);
         uint256 amount = 1000e6;
 
@@ -70,7 +70,7 @@ contract AlgebraTest is BaseTest, Masks {
         vm.stopPrank();
     }
 
-    function test_insufficient_balance() public {
+    function test_integ_swap_algebra_insufficientBalance() public {
         address pool = _getPool(USDC, WETH);
         uint256 amount = 1000e6;
 
@@ -82,7 +82,7 @@ contract AlgebraTest is BaseTest, Masks {
         vm.stopPrank();
     }
 
-    function test_contract_pays_config() public {
+    function test_integ_swap_algebra_contractPaysConfig() public {
         address pool = _getPool(USDC, WETH);
         uint256 amount = 1000e6;
 

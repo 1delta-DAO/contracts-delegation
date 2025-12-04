@@ -87,7 +87,7 @@ contract FlashSwapTest is BaseTest {
     /**
      * Flash swap open on aave v3 using Uniswap V3
      */
-    function test_unit_flashSwap_aave_flash_swap_single() external {
+    function test_integ_flashSwap_aave_flash_swap_single() external {
         vm.assume(user != address(0));
 
         address tokenIn = USDC;
@@ -162,7 +162,7 @@ contract FlashSwapTest is BaseTest {
      *   }
      * }
      */
-    function test_unit_flashSwap_aave_flash_swap_split() external {
+    function test_integ_flashSwap_aave_flash_swap_split() external {
         vm.assume(user != address(0));
 
         address tokenIn = USDC;

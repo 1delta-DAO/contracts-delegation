@@ -86,7 +86,7 @@ contract BalancerV3QuoterTest is BaseTest {
     /**
      * END OF CALLDATA UTILS
      */
-    function test_unit_quoter_simple_swap_balancerv3() public {
+    function test_integ_quoter_simple_swap_balancerv3() public {
         /**
          * WETH -> USDC (0,0)
          */

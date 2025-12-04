@@ -30,7 +30,7 @@ contract AaveV2LightTest is BaseTest {
         oneDV2 = ComposerPlugin.getComposer(chainName);
     }
 
-    function test_unit_lending_aaveV2_deposit_basic() external {
+    function test_integ_lending_aaveV2_deposit_basic() external {
         vm.assume(user != address(0));
 
         address token = USDC;
@@ -66,7 +66,7 @@ contract AaveV2LightTest is BaseTest {
         assertApproxEqAbs(underlyingBefore - underlyingAfter, amount, 1);
     }
 
-    function test_unit_lending_aaveV2_borrow_basic() external {
+    function test_integ_lending_aaveV2_borrow_basic() external {
         vm.assume(user != address(0));
 
         address token = USDC;
@@ -97,7 +97,7 @@ contract AaveV2LightTest is BaseTest {
         assertApproxEqAbs(underlyingAfter - underlyingBefore, amountToBorrow, 0);
     }
 
-    function test_unit_lending_aaveV2_withdraw_basic() external {
+    function test_integ_lending_aaveV2_withdraw_basic() external {
         vm.assume(user != address(0));
 
         address token = USDC;
@@ -131,7 +131,7 @@ contract AaveV2LightTest is BaseTest {
         assertApproxEqAbs(underlyingAfter - underlyingBefore, amountToWithdraw, 1);
     }
 
-    function test_unit_lending_aaveV2_repay_basic() external {
+    function test_integ_lending_aaveV2_repay_basic() external {
         vm.assume(user != address(0));
 
         address token = USDC;

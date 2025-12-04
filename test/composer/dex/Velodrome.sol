@@ -137,7 +137,7 @@ contract Velodrome123Test is BaseTest {
         );
     }
 
-    function test_unit_dex_velodrome3_single() external {
+    function test_integ_swap_velodrome3_single() external {
         vm.assume(user != address(0));
 
         address tokenIn = USDC;
@@ -164,7 +164,7 @@ contract Velodrome123Test is BaseTest {
     /**
      * Flash swap open on aave v3 using Velodrome V2
      */
-    function test_light_aave_flash_swap_velo2_single() external {
+    function test_integ_swap_velodrome_aaveFlashSwapVelo2Single() external {
         vm.assume(user != address(0));
 
         address tokenIn = USDC;

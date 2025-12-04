@@ -79,7 +79,7 @@ contract V4QuoterTest is BaseTest {
     /**
      * END OF CALLDATA UTILS
      */
-    function test_unit_quoter_simple_dodo() public {
+    function test_integ_quoter_simple_dodo() public {
         /**
          * WETH -> USDC (0,0)
          */

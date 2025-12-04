@@ -47,7 +47,7 @@ contract CallDataInjection is BaseTest, DeltaErrors {
         deal(WETH, address(attacker), 1 ether);
     }
 
-    function test_unit_security_callbackInjection_injection_uniV3BadPool() public {
+    function test_integ_security_callbackInjection_injection_uniV3BadPool() public {
         MaliciousPoolV3 maliciousPool = new MaliciousPoolV3(
             address(user),
             address(attacker),
@@ -75,7 +75,7 @@ contract CallDataInjection is BaseTest, DeltaErrors {
         vm.stopPrank();
     }
 
-    function test_unit_security_callbackInjection_injection_uniV3DirectInject() public {
+    function test_integ_security_callbackInjection_injection_uniV3DirectInject() public {
         bytes4 uniV3CallbackSelector = bytes4(0xfa461e33);
         // deal weth to user and approve composer, simulating a prior tx on composer by the victim
         deal(WETH, address(user), 10 ether);
@@ -95,7 +95,7 @@ contract CallDataInjection is BaseTest, DeltaErrors {
         vm.assertEq(data, abi.encodeWithSignature("BadPool()"));
     }
 
-    function test_unit_security_callbackInjection_injection_uniV2DirectInject() public {
+    function test_integ_security_callbackInjection_injection_uniV2DirectInject() public {
         address weth_usdc_pool = IF2(UNI_V2_FACTORY).getPair(WETH, USDC);
         bytes4 uniV2SwapSelector = bytes4(0x022c0d9f);
 
@@ -116,7 +116,7 @@ contract CallDataInjection is BaseTest, DeltaErrors {
         assertEq(data, abi.encodeWithSelector(INVALID_CALLER));
     }
 
-    function test_unit_security_callbackInjection_injection_uniV2BadPool() public {
+    function test_integ_security_callbackInjection_injection_uniV2BadPool() public {
         MaliciousPoolV2 maliciousPool = new MaliciousPoolV2(
             address(user),
             address(attacker),

@@ -154,7 +154,7 @@ contract SwapHopsLightTest is BaseTest {
         );
     }
 
-    function test_unit_swap_v3_route_no_splits() external {
+    function test_integ_swap_v3_route_no_splits() external {
         vm.assume(user != address(0));
 
         address tokenIn = USDC;
