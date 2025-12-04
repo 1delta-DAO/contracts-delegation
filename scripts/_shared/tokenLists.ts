@@ -23,6 +23,7 @@ export type TokenListsRecord = Record<string, Record<string, RawCurrency>>;
 
 let cachedTokenLists: TokenListsRecord | null = null;
 let loadPromise: Promise<TokenListsRecord> | null = null;
+let isCreatingPromise = false;
 
 const unallowedChars = ["[", "]", "₮"];
 
@@ -51,7 +52,22 @@ async function fetchList(chainId: string): Promise<DeltaTokenList | null> {
 
 export async function loadTokenLists(chainIds: string[]): Promise<TokenListsRecord> {
     if (cachedTokenLists) return cachedTokenLists;
+
     if (loadPromise) return loadPromise;
+
+    while (isCreatingPromise) {
+        await new Promise((resolve) => setTimeout(resolve, 0));
+        if (loadPromise) return loadPromise;
+    }
+
+    if (loadPromise) return loadPromise;
+
+    isCreatingPromise = true;
+
+    if (loadPromise) {
+        isCreatingPromise = false;
+        return loadPromise;
+    }
 
     loadPromise = (async () => {
         const lists: TokenListsRecord = {};
@@ -71,6 +87,7 @@ export async function loadTokenLists(chainIds: string[]): Promise<TokenListsReco
         }
 
         cachedTokenLists = lists;
+        isCreatingPromise = false;
         return lists;
     })();
 
