@@ -1,48 +1,42 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.19;
 
+import {Test} from "forge-std/Test.sol";
 import {console} from "forge-std/console.sol";
 import {IERC20All} from "test/shared/interfaces/IERC20All.sol";
 import {BaseTest} from "test/shared/BaseTest.sol";
-import {Chains, Tokens, Lenders} from "test/data/LenderRegistry.sol";
+import {Chains} from "test/data/LenderRegistry.sol";
 import "contracts/utils/CalldataLib.sol";
 import {DeltaErrors} from "contracts/1delta/shared/errors/Errors.sol";
 import {StdStyle as S} from "forge-std/StdStyle.sol";
 import {MorphoMathLib} from "test/composer/lending/utils/MathLib.sol";
 import {SweepType} from "contracts/1delta/composer/enums/MiscEnums.sol";
-import {ComposerPlugin, IComposerLike} from "plugins/ComposerPlugin.sol";
+import {ComposerPlugin, IComposerLike} from "test/shared/composers/ComposerPlugin.sol";
+import {MockERC20Revert} from "test/mocks/MockERC20Revert.sol";
+import {MockERC20NoReturn} from "test/mocks/MockERC20NoReturn.sol";
+import {MockReceiver} from "test/mocks/MockReceiver.sol";
+import {MockERC20} from "test/mocks/MockERC20.sol";
+import {WETH9} from "test/mocks/WETH9.sol";
 
-contract TransfersLightTest is BaseTest, DeltaErrors {
-    using MorphoMathLib for uint256;
-
+contract TransfersTest is BaseTest, DeltaErrors {
     IComposerLike oneD;
-
-    uint256 internal constant forkBlock = 26696865;
-
-    address internal MORPHO = 0xBBBBBbbBBb9cC5e90e3b3Af64bdAF62C37EEFFCb;
-    address internal AAVE_V3_POOL;
-    address internal GRANARY_POOL;
-    address private BALANCER_V2_VAULT = 0xBA12222222228d8Ba445958a75a0704d566BF2C8;
-    address internal constant UNI_V4_PM = 0x498581fF718922c3f8e6A244956aF099B2652b2b;
-
-    // balancer dex data
-    address internal constant BALANCER_V3_VAULT = 0xbA1333333333a1BA1108E8412f11850A5C319bA9;
 
     address internal WETH;
     address internal USDC;
 
     function setUp() public virtual {
-        string memory chainName = Chains.BASE;
+        user = address(0x1de17a);
+        vm.deal(user, 100 ether);
+        vm.label(user, "user");
 
-        _init(chainName, forkBlock, true);
-        AAVE_V3_POOL = chain.getLendingController(Lenders.AAVE_V3);
-        WETH = chain.getTokenAddress(Tokens.WETH);
-        USDC = chain.getTokenAddress(Tokens.USDC);
-        GRANARY_POOL = chain.getLendingController(Lenders.GRANARY);
-        oneD = ComposerPlugin.getComposer(chainName);
+        MockERC20 mockUSDC = new MockERC20("USD Coin", "USDC", 6);
+        USDC = address(mockUSDC);
+
+        WETH9 mockWETH = new WETH9();
+        WETH = address(mockWETH);
+
+        oneD = ComposerPlugin.getComposer(Chains.BASE);
     }
-
-    uint256 internal constant UPPER_BIT = 1 << 255;
 
     // ------------------------------------------------------------------------
     // sweep tests
@@ -267,5 +261,96 @@ contract TransfersLightTest is BaseTest, DeltaErrors {
         vm.prank(user);
         IERC20All(USDC).transferFrom(address(oneD), user, initialAmount);
         assertEq(IERC20All(USDC).balanceOf(user), initialAmount);
+    }
+
+    function test_unit_transfer_unwrap_validate_insufficient_balance() external {
+        uint256 initialAmount = 1 ether;
+        vm.deal(address(oneD), initialAmount);
+
+        bytes memory wrapData = CalldataLib.encodeWrap(initialAmount, WETH);
+        vm.prank(user);
+        oneD.deltaCompose(wrapData);
+
+        uint256 minAmount = 2 ether;
+        bytes memory unwrapData = CalldataLib.encodeUnwrap(WETH, user, minAmount, SweepType.VALIDATE);
+
+        vm.prank(user);
+        vm.expectRevert(SLIPPAGE);
+        oneD.deltaCompose(unwrapData);
+    }
+
+    function test_unit_transfer_token_transferFrom_non_erc20_compliant() external {
+        MockERC20NoReturn mockToken = new MockERC20NoReturn(1000e18);
+        uint256 transferAmount = 500e18;
+        mockToken.transfer(user, 1000e18);
+
+        vm.prank(user);
+        mockToken.approve(address(oneD), type(uint256).max);
+
+        bytes memory data = CalldataLib.encodeTransferIn(address(mockToken), address(oneD), transferAmount);
+
+        vm.prank(user);
+        oneD.deltaCompose(data);
+
+        assertEq(mockToken.balanceOf(user), 1000e18 - transferAmount);
+        assertEq(mockToken.balanceOf(address(oneD)), transferAmount);
+    }
+
+    function test_unit_transfer_token_transferFrom_reverts_on_failure() external {
+        MockERC20Revert mockToken = new MockERC20Revert(1000e18);
+        uint256 transferAmount = 500e18;
+        mockToken.transfer(user, 1000e18);
+
+        vm.prank(user);
+        mockToken.approve(address(oneD), type(uint256).max);
+
+        mockToken.setShouldRevertTransferFrom(true);
+
+        bytes memory data = CalldataLib.encodeTransferIn(address(mockToken), address(oneD), transferAmount);
+
+        vm.prank(user);
+        vm.expectRevert("TransferFrom reverted");
+        oneD.deltaCompose(data);
+    }
+
+    function test_unit_transfer_token_sweep_token_reverts_on_transfer() external {
+        MockERC20Revert mockToken = new MockERC20Revert(1000e18);
+        mockToken.transfer(address(oneD), 1000e18);
+        mockToken.setShouldRevertTransfer(true);
+
+        bytes memory data = CalldataLib.encodeSweep(address(mockToken), user, 500e18, SweepType.AMOUNT);
+
+        vm.prank(user);
+        vm.expectRevert("Transfer reverted");
+        oneD.deltaCompose(data);
+    }
+
+    function test_unit_transfer_token_sweep_native_receiver_cannot_receive() external {
+        uint256 initialAmount = 1 ether;
+        vm.deal(address(oneD), initialAmount);
+
+        MockReceiver receiver = new MockReceiver(false);
+
+        bytes memory data = CalldataLib.encodeSweep(address(0), address(receiver), initialAmount, SweepType.AMOUNT);
+
+        vm.prank(user);
+        vm.expectRevert(NATIVE_TRANSFER);
+        oneD.deltaCompose(data);
+    }
+
+    function test_unit_transfer_unwrap_receiver_cannot_receive_native() external {
+        uint256 initialAmount = 1 ether;
+        vm.deal(address(oneD), initialAmount);
+
+        bytes memory wrapData = CalldataLib.encodeWrap(initialAmount, WETH);
+        vm.prank(user);
+        oneD.deltaCompose(wrapData);
+
+        MockReceiver receiver = new MockReceiver(false);
+        bytes memory unwrapData = CalldataLib.encodeUnwrap(WETH, address(receiver), initialAmount, SweepType.AMOUNT);
+
+        vm.prank(user);
+        vm.expectRevert(NATIVE_TRANSFER);
+        oneD.deltaCompose(unwrapData);
     }
 }
