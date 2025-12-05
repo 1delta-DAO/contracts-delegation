@@ -14,6 +14,9 @@ multiline_func_header = "all"
 [lint]
 exclude_lints = ["mixed-case-variable"]
 
+[fuzz]
+runs = 10000
+
 # RPC Overrides
 RPC_ETHEREUM_MAINNET="https://ethereum-mainnet.gateway.tatum.io"
 RPC_BNB_SMART_CHAIN_MAINNET="https://binance.llamarpc.com"
