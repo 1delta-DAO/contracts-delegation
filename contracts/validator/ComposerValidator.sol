@@ -14,8 +14,8 @@ import {
     PermitIds,
     ComposerCommands,
     BridgeIds
-} from "../enums/DeltaEnums.sol";
-import {Masks} from "../../shared/masks/Masks.sol";
+} from "contracts/1delta/composer/enums/DeltaEnums.sol";
+import {Masks} from "contracts/1delta/shared/masks/Masks.sol";
 
 // solhint-disable max-line-length
 

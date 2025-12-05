@@ -2,8 +2,8 @@
 
 pragma solidity 0.8.28;
 
-import {ComposerCommands} from "../enums/DeltaEnums.sol";
-import {DeltaErrors} from "../../shared/errors/Errors.sol";
+import {ComposerCommands} from "contracts/1delta/composer/enums/DeltaEnums.sol";
+import {DeltaErrors} from "contracts/1delta/shared/errors/Errors.sol";
 
 // solhint-disable max-line-length
 
