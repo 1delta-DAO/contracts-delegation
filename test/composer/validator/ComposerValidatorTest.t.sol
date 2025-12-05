@@ -7,8 +7,8 @@ import {Chains, Tokens, Lenders} from "test/data/LenderRegistry.sol";
 import "contracts/utils/CalldataLib.sol";
 import {console} from "forge-std/console.sol";
 
-import {ComposerValidator} from "contracts/1delta/composer/validator/ComposerValidator.sol";
-import {AddressWhitelistManager} from "contracts/1delta/composer/validator/AddressWhitelistManager.sol";
+import {ComposerValidator} from "contracts/validator/ComposerValidator.sol";
+import {AddressWhitelistManager} from "contracts/validator/AddressWhitelistManager.sol";
 import {ComposerCommands, LenderOps, LenderIds} from "contracts/1delta/composer/enums/DeltaEnums.sol";
 import {ERC1967Proxy} from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 

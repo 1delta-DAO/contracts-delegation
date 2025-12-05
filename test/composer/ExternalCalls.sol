@@ -6,7 +6,7 @@ import {CallForwarder} from "../../contracts/1delta/composer/generic/CallForward
 import {IERC20All} from "../shared/interfaces/IERC20All.sol";
 import {BaseTest} from "../shared/BaseTest.sol";
 import {Chains, Tokens, Lenders} from "../data/LenderRegistry.sol";
-import "../../contracts/1delta/test/TrivialMockRouter.sol";
+import "../mocks/TrivialMockRouter.sol";
 import {SweepType} from "contracts/1delta/composer/enums/MiscEnums.sol";
 import {ComposerPlugin, IComposerLike} from "plugins/ComposerPlugin.sol";
 import {CalldataLib} from "contracts/utils/CalldataLib.sol";
