@@ -1,0 +1,83 @@
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.28;
+
+contract MockDaiPermit {
+    string public constant name = "Mock Dai Token";
+    string public constant symbol = "MDAI";
+    uint8 public constant decimals = 18;
+    uint256 public totalSupply;
+    mapping(address => uint256) public balanceOf;
+    mapping(address => mapping(address => uint256)) public allowance;
+    mapping(address => uint256) public nonces;
+
+    bytes32 public DOMAIN_SEPARATOR;
+    bytes32 public constant PERMIT_TYPEHASH = 0xea2aa0a1eb11a72f148e9175bced81425729a267e49f3cbff88e635cfbc0b681;
+
+    event Approval(address indexed owner, address indexed spender, uint256 value);
+    event Transfer(address indexed from, address indexed to, uint256 value);
+
+    constructor(uint256 _totalSupply) {
+        uint256 chainId;
+        assembly {
+            chainId := chainid()
+        }
+        DOMAIN_SEPARATOR = keccak256(
+            abi.encode(
+                keccak256("EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)"),
+                keccak256(bytes(name)),
+                keccak256(bytes("1")),
+                chainId,
+                address(this)
+            )
+        );
+        _mint(msg.sender, _totalSupply);
+    }
+
+    function _mint(address to, uint256 value) internal {
+        totalSupply = totalSupply + value;
+        balanceOf[to] = balanceOf[to] + value;
+        emit Transfer(address(0), to, value);
+    }
+
+    function _approve(address owner, address spender, uint256 value) private {
+        allowance[owner][spender] = value;
+        emit Approval(owner, spender, value);
+    }
+
+    function approve(address spender, uint256 value) external returns (bool) {
+        _approve(msg.sender, spender, value);
+        return true;
+    }
+
+    function transfer(address to, uint256 value) external returns (bool) {
+        balanceOf[msg.sender] = balanceOf[msg.sender] - value;
+        balanceOf[to] = balanceOf[to] + value;
+        emit Transfer(msg.sender, to, value);
+        return true;
+    }
+
+    function transferFrom(address from, address to, uint256 value) external returns (bool) {
+        if (allowance[from][msg.sender] != type(uint256).max) {
+            allowance[from][msg.sender] = allowance[from][msg.sender] - value;
+        }
+        balanceOf[from] = balanceOf[from] - value;
+        balanceOf[to] = balanceOf[to] + value;
+        emit Transfer(from, to, value);
+        return true;
+    }
+
+    function permit(address holder, address spender, uint256 nonce, uint256 expiry, bool allowed, uint8 v, bytes32 r, bytes32 s) external {
+        require(expiry >= block.timestamp, "EXPIRED");
+        bytes32 digest = keccak256(
+            abi.encodePacked("\x19\x01", DOMAIN_SEPARATOR, keccak256(abi.encode(PERMIT_TYPEHASH, holder, spender, nonce, expiry, allowed)))
+        );
+        address recoveredAddress = ecrecover(digest, v, r, s);
+        require(recoveredAddress != address(0) && recoveredAddress == holder, "INVALID_SIGNATURE");
+        if (allowed) {
+            _approve(holder, spender, type(uint256).max);
+        } else {
+            _approve(holder, spender, 0);
+        }
+    }
+}
+
