@@ -1,7 +1,8 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity >=0.8.0;
 
-import "./ERC20.sol";
+import "../shared/ERC20.sol";
+import "../shared/interfaces/IERC20.sol";
 
 interface IPermit2 {
     struct PermitDetails {
@@ -114,3 +115,4 @@ contract MockERC20 is ERC20 {
         data = abi.encodeWithSelector(IPermit2.transferFrom.selector, user, spender, amount, token);
     }
 }
+

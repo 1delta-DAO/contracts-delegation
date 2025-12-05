@@ -3,7 +3,7 @@
 pragma solidity ^0.8.16;
 
 import "./Context.sol";
-import "./IERC20.sol";
+import "./interfaces/IERC20.sol";
 
 /**
  * @dev Implementation of the {IERC20} interface.
@@ -335,3 +335,4 @@ contract ERC20 is IERC20, Context {
      */
     function _afterTokenTransfer(address from, address to, uint256 amount) internal virtual {}
 }
+
