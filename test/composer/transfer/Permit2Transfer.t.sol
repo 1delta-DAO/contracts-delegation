@@ -72,6 +72,98 @@ contract Permit2TransferTest is BaseTest, DeltaErrors {
         assertEq(IERC20All(USDC).balanceOf(user), initialAmount - transferAmount);
         assertEq(IERC20All(USDC).balanceOf(address(oneD)), transferAmount);
     }
+
+    function test_unit_transfer_permit2_transferFrom_zero_amount() public {
+        uint256 initialAmount = 1000e6;
+        deal(USDC, user, initialAmount);
+
+        vm.startPrank(user);
+
+        IERC20All(USDC).approve(PERMIT2, type(uint256).max);
+
+        uint48 expiration = uint48(blockTimestamp + 1 hours);
+        uint48 nonce = 0;
+        uint256 sigDeadline = blockTimestamp + 1 hours;
+
+        bytes memory signature = signPermit2(USDC, uint160(initialAmount), expiration, nonce, address(oneD), sigDeadline);
+
+        IPermit2.PermitSingle memory permitSingle = IPermit2.PermitSingle({
+            details: IPermit2.PermitDetails({token: USDC, amount: uint160(initialAmount), expiration: expiration, nonce: nonce}),
+            spender: address(oneD),
+            sigDeadline: sigDeadline
+        });
+
+        IPermit2(PERMIT2).permit(user, permitSingle, signature);
+
+        bytes memory data = CalldataLib.encodePermit2TransferFrom(USDC, address(oneD), 0);
+
+        oneD.deltaCompose(data);
+        vm.stopPrank();
+
+        assertEq(IERC20All(USDC).balanceOf(user), 0);
+        assertEq(IERC20All(USDC).balanceOf(address(oneD)), initialAmount);
+    }
+
+    function test_unit_transfer_permit2_transferFrom_insufficient_allowance() public {
+        uint256 initialAmount = 1000e6;
+        uint256 transferAmount = 500e6;
+        deal(USDC, user, initialAmount);
+
+        vm.startPrank(user);
+
+        IERC20All(USDC).approve(PERMIT2, transferAmount - 1);
+
+        uint48 expiration = uint48(blockTimestamp + 1 hours);
+        uint48 nonce = 0;
+        uint256 sigDeadline = blockTimestamp + 1 hours;
+
+        bytes memory signature = signPermit2(USDC, uint160(transferAmount), expiration, nonce, address(oneD), sigDeadline);
+
+        IPermit2.PermitSingle memory permitSingle = IPermit2.PermitSingle({
+            details: IPermit2.PermitDetails({token: USDC, amount: uint160(transferAmount), expiration: expiration, nonce: nonce}),
+            spender: address(oneD),
+            sigDeadline: sigDeadline
+        });
+
+        IPermit2(PERMIT2).permit(user, permitSingle, signature);
+
+        bytes memory data = CalldataLib.encodePermit2TransferFrom(USDC, address(oneD), transferAmount);
+
+        vm.expectRevert();
+        oneD.deltaCompose(data);
+        vm.stopPrank();
+    }
+
+    function test_unit_transfer_permit2_transferFrom_insufficient_balance() public {
+        uint256 initialAmount = 1000e6;
+        uint256 transferAmount = 1500e6;
+        deal(USDC, user, initialAmount);
+
+        vm.startPrank(user);
+
+        IERC20All(USDC).approve(PERMIT2, type(uint256).max);
+
+        uint48 expiration = uint48(blockTimestamp + 1 hours);
+        uint48 nonce = 0;
+        uint256 sigDeadline = blockTimestamp + 1 hours;
+
+        bytes memory signature = signPermit2(USDC, uint160(transferAmount), expiration, nonce, address(oneD), sigDeadline);
+
+        IPermit2.PermitSingle memory permitSingle = IPermit2.PermitSingle({
+            details: IPermit2.PermitDetails({token: USDC, amount: uint160(transferAmount), expiration: expiration, nonce: nonce}),
+            spender: address(oneD),
+            sigDeadline: sigDeadline
+        });
+
+        IPermit2(PERMIT2).permit(user, permitSingle, signature);
+
+        bytes memory data = CalldataLib.encodePermit2TransferFrom(USDC, address(oneD), transferAmount);
+
+        vm.expectRevert();
+        oneD.deltaCompose(data);
+        vm.stopPrank();
+    }
+
     // ------------------------------------------------------------------------
     // Helper functions
     // ------------------------------------------------------------------------
