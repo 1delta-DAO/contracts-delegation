@@ -6,16 +6,21 @@ import {Masks} from "../../../shared/masks/Masks.sol";
 
 abstract contract DodoV2Quoter is Masks {
     /**
-     * Swaps exact input on Dodo V2
+     * @notice Calculates amountOut for Dodo V2 pools
+     * @dev Does not require overflow checks
+     * @param sellAmount Input amount
+     * @param currentOffset Current position in the calldata
+     * @return amountOut Output amount
+     * @return newOffset Updated calldata offset after processing
+     * @custom:calldata-offset-table
      * | Offset | Length (bytes) | Description          |
      * |--------|----------------|----------------------|
      * | 0      | 20             | pool                 |
      * | 20     | 1              | sellQuote            |
      * | 21     | 2              | pId                  | pool index for flash validation
-     * | 22     | 2              | clLength / pay flag  | <- 0: caller pays; 1: contract pays; greater: pre-funded
-     * | 25     | clLength       | calldata             | calldata for fash loan
+     * | 23     | 2              | clLength / pay flag  | <- 0: caller pays; 1: contract pays; greater: pre-funded
+     * | 25     | clLength       | calldata             | calldata for flash loan
      */
-    /// @dev calculate amountOut for dodoV2 style pools - does not require overflow checks
     function _getDodoV2AmountOut(uint256 sellAmount, uint256 currentOffset) internal view returns (uint256 amountOut, uint256 newOffset) {
         address pair;
         uint256 sellQuote;

@@ -17,14 +17,18 @@ abstract contract SiloV2Lending is ERC20Selectors, Masks {
     bytes32 private constant REDEEM = 0xba08765200000000000000000000000000000000000000000000000000000000;
     bytes32 private constant REDEEM_WITH_COLLATERAL_TYPE = 0xda53766000000000000000000000000000000000000000000000000000000000;
 
-    /*
+    /**
+     * @notice Withdraws from Silo V2 lending pool
+     * @param currentOffset Current position in the calldata
+     * @param callerAddress Address of the caller
+     * @return Updated calldata offset after processing
+     * @custom:calldata-offset-table
      * | Offset | Length (bytes) | Description                     |
      * |--------|----------------|---------------------------------|
      * | 0      | 16             | amount                          |
      * | 16     | 20             | receiver                        |
      * | 36     | 20             | silo                            |
      */
-    /// @notice Withdraw from lender given caller address
     function _withdrawFromSiloV2(uint256 currentOffset, address callerAddress) internal returns (uint256) {
         assembly {
             let ptr := mload(0x40)
@@ -121,7 +125,13 @@ abstract contract SiloV2Lending is ERC20Selectors, Masks {
     bytes32 private constant BORROW = 0xd516418400000000000000000000000000000000000000000000000000000000;
     bytes32 private constant BORROW_SHARES = 0x889576f700000000000000000000000000000000000000000000000000000000;
 
-    /*
+    /**
+     * @notice Borrows from Silo V2 lending pool
+     * @dev Supports borrowing by assets or shares
+     * @param currentOffset Current position in the calldata
+     * @param callerAddress Address of the caller
+     * @return Updated calldata offset after processing
+     * @custom:calldata-offset-table
      * | Offset | Length (bytes) | Description                     |
      * |--------|----------------|---------------------------------|
      * | 0      | 16             | amount                          |
@@ -172,7 +182,12 @@ abstract contract SiloV2Lending is ERC20Selectors, Masks {
     bytes32 private constant DEPOSIT = 0x6e553f6500000000000000000000000000000000000000000000000000000000;
     bytes32 private constant DEPOSIT_WITH_COLLATERAL_TYPE = 0xb7ec8d4b00000000000000000000000000000000000000000000000000000000;
 
-    /*
+    /**
+     * @notice Deposits to Silo V2 lending pool
+     * @dev Zero amount uses contract balance
+     * @param currentOffset Current position in the calldata
+     * @return Updated calldata offset after processing
+     * @custom:calldata-offset-table
      * | Offset | Length (bytes) | Description                     |
      * |--------|----------------|---------------------------------|
      * | 0      | 20             | underlying                      |
@@ -180,7 +195,6 @@ abstract contract SiloV2Lending is ERC20Selectors, Masks {
      * | 36     | 20             | receiver                        |
      * | 56     | 20             | silo                            |
      */
-    /// @notice deposit to Silo
     function _depositToSiloV2(uint256 currentOffset) internal returns (uint256) {
         assembly {
             let underlying := shr(96, calldataload(currentOffset))
@@ -245,7 +259,13 @@ abstract contract SiloV2Lending is ERC20Selectors, Masks {
 
     bytes32 private constant MAX_REPAY = 0x5f30114900000000000000000000000000000000000000000000000000000000;
     bytes32 private constant REPAY = 0xacb7081500000000000000000000000000000000000000000000000000000000;
-    /*
+
+    /**
+     * @notice Repays debt to Silo V2 lending pool
+     * @dev Zero amount uses contract balance. Max amount (0xffffffffffffffffffffffffffff) repays minimum of contract balance and user debt.
+     * @param currentOffset Current position in the calldata
+     * @return Updated calldata offset after processing
+     * @custom:calldata-offset-table
      * | Offset | Length (bytes) | Description                     |
      * |--------|----------------|---------------------------------|
      * | 0      | 20             | underlying                      |
@@ -253,7 +273,6 @@ abstract contract SiloV2Lending is ERC20Selectors, Masks {
      * | 36     | 20             | receiver                        |
      * | 56     | 20             | silo                            |
      */
-
     function _repayToSiloV2(uint256 currentOffset) internal returns (uint256) {
         assembly {
             function _balanceOf(t, u) -> b {

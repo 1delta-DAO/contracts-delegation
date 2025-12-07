@@ -9,7 +9,7 @@ contract StargateV2 is BaseUtils {
      * @dev Decodes calldata and forwards the call to the appropriate Stargate adapter function
      * @param currentOffset Current position in the calldata
      * @return Updated calldata offset after processing
-     *
+     * @custom:calldata-offset-table
      * | Offset       | Length (bytes) | Description                  |
      * |--------------|----------------|------------------------------|
      * | 0            | 20             | tokenAddress                 |

@@ -11,7 +11,13 @@ import {Masks} from "../../shared/masks/Masks.sol";
  * @notice Lending base contract that wraps multiple Aave lender types (V2, V3, non-ir mode based).
  */
 abstract contract AaveLending is ERC20Selectors, Masks {
-    /*
+    /**
+     * @notice Withdraws from Aave lending pool
+     * @dev Transfers collateral tokens from caller and withdraws underlying
+     * @param currentOffset Current position in the calldata
+     * @param callerAddress Address of the caller
+     * @return Updated calldata offset after processing
+     * @custom:calldata-offset-table
      * | Offset | Length (bytes) | Description                     |
      * |--------|----------------|---------------------------------|
      * | 0      | 20             | underlying                      |
@@ -20,7 +26,6 @@ abstract contract AaveLending is ERC20Selectors, Masks {
      * | 56     | 20             | aToken                          |
      * | 76     | 20             | pool                            |
      */
-    /// @notice Withdraw from lender lastgiven user address and lender Id
     function _withdrawFromAave(uint256 currentOffset, address callerAddress) internal returns (uint256) {
         assembly {
             let ptr := mload(0x40)
@@ -100,14 +105,20 @@ abstract contract AaveLending is ERC20Selectors, Masks {
         return currentOffset;
     }
 
-    /*
+    /**
+     * @notice Borrows from Aave lending pool
+     * @dev Supports both IR mode and non-IR mode borrowing
+     * @param currentOffset Current position in the calldata
+     * @param callerAddress Address of the caller
+     * @return Updated calldata offset after processing
+     * @custom:calldata-offset-table
      * | Offset | Length (bytes) | Description                     |
      * |--------|----------------|---------------------------------|
      * | 0      | 20             | underlying                      |
      * | 20     | 16             | amount                          |
      * | 36     | 20             | receiver                        |
-     * | 76     | 1              | mode                            |
-     * | 77     | 20             | pool                            |
+     * | 56     | 1              | mode                            |
+     * | 57     | 20             | pool                            |
      */
     function _borrowFromAave(uint256 currentOffset, address callerAddress) internal returns (uint256) {
         assembly {
@@ -191,15 +202,19 @@ abstract contract AaveLending is ERC20Selectors, Masks {
         return currentOffset;
     }
 
-    /*
+    /**
+     * @notice Deposits to Aave V3 lending pool
+     * @dev Zero amount uses contract balance
+     * @param currentOffset Current position in the calldata
+     * @return Updated calldata offset after processing
+     * @custom:calldata-offset-table
      * | Offset | Length (bytes) | Description                     |
      * |--------|----------------|---------------------------------|
      * | 0      | 20             | underlying                      |
      * | 20     | 16             | amount                          |
      * | 36     | 20             | receiver                        |
-     * | 76     | 20             | pool                            |
+     * | 56     | 20             | pool                            |
      */
-    /// @notice Withdraw from lender lastgiven user address and lender Id
     function _depositToAaveV3(uint256 currentOffset) internal returns (uint256) {
         assembly {
             let underlying := shr(96, calldataload(currentOffset))
@@ -242,7 +257,12 @@ abstract contract AaveLending is ERC20Selectors, Masks {
         return currentOffset;
     }
 
-    /*
+    /**
+     * @notice Deposits to Aave V2 lending pool
+     * @dev Zero amount uses contract balance
+     * @param currentOffset Current position in the calldata
+     * @return Updated calldata offset after processing
+     * @custom:calldata-offset-table
      * | Offset | Length (bytes) | Description                     |
      * |--------|----------------|---------------------------------|
      * | 0      | 20             | underlying                      |
@@ -250,7 +270,6 @@ abstract contract AaveLending is ERC20Selectors, Masks {
      * | 36     | 20             | receiver                        |
      * | 56     | 20             | pool                            |
      */
-    /// @notice Withdraw from lender lastgiven user address and lender Id
     function _depositToAaveV2(uint256 currentOffset) internal returns (uint256) {
         assembly {
             let underlying := shr(96, calldataload(currentOffset))
@@ -301,15 +320,21 @@ abstract contract AaveLending is ERC20Selectors, Masks {
         return currentOffset;
     }
 
-    /*
+    /**
+     * @notice Repays debt to Aave lending pool
+     * @dev Supports both IR mode and non-IR mode. Zero amount uses contract balance.
+     * Max amount (0xffffffffffffffffffffffffffff) repays minimum of contract balance and user debt.
+     * @param currentOffset Current position in the calldata
+     * @return Updated calldata offset after processing
+     * @custom:calldata-offset-table
      * | Offset | Length (bytes) | Description                     |
      * |--------|----------------|---------------------------------|
      * | 0      | 20             | underlying                      |
      * | 20     | 16             | amount                          |
      * | 36     | 20             | receiver                        |
-     * | 76     | 1              | mode                            |
-     * | 77     | 20             | debtToken                       |
-     * | 97     | 20             | pool                            |
+     * | 56     | 1              | mode                            |
+     * | 57     | 20             | debtToken                       |
+     * | 77     | 20             | pool                            |
      */
     function _repayToAave(uint256 currentOffset) internal returns (uint256) {
         assembly {

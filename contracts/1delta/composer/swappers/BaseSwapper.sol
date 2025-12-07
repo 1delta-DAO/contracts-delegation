@@ -122,20 +122,29 @@ abstract contract BaseSwapper is
     }
 
     /**
-     * Ensure that all paths end with the same CCY
-     * parallel swaps a->...->b; a->...->b for different dexs
+     * @notice Ensures that all paths end with the same currency
+     * @dev Parallel swaps a->...->b; a->...->b for different DEXs
+     * @param amountIn Input amount
+     * @param splitsMaxIndex Maximum split index
+     * @param tokenIn Input token address
+     * @param callerAddress Address of the caller
+     * @param currentOffset Current position in the calldata
+     * @return Updated amount after swaps
+     * @return Updated calldata offset after processing
+     * @return nextToken Next token address
+     * @custom:calldata-offset-table
      * | Offset | Length (bytes) | Description          |
      * |--------|----------------|----------------------|
      * | 0      | 0-16           | splits               |
      * | sC     | Variable       | datas                |
      *
-     * `splits` looks like follows
+     * @custom:split-format
      * | Offset | Length (bytes) | Description          |
      * |--------|----------------|----------------------|
      * | 0      | 1              | count                |
      * | 1      | 2*count - 1    | splits               | <- count = 0 means there is no data, otherwise uint16 splits
      *
-     * `datas` looks like follows
+     * @custom:datas-format 
      * | Offset | Length (bytes) | Description          |
      * |--------|----------------|----------------------|
      * | 0      | 2              | (r,c)                | <- indicates whether the swap is non-simple (further splits or hops)
@@ -145,8 +154,6 @@ abstract contract BaseSwapper is
      * | 4+v    | 1              | dexId                |
      * | ...    | variable       | params               | <- depends on dexId (fixed for each one)
      * | ...    | ...            | ...                  | <- count + 1 times of repeating this pattern
-     *
-     * returns cumulative output, updated offset and nextToken address
      */
     function _singleSwapOrSplit(
         uint256 amountIn,
@@ -227,20 +234,23 @@ abstract contract BaseSwapper is
         return (amountIn, currentOffset, nextToken);
     }
 
-    /*
-     * execute swap or split amounts
+    /**
+     * @notice Executes swap or split amounts
+     * @dev If r=0: if c=0 then single swap, else split swap. If r!=0: multihop swap.
+     * Always returns output amount, updated offset and nextToken address.
+     * @param amountIn Input amount
+     * @param tokenIn Input token address
+     * @param callerAddress Address of the caller
+     * @param currentOffset Current position in the calldata
+     * @return received Output amount
+     * @return Updated calldata offset after processing
+     * @return nextToken Next token address
+     * @custom:calldata-offset-table
      * | Offset | Length (bytes) | Description          |
      * |--------|----------------|----------------------|
      * | 0      | 2              | (r,c)                |
      * | 2      | 20             | nextToken            |
      * | 22     | any            | swapData             |
-     *
-     * if r=0
-     *      if c=0 : single swap
-     *      else: split swap
-     * else: multihop swap
-     *
-     * always return output amount, updated offset and nextToken address
      */
     function _singleSwapSplitOrRoute(
         uint256 amountIn,

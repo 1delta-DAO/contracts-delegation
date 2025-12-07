@@ -28,7 +28,19 @@ abstract contract V2TypeGeneric is ERC20Selectors, Masks {
     /// @notice deterministically deployed pemrit2 address
     address private constant PERMIT2 = 0x000000000022D473030F116dDEE9F6B43aC78BA3;
 
-    /*
+    /**
+     * @notice Swaps exact input on Uniswap V2 type pools
+     * @dev Supports Uni V2, Solidly, FoT, exactIn.
+     * Pay mode: 0 = pay from self; 1 = caller pays; 3 = pre-funded.
+     * @param amountIn Input amount
+     * @param tokenIn Input token address
+     * @param tokenOut Output token address
+     * @param receiver Receiver address
+     * @param currentOffset Current position in the calldata
+     * @param callerAddress Address of the caller
+     * @return buyAmount Output amount
+     * @return clLength Updated calldata offset after processing
+     * @custom:calldata-offset-table
      * | Offset | Length (bytes) | Description          |
      * |--------|----------------|----------------------|
      * | 0      | 20             | pool                 |

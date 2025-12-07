@@ -137,11 +137,19 @@ abstract contract CurveSwapper is ERC20Selectors, Masks {
     }
 
     /**
-     * Swaps using a standard curve pool
-     * Data is supposed to be packed as follows
-     * tokenIn | actionId | dexId | pool | i | j | sm | tokenOut
-     * sm is the selector,
-     * i,j are the swap indexes for the pool
+     * @notice Swaps using a standard curve pool
+     * @dev Data is supposed to be packed as follows: tokenIn | actionId | dexId | pool | i | j | sm | tokenOut.
+     * sm is the selector, i,j are the swap indexes for the pool.
+     * Pay mode: 0 = pay from self; 1 = caller pays; 3 = pre-funded.
+     * @param tokenIn Input token address
+     * @param tokenOut Output token address
+     * @param amountIn Input amount
+     * @param receiver Receiver address
+     * @param callerAddress Address of the caller
+     * @param currentOffset Current position in the calldata
+     * @return amountOut Output amount
+     * @return curveData Updated calldata offset after processing
+     * @custom:calldata-offset-table
      * | Offset | Length (bytes) | Description          |
      * |--------|----------------|----------------------|
      * | 0      | 20             | pool                 |
@@ -309,11 +317,19 @@ abstract contract CurveSwapper is ERC20Selectors, Masks {
     }
 
     /**
-     * Swaps using a standard curve pool
-     * Data is supposed to be packed as follows
-     * tokenIn | actionId | dexId | pool | i | j | sm | tokenOut
-     * sm is the selector,
-     * i,j are the swap indexes for the pool
+     * @notice Swaps using a standard curve fork pool
+     * @dev Data is supposed to be packed as follows: tokenIn | actionId | dexId | pool | i | j | sm | tokenOut.
+     * sm is the selector, i,j are the swap indexes for the pool.
+     * Pay mode: 0 = pay from self; 1 = caller pays; 3 = pre-funded.
+     * @param tokenIn Input token address
+     * @param tokenOut Output token address
+     * @param amountIn Input amount
+     * @param receiver Receiver address
+     * @param callerAddress Address of the caller
+     * @param currentOffset Current position in the calldata
+     * @return amountOut Output amount
+     * @return curveData Updated calldata offset after processing
+     * @custom:calldata-offset-table
      * | Offset | Length (bytes) | Description          |
      * |--------|----------------|----------------------|
      * | 0      | 20             | pool                 |
@@ -455,11 +471,18 @@ abstract contract CurveSwapper is ERC20Selectors, Masks {
     }
 
     /**
-     * Swaps using a NG pool that allows for pre-funded swaps
-     * Data is supposed to be packed as follows
-     * tokenIn | actionId | dexId | pool | sm | i | j | tokenOut
-     * sm is the selector,
-     * i,j are the swap indexes for the pool
+     * @notice Swaps using a NG pool that allows for pre-funded swaps
+     * @dev Data is supposed to be packed as follows: tokenIn | actionId | dexId | pool | sm | i | j | tokenOut.
+     * sm is the selector, i,j are the swap indexes for the pool.
+     * Pay mode: 0 = pay from self; 1 = caller pays; 3 = pre-funded.
+     * @param tokenIn Input token address
+     * @param amountIn Input amount
+     * @param receiver Receiver address
+     * @param callerAddress Address of the caller
+     * @param currentOffset Current position in the calldata
+     * @return payFlagAmountOut Output amount (with pay flag)
+     * @return curveData Updated calldata offset after processing
+     * @custom:calldata-offset-table
      * | Offset | Length (bytes) | Description          |
      * |--------|----------------|----------------------|
      * | 0      | 20             | pool                 |

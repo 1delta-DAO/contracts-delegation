@@ -20,7 +20,12 @@ import {DeltaErrors} from "contracts/1delta/shared/errors/Errors.sol";
  */
 abstract contract UniversalLending is AaveLending, CompoundV3Lending, CompoundV2Lending, MorphoLending, SiloV2Lending, DeltaErrors {
     /**
-     * execute ANY lending operation across various lenders
+     * @notice Executes any lending operation across various lenders
+     * @dev Routes to appropriate lender based on operation and lender ID
+     * @param callerAddress Address of the caller
+     * @param currentOffset Current position in the calldata
+     * @return Updated calldata offset after processing
+     * @custom:calldata-offset-table
      * | Offset | Length (bytes) | Description                     |
      * |--------|----------------|---------------------------------|
      * | 0      | 1              | lendingOperation                |

@@ -13,6 +13,17 @@ import {SharedSingletonActions} from "./Shared.sol";
  * @notice Everything Uniswap V4 & Balancer V3, the major upgrades for DEXs in 2025
  */
 abstract contract Gen2025DexActions is UniswapV4SingletonActions, BalancerV3VaultActions, SharedSingletonActions {
+    /**
+     * @notice Routes to appropriate Uniswap V4 or Balancer V3 DEX action based on operation ID
+     * @dev Supports Uniswap V4 and Balancer V3 operations
+     * @param currentOffset Current position in the calldata
+     * @param callerAddress Address of the caller
+     * @return Updated calldata offset after processing
+     * @custom:calldata-offset-table
+     * | Offset | Length (bytes) | Description      |
+     * |--------|----------------|------------------|
+     * | 0      | 1              | transferOperation|
+     */
     function _gen2025DexActions(uint256 currentOffset, address callerAddress) internal returns (uint256) {
         uint256 transferOperation;
         assembly {

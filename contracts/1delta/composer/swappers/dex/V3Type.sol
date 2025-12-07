@@ -12,7 +12,17 @@ import {Masks} from "../../../shared/masks/Masks.sol";
 abstract contract V3TypeGeneric is Masks {
     constructor() {}
 
-    /*
+    /**
+     * @notice Swaps exact input on Uniswap V3 type pools
+     * @param fromAmount Input amount
+     * @param tokenIn Input token address
+     * @param tokenOut Output token address
+     * @param receiver Receiver address
+     * @param currentOffset Current position in the calldata
+     * @param callerAddress Address of the caller
+     * @return receivedAmount Output amount
+     * @return Updated calldata offset after processing
+     * @custom:calldata-offset-table
      * | Offset | Length (bytes) | Description          |
      * |--------|----------------|----------------------|
      * | 0      | 20             | pool                 |

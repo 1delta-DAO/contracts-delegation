@@ -23,7 +23,15 @@ contract UniversalFlashLoan is
     FlashLoanCallbacks //
 {
     /**
-     * All flash ones in one function -what do you need more?
+     * @notice Routes to appropriate flash loan provider
+     * @dev All flash loans in one function
+     * @param currentOffset Current position in the calldata
+     * @param callerAddress Address of the caller
+     * @return Updated calldata offset after processing
+     * @custom:calldata-offset-table
+     * | Offset | Length (bytes) | Description                     |
+     * |--------|----------------|---------------------------------|
+     * | 0      | 1              | flashLoanType                   |
      */
     function _universalFlashLoan(uint256 currentOffset, address callerAddress) internal virtual returns (uint256) {
         uint256 flashLoanType; // architecture type

@@ -35,7 +35,18 @@ abstract contract BalancerV3Swapper is ERC20Selectors, Masks {
 
     constructor() {}
 
-    /*
+    /**
+     * @notice Swaps exact input on Balancer V3 pools
+     * @dev Can only be executed within `manager.unlock()`. Can unlock arbitrary times.
+     * @param fromAmount Input amount
+     * @param tokenIn Input token address
+     * @param tokenOut Output token address
+     * @param receiver Receiver address
+     * @param currentOffset Current position in the calldata
+     * @param callerAddress Address of the caller
+     * @return receivedAmount Output amount
+     * @return tempVar Updated calldata offset after processing
+     * @custom:calldata-offset-table
      * | Offset | Length (bytes) | Description          |
      * |--------|----------------|----------------------|
      * | 0      | 20             | pool                 |

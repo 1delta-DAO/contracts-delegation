@@ -13,7 +13,16 @@ abstract contract SyncSwapper is ERC20Selectors, Masks {
     bytes32 internal constant SYNCSWAP_SELECTOR = 0x7132bb7f00000000000000000000000000000000000000000000000000000000;
 
     /**
-     * Swaps exact input on SyncSwap
+     * @notice Swaps exact input on SyncSwap
+     * @dev Pre-funded, all pool variations. Pay flag: 0 = caller pays; 1 = contract pays; greater = pre-funded.
+     * @param fromAmount Input amount
+     * @param tokenIn Input token address
+     * @param receiver Receiver address
+     * @param callerAddress Address of the caller
+     * @param currentOffset Current position in the calldata
+     * @return buyAmount Output amount
+     * @return payFlag Updated calldata offset after processing
+     * @custom:calldata-offset-table
      * | Offset | Length (bytes) | Description          |
      * |--------|----------------|----------------------|
      * | 0      | 20             | pool                 |

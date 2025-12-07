@@ -212,20 +212,28 @@ contract QuoterLight is
     }
 
     /**
-     * Ensure that all paths end with the same CCY
-     * parallel swaps a->...->b; a->...->b for different dexs
+     * @notice Ensures that all paths end with the same currency
+     * @dev Parallel swaps a->...->b; a->...->b for different DEXs
+     * @param amountIn Input amount
+     * @param splitsMaxIndex Maximum split index
+     * @param tokenIn Input token address
+     * @param currentOffset Current position in the calldata
+     * @return Updated amount after quotes
+     * @return Updated calldata offset after processing
+     * @return nextToken Next token address
+     * @custom:calldata-offset-table
      * | Offset | Length (bytes) | Description          |
      * |--------|----------------|----------------------|
      * | 0      | 0-16           | splits               |
      * | sC     | Variable       | datas                |
      *
-     * `splits` looks like follows
+     * @custom:split-format
      * | Offset | Length (bytes) | Description          |
      * |--------|----------------|----------------------|
      * | 0      | 1              | count                |
      * | 1      | 2*count - 1    | splits               | <- count = 0 means there is no data, otherwise uint16 splits
      *
-     * `datas` looks like follows
+     * @custom:datas-format
      * | Offset | Length (bytes) | Description          |
      * |--------|----------------|----------------------|
      * | 0      | 2              | (r,c)                | <- indicates whether the swap is non-simple (further splits or hops)
@@ -235,8 +243,6 @@ contract QuoterLight is
      * | 4+v    | 1              | dexId                |
      * | ...    | variable       | params               | <- depends on dexId (fixed for each one)
      * | ...    | ...            | ...                  | <- count + 1 times of repeating this pattern
-     *
-     * returns cumulative output, updated offset and nextToken address
      */
     function _quoteSingleSwapOrSplit(
         uint256 amountIn,
