@@ -6,7 +6,15 @@ import {DexTypeMappings} from "../../swappers/dex/DexTypeMappings.sol";
 import {QuoterUtils} from "./utils/QuoterUtils.sol";
 
 abstract contract V3TypeQuoter is QuoterUtils, Masks {
-    /*
+    /**
+     * @notice Calculates amountOut for Uniswap V3 style pools
+     * @param amountIn Input amount
+     * @param tokenIn Input token address
+     * @param tokenOut Output token address
+     * @param currentOffset Current position in the calldata
+     * @return amountOut Output amount
+     * @return newOffset Updated calldata offset after processing
+     * @custom:calldata-offset-table
      * | Offset | Length (bytes) | Description          |
      * |--------|----------------|----------------------|
      * | 0      | 20             | pool                 |
@@ -57,6 +65,23 @@ abstract contract V3TypeQuoter is QuoterUtils, Masks {
         revert("Swap did not revert");
     }
 
+    /**
+     * @notice Calculates amountOut for Izumi pools
+     * @param amountIn Input amount
+     * @param tokenIn Input token address
+     * @param tokenOut Output token address
+     * @param currentOffset Current position in the calldata
+     * @return amountOut Output amount
+     * @return newOffset Updated calldata offset after processing
+     * @custom:calldata-offset-table
+     * | Offset | Length (bytes) | Description          |
+     * |--------|----------------|----------------------|
+     * | 0      | 20             | pool                 |
+     * | 20     | 1              | forkId               |
+     * | 21     | 2              | fee                  |
+     * | 23     | 2              | calldataLength       |
+     * | 25     | calldataLength | calldata             |
+     */
     function _getIzumiAmountOut(
         uint256 amountIn,
         address tokenIn,

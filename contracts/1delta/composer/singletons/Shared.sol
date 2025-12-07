@@ -15,16 +15,19 @@ abstract contract SharedSingletonActions is Masks {
     bytes32 private constant CB_SELECTOR = 0x480cf7ef00000000000000000000000000000000000000000000000000000000;
 
     /**
-     * Here we need to add a selector deterministically as this function is Identical for B3 and U4
+     * @notice Unlocks tokens for Uniswap V4 or Balancer V3
+     * @dev Here we need to add a selector deterministically as this function is Identical for Balancer V3 and Uniswap V4
+     * @param currentOffset Current position in the calldata
+     * @param callerAddress Address of the caller
+     * @return Updated calldata offset after processing
+     * @custom:calldata-offset-table
+     * | Offset | Length (bytes) | Description     |
+     * |--------|----------------|-----------------|
+     * | 0      | 20             | manager         |
+     * | 20     | 2              | length          |
+     * | 22     | length         | data            |
      */
     function _singletonUnlock(uint256 currentOffset, address callerAddress) internal returns (uint256) {
-        /*
-         * | Offset | Length (bytes) | Description     |
-         * |--------|----------------|-----------------|
-         * | 0      | 20             | manager         |
-         * | 20     | 2              | length          |
-         * | 22     | length         | data            |
-         */
         assembly {
             let manager := calldataload(currentOffset)
             let dataLength := and(UINT16_MASK, shr(80, manager))

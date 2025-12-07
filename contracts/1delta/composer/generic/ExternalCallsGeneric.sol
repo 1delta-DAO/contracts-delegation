@@ -16,15 +16,20 @@ abstract contract ExternalCallsGeneric is BaseUtils {
     // Forbidden()
     bytes4 private constant FORBIDDEN = 0xee90c468;
 
+    /**
+     * @notice Executes an external call on any target
+     * @dev Prevents `transferFrom` selector and calls on Permit2
+     * @param currentOffset Current position in the calldata
+     * @return Updated calldata offset after processing
+     * @custom:calldata-offset-table
+     * | Offset | Length (bytes) | Description          |
+     * |--------|----------------|----------------------|
+     * | 0      | 20             | target               |
+     * | 20     | 16             | nativeValue          |
+     * | 36     | 2              | calldataLength:  cl  |
+     * | 38     | cl             | calldata             |
+     */
     function _callExternal(uint256 currentOffset) internal returns (uint256) {
-        /*
-         * | Offset | Length (bytes) | Description          |
-         * |--------|----------------|----------------------|
-         * | 0      | 20             | target               |
-         * | 20     | 16             | nativeValue          |
-         * | 36     | 2              | calldataLength:  cl  |
-         * | 38     | cl             | calldata             |
-         */
         assembly {
             // get first three addresses
             let target := shr(96, calldataload(currentOffset))
@@ -80,18 +85,24 @@ abstract contract ExternalCallsGeneric is BaseUtils {
         return currentOffset;
     }
 
+    /**
+     * @notice Executes an external call with error handling
+     * @dev Prevents `transferFrom` selector and calls on Permit2. Supports catch blocks for error handling.
+     * @param currentOffset Current position in the calldata
+     * @param callerAddress Address of the caller
+     * @return Updated calldata offset after processing
+     * @custom:calldata-offset-table
+     * | Offset | Length (bytes) | Description          |
+     * |--------|----------------|----------------------|
+     * | 0      | 20             | target               |
+     * | 20     | 16             | nativeValue          |
+     * | 36     | 2              | calldataLength:  cl  |
+     * | 38     | cl             | calldata             |
+     * | 38+cl  | 1              | catchHandling        | <- 0: revert; 1: exit in catch if revert; else continue after catch
+     * | 39+cl  | 2              | catchDataLength: dl  |
+     * | 41+cl  | dl             | catchData            |
+     */
     function _tryCallExternal(uint256 currentOffset, address callerAddress) internal returns (uint256) {
-        /*
-         * | Offset | Length (bytes) | Description          |
-         * |--------|----------------|----------------------|
-         * | 0      | 20             | target               |
-         * | 20     | 16             | nativeValue          |
-         * | 36     | 2              | calldataLength:  cl  |
-         * | 38     | cl             | calldata             |
-         * | 38+cl  | 1              | catchHandling        | <- 0: revert; 1: exit in catch if revert; else continue after catch
-         * | 39+cl  | 2              | catchDataLength: dl  |
-         * | 41+cl  | dl             | catchData            |
-         */
         bool success;
         uint256 catchHandling;
         uint256 catchCalldataLength;
@@ -182,7 +193,12 @@ abstract contract ExternalCallsGeneric is BaseUtils {
         return currentOffset;
     }
 
-    /*
+    /**
+     * @notice Executes an external call with token amount replacement
+     * @dev Prevents `transferFrom` selector and calls on Permit2. Can replace token amounts in calldata.
+     * @param currentOffset Current position in the calldata
+     * @return Updated calldata offset after processing
+     * @custom:calldata-offset-table
      * | Offset | Length (bytes) | Description                                |
      * |--------|----------------|--------------------------------------------|
      * | 0      | 20             | target                                     |
@@ -256,7 +272,13 @@ abstract contract ExternalCallsGeneric is BaseUtils {
         return currentOffset;
     }
 
-    /*
+    /**
+     * @notice Executes an external call with token amount replacement and error handling
+     * @dev Prevents `transferFrom` selector and calls on Permit2. Can replace token amounts in calldata. Supports catch blocks.
+     * @param currentOffset Current position in the calldata
+     * @param callerAddress Address of the caller
+     * @return Updated calldata offset after processing
+     * @custom:calldata-offset-table
      * | Offset | Length (bytes) | Description                                |
      * |--------|----------------|--------------------------------------------|
      * | 0      | 20             | target                                     |

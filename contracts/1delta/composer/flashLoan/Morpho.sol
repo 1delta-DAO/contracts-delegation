@@ -9,7 +9,13 @@ import {Masks} from "../../shared/masks/Masks.sol";
  * @author 1delta Labs AG
  */
 contract MorphoFlashLoans is Masks {
-    /*
+    /**
+     * @notice Executes Morpho flash loan
+     * @dev We allow ANY morpho style pool here
+     * @param currentOffset Current position in the calldata
+     * @param callerAddress Address of the caller
+     * @return Updated calldata offset after processing
+     * @custom:calldata-offset-table
      * | Offset | Length (bytes) | Description                     |
      * |--------|----------------|---------------------------------|
      * | 0      | 20             | asset                           |

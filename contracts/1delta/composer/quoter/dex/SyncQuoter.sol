@@ -5,6 +5,19 @@ pragma solidity ^0.8.28;
 // solhint-disable max-line-length
 
 abstract contract SyncQuoter {
+    /**
+     * @notice Quotes amountOut for SyncSwap swaps
+     * @param tokenIn Input token address
+     * @param amountIn Input amount
+     * @param currentOffset Current position in the calldata
+     * @return amountOut Output amount
+     * @return Updated calldata offset after processing
+     * @custom:calldata-offset-table
+     * | Offset | Length (bytes) | Description          |
+     * |--------|----------------|----------------------|
+     * | 0      | 20             | pool                 |
+     * | 20     | 1              | padding              |
+     */
     function _quoteSyncSwapExactIn(address tokenIn, uint256 amountIn, uint256 currentOffset) internal view returns (uint256 amountOut, uint256) {
         assembly {
             let syncSwapData := calldataload(currentOffset)

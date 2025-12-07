@@ -17,7 +17,13 @@ contract AssetTransfers is BaseUtils {
     /// @notice deterministically deployed pemrit2 address
     address private constant PERMIT2 = 0x000000000022D473030F116dDEE9F6B43aC78BA3;
 
-    /*
+    /**
+     * @notice Transfers tokens from caller to this address using Permit2
+     * @dev Zero amount flags that the entire balance is sent
+     * @param currentOffset Current position in the calldata
+     * @param callerAddress Address of the caller
+     * @return Updated calldata offset after processing
+     * @custom:calldata-offset-table
      * | Offset | Length (bytes) | Description         |
      * |--------|----------------|---------------------|
      * | 0      | 20             | asset               |
@@ -25,10 +31,6 @@ contract AssetTransfers is BaseUtils {
      * | 40     | 16             | amount              |
      */
     function _permit2TransferFrom(uint256 currentOffset, address callerAddress) internal returns (uint256) {
-        ////////////////////////////////////////////////////
-        // Transfers tokens from caller to this address
-        // zero amount flags that the entire balance is sent
-        ////////////////////////////////////////////////////
         assembly {
             let underlying := shr(96, calldataload(currentOffset))
             let receiver := shr(96, calldataload(add(currentOffset, 20)))
@@ -70,7 +72,13 @@ contract AssetTransfers is BaseUtils {
         return currentOffset;
     }
 
-    /*
+    /**
+     * @notice Transfers tokens from caller to this address
+     * @dev Zero amount flags that the entire balance is sent
+     * @param currentOffset Current position in the calldata
+     * @param callerAddress Address of the caller
+     * @return Updated calldata offset after processing
+     * @custom:calldata-offset-table
      * | Offset | Length (bytes) | Description         |
      * |--------|----------------|---------------------|
      * | 0      | 20             | asset               |
@@ -78,10 +86,6 @@ contract AssetTransfers is BaseUtils {
      * | 40     | 16             | amount              |
      */
     function _transferFrom(uint256 currentOffset, address callerAddress) internal returns (uint256) {
-        ////////////////////////////////////////////////////
-        // Transfers tokens from caller to this address
-        // zero amount flags that the entire balance is sent
-        ////////////////////////////////////////////////////
         assembly {
             let underlying := shr(96, calldataload(currentOffset))
             let receiver := shr(96, calldataload(add(currentOffset, 20)))
@@ -140,7 +144,16 @@ contract AssetTransfers is BaseUtils {
         return currentOffset;
     }
 
-    /*
+    /**
+     * @notice Transfers either token or native balance from this contract to receiver
+     * @dev Reverts if minAmount is less than the contract balance.
+     * Config: 0 = sweep balance and validate against amount (fetches balance and checks balance >= amount),
+     * 1 = transfer amount to receiver, skip validation.
+     * Use wrapped native address as receiver to wrap native tokens.
+     * amount:=0 and config:=0 means to sweep the entire balance
+     * @param currentOffset Current position in the calldata
+     * @return Updated calldata offset after processing
+     * @custom:calldata-offset-table
      * | Offset | Length (bytes) | Description         |
      * |--------|----------------|---------------------|
      * | 0      | 20             | asset               |
@@ -149,15 +162,6 @@ contract AssetTransfers is BaseUtils {
      * | 41     | 16             | amount              |
      */
     function _sweep(uint256 currentOffset) internal returns (uint256) {
-        ////////////////////////////////////////////////////
-        // Transfers either token or native balance from this
-        // contract to receiver. Reverts if minAmount is
-        // less than the contract balance
-        //  config
-        //  0: sweep balance and validate against amount
-        //     fetches the balance and checks balance >= amount
-        //  1: transfer amount to receiver, skip validation
-        ////////////////////////////////////////////////////
         assembly {
             let underlying := shr(96, calldataload(currentOffset))
             // we skip shr by loading the address to the lower bytes
@@ -273,7 +277,14 @@ contract AssetTransfers is BaseUtils {
         return currentOffset;
     }
 
-    /*
+    /**
+     * @notice Approves a token for a target address
+     * @dev Skips approval if already approved to save gas. Uses a storage mapping to track approvals:
+     *      `keccak256(target, keccak256(token, CALL_MANAGEMENT_APPROVALS))` -> boolean (1 if approved, 0 if not).
+     *      If the mapping value is 0, the function approves MAX_UINT256 to the target and sets the mapping to 1.
+     * @param currentOffset Current position in the calldata
+     * @return Updated calldata offset after processing
+     * @custom:calldata-offset-table
      * | Offset | Length (bytes) | Description          |
      * |--------|----------------|----------------------|
      * | 0      | 20             | token                |
@@ -316,7 +327,14 @@ contract AssetTransfers is BaseUtils {
         return currentOffset;
     }
 
-    /*
+    /**
+     * @notice Unwraps wrapped native tokens and transfers to receiver
+     * @dev Reverts if minAmount is less than the contract balance.
+     * Config: 0 = sweep balance and validate against amount (fetches balance and checks balance >= amount),
+     * 1 = transfer amount to receiver, skip validation.
+     * @param currentOffset Current position in the calldata
+     * @return Updated calldata offset after processing
+     * @custom:calldata-offset-table
      * | Offset | Length (bytes) | Description         |
      * |--------|----------------|---------------------|
      * | 0      | 20             | wrappedNativeAddress|
@@ -325,15 +343,6 @@ contract AssetTransfers is BaseUtils {
      * | 41     | 16             | amount              |
      */
     function _unwrap(uint256 currentOffset) internal virtual returns (uint256) {
-        ////////////////////////////////////////////////////
-        // Transfers either token or native balance from this
-        // contract to receiver. Reverts if minAmount is
-        // less than the contract balance
-        //  config
-        //  0: sweep balance and validate against amount
-        //     fetches the balance and checks balance >= amount
-        //  1: transfer amount to receiver, skip validation
-        ////////////////////////////////////////////////////
         assembly {
             // load receiver
             let wrapperAsset := shr(96, calldataload(currentOffset))

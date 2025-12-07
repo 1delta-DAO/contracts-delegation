@@ -4,10 +4,19 @@ pragma solidity ^0.8.28;
 
 abstract contract GMXQuoter {
     /**
-     * Swaps exact input on GMX V1
+     * @notice Calculates amountOut for GMX V1 swaps
+     * @param _tokenIn Input token address
+     * @param _tokenOut Output token address
+     * @param amountIn Input amount
+     * @param receiverIsReader Reader address for oracle queries
+     * @param currentOffset Current position in the calldata
+     * @return amountOut Output amount
+     * @return Updated calldata offset after processing
+     * @custom:calldata-offset-table
      * | Offset | Length (bytes) | Description          |
      * |--------|----------------|----------------------|
      * | 0      | 20             | pool                 |
+     * | 20     | 1              | not used in quoter   |
      */
     function _getGMXAmountOut(
         address _tokenIn,

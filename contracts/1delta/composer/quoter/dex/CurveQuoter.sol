@@ -11,6 +11,21 @@ abstract contract CurveQuoter is Masks {
 
     bytes32 internal constant CURVE_GET_DY_128 = 0x5e0d443f00000000000000000000000000000000000000000000000000000000;
 
+    /**
+     * @notice Calculates amountOut for Curve pools
+     * @param amountIn Input amount
+     * @param currentOffset Current position in the calldata
+     * @return amountOut Output amount
+     * @return Updated calldata offset after processing
+     * @custom:calldata-offset-table
+     * | Offset | Length (bytes) | Description          |
+     * |--------|----------------|----------------------|
+     * | 0      | 20             | pool                 |
+     * | 20     | 1              | indexIn              |
+     * | 21     | 1              | indexOut             |
+     * | 22     | 1              | selectorId            |
+     * | 23     | 2              | padding              |
+     */
     function _getCurveAmountOut(uint256 amountIn, uint256 currentOffset) internal view returns (uint256 amountOut, uint256) {
         address pool;
         uint256 indexIn;

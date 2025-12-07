@@ -10,7 +10,16 @@ import {Masks} from "../../../shared/masks/Masks.sol";
  */
 abstract contract LBSwapper is ERC20Selectors, Masks {
     /**
-     * Swaps exact input on LB
+     * @notice Swaps exact input on LB (Liquidity Book)
+     * @dev Pay flag: 0 = caller pays; 1 = contract pays; greater = pre-funded.
+     * @param fromAmount Input amount
+     * @param tokenIn Input token address
+     * @param receiver Receiver address
+     * @param callerAddress Address of the caller
+     * @param currentOffset Current position in the calldata
+     * @return amountOut Output amount
+     * @return payFlag Updated calldata offset after processing
+     * @custom:calldata-offset-table
      * | Offset | Length (bytes) | Description          |
      * |--------|----------------|----------------------|
      * | 0      | 20             | pool                 |

@@ -12,13 +12,19 @@ abstract contract BalancerV2FlashLoans is Slots, Masks {
     address private constant BALANCER_V2 = 0xBA12222222228d8Ba445958a75a0704d566BF2C8;
     address private constant SWAAP = 0xd315a9C38eC871068FEC378E4Ce78AF528C76293;
 
-    /*
+    /**
+     * @notice Executes Balancer V2 flash loan
+     * @dev The first param in params is the poolId
+     * @param currentOffset Current position in the calldata
+     * @param callerAddress Address of the caller
+     * @return Updated calldata offset after processing
+     * @custom:calldata-offset-table
      * | Offset | Length (bytes) | Description                     |
      * |--------|----------------|---------------------------------|
      * | 0      | 20             | asset                           |
      * | 20     | 16             | amount                          |
      * | 36     | 2              | paramsLength                    |
-     * | 38     | paramsLength   | params                          | <- the first param here is the poolId 
+     * | 38     | paramsLength   | params                          | <- the first param here is the poolId
      */
     function balancerV2FlashLoan(uint256 currentOffset, address callerAddress) internal returns (uint256) {
         assembly {

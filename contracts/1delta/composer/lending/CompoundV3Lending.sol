@@ -11,14 +11,20 @@ import {Masks} from "../../shared/masks/Masks.sol";
  * @notice Lending base contract that wraps Cmpound V3 markets
  */
 abstract contract CompoundV3Lending is ERC20Selectors, Masks {
-    /*
+    /**
+     * @notice Withdraws from Compound V3 lending pool
+     * @dev Supports both base and collateral token withdrawals
+     * @param currentOffset Current position in the calldata
+     * @param callerAddress Address of the caller
+     * @return Updated calldata offset after processing
+     * @custom:calldata-offset-table
      * | Offset | Length (bytes) | Description                     |
      * |--------|----------------|---------------------------------|
      * | 0      | 20             | underlying                      |
      * | 20     | 16             | amount                          |
      * | 36     | 20             | receiver                        |
-     * | 76     | 1              | isBase                          |
-     * | 77     | 20             | pool                            |
+     * | 56     | 1              | isBase                          |
+     * | 57     | 20             | pool                            |
      */
     function _withdrawFromCompoundV3(uint256 currentOffset, address callerAddress) internal returns (uint256) {
         assembly {
@@ -82,13 +88,18 @@ abstract contract CompoundV3Lending is ERC20Selectors, Masks {
         return currentOffset;
     }
 
-    /*
+    /**
+     * @notice Borrows from Compound V3 lending pool
+     * @param currentOffset Current position in the calldata
+     * @param callerAddress Address of the caller
+     * @return Updated calldata offset after processing
+     * @custom:calldata-offset-table
      * | Offset | Length (bytes) | Description                     |
      * |--------|----------------|---------------------------------|
      * | 0      | 20             | underlying                      |
      * | 20     | 16             | amount                          |
      * | 36     | 20             | receiver                        |
-     * | 76     | 20             | comet                           |
+     * | 56     | 20             | comet                           |
      */
     function _borrowFromCompoundV3(uint256 currentOffset, address callerAddress) internal returns (uint256) {
         assembly {
@@ -121,15 +132,19 @@ abstract contract CompoundV3Lending is ERC20Selectors, Masks {
         return currentOffset;
     }
 
-    /*
+    /**
+     * @notice Deposits to Compound V3 lending pool
+     * @dev Zero amount uses contract balance
+     * @param currentOffset Current position in the calldata
+     * @return Updated calldata offset after processing
+     * @custom:calldata-offset-table
      * | Offset | Length (bytes) | Description                     |
      * |--------|----------------|---------------------------------|
      * | 0      | 20             | underlying                      |
      * | 20     | 16             | amount                          |
      * | 36     | 20             | receiver                        |
-     * | 76     | 20             | comet                           |
+     * | 56     | 20             | comet                           |
      */
-    /// @notice Withdraw from lender lastgiven user address and lender Id
     function _depositToCompoundV3(uint256 currentOffset) internal returns (uint256) {
         assembly {
             let underlying := shr(96, calldataload(currentOffset))
@@ -170,13 +185,18 @@ abstract contract CompoundV3Lending is ERC20Selectors, Masks {
         return currentOffset;
     }
 
-    /*
+    /**
+     * @notice Repays debt to Compound V3 lending pool
+     * @dev Zero amount uses contract balance. Max amount (0xffffffffffffffffffffffffffff) repays minimum of contract balance and user debt.
+     * @param currentOffset Current position in the calldata
+     * @return Updated calldata offset after processing
+     * @custom:calldata-offset-table
      * | Offset | Length (bytes) | Description                     |
      * |--------|----------------|---------------------------------|
      * | 0      | 20             | underlying                      |
      * | 20     | 16             | amount                          |
      * | 36     | 20             | receiver                        |
-     * | 76     | 20             | comet                           |
+     * | 56     | 20             | comet                           |
      */
     function _repayToCompoundV3(uint256 currentOffset) internal returns (uint256) {
         assembly {

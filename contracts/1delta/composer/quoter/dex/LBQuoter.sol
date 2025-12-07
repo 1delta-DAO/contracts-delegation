@@ -5,6 +5,19 @@ pragma solidity ^0.8.28;
 import {Masks} from "../../../shared/masks/Masks.sol";
 
 abstract contract LBQuoter is Masks {
+    /**
+     * @notice Calculates amountOut for LB (Liquidity Book) pools
+     * @param amountIn Input amount
+     * @param currentOffset Current position in the calldata
+     * @return amountOut Output amount
+     * @return lbDataThenOffset Updated calldata offset after processing
+     * @custom:calldata-offset-table
+     * | Offset | Length (bytes) | Description          |
+     * |--------|----------------|----------------------|
+     * | 0      | 20             | pool                 |
+     * | 20     | 1              | swapForY             |
+     * | 21     | 1              | not used in quoter   |
+     */
     function _getLBAmountOut(
         uint256 amountIn,
         uint256 currentOffset //

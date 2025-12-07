@@ -81,14 +81,24 @@ abstract contract DodoV2Swapper is ERC20Selectors, Masks {
     }
 
     /**
-     * Swaps exact input on Dodo V2
+     * @notice Swaps exact input on Dodo V2
+     * @dev Pay flag: 0 = caller pays; 1 = contract pays; greater = pre-funded. pId is pool index for flash validation.
+     * @param amountIn Input amount
+     * @param tokenIn Input token address
+     * @param tokenOut Output token address
+     * @param receiver Receiver address
+     * @param callerAddress Address of the caller
+     * @param currentOffset Current position in the calldata
+     * @return amountOut Output amount
+     * @return clLength Updated calldata offset after processing
+     * @custom:calldata-offset-table
      * | Offset | Length (bytes) | Description          |
      * |--------|----------------|----------------------|
      * | 0      | 20             | pool                 |
      * | 20     | 1              | sellQuote            |
      * | 21     | 2              | pId                  | pool index for flash validation
      * | 22     | 2              | clLength / pay flag  | <- 0: caller pays; 1: contract pays; greater: pre-funded
-     * | 25     | clLength       | calldata             | calldata for fash loan
+     * | 25     | clLength       | calldata             | calldata for flash loan
      */
     function _swapDodoV2ExactIn(
         uint256 amountIn,

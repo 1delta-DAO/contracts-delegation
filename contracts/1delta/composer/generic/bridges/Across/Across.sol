@@ -9,7 +9,7 @@ contract Across is BaseUtils {
      * @dev Decodes calldata and directly executes the bridge operation using assembly
      * @param currentOffset Current position in the calldata
      * @return Updated calldata offset after processing
-     * @custom:calldata-offset
+     * @custom:calldata-offset-table
      * | Offset | Length (bytes) | Description                  |
      * |--------|----------------|------------------------------|
      * | 0      | 20             | spokePool                    |

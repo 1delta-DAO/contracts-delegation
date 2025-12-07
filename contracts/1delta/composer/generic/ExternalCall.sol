@@ -15,21 +15,22 @@ abstract contract ExternalCall is BaseUtils {
     bytes32 private constant DELTA_FORWARD_COMPOSE = 0x6a0c90ff00000000000000000000000000000000000000000000000000000000;
 
     /**
-     * This is not a real external call, this one has a pre-determined selector
-     * that prevents collision with any calls that can be made in this contract
-     * This prevents unauthorized calls that would pull funds from other users
-     *
+     * @notice Executes an external call through a call forwarder with a pre-determined selector
+     * @dev This is not a real external call, this one has a pre-determined selector
+     * that prevents collision with any calls that can be made in this contract.
+     * This prevents unauthorized calls that would pull funds from other users.
      * On top of that, this makes the contract arbitrarily extensible.
+     * @param currentOffset Current position in the calldata
+     * @return Updated calldata offset after processing
+     * @custom:calldata-offset-table
+     * | Offset | Length (bytes) | Description          |
+     * |--------|----------------|----------------------|
+     * | 0      | 20             | target               |
+     * | 20     | 16             | nativeValue          |
+     * | 36     | 2              | calldataLength       |
+     * | 38     | calldataLength | calldata             |
      */
     function _callExternal(uint256 currentOffset) internal returns (uint256) {
-        /*
-         * | Offset | Length (bytes) | Description          |
-         * |--------|----------------|----------------------|
-         * | 0      | 20             | target               |
-         * | 20     | 16             | nativeValue          |
-         * | 36     | 2              | calldataLength       |
-         * | 38     | calldataLength | calldata             |
-         */
         assembly {
             let target := shr(96, calldataload(currentOffset))
             currentOffset := add(20, currentOffset)

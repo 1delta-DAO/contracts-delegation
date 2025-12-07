@@ -20,15 +20,20 @@ abstract contract BalancerV3VaultActions is Masks, DeltaErrors {
 
     constructor() {}
 
+    /**
+     * @notice Executes Balancer V3 take operation
+     * @dev Takes tokens from Balancer V3 vault manager
+     * @param currentOffset Current position in the calldata
+     * @return Updated calldata offset after processing
+     * @custom:calldata-offset-table
+     * | Offset | Length (bytes) | Description         |
+     * |--------|----------------|---------------------|
+     * | 0      | 20             | manager             |
+     * | 20     | 20             | asset               |
+     * | 40     | 20             | receiver            |
+     * | 60     | 16             | amount              |
+     */
     function _encodeBalancerV3Take(uint256 currentOffset) internal returns (uint256) {
-        /*
-         * | Offset | Length (bytes) | Description         |
-         * |--------|----------------|---------------------|
-         * | 0      | 20             | manager             |
-         * | 20     | 20             | asset               |
-         * | 40     | 20             | receiver            |
-         * | 60     | 16             | amount              |
-         */
         assembly {
             let manager := shr(96, calldataload(currentOffset))
             currentOffset := add(20, currentOffset)
@@ -67,14 +72,19 @@ abstract contract BalancerV3VaultActions is Masks, DeltaErrors {
         return currentOffset;
     }
 
+    /**
+     * @notice Executes Balancer V3 settle operation
+     * @dev Settles flash loan debt. Asset is never native.
+     * @param currentOffset Current position in the calldata
+     * @return Updated calldata offset after processing
+     * @custom:calldata-offset-table
+     * | Offset | Length (bytes) | Description       |
+     * |--------|----------------|-------------------|
+     * | 0      | 20             | manager           |
+     * | 20     | 20             | asset             | <-- never native
+     * | 40     | 16             | amountHint        |
+     */
     function _balancerV3Settle(uint256 currentOffset) internal returns (uint256) {
-        /*
-         * | Offset | Length (bytes) | Description       |
-         * |--------|----------------|-------------------|
-         * | 0      | 20             | manager           |
-         * | 20     | 20             | asset             | <-- never native
-         * | 40     | 16             | amountHint        |
-         */
         assembly {
             let manager := shr(96, calldataload(currentOffset))
             currentOffset := add(20, currentOffset)

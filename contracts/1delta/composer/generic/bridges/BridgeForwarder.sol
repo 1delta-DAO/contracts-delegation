@@ -8,9 +8,19 @@ import {GasZip} from "./GasZip/GasZip.sol";
 import {BridgeIds} from "contracts/1delta/composer/enums/DeltaEnums.sol";
 
 /**
- * Aggregates multiple bridge calls
+ * @notice Aggregates multiple bridge calls
  */
 contract BridgeForwarder is StargateV2, Across, SquidRouter, GasZip {
+    /**
+     * @notice Routes to appropriate bridge operation based on operation ID
+     * @dev Supports Stargate V2, Across, SquidRouter, and GasZip bridges
+     * @param currentOffset Current position in the calldata
+     * @return Updated calldata offset after processing
+     * @custom:calldata-offset-table
+     * | Offset | Length (bytes) | Description     |
+     * |--------|----------------|-----------------|
+     * | 0      | 1              | bridgeOperation  |
+     */
     function _bridge(uint256 currentOffset) internal returns (uint256) {
         uint256 bridgeOperation;
         assembly {

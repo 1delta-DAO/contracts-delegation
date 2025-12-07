@@ -47,7 +47,15 @@ abstract contract BalancerV3Quoter is QuoterUtils, Masks {
         );
     }
 
-    /*
+    /**
+     * @notice Calculates amountOut for Balancer V3 pools
+     * @param fromAmount Input amount
+     * @param tokenIn Input token address
+     * @param tokenOut Output token address
+     * @param currentOffset Current position in the calldata
+     * @return receivedAmount Output amount
+     * @return Updated calldata offset after processing
+     * @custom:calldata-offset-table
      * | Offset | Length (bytes) | Description          |
      * |--------|----------------|----------------------|
      * | 0      | 20             | pool                 |
@@ -107,14 +115,20 @@ abstract contract BalancerV3Quoter is QuoterUtils, Masks {
      */
     bytes32 private constant SWAP = 0x2bfb780c00000000000000000000000000000000000000000000000000000000;
 
-    /*
+    /**
+     * @notice Simulates a swap on Balancer V3 pools
+     * @param fromAmount Input amount
+     * @param tokenIn Input token address
+     * @param tokenOut Output token address
+     * @param currentOffset Current position in the calldata
+     * @custom:calldata-offset-table
      * | Offset | Length (bytes) | Description          |
      * |--------|----------------|----------------------|
      * | 0      | 20             | pool                 |
      * | 20     | 20             | manager              |
      * | 40     | 1              | payFlag              |
      * | 41     | 2              | calldataLength       | <- this here might be pool-dependent, cannot be used as flag
-     * | 42     | calldataLength | calldata             |
+     * | 43     | calldataLength | calldata             |
      */
     function _simSwapBalancerV3ExactInGeneric(
         uint256 fromAmount,
