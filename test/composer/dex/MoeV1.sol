@@ -5,7 +5,7 @@ import {console} from "forge-std/console.sol";
 import {IERC20All} from "../../shared/interfaces/IERC20All.sol";
 import {BaseTest} from "../../shared/BaseTest.sol";
 import {Chains, Tokens, Lenders} from "../../data/LenderRegistry.sol";
-import "../utils/CalldataLib.sol";
+import "contracts/utils/CalldataLib.sol";
 import {ComposerPlugin, IComposerLike} from "plugins/ComposerPlugin.sol";
 
 // solhint-disable max-line-length
@@ -91,7 +91,7 @@ contract MoeV1Test is BaseTest {
     /**
      * Flash swap open on aave v3 using Velodrome V2
      */
-    function test_light_aave_flash_swap_moe1_single() external {
+    function test_integ_swap_moeV1_aaveFlashSwapSingle() external {
         vm.assume(user != address(0));
 
         address tokenIn = USDC;

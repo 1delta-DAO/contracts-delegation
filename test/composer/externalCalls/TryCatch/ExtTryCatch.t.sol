@@ -4,9 +4,10 @@ pragma solidity 0.8.28;
 import {BaseTest} from "test/shared/BaseTest.sol";
 import {console} from "forge-std/console.sol";
 import {CallForwarder} from "contracts/1delta/composer/generic/CallForwarder.sol";
-import {CalldataLib} from "test/composer/utils/CalldataLib.sol";
+import {CalldataLib} from "contracts/utils/CalldataLib.sol";
 import {Chains, Tokens} from "test/data/LenderRegistry.sol";
 import {ComposerPlugin, IComposerLike} from "plugins/ComposerPlugin.sol";
+import {MockContract} from "test/mocks/MockContract.sol";
 
 error ShouldRevert();
 
@@ -32,7 +33,7 @@ contract ExtTryCatch is BaseTest {
         vm.label(address(user), "User");
     }
 
-    function test_externalTryCall_reverts_if_not_successful() public {
+    function test_unit_externalCall_externalTryCall_reverts_if_not_successful() public {
         // Configure mock to fail
         mockContract.setShouldFail(true);
         mockContract.reset();
@@ -61,7 +62,7 @@ contract ExtTryCatch is BaseTest {
         assertFalse(mockContract.catchCalled());
     }
 
-    function test_externalTryCall_catch_executes_if_not_successful() public {
+    function test_unit_externalCall_externalTryCall_catch_executes_if_not_successful() public {
         // Configure mock to fail
         mockContract.setShouldFail(true);
         mockContract.reset();
@@ -90,7 +91,7 @@ contract ExtTryCatch is BaseTest {
         assertTrue(mockContract.catchCalled());
     }
 
-    function test_externalTryCall_catch_does_not_execute_if_successful() public {
+    function test_unit_externalCall_externalTryCall_catch_does_not_execute_if_successful() public {
         // Configure mock to fail
         mockContract.setShouldFail(false);
         mockContract.reset();
@@ -117,34 +118,5 @@ contract ExtTryCatch is BaseTest {
         // Verify assertions
         assertTrue(mockContract.called());
         assertFalse(mockContract.catchCalled());
-    }
-}
-
-// Helper contract to test try/catch
-
-contract MockContract {
-    bool public shouldFail;
-    bool public called;
-    bool public catchCalled;
-
-    function setShouldFail(bool _shouldFail) external {
-        shouldFail = _shouldFail;
-    }
-
-    function testCall() external {
-        called = true;
-
-        if (shouldFail) {
-            revert ShouldRevert();
-        }
-    }
-
-    function catchBlock() external {
-        catchCalled = true;
-    }
-
-    function reset() external {
-        called = false;
-        catchCalled = false;
     }
 }

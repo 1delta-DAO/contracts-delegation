@@ -1,12 +1,10 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
-import {console} from "forge-std/console.sol";
-import {Vm} from "forge-std/Vm.sol";
 import {Chains, Lenders, Tokens} from "test/data/LenderRegistry.sol";
 import {DeltaErrors} from "contracts/1delta/shared/errors/Errors.sol";
 import {ComposerPlugin, IComposerLike} from "plugins/ComposerPlugin.sol";
-import {CalldataLib} from "test/composer/utils/CalldataLib.sol";
+import {CalldataLib} from "contracts/utils/CalldataLib.sol";
 import {BaseTest} from "test/shared/BaseTest.sol";
 import {AaveV2MockPool, IAaveV2Pool} from "test/mocks/AaveV2MockPool.sol";
 import {SweepType} from "contracts/1delta/composer/enums/MiscEnums.sol";
@@ -45,7 +43,7 @@ contract AaveV2FlashLoanCallbackTest is BaseTest, DeltaErrors {
         mockPool = new AaveV2MockPool();
     }
 
-    function test_flash_loan_aaveV2_type_meridian_pool_with_callbacks() public {
+    function test_unit_lending_flashloans_aaveV2_callback_meridianPool() public {
         replaceLendingPoolWithMock(MERIDIAN);
 
         bytes memory params = CalldataLib.encodeFlashLoan(USDC, 1e6, MERIDIAN, uint8(3), uint8(3), sweepCall());
@@ -54,7 +52,7 @@ contract AaveV2FlashLoanCallbackTest is BaseTest, DeltaErrors {
         oneDV2.deltaCompose(params);
     }
 
-    function test_flash_loan_aaveV2_type_takotako_pool_with_callbacks() public {
+    function test_unit_lending_flashloans_aaveV2_callback_takotakoPool() public {
         replaceLendingPoolWithMock(TAKOTAKO);
 
         bytes memory params = CalldataLib.encodeFlashLoan(USDC, 1e6, TAKOTAKO, uint8(3), uint8(4), sweepCall());
@@ -63,7 +61,7 @@ contract AaveV2FlashLoanCallbackTest is BaseTest, DeltaErrors {
         oneDV2.deltaCompose(params);
     }
 
-    function test_flash_loan_aaveV2_type_takotako_eth_pool_with_callbacks() public {
+    function test_unit_lending_flashloans_aaveV2_callback_takotako_ethPool() public {
         replaceLendingPoolWithMock(TAKOTAKO_ETH);
 
         bytes memory params = CalldataLib.encodeFlashLoan(USDC, 1e6, TAKOTAKO_ETH, uint8(3), uint8(5), sweepCall());
@@ -72,7 +70,7 @@ contract AaveV2FlashLoanCallbackTest is BaseTest, DeltaErrors {
         oneDV2.deltaCompose(params);
     }
 
-    function test_flash_loan_aaveV2_type_wrongCaller_revert() public {
+    function test_unit_lending_flashloans_aaveV2_callback_wrongCallerRevert() public {
         bytes memory params = CalldataLib.encodeFlashLoan(USDC, 1e6, address(mockPool), uint8(3), uint8(3), sweepCall());
 
         vm.prank(user);
@@ -80,7 +78,7 @@ contract AaveV2FlashLoanCallbackTest is BaseTest, DeltaErrors {
         oneDV2.deltaCompose(params);
     }
 
-    function test_flash_loan_aaveV2_type_WrongInitiator_revert() public {
+    function test_unit_lending_flashloans_aaveV2_callback_wrongInitiatorRevert() public {
         PoolCase memory pc = validPools[0];
 
         replaceLendingPoolWithMock(pc.poolAddr);
@@ -99,7 +97,7 @@ contract AaveV2FlashLoanCallbackTest is BaseTest, DeltaErrors {
         IAaveV2Pool(pc.poolAddr).flashLoan(address(oneDV2), assets, amounts, modes, address(0), abi.encodePacked(address(user), pc.poolId), 0);
     }
 
-    function test_flash_loan_aaveV2_type_fuzz_invalidPoolIds(uint8 poolId) public {
+    function test_unit_lending_flashloans_aaveV2_callback_fuzzInvalidPoolIds(uint8 poolId) public {
         replaceLendingPoolWithMock(MERIDIAN);
 
         for (uint256 i = 0; i < validPools.length; i++) {

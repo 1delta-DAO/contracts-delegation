@@ -4,11 +4,11 @@ pragma solidity ^0.8.28;
 import {IERC20All} from "test/shared/interfaces/IERC20All.sol";
 import {BaseTest} from "test/shared/BaseTest.sol";
 import {Chains, Tokens, Lenders} from "test/data/LenderRegistry.sol";
-import "test/composer/utils/CalldataLib.sol";
+import "contracts/utils/CalldataLib.sol";
 import {console} from "forge-std/console.sol";
 
-import {ComposerValidator} from "contracts/1delta/composer/validator/ComposerValidator.sol";
-import {AddressWhitelistManager} from "contracts/1delta/composer/validator/AddressWhitelistManager.sol";
+import {ComposerValidator} from "contracts/validator/ComposerValidator.sol";
+import {AddressWhitelistManager} from "contracts/validator/AddressWhitelistManager.sol";
 import {ComposerCommands, LenderOps, LenderIds} from "contracts/1delta/composer/enums/DeltaEnums.sol";
 import {ERC1967Proxy} from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 
@@ -50,7 +50,7 @@ contract ComposerValidatorTest is BaseTest {
         whitelistManager.setCallForwarderWhitelist(callForwarder, true);
     }
 
-    function test_validator_external_call_valid() external {
+    function test_unit_validator_external_call_valid() external {
         address target = address(0x1111111111111111111111111111111111111111);
         uint256 value = 0;
         bytes memory data = abi.encodeWithSignature("balanceOf(address)", user);
@@ -64,7 +64,7 @@ contract ComposerValidatorTest is BaseTest {
         assertEq(bytes(errorMessage).length, 0);
     }
 
-    function test_validator_external_call_invalid_permit2() external {
+    function test_unit_validator_external_call_invalid_permit2() external {
         address permit2 = 0x000000000022D473030F116dDEE9F6B43aC78BA3;
         uint256 value = 0;
         bytes memory data = abi.encodeWithSignature("permitTransferFrom(bytes,bytes,address)", "", "", user);
@@ -78,7 +78,7 @@ contract ComposerValidatorTest is BaseTest {
         assertEq(errorMessage, "Permit2 calls forbidden");
     }
 
-    function test_validator_external_call_invalid_transferFrom() external {
+    function test_unit_validator_external_call_invalid_transferFrom() external {
         address target = address(0x1111111111111111111111111111111111111111);
         uint256 value = 0;
 
@@ -92,7 +92,7 @@ contract ComposerValidatorTest is BaseTest {
         assertEq(errorMessage, "transferFrom calls forbidden");
     }
 
-    function test_validator_external_call_data_too_long() external {
+    function test_unit_validator_external_call_data_too_long() external {
         uint256 value = 0;
         bytes memory data = new bytes(10001);
 
@@ -104,7 +104,7 @@ contract ComposerValidatorTest is BaseTest {
         assertEq(errorMessage, "Calldata too long");
     }
 
-    function test_validator_aave_v3_deposit_valid_whitelisted_pool() external {
+    function test_unit_validator_aave_v3_deposit_valid_whitelisted_pool() external {
         address token = chain.getTokenAddress(Tokens.USDC);
         uint256 amount = 100e6;
 
@@ -116,7 +116,7 @@ contract ComposerValidatorTest is BaseTest {
         assertEq(bytes(errorMessage).length, 0);
     }
 
-    function test_validator_aave_v3_deposit_invalid_non_whitelisted_pool() external {
+    function test_unit_validator_aave_v3_deposit_invalid_non_whitelisted_pool() external {
         address token = chain.getTokenAddress(Tokens.USDC);
         uint256 amount = 100e6;
 
@@ -128,7 +128,7 @@ contract ComposerValidatorTest is BaseTest {
         assertEq(errorMessage, "Aave V3 pool not whitelisted");
     }
 
-    function test_validator_aave_v3_borrow_valid_whitelisted_pool() external {
+    function test_unit_validator_aave_v3_borrow_valid_whitelisted_pool() external {
         address token = chain.getTokenAddress(Tokens.USDC);
         uint256 amount = 50e6;
         uint256 mode = 2;
@@ -141,7 +141,7 @@ contract ComposerValidatorTest is BaseTest {
         assertEq(bytes(errorMessage).length, 0);
     }
 
-    function test_validator_aave_v3_borrow_invalid_non_whitelisted_pool() external {
+    function test_unit_validator_aave_v3_borrow_invalid_non_whitelisted_pool() external {
         address token = chain.getTokenAddress(Tokens.USDC);
         uint256 amount = 50e6;
         uint256 mode = 2;
@@ -154,7 +154,7 @@ contract ComposerValidatorTest is BaseTest {
         assertEq(errorMessage, "Aave V3 pool not whitelisted");
     }
 
-    function test_validator_compound_v3_deposit_valid_whitelisted_comet() external {
+    function test_unit_validator_compound_v3_deposit_valid_whitelisted_comet() external {
         address token = chain.getTokenAddress(Tokens.USDC);
         uint256 amount = 100e6;
 
@@ -166,7 +166,7 @@ contract ComposerValidatorTest is BaseTest {
         assertEq(bytes(errorMessage).length, 0);
     }
 
-    function test_validator_compound_v3_deposit_invalid_non_whitelisted_comet() external {
+    function test_unit_validator_compound_v3_deposit_invalid_non_whitelisted_comet() external {
         address token = chain.getTokenAddress(Tokens.USDC);
         uint256 amount = 100e6;
 
@@ -178,7 +178,7 @@ contract ComposerValidatorTest is BaseTest {
         assertEq(errorMessage, "Compound V3 comet not whitelisted");
     }
 
-    function test_validator_compound_v3_borrow_valid_whitelisted_comet() external {
+    function test_unit_validator_compound_v3_borrow_valid_whitelisted_comet() external {
         address token = chain.getTokenAddress(Tokens.USDC);
         uint256 amount = 50e6;
 
@@ -190,7 +190,7 @@ contract ComposerValidatorTest is BaseTest {
         assertEq(bytes(errorMessage).length, 0);
     }
 
-    function test_validator_compound_v3_borrow_invalid_non_whitelisted_comet() external {
+    function test_unit_validator_compound_v3_borrow_invalid_non_whitelisted_comet() external {
         address token = chain.getTokenAddress(Tokens.USDC);
         uint256 amount = 50e6;
 
@@ -202,7 +202,7 @@ contract ComposerValidatorTest is BaseTest {
         assertEq(errorMessage, "Compound V3 comet not whitelisted");
     }
 
-    function test_validator_morpho_borrow_valid_whitelisted_morpho() external {
+    function test_unit_validator_morpho_borrow_valid_whitelisted_morpho() external {
         address loanToken = chain.getTokenAddress(Tokens.USDC);
         address collateralToken = chain.getTokenAddress(Tokens.WETH);
         address oracle = address(0x2222222222222222222222222222222222222222);
@@ -219,7 +219,7 @@ contract ComposerValidatorTest is BaseTest {
         assertEq(bytes(errorMessage).length, 0);
     }
 
-    function test_validator_morpho_borrow_invalid_non_whitelisted_morpho() external {
+    function test_unit_validator_morpho_borrow_invalid_non_whitelisted_morpho() external {
         address loanToken = chain.getTokenAddress(Tokens.USDC);
         address collateralToken = chain.getTokenAddress(Tokens.WETH);
         address oracle = address(0x2222222222222222222222222222222222222222);
@@ -236,7 +236,7 @@ contract ComposerValidatorTest is BaseTest {
         assertEq(errorMessage, "Morpho not whitelisted");
     }
 
-    function test_validator_invalid_lending_operation() external {
+    function test_unit_validator_invalid_lending_operation() external {
         bytes memory calldataBytes = abi.encodePacked(
             uint8(ComposerCommands.LENDING),
             uint8(10), // Invalid operation > 5
@@ -249,7 +249,7 @@ contract ComposerValidatorTest is BaseTest {
         assertEq(errorMessage, "Invalid lending operation");
     }
 
-    function test_validator_invalid_lender_id() external {
+    function test_unit_validator_invalid_lender_id() external {
         bytes memory calldataBytes = abi.encodePacked(uint8(ComposerCommands.LENDING), uint8(LenderOps.DEPOSIT), uint16(LenderIds.UP_TO_MORPHO + 1));
 
         (bool isValid, string memory errorMessage, uint256 failedAtOffset) = validator.validateComposerCalldata(calldataBytes);
@@ -258,7 +258,7 @@ contract ComposerValidatorTest is BaseTest {
         assertEq(errorMessage, "Invalid lender ID");
     }
 
-    function test_validator_invalid_zero_addresses() external {
+    function test_unit_validator_invalid_zero_addresses() external {
         // Test with zero addresses that should fail validation
         address token = address(0);
         uint256 amount = 100e6;
@@ -271,7 +271,7 @@ contract ComposerValidatorTest is BaseTest {
         assertEq(errorMessage, "Invalid underlying address");
     }
 
-    function test_validator_whitelist_management() external {
+    function test_unit_validator_whitelist_management() external {
         address newPool = address(0x9999999999999999999999999999999999999999);
 
         assertFalse(whitelistManager.isAaveV3PoolWhitelisted(newPool));
@@ -283,7 +283,7 @@ contract ComposerValidatorTest is BaseTest {
         assertFalse(whitelistManager.isAaveV3PoolWhitelisted(newPool));
     }
 
-    function test_validator_ownership_transfer() external {
+    function test_unit_validator_ownership_transfer() external {
         address newOwner = address(0x1111111111111111111111111111111111111111);
 
         whitelistManager.transferOwnership(newOwner);
@@ -296,7 +296,7 @@ contract ComposerValidatorTest is BaseTest {
         whitelistManager.setAaveV3PoolWhitelist(address(0x456), true);
     }
 
-    function test_validator_combined_operations() external {
+    function test_unit_validator_combined_operations() external {
         address token = chain.getTokenAddress(Tokens.USDC);
         uint256 amount = 100e6;
 
@@ -310,7 +310,7 @@ contract ComposerValidatorTest is BaseTest {
         assertEq(bytes(errorMessage).length, 0);
     }
 
-    function test_validator_try_external_call_valid() external {
+    function test_unit_validator_try_external_call_valid() external {
         address target = address(0x1111111111111111111111111111111111111111);
         uint256 value = 0;
         bytes memory data = abi.encodeWithSignature("balanceOf(address)", user);
@@ -325,7 +325,7 @@ contract ComposerValidatorTest is BaseTest {
         assertEq(bytes(errorMessage).length, 0);
     }
 
-    function test_validator_external_call_invalid_callforwarder_self() external {
+    function test_unit_validator_external_call_invalid_callforwarder_self() external {
         bytes memory data = abi.encodeWithSignature("balanceOf(address)", user); // arbitrary call
         bytes memory catchData = CalldataLib.encodeSweep(0x1111111111111111111111111111111111111111, address(this), 1, SweepType.AMOUNT);
 

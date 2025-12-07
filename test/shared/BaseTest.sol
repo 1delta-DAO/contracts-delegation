@@ -20,14 +20,61 @@ contract BaseTest is Test {
     mapping(string => string) internal rpcOverrides;
 
     constructor() {
-        rpcOverrides[Chains.ETHEREUM_MAINNET] = "https://ethereum.therpc.io";
-        rpcOverrides[Chains.ARBITRUM_ONE] = "https://arb1.lava.build";
-        rpcOverrides[Chains.BNB_SMART_CHAIN_MAINNET] = "https://bsc-dataseed1.binance.org/";
-        rpcOverrides[Chains.OP_MAINNET] = "https://optimism.api.onfinality.io/public";
-        rpcOverrides[Chains.POLYGON_MAINNET] = "https://polygon-rpc.com";
-        rpcOverrides[Chains.HYPEREVM] = "https://rpc.hyperliquid.xyz/evm";
-        rpcOverrides[Chains.CORE_BLOCKCHAIN_MAINNET] = "https://core.drpc.org";
-        // rpcOverrides[Chains.TAIKO_ALETHIA] = "https://rpc.mainnet.taiko.xyz/";
+        _initRpcOverrides();
+    }
+
+    function _initRpcOverrides() internal {
+        _setRpcOverride(Chains.ARBITRUM_ONE, "RPC_ARBITRUM_ONE");
+        _setRpcOverride(Chains.AVALANCHE_C_CHAIN, "RPC_AVALANCHE_C_CHAIN");
+        _setRpcOverride(Chains.BASE, "RPC_BASE");
+        _setRpcOverride(Chains.BERACHAIN, "RPC_BERACHAIN");
+        _setRpcOverride(Chains.BLAST, "RPC_BLAST");
+        _setRpcOverride(Chains.CELO_MAINNET, "RPC_CELO_MAINNET");
+        _setRpcOverride(Chains.CORE_BLOCKCHAIN_MAINNET, "RPC_CORE_BLOCKCHAIN_MAINNET");
+        _setRpcOverride(Chains.CRONOS_MAINNET, "RPC_CRONOS_MAINNET");
+        _setRpcOverride(Chains.ETHEREUM_MAINNET, "RPC_ETHEREUM_MAINNET");
+        _setRpcOverride(Chains.FANTOM_OPERA, "RPC_FANTOM_OPERA");
+        _setRpcOverride(Chains.HEMI_NETWORK, "RPC_HEMI_NETWORK");
+        _setRpcOverride(Chains.HYPEREVM, "RPC_HYPEREVM");
+        _setRpcOverride(Chains.KAIA_MAINNET, "RPC_KAIA_MAINNET");
+        _setRpcOverride(Chains.KATANA, "RPC_KATANA");
+        _setRpcOverride(Chains.LINEA, "RPC_LINEA");
+        _setRpcOverride(Chains.MANTA_PACIFIC_MAINNET, "RPC_MANTA_PACIFIC_MAINNET");
+        _setRpcOverride(Chains.MANTLE, "RPC_MANTLE");
+        _setRpcOverride(Chains.METIS_ANDROMEDA_MAINNET, "RPC_METIS_ANDROMEDA_MAINNET");
+        _setRpcOverride(Chains.MODE, "RPC_MODE");
+        _setRpcOverride(Chains.MOONBEAM, "RPC_MOONBEAM");
+        _setRpcOverride(Chains.MORPH, "RPC_MORPH");
+        _setRpcOverride(Chains.MONAD_MAINNET, "RPC_MONAD_MAINNET");
+        _setRpcOverride(Chains.OP_MAINNET, "RPC_OP_MAINNET");
+        _setRpcOverride(Chains.BNB_SMART_CHAIN_MAINNET, "RPC_BNB_SMART_CHAIN_MAINNET");
+        _setRpcOverride(Chains.GNOSIS, "RPC_GNOSIS");
+        _setRpcOverride(Chains.PLASMA_MAINNET, "RPC_PLASMA_MAINNET");
+        _setRpcOverride(Chains.POLYGON_MAINNET, "RPC_POLYGON_MAINNET");
+        _setRpcOverride(Chains.PULSECHAIN, "RPC_PULSECHAIN");
+        _setRpcOverride(Chains.SCROLL, "RPC_SCROLL");
+        _setRpcOverride(Chains.SEI_NETWORK, "RPC_SEI_NETWORK");
+        _setRpcOverride(Chains.SONEIUM, "RPC_SONEIUM");
+        _setRpcOverride(Chains.SONIC_MAINNET, "RPC_SONIC_MAINNET");
+        _setRpcOverride(Chains.TAIKO_ALETHIA, "RPC_TAIKO_ALETHIA");
+        _setRpcOverride(Chains.TELOS_EVM_MAINNET, "RPC_TELOS_EVM_MAINNET");
+        _setRpcOverride(Chains.UNICHAIN, "RPC_UNICHAIN");
+        _setRpcOverride(Chains.XDC_NETWORK, "RPC_XDC_NETWORK");
+    }
+
+    function _setRpcOverride(string memory chainName, string memory envVar) internal {
+        string memory rpc = _getEnvRpc(envVar);
+        if (bytes(rpc).length > 0) {
+            rpcOverrides[chainName] = rpc;
+        }
+    }
+
+    function _getEnvRpc(string memory envVar) internal view returns (string memory) {
+        try vm.envString(envVar) returns (string memory rpc) {
+            return rpc;
+        } catch {
+            return "";
+        }
     }
 
     /// @notice Initialize the chain for the test

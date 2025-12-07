@@ -1,15 +1,12 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
-import {console} from "forge-std/console.sol";
-import {Vm} from "forge-std/Vm.sol";
 import {Chains, Lenders, Tokens} from "test/data/LenderRegistry.sol";
 import {DeltaErrors} from "contracts/1delta/shared/errors/Errors.sol";
 import {ComposerPlugin, IComposerLike} from "plugins/ComposerPlugin.sol";
-import {CalldataLib} from "test/composer/utils/CalldataLib.sol";
+import {CalldataLib} from "contracts/utils/CalldataLib.sol";
 import {BaseTest} from "test/shared/BaseTest.sol";
-import {AaveMockPool, IAaveFlashLoanReceiver, IAavePool} from "test/mocks/AaveMockPool.sol";
-import {IERC20} from "openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
+import {AaveMockPool, IAavePool} from "test/mocks/AaveMockPool.sol";
 import {SweepType} from "contracts/1delta/composer/enums/MiscEnums.sol";
 
 contract AaveV3FlashLoanCallbackTest is BaseTest, DeltaErrors {
@@ -22,6 +19,7 @@ contract AaveV3FlashLoanCallbackTest is BaseTest, DeltaErrors {
     address private COLEND;
     address private COLEND_LSTBTC;
 
+    address private SOLVBTC_B;
     address private USDC;
     address private STBTC;
 
@@ -49,17 +47,17 @@ contract AaveV3FlashLoanCallbackTest is BaseTest, DeltaErrors {
         mockPool = new AaveMockPool();
     }
 
-    function test_flash_loan_aaveV3_type_avalon_pool_with_callbacks() public {
+    function test_unit_lending_flashloans_aaveV3_callback_avalonPool() public {
         // mock implementation
         replaceLendingPoolWithMock(AVALON);
 
-        bytes memory params = CalldataLib.encodeFlashLoan(USDC, 1e6, AVALON, uint8(2), uint8(50), sweepCall());
+        bytes memory params = CalldataLib.encodeFlashLoan(SOLVBTC_B, 1e6, AVALON, uint8(2), uint8(50), sweepCall());
 
         vm.prank(user);
         oneDV2.deltaCompose(params);
     }
 
-    function test_flash_loan_aaveV3_type_avalon_ubtc_pool_with_callbacks() public {
+    function test_unit_lending_flashloans_aaveV3_callback_avalon_ubtcPool() public {
         // mock implementation
         replaceLendingPoolWithMock(AVALON_UBTC);
 
@@ -69,7 +67,7 @@ contract AaveV3FlashLoanCallbackTest is BaseTest, DeltaErrors {
         oneDV2.deltaCompose(params);
     }
 
-    function test_flash_loan_aaveV3_type_avalon_obtc_pool_with_callbacks() public {
+    function test_unit_lending_flashloans_aaveV3_callback_avalon_obtcPool() public {
         // mock implementation
         replaceLendingPoolWithMock(AVALON_OBTC);
 
@@ -79,7 +77,7 @@ contract AaveV3FlashLoanCallbackTest is BaseTest, DeltaErrors {
         oneDV2.deltaCompose(params);
     }
 
-    function test_flash_loan_aaveV3_type_colend_pool_with_callbacks() public {
+    function test_unit_lending_flashloans_aaveV3_callback_colendPool() public {
         // mock implementation
         replaceLendingPoolWithMock(COLEND);
 
@@ -89,7 +87,7 @@ contract AaveV3FlashLoanCallbackTest is BaseTest, DeltaErrors {
         oneDV2.deltaCompose(params);
     }
 
-    function test_flash_loan_aaveV3_type_colend_lstbtc_pool_with_callbacks() public {
+    function test_unit_lending_flashloans_aaveV3_callback_colend_lstbtcPool() public {
         // mock implementation
         replaceLendingPoolWithMock(COLEND_LSTBTC);
 
@@ -99,9 +97,9 @@ contract AaveV3FlashLoanCallbackTest is BaseTest, DeltaErrors {
         oneDV2.deltaCompose(params);
     }
 
-    function test_flash_loan_aaveV3_type_wrongCaller_revert() public {
+    function test_unit_lending_flashloans_aaveV3_callback_wrongCallerRevert() public {
         for (uint256 i = 0; i < validPools.length; i++) {
-            bytes memory params = CalldataLib.encodeFlashLoan(USDC, 1e6, address(mockPool), uint8(2), uint8(validPools[0].poolId), sweepCall());
+            bytes memory params = CalldataLib.encodeFlashLoan(SOLVBTC_B, 1e6, address(mockPool), uint8(2), uint8(validPools[0].poolId), sweepCall());
 
             vm.prank(user);
             vm.expectRevert(DeltaErrors.INVALID_CALLER);
@@ -109,7 +107,7 @@ contract AaveV3FlashLoanCallbackTest is BaseTest, DeltaErrors {
         }
     }
 
-    function test_flash_loan_aaveV3_type_WrongInitiator_revert() public {
+    function test_unit_lending_flashloans_aaveV3_callback_wrongInitiatorRevert() public {
         for (uint256 i = 0; i < validPools.length; i++) {
             PoolCase memory pc = validPools[i];
             // mock implementation
@@ -117,17 +115,17 @@ contract AaveV3FlashLoanCallbackTest is BaseTest, DeltaErrors {
 
             vm.prank(user);
             vm.expectRevert(DeltaErrors.INVALID_INITIATOR);
-            IAavePool(pc.poolAddr).flashLoanSimple(address(oneDV2), USDC, 1e6, abi.encodePacked(address(user), pc.poolId), 0);
+            IAavePool(pc.poolAddr).flashLoanSimple(address(oneDV2), SOLVBTC_B, 1e6, abi.encodePacked(address(user), pc.poolId), 0);
         }
     }
 
-    function test_flash_loan_aaveV3_type_fuzz_invalidPoolIds(uint8 poolId) public {
+    function test_unit_lending_flashloans_aaveV3_callback_fuzzInvalidPoolIds(uint8 poolId) public {
         replaceLendingPoolWithMock(AVALON);
 
         for (uint256 i = 0; i < validPools.length; i++) {
             if (poolId == validPools[i].poolId) return;
         }
-        bytes memory params = CalldataLib.encodeFlashLoan(USDC, 1e6, AVALON, uint8(2), uint8(poolId), sweepCall());
+        bytes memory params = CalldataLib.encodeFlashLoan(SOLVBTC_B, 1e6, AVALON, uint8(2), uint8(poolId), sweepCall());
         vm.prank(user);
         vm.expectRevert(DeltaErrors.INVALID_FLASH_LOAN);
         oneDV2.deltaCompose(params);
@@ -135,7 +133,7 @@ contract AaveV3FlashLoanCallbackTest is BaseTest, DeltaErrors {
 
     // Helper Functions
     function sweepCall() internal returns (bytes memory) {
-        return CalldataLib.encodeSweep(USDC, user, 0, SweepType.VALIDATE);
+        return CalldataLib.encodeSweep(SOLVBTC_B, user, 0, SweepType.VALIDATE);
     }
 
     function getAddressFromRegistry() internal {
@@ -146,12 +144,13 @@ contract AaveV3FlashLoanCallbackTest is BaseTest, DeltaErrors {
         COLEND_LSTBTC = chain.getLendingController(Lenders.COLEND_LSTBTC);
 
         // Get token addresses
+        SOLVBTC_B = chain.getTokenAddress(Tokens.SOLVBTC_B);
         USDC = chain.getTokenAddress(Tokens.USDC);
         STBTC = chain.getTokenAddress(Tokens.STBTC);
     }
 
     function populateValidPools() internal {
-        validPools.push(PoolCase({poolId: 50, poolAddr: AVALON, asset: USDC}));
+        validPools.push(PoolCase({poolId: 50, poolAddr: AVALON, asset: SOLVBTC_B}));
         validPools.push(PoolCase({poolId: 59, poolAddr: AVALON_UBTC, asset: USDC}));
         validPools.push(PoolCase({poolId: 60, poolAddr: AVALON_OBTC, asset: USDC}));
         validPools.push(PoolCase({poolId: 102, poolAddr: COLEND, asset: USDC}));
@@ -159,6 +158,7 @@ contract AaveV3FlashLoanCallbackTest is BaseTest, DeltaErrors {
     }
 
     function mockERC20FunctionsForAllTokens() internal {
+        mockERC20Functions(SOLVBTC_B);
         mockERC20Functions(USDC);
         mockERC20Functions(STBTC);
     }

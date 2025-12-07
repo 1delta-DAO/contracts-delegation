@@ -10,6 +10,7 @@ import {DeltaErrors} from "../../shared/errors/Errors.sol";
 
 /**
  * @notice ERC4626 deposit and withdraw actions
+ * @dev Handles ERC4626 vault operations including deposit, mint, withdraw, and redeem
  */
 abstract contract ERC4626Transfers is ERC20Selectors, Masks, DeltaErrors {
     /// @dev  mint(...)
@@ -24,7 +25,19 @@ abstract contract ERC4626Transfers is ERC20Selectors, Masks, DeltaErrors {
     /// @dev  redeem(...)
     bytes32 private constant ERC4626_REDEEM = 0xba08765200000000000000000000000000000000000000000000000000000000;
 
-    /// @notice Deposit to (e.g. morpho) vault
+    /**
+     * @notice Deposit to ERC4626 vault (e.g. morpho)
+     * @dev Decodes calldata and executes deposit or mint operation on an ERC4626 vault
+     * @param currentOffset Current position in the calldata
+     * @return Updated calldata offset after processing
+     * @custom:calldata-offset-table
+     * | Offset | Length (bytes) | Description                  |
+     * |--------|----------------|------------------------------|
+     * | 0      | 20             | asset                        |
+     * | 20     | 20             | vaultContract                |
+     * | 40     | 16             | amount (with flags)          |
+     * | 56     | 20             | receiver                     |
+     */
     function _encodeErc4646Deposit(uint256 currentOffset) internal returns (uint256) {
         assembly {
             let ptr := mload(0x40)
@@ -77,7 +90,19 @@ abstract contract ERC4626Transfers is ERC20Selectors, Masks, DeltaErrors {
         return currentOffset;
     }
 
-    /// @notice withdraw from (e.g. morpho) vault
+    /**
+     * @notice Withdraw from ERC4626 vault (e.g. morpho)
+     * @dev Decodes calldata and executes withdraw or redeem operation on an ERC4626 vault
+     * @param currentOffset Current position in the calldata
+     * @param callerAddress Address of the caller
+     * @return Updated calldata offset after processing
+     * @custom:calldata-offset-table
+     * | Offset | Length (bytes) | Description                  |
+     * |--------|----------------|------------------------------|
+     * | 0      | 20             | vaultContract                |
+     * | 20     | 16             | amount (with flags)          |
+     * | 36     | 20             | receiver                     |
+     */
     function _encodeErc4646Withdraw(uint256 currentOffset, address callerAddress) internal returns (uint256) {
         assembly {
             let ptr := mload(0x40)
@@ -101,7 +126,7 @@ abstract contract ERC4626Transfers is ERC20Selectors, Masks, DeltaErrors {
             }
             default {
                 // note that this covers max withdraw already as the user can apply the
-                // static shares amount hey own
+                // static shares amount they own
                 mstore(ptr, ERC4626_REDEEM)
             }
 

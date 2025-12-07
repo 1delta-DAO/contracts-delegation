@@ -1,15 +1,12 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
-import {console} from "forge-std/console.sol";
-import {Vm} from "forge-std/Vm.sol";
 import {Chains, Lenders, Tokens} from "test/data/LenderRegistry.sol";
 import {DeltaErrors} from "contracts/1delta/shared/errors/Errors.sol";
 import {ComposerPlugin, IComposerLike} from "plugins/ComposerPlugin.sol";
-import {CalldataLib} from "test/composer/utils/CalldataLib.sol";
+import {CalldataLib} from "contracts/utils/CalldataLib.sol";
 import {BaseTest} from "test/shared/BaseTest.sol";
-import {AaveMockPool, IAaveFlashLoanReceiver, IAavePool} from "test/mocks/AaveMockPool.sol";
-import {IERC20} from "openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
+import {AaveMockPool, IAavePool} from "test/mocks/AaveMockPool.sol";
 import {SweepType} from "contracts/1delta/composer/enums/MiscEnums.sol";
 
 contract AaveV3FlashLoanCallbackTest is BaseTest, DeltaErrors {
@@ -58,7 +55,7 @@ contract AaveV3FlashLoanCallbackTest is BaseTest, DeltaErrors {
         mockPool = new AaveMockPool();
     }
 
-    function test_flash_loan_aaveV3_type_kinza_pool_with_callbacks() public {
+    function test_unit_lending_flashloans_aaveV3_callback_kinzaPool() public {
         // mock implementation
         replaceLendingPoolWithMock(KINZA);
 
@@ -68,7 +65,7 @@ contract AaveV3FlashLoanCallbackTest is BaseTest, DeltaErrors {
         oneDV2.deltaCompose(params);
     }
 
-    function test_flash_loan_aaveV3_type_lendle_cmeth_pool_with_callbacks() public {
+    function test_unit_lending_flashloans_aaveV3_callback_lendle_cmethPool() public {
         // mock implementation
         replaceLendingPoolWithMock(LENDLE_CMETH);
 
@@ -78,7 +75,7 @@ contract AaveV3FlashLoanCallbackTest is BaseTest, DeltaErrors {
         oneDV2.deltaCompose(params);
     }
 
-    function test_flash_loan_aaveV3_type_lendle_pt_cmeth_pool_with_callbacks() public {
+    function test_unit_lending_flashloans_aaveV3_callback_lendle_pt_cmethPool() public {
         // mock implementation
         replaceLendingPoolWithMock(LENDLE_PT_CMETH);
 
@@ -88,7 +85,7 @@ contract AaveV3FlashLoanCallbackTest is BaseTest, DeltaErrors {
         oneDV2.deltaCompose(params);
     }
 
-    function test_flash_loan_aaveV3_type_lendle_susde_pool_with_callbacks() public {
+    function test_unit_lending_flashloans_aaveV3_callback_lendle_susdePool() public {
         // mock implementation
         replaceLendingPoolWithMock(LENDLE_SUSDE);
 
@@ -98,7 +95,7 @@ contract AaveV3FlashLoanCallbackTest is BaseTest, DeltaErrors {
         oneDV2.deltaCompose(params);
     }
 
-    function test_flash_loan_aaveV3_type_lendle_susde_usdt_pool_with_callbacks() public {
+    function test_unit_lending_flashloans_aaveV3_callback_lendle_susde_usdtPool() public {
         // mock implementation
         replaceLendingPoolWithMock(LENDLE_SUSDE_USDT);
 
@@ -108,7 +105,7 @@ contract AaveV3FlashLoanCallbackTest is BaseTest, DeltaErrors {
         oneDV2.deltaCompose(params);
     }
 
-    function test_flash_loan_aaveV3_type_lendle_meth_weth_pool_with_callbacks() public {
+    function test_unit_lending_flashloans_aaveV3_callback_lendle_meth_wethPool() public {
         // mock implementation
         replaceLendingPoolWithMock(LENDLE_METH_WETH);
 
@@ -118,7 +115,7 @@ contract AaveV3FlashLoanCallbackTest is BaseTest, DeltaErrors {
         oneDV2.deltaCompose(params);
     }
 
-    function test_flash_loan_aaveV3_type_lendle_meth_usde_pool_with_callbacks() public {
+    function test_unit_lending_flashloans_aaveV3_callback_lendle_meth_usdePool() public {
         // mock implementation
         replaceLendingPoolWithMock(LENDLE_METH_USDE);
 
@@ -128,7 +125,7 @@ contract AaveV3FlashLoanCallbackTest is BaseTest, DeltaErrors {
         oneDV2.deltaCompose(params);
     }
 
-    function test_flash_loan_aaveV3_type_lendle_cmeth_weth_pool_with_callbacks() public {
+    function test_unit_lending_flashloans_aaveV3_callback_lendle_cmeth_wethPool() public {
         // mock implementation
         replaceLendingPoolWithMock(LENDLE_CMETH_WETH);
 
@@ -138,7 +135,7 @@ contract AaveV3FlashLoanCallbackTest is BaseTest, DeltaErrors {
         oneDV2.deltaCompose(params);
     }
 
-    function test_flash_loan_aaveV3_type_lendle_cmeth_usde_pool_with_callbacks() public {
+    function test_unit_lending_flashloans_aaveV3_callback_lendle_cmeth_usdePool() public {
         // mock implementation
         replaceLendingPoolWithMock(LENDLE_CMETH_USDE);
 
@@ -148,7 +145,7 @@ contract AaveV3FlashLoanCallbackTest is BaseTest, DeltaErrors {
         oneDV2.deltaCompose(params);
     }
 
-    function test_flash_loan_aaveV3_type_lendle_cmeth_wmnt_pool_with_callbacks() public {
+    function test_unit_lending_flashloans_aaveV3_callback_lendle_cmeth_wmntPool() public {
         // mock implementation
         replaceLendingPoolWithMock(LENDLE_CMETH_WMNT);
 
@@ -158,7 +155,7 @@ contract AaveV3FlashLoanCallbackTest is BaseTest, DeltaErrors {
         oneDV2.deltaCompose(params);
     }
 
-    function test_flash_loan_aaveV3_type_lendle_fbtc_weth_pool_with_callbacks() public {
+    function test_unit_lending_flashloans_aaveV3_callback_lendle_fbtc_wethPool() public {
         // mock implementation
         replaceLendingPoolWithMock(LENDLE_FBTC_WETH);
 
@@ -168,7 +165,7 @@ contract AaveV3FlashLoanCallbackTest is BaseTest, DeltaErrors {
         oneDV2.deltaCompose(params);
     }
 
-    function test_flash_loan_aaveV3_type_lendle_fbtc_usde_pool_with_callbacks() public {
+    function test_unit_lending_flashloans_aaveV3_callback_lendle_fbtc_usdePool() public {
         // mock implementation
         replaceLendingPoolWithMock(LENDLE_FBTC_USDE);
 
@@ -178,7 +175,7 @@ contract AaveV3FlashLoanCallbackTest is BaseTest, DeltaErrors {
         oneDV2.deltaCompose(params);
     }
 
-    function test_flash_loan_aaveV3_type_lendle_fbtc_wmnt_pool_with_callbacks() public {
+    function test_unit_lending_flashloans_aaveV3_callback_lendle_fbtc_wmntPool() public {
         // mock implementation
         replaceLendingPoolWithMock(LENDLE_FBTC_WMNT);
 
@@ -188,7 +185,7 @@ contract AaveV3FlashLoanCallbackTest is BaseTest, DeltaErrors {
         oneDV2.deltaCompose(params);
     }
 
-    function test_flash_loan_aaveV3_type_lendle_wmnt_weth_pool_with_callbacks() public {
+    function test_unit_lending_flashloans_aaveV3_callback_lendle_wmnt_wethPool() public {
         // mock implementation
         replaceLendingPoolWithMock(LENDLE_WMNT_WETH);
 
@@ -198,7 +195,7 @@ contract AaveV3FlashLoanCallbackTest is BaseTest, DeltaErrors {
         oneDV2.deltaCompose(params);
     }
 
-    function test_flash_loan_aaveV3_type_lendle_wmnt_usde_pool_with_callbacks() public {
+    function test_unit_lending_flashloans_aaveV3_callback_lendle_wmnt_usdePool() public {
         // mock implementation
         replaceLendingPoolWithMock(LENDLE_WMNT_USDE);
 
@@ -208,7 +205,7 @@ contract AaveV3FlashLoanCallbackTest is BaseTest, DeltaErrors {
         oneDV2.deltaCompose(params);
     }
 
-    function test_flash_loan_aaveV3_type_wrongCaller_revert() public {
+    function test_unit_lending_flashloans_aaveV3_callback_wrongCallerRevert() public {
         for (uint256 i = 0; i < validPools.length; i++) {
             bytes memory params = CalldataLib.encodeFlashLoan(USDC, 1e6, address(mockPool), uint8(2), uint8(validPools[0].poolId), sweepCall());
 
@@ -218,7 +215,7 @@ contract AaveV3FlashLoanCallbackTest is BaseTest, DeltaErrors {
         }
     }
 
-    function test_flash_loan_aaveV3_type_WrongInitiator_revert() public {
+    function test_unit_lending_flashloans_aaveV3_callback_wrongInitiatorRevert() public {
         for (uint256 i = 0; i < validPools.length; i++) {
             PoolCase memory pc = validPools[i];
             // mock implementation
@@ -230,7 +227,7 @@ contract AaveV3FlashLoanCallbackTest is BaseTest, DeltaErrors {
         }
     }
 
-    function test_flash_loan_aaveV3_type_fuzz_invalidPoolIds(uint8 poolId) public {
+    function test_unit_lending_flashloans_aaveV3_callback_fuzzInvalidPoolIds(uint8 poolId) public {
         replaceLendingPoolWithMock(KINZA);
 
         for (uint256 i = 0; i < validPools.length; i++) {

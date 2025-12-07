@@ -5,7 +5,7 @@ import {console} from "forge-std/console.sol";
 import {IERC20All} from "test/shared/interfaces/IERC20All.sol";
 import {BaseTest} from "test/shared/BaseTest.sol";
 import {Chains, Tokens, Lenders} from "test/data/LenderRegistry.sol";
-import "test/composer/utils/CalldataLib.sol";
+import "contracts/utils/CalldataLib.sol";
 import {ComposerPlugin, IComposerLike} from "plugins/ComposerPlugin.sol";
 
 contract BalancerFlashSwapTest is BaseTest {
@@ -73,7 +73,7 @@ contract BalancerFlashSwapTest is BaseTest {
     /**
      * Flash swap open on aave v3 using Uniswap V3
      */
-    function test_light_aave_flash_swap_balancer_v3_single() external {
+    function test_integ_flashSwap_aave_flash_swap_balancer_v3_single() external {
         vm.assume(user != address(0));
 
         address tokenIn = WETH;

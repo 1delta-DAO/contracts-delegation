@@ -11,40 +11,8 @@ import {ComposerPlugin, IComposerLike} from "plugins/ComposerPlugin.sol";
 import {IERC20All} from "test/shared/interfaces/IERC20All.sol";
 import {BaseTest} from "test/shared/BaseTest.sol";
 import {Chains, Tokens, Lenders} from "test/data/LenderRegistry.sol";
-import "test/composer/utils/CalldataLib.sol";
-
-contract MockPermitter {
-    struct Authorization {
-        address authorizer;
-        address authorized;
-        bool isAuthorized;
-        uint256 nonce;
-        uint256 deadline;
-    }
-
-    struct Signature {
-        uint8 v;
-        bytes32 r;
-        bytes32 s;
-    }
-
-    bool public isAuth;
-
-    /// @notice Sets the authorization for `authorization.authorized` to manage `authorization.authorizer`'s positions.
-    /// @dev Warning: Reverts if the signature has already been submitted.
-    /// @dev The signature is malleable, but it has no impact on the security here.
-    /// @dev The nonce is passed as argument to be able to revert with a different error message.
-    /// @param authorization The `Authorization` struct.
-    /// @param signature The signature.
-
-    function setAuthorizationWithSig(Authorization calldata authorization, Signature calldata signature) external {
-        isAuth = true;
-    }
-
-    function getIsAuth() external view returns (bool) {
-        return isAuth;
-    }
-}
+import "contracts/utils/CalldataLib.sol";
+import {MockPermitter} from "test/mocks/MockPermitter.sol";
 
 // solhint-disable max-line-length
 
@@ -101,7 +69,7 @@ contract MorphoBlueTest is BaseTest {
         );
     }
 
-    function test_light_lending_morpho_permit() external {
+    function test_unit_lending_morpho_permit() external {
         vm.assume(user != address(0));
 
         bytes memory d = encodeMorphoPermit(999, true);
@@ -137,7 +105,7 @@ contract MorphoBlueTest is BaseTest {
         assert(p.getIsAuth());
     }
 
-    function test_light_lending_morpho_withdraw_collateral() external {
+    function test_unit_lending_morpho_withdraw_collateral() external {
         deal(LBTC, user, 30.0e8);
         deal(USDC, user, 300_000.0e6);
 
@@ -169,7 +137,7 @@ contract MorphoBlueTest is BaseTest {
         assertApproxEqAbs(underlyingAfter - underlyingBefore, withdrawAssets, 0);
     }
 
-    function test_light_lending_morpho_borrow() external {
+    function test_unit_lending_morpho_borrow() external {
         deal(LBTC, user, 30.0e8);
         deal(USDC, user, 300_000.0e6);
 
@@ -201,7 +169,7 @@ contract MorphoBlueTest is BaseTest {
         assertEq(borrowBalanceAfter, borrowAssets);
     }
 
-    function test_light_lending_morpho_repay_by_assets() external {
+    function test_unit_lending_morpho_repay_by_assets() external {
         deal(LBTC, user, 30.0e8);
         deal(USDC, user, 300_000.0e6);
 
@@ -251,7 +219,7 @@ contract MorphoBlueTest is BaseTest {
         assertApproxEqAbs(borrowShares, 0, 1);
     }
 
-    function test_light_lending_morpho_repay_by_shares() external {
+    function test_unit_lending_morpho_repay_by_shares() external {
         deal(LBTC, user, 30.0e8);
         deal(USDC, user, 300_000.0e6);
 
@@ -289,7 +257,7 @@ contract MorphoBlueTest is BaseTest {
         assertApproxEqAbs(borrowSharesAfter, 0, 0);
     }
 
-    function test_light_lending_morpho_repay_with_callback() external {
+    function test_unit_lending_morpho_repay_with_callback() external {
         deal(LBTC, user, 30.0e8);
         deal(USDC, user, 300_000.0e6);
 
@@ -349,7 +317,7 @@ contract MorphoBlueTest is BaseTest {
         assertApproxEqAbs(IERC20All(WETH).balanceOf(user), recoverWeth, 0);
     }
 
-    function test_light_lending_morpho_repay_all() external {
+    function test_unit_lending_morpho_repay_all() external {
         deal(LBTC, user, 30.0e8);
         deal(USDC, user, 300_000.0e6);
 
@@ -405,7 +373,7 @@ contract MorphoBlueTest is BaseTest {
         logPos(marketId(LBTC_USDC_MARKET), user);
     }
 
-    function test_light_lending_morpho_deposit_loan_asset() external {
+    function test_unit_lending_morpho_deposit_loan_asset() external {
         deal(LBTC, user, 30.0e8);
         deal(USDC, user, 300_000.0e6);
 
@@ -447,7 +415,7 @@ contract MorphoBlueTest is BaseTest {
         assertApproxEqAbs(assetsSupplied, assets - 1, 0);
     }
 
-    function test_light_lending_morpho_deposit_loan_asset_callback() external {
+    function test_unit_lending_morpho_deposit_loan_asset_callback() external {
         deal(LBTC, user, 30.0e8);
         deal(USDC, user, 300_000.0e6);
         uint256 recoverWeth = 1.0e18;
@@ -499,7 +467,7 @@ contract MorphoBlueTest is BaseTest {
         assertApproxEqAbs(IERC20All(WETH).balanceOf(user), recoverWeth, 0);
     }
 
-    function test_light_lending_morpho_withdraw_loan_asset() external {
+    function test_unit_lending_morpho_withdraw_loan_asset() external {
         deal(LBTC, user, 30.0e8);
         deal(USDC, user, 300_000.0e6);
 
@@ -541,7 +509,7 @@ contract MorphoBlueTest is BaseTest {
         assertApproxEqAbs(assetsSupplied, loanAssetAm - loanAssetAmWithdraw - 1, 0);
     }
 
-    function test_light_lending_morpho_withdraw_loan_asset_all() external {
+    function test_unit_lending_morpho_withdraw_loan_asset_all() external {
         deal(LBTC, user, 30.0e8);
         deal(USDC, user, 300_000.0e6);
 
@@ -584,7 +552,7 @@ contract MorphoBlueTest is BaseTest {
         assertApproxEqAbs(assetsSupplied, 0, 0);
     }
 
-    function test_light_lending_morpho_deposit_collateral() external {
+    function test_unit_lending_morpho_deposit_collateral() external {
         deal(LBTC, user, 30.0e8);
         deal(USDC, user, 300_000.0e6);
 
@@ -614,7 +582,7 @@ contract MorphoBlueTest is BaseTest {
         assertApproxEqAbs(assets, collateralAmount, 0);
     }
 
-    function test_light_lending_morpho_deposit_collateral_with_callback() external {
+    function test_unit_lending_morpho_deposit_collateral_with_callback() external {
         deal(LBTC, user, 30.0e8);
         deal(USDC, user, 300_000.0e6);
 

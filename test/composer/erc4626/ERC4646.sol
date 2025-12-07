@@ -8,13 +8,10 @@ import {MarketParams, IMorphoEverything} from "test/composer/lending/utils/Morph
 import {IERC20All} from "test/shared/interfaces/IERC20All.sol";
 import {BaseTest} from "test/shared/BaseTest.sol";
 import {Chains, Tokens, Lenders} from "test/data/LenderRegistry.sol";
-import "test/composer/utils/CalldataLib.sol";
+import "contracts/utils/CalldataLib.sol";
 import {ComposerPlugin, IComposerLike} from "plugins/ComposerPlugin.sol";
+import {IERC4626} from "lib/forge-std/src/interfaces/IERC4626.sol";
 
-/**
- * We test all CalldataLib.morpho blue operations
- * - supply, supplyCollateral, borrow, repay, encodeErc4646Deposit, encodeErc4646Withdraw
- */
 contract ERC4626Test is BaseTest {
     using CalldataLib for bytes;
     using MorphoMathLib for uint256;
@@ -26,8 +23,6 @@ contract ERC4626Test is BaseTest {
     address internal USDC;
     address internal WETH;
     address internal constant META_MORPHO_USDC = 0x7BfA7C4f149E7415b73bdeDfe609237e29CBF34A;
-
-    address internal constant MORPHO = 0xBBBBBbbBBb9cC5e90e3b3Af64bdAF62C37EEFFCb;
 
     address internal constant USDM = 0x59D9356E565Ab3A36dD77763Fc0d87fEaf85508C;
     address internal constant WUSDM = 0x57F5E098CaD7A3D1Eed53991D4d66C45C9AF7812;
@@ -44,7 +39,7 @@ contract ERC4626Test is BaseTest {
         oneD = ComposerPlugin.getComposer(chainName);
     }
 
-    function test_light_morpho_deposit_to_erc4626() external {
+    function test_integ_erc4626_morpho_deposit_basic() external {
         deal(USDC, user, 300_000.0e6);
 
         address vault = META_MORPHO_USDC;
@@ -71,13 +66,13 @@ contract ERC4626Test is BaseTest {
         vm.prank(user);
         oneD.deltaCompose(abi.encodePacked(transferTo, deposit));
 
-        uint256 shares = IERC20All(vault).balanceOf(user);
-        uint256 assetsInVault = IERC20All(vault).convertToAssets(shares);
+        uint256 shares = IERC4626(vault).balanceOf(user);
+        uint256 assetsInVault = IERC4626(vault).convertToAssets(shares);
 
         assertApproxEqAbs(assets, assetsInVault, 1); // adjust for rounding
     }
 
-    function test_light_morpho_deposit_shares_to_erc4626() external {
+    function test_integ_erc4626_morpho_deposit_shares() external {
         deal(USDC, user, 300_000.0e6);
 
         address asset = USDC;
@@ -85,7 +80,7 @@ contract ERC4626Test is BaseTest {
 
         uint256 desiredShares = 10.0e8;
 
-        uint256 assets = IERC20All(META_MORPHO_USDC).convertToAssets(desiredShares);
+        uint256 assets = IERC4626(META_MORPHO_USDC).convertToAssets(desiredShares);
 
         bytes memory transferTo = CalldataLib.encodeTransferIn(
             asset,
@@ -106,8 +101,8 @@ contract ERC4626Test is BaseTest {
         vm.prank(user);
         oneD.deltaCompose(abi.encodePacked(transferTo, deposit));
 
-        uint256 shares = IERC20All(vault).balanceOf(user);
-        uint256 assetsInVault = IERC20All(vault).convertToAssets(shares);
+        uint256 shares = IERC4626(vault).balanceOf(user);
+        uint256 assetsInVault = IERC4626(vault).convertToAssets(shares);
 
         assertApproxEqAbs(shares, desiredShares, 0); // shares are exact!
         assertApproxEqAbs(assets, assetsInVault, 0);
@@ -134,7 +129,7 @@ contract ERC4626Test is BaseTest {
         oneD.deltaCompose(abi.encodePacked(transferTo, deposit));
     }
 
-    function test_light_morpho_withdraw_from_erc4626() external {
+    function test_integ_erc4626_morpho_withdraw_basic() external {
         deal(USDC, user, 300_000.0e6);
 
         uint256 assets = 100.0e6;
@@ -152,23 +147,23 @@ contract ERC4626Test is BaseTest {
         );
 
         vm.prank(user);
-        IERC20All(vault).approve(address(oneD), type(uint256).max);
+        IERC4626(vault).approve(address(oneD), type(uint256).max);
 
         uint256 underlyingBefore = IERC20All(underlying).balanceOf(user);
 
-        uint256 assetsInVault = IERC20All(vault).convertToAssets(IERC20All(vault).balanceOf(user));
+        uint256 assetsInVault = IERC4626(vault).convertToAssets(IERC4626(vault).balanceOf(user));
 
         vm.prank(user);
         oneD.deltaCompose(withdrawCall);
 
         uint256 underlyingAfter = IERC20All(underlying).balanceOf(user);
-        uint256 assetsInVaultAfter = IERC20All(vault).convertToAssets(IERC20All(vault).balanceOf(user));
+        uint256 assetsInVaultAfter = IERC4626(vault).convertToAssets(IERC4626(vault).balanceOf(user));
 
         assertApproxEqAbs(assetsInVault - assetsInVaultAfter, withdrawAssets, 1);
         assertApproxEqAbs(underlyingAfter - underlyingBefore, withdrawAssets, 1);
     }
 
-    function test_light_morpho_withdraw_shares_from_erc4626() external {
+    function test_integ_erc4626_morpho_withdraw_shares() external {
         deal(USDC, user, 300_000.0e6);
 
         address underlying = USDC;
@@ -177,7 +172,7 @@ contract ERC4626Test is BaseTest {
 
         depositToMetaMorpho(user, underlying, assets);
 
-        uint256 userShares = IERC20All(vault).balanceOf(user);
+        uint256 userShares = IERC4626(vault).balanceOf(user);
 
         bytes memory withdrawCall = CalldataLib.encodeErc4646Withdraw(
             vault, //
@@ -186,12 +181,12 @@ contract ERC4626Test is BaseTest {
             user
         );
         vm.prank(user);
-        IERC20All(vault).approve(address(oneD), type(uint256).max);
+        IERC4626(vault).approve(address(oneD), type(uint256).max);
 
         vm.prank(user);
         oneD.deltaCompose(withdrawCall);
 
-        assertApproxEqAbs(IERC20All(vault).balanceOf(user), userShares / 2, 1);
+        assertApproxEqAbs(IERC4626(vault).balanceOf(user), userShares / 2, 1);
     }
 
     function wrapSwapWUSDM(address receiver, uint256 amount) internal view returns (bytes memory data) {
@@ -228,9 +223,7 @@ contract ERC4626Test is BaseTest {
         );
     }
 
-    function test_light_wrap_redeem_single() external {
-        vm.assume(user != address(0));
-
+    function test_integ_erc4626_wrap_redeem_single() external {
         address tokenIn = WUSDM;
         address tokenOut = USDM;
         uint256 amount = 1.0e18;
@@ -256,9 +249,7 @@ contract ERC4626Test is BaseTest {
 
     // this one is a bit weird as we
     // forge cannot mint USDM, only WUSDM
-    function test_light_wrap_deposit_single() external {
-        vm.assume(user != address(0));
-
+    function test_integ_erc4626_wrap_deposit_single() external {
         address tokenIn = WUSDM;
         address tokenOut = USDM;
         uint256 amount = 1.0e18;
@@ -312,9 +303,7 @@ contract ERC4626Test is BaseTest {
         );
     }
 
-    function test_light_wrap_native_single() external {
-        vm.assume(user != address(0));
-
+    function test_integ_erc4626_wrap_native_single() external {
         address tokenOut = WETH;
         uint256 amount = 1.0e18;
         uint256 approxOut = 1.0e18;
@@ -351,9 +340,7 @@ contract ERC4626Test is BaseTest {
         );
     }
 
-    function test_light_wrap_wnative_single() external {
-        vm.assume(user != address(0));
-
+    function test_integ_erc4626_wrap_wnative_single() external {
         address tokenIn = WETH;
         uint256 amount = 1.0e18;
         uint256 approxOut = 1.0e18;
@@ -374,5 +361,141 @@ contract ERC4626Test is BaseTest {
         uint256 balAfter = user.balance;
         console.log("received", balAfter - balBefore);
         assertApproxEqAbs(balAfter - balBefore, approxOut, (approxOut * 10) / 100);
+    }
+
+    function test_integ_erc4626_deposit_zero_amount_uses_balance() external {
+        deal(USDC, user, 300_000.0e6);
+        address vault = META_MORPHO_USDC;
+        address asset = USDC;
+        uint256 assets = 100.0e6;
+
+        bytes memory cd = CalldataLib.encodeTransferIn(asset, address(oneD), assets);
+
+        cd = abi.encodePacked(cd, CalldataLib.encodeErc4646Deposit(asset, vault, false, 0, user));
+
+        vm.prank(user);
+        IERC20All(asset).approve(address(oneD), type(uint256).max);
+
+        vm.prank(user);
+        oneD.deltaCompose(cd);
+
+        uint256 shares = IERC4626(vault).balanceOf(user);
+        uint256 assetsInVault = IERC4626(vault).convertToAssets(shares);
+
+        assertApproxEqAbs(assets, assetsInVault, 1);
+    }
+
+    function test_integ_erc4626_deposit_different_receiver() external {
+        deal(USDC, user, 300_000.0e6);
+        address receiver = address(0x1234);
+        address vault = META_MORPHO_USDC;
+        address asset = USDC;
+        uint256 assets = 100.0e6;
+
+        bytes memory transferTo = CalldataLib.encodeTransferIn(asset, address(oneD), assets);
+
+        bytes memory deposit = CalldataLib.encodeErc4646Deposit(asset, vault, false, assets, receiver);
+
+        vm.prank(user);
+        IERC20All(asset).approve(address(oneD), type(uint256).max);
+
+        vm.prank(user);
+        oneD.deltaCompose(abi.encodePacked(transferTo, deposit));
+
+        uint256 shares = IERC4626(vault).balanceOf(receiver);
+        uint256 assetsInVault = IERC4626(vault).convertToAssets(shares);
+
+        assertApproxEqAbs(assets, assetsInVault, 1);
+        assertEq(IERC4626(vault).balanceOf(user), 0);
+    }
+
+    function test_integ_erc4626_withdraw_different_receiver() external {
+        deal(USDC, user, 300_000.0e6);
+        address receiver = address(0x1234);
+        uint256 assets = 100.0e6;
+        address underlying = USDC;
+        address vault = META_MORPHO_USDC;
+
+        depositToMetaMorpho(user, USDC, assets);
+
+        uint256 withdrawAssets = 70.0e6;
+        bytes memory withdrawCall = CalldataLib.encodeErc4646Withdraw(vault, false, withdrawAssets, receiver);
+
+        vm.prank(user);
+        IERC4626(vault).approve(address(oneD), type(uint256).max);
+
+        uint256 underlyingBefore = IERC20All(underlying).balanceOf(receiver);
+
+        vm.prank(user);
+        oneD.deltaCompose(withdrawCall);
+
+        uint256 underlyingAfter = IERC20All(underlying).balanceOf(receiver);
+        assertApproxEqAbs(underlyingAfter - underlyingBefore, withdrawAssets, 1);
+    }
+
+    function test_integ_erc4626_withdraw_max_available() external {
+        deal(USDC, user, 300_000.0e6);
+        uint256 assets = 100.0e6;
+        address underlying = USDC;
+        address vault = META_MORPHO_USDC;
+
+        depositToMetaMorpho(user, USDC, assets);
+
+        uint256 userShares = IERC4626(vault).balanceOf(user);
+        uint256 maxAssets = IERC4626(vault).convertToAssets(userShares);
+
+        bytes memory withdrawCall = CalldataLib.encodeErc4646Withdraw(vault, true, userShares, user);
+
+        vm.prank(user);
+        IERC4626(vault).approve(address(oneD), type(uint256).max);
+
+        uint256 underlyingBefore = IERC20All(underlying).balanceOf(user);
+
+        vm.prank(user);
+        oneD.deltaCompose(withdrawCall);
+
+        uint256 underlyingAfter = IERC20All(underlying).balanceOf(user);
+        uint256 sharesAfter = IERC4626(vault).balanceOf(user);
+
+        assertEq(sharesAfter, 0);
+        assertApproxEqAbs(underlyingAfter - underlyingBefore, maxAssets, 2);
+    }
+
+    function test_integ_erc4626_deposit_insufficient_balance_reverts() external {
+        deal(USDC, user, 50.0e6);
+        address vault = META_MORPHO_USDC;
+        address asset = USDC;
+        uint256 assets = 100.0e6;
+
+        bytes memory transferTo = CalldataLib.encodeTransferIn(asset, address(oneD), assets);
+
+        bytes memory deposit = CalldataLib.encodeErc4646Deposit(asset, vault, false, assets, user);
+
+        vm.prank(user);
+        IERC20All(asset).approve(address(oneD), type(uint256).max);
+
+        vm.prank(user);
+        vm.expectRevert();
+        oneD.deltaCompose(abi.encodePacked(transferTo, deposit));
+    }
+
+    function test_integ_erc4626_withdraw_insufficient_shares_reverts() external {
+        deal(USDC, user, 300_000.0e6);
+        uint256 assets = 100.0e6;
+        address vault = META_MORPHO_USDC;
+
+        depositToMetaMorpho(user, USDC, assets);
+
+        uint256 userShares = IERC4626(vault).balanceOf(user);
+        uint256 excessiveShares = userShares + 1;
+
+        bytes memory withdrawCall = CalldataLib.encodeErc4646Withdraw(vault, true, excessiveShares, user);
+
+        vm.prank(user);
+        IERC4626(vault).approve(address(oneD), type(uint256).max);
+
+        vm.prank(user);
+        vm.expectRevert();
+        oneD.deltaCompose(withdrawCall);
     }
 }

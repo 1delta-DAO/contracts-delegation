@@ -646,17 +646,6 @@ const config: HardhatUserConfig = {
                     evmVersion: "paris",
                 },
             },
-            // ma
-            "contracts/1delta/contracts/1delta/shared/MetaAggregator.sol": {
-                version: "0.8.28",
-                settings: {
-                    optimizer: {
-                        enabled: true,
-                        runs: 1_000_000,
-                    },
-                    evmVersion: "paris",
-                },
-            },
             // forwarder
             "contracts/1delta/composer/generic/CallForwarder.sol": {
                 version: "0.8.28",
@@ -1010,16 +999,6 @@ const config: HardhatUserConfig = {
                     evmVersion: "cancun",
                 },
             },
-            "contracts/external-protocols/misc/UniswapMulticall.sol": {
-                version: "0.7.6",
-                settings: {
-                    optimizer: {
-                        enabled: true,
-                        runs: 10_000_000,
-                    },
-                    evmVersion: "istanbul",
-                },
-            },
             "contracts/1delta/composer/chains/base/Composer.sol": {
                 version: "0.8.28",
                 settings: {
@@ -1058,16 +1037,6 @@ const config: HardhatUserConfig = {
                         runs: 1_000,
                     },
                     evmVersion: "shanghai",
-                },
-            },
-            "contracts/1delta/quoter/MoeJoeLens.sol": {
-                version: "0.8.28",
-                settings: {
-                    optimizer: {
-                        enabled: true,
-                        runs: 1_000_000,
-                    },
-                    evmVersion: "paris",
                 },
             },
             "contracts/external-protocols/misc/CometLens.sol": {

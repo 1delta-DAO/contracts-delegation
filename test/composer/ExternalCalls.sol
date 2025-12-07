@@ -6,10 +6,10 @@ import {CallForwarder} from "../../contracts/1delta/composer/generic/CallForward
 import {IERC20All} from "../shared/interfaces/IERC20All.sol";
 import {BaseTest} from "../shared/BaseTest.sol";
 import {Chains, Tokens, Lenders} from "../data/LenderRegistry.sol";
-import "../../contracts/1delta/test/TrivialMockRouter.sol";
+import "../mocks/TrivialMockRouter.sol";
 import {SweepType} from "contracts/1delta/composer/enums/MiscEnums.sol";
 import {ComposerPlugin, IComposerLike} from "plugins/ComposerPlugin.sol";
-import {CalldataLib} from "./utils/CalldataLib.sol";
+import {CalldataLib} from "contracts/utils/CalldataLib.sol";
 
 // solhint-disable max-line-length
 
@@ -43,7 +43,7 @@ contract ExternalCallsTest is BaseTest {
         // initialize the chain
         string memory chainName = Chains.BASE;
 
-        _init(chainName, forkBlock, true);
+        _init(chainName, forkBlock, false);
         LBTC = chain.getTokenAddress(Tokens.LBTC);
         WETH = chain.getTokenAddress(Tokens.WETH);
         cbETH = chain.getTokenAddress(Tokens.CBETH);
@@ -64,7 +64,7 @@ contract ExternalCallsTest is BaseTest {
         data = CalldataLib.encodeExternalCall(address(cf), amount, false, data);
     }
 
-    function test_light_ext_call() external {
+    function test_unit_externalCall_extCall() external {
         vm.assume(user != address(0));
 
         address tokenIn = address(0);
