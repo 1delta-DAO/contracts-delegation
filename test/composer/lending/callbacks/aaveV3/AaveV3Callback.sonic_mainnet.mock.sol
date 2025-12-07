@@ -1,4 +1,3 @@
-
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
@@ -20,7 +19,6 @@ contract AaveV3FlashLoanCallbackTest is BaseTest, DeltaErrors {
     address private AVALON_BEETS;
 
     address private WETH;
-
 
     struct PoolCase {
         uint8 poolId;
@@ -121,7 +119,7 @@ contract AaveV3FlashLoanCallbackTest is BaseTest, DeltaErrors {
     }
 
     // Helper Functions
-        function sweepCall() internal returns (bytes memory){
+    function sweepCall() internal returns (bytes memory) {
         return CalldataLib.encodeSweep(WETH, user, 0, SweepType.VALIDATE);
     }
 
@@ -140,12 +138,10 @@ contract AaveV3FlashLoanCallbackTest is BaseTest, DeltaErrors {
         validPools.push(PoolCase({poolId: 50, poolAddr: AVALON, asset: WETH}));
         validPools.push(PoolCase({poolId: 55, poolAddr: AVALON_USDA, asset: WETH}));
         validPools.push(PoolCase({poolId: 61, poolAddr: AVALON_BEETS, asset: WETH}));
-
     }
 
     function mockERC20FunctionsForAllTokens() internal {
         mockERC20Functions(WETH);
-
     }
 
     function mockERC20Functions(address token) internal {

@@ -1,9 +1,10 @@
 import axios from "axios";
 import {CREATE_CHAIN_IDS} from "./_create/config";
-import {CHAIN_INFO} from "@1delta/asset-registry";
 import * as fs from "fs";
 import * as path from "path";
 import crypto from "crypto";
+import {chains} from "@1delta/data-sdk";
+import {fetchLenderMetaFromDirAndInitialize} from "./_create/utils";
 
 interface ChainConfig {
     name: string;
@@ -33,14 +34,14 @@ interface ReportData {
 }
 
 function getChainIdFromChainEnum(chainEnum: string): number | null {
-    const chainInfo = CHAIN_INFO[chainEnum];
+    const chainInfo = chains()[chainEnum];
     if (!chainInfo || !chainInfo.chainId) {
         return null;
     }
     return parseInt(chainInfo.chainId.toString(), 10);
 }
 
-function extractChainConfigs(): ChainConfig[] {
+async function extractChainConfigs(): Promise<ChainConfig[]> {
     const chainConfigs: ChainConfig[] = [];
 
     for (const chainEnum of CREATE_CHAIN_IDS) {
@@ -50,7 +51,7 @@ function extractChainConfigs(): ChainConfig[] {
             continue;
         }
 
-        const chainInfo = CHAIN_INFO[chainEnum];
+        const chainInfo = chains()[chainEnum];
         if (!chainInfo) {
             console.warn(`Warning: Could not find chain info for ${chainEnum}`);
             continue;
@@ -287,6 +288,7 @@ function printConsoleSummary(reportData: ReportData): void {
 }
 
 async function main() {
+    await fetchLenderMetaFromDirAndInitialize();
     const contractAddress = process.argv[2];
 
     if (!contractAddress) {
@@ -301,7 +303,7 @@ async function main() {
     }
 
     console.log("Extracting chain configurations...");
-    const chainConfigs = extractChainConfigs();
+    const chainConfigs = await extractChainConfigs();
 
     if (chainConfigs.length === 0) {
         console.error("Error: No valid chain configurations found");

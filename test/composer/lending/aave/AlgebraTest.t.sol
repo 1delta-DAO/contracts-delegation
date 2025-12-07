@@ -116,7 +116,17 @@ contract AlgebraTest is BaseTest, Masks {
         return address(uint160(((uint256(factory) << 8) >> 88)));
     }
 
-    function _createSwapData(address pool, address tokenIn, address tokenOut, address receiver, uint256 amount) internal view returns (bytes memory) {
+    function _createSwapData(
+        address pool,
+        address tokenIn,
+        address tokenOut,
+        address receiver,
+        uint256 amount
+    )
+        internal
+        view
+        returns (bytes memory)
+    {
         return _createSwapDataWithConfig(pool, tokenIn, tokenOut, receiver, amount, DexPayConfig.CALLER_PAYS);
     }
 

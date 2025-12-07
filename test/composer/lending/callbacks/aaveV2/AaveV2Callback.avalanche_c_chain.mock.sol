@@ -1,6 +1,6 @@
-
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
+
 import {Chains, Lenders, Tokens} from "test/data/LenderRegistry.sol";
 import {DeltaErrors} from "contracts/1delta/shared/errors/Errors.sol";
 import {ComposerPlugin, IComposerLike} from "plugins/ComposerPlugin.sol";
@@ -18,7 +18,6 @@ contract AaveV2FlashLoanCallbackTest is BaseTest, DeltaErrors {
     address private GRANARY;
 
     address private USDC;
-
 
     struct PoolCase {
         uint8 poolId;
@@ -45,8 +44,7 @@ contract AaveV2FlashLoanCallbackTest is BaseTest, DeltaErrors {
     }
 
     function test_unit_lending_flashloans_aaveV2_callback_aave_v2Pool() public {
-
-    replaceLendingPoolWithMock(AAVE_V2);
+        replaceLendingPoolWithMock(AAVE_V2);
 
         bytes memory params = CalldataLib.encodeFlashLoan(USDC, 1e6, AAVE_V2, uint8(3), uint8(0), sweepCall());
 
@@ -55,8 +53,7 @@ contract AaveV2FlashLoanCallbackTest is BaseTest, DeltaErrors {
     }
 
     function test_unit_lending_flashloans_aaveV2_callback_nereusPool() public {
-
-    replaceLendingPoolWithMock(NEREUS);
+        replaceLendingPoolWithMock(NEREUS);
 
         bytes memory params = CalldataLib.encodeFlashLoan(USDC, 1e6, NEREUS, uint8(3), uint8(6), sweepCall());
 
@@ -65,8 +62,7 @@ contract AaveV2FlashLoanCallbackTest is BaseTest, DeltaErrors {
     }
 
     function test_unit_lending_flashloans_aaveV2_callback_granaryPool() public {
-
-    replaceLendingPoolWithMock(GRANARY);
+        replaceLendingPoolWithMock(GRANARY);
 
         bytes memory params = CalldataLib.encodeFlashLoan(USDC, 1e6, GRANARY, uint8(3), uint8(7), sweepCall());
 
@@ -89,24 +85,16 @@ contract AaveV2FlashLoanCallbackTest is BaseTest, DeltaErrors {
 
         address[] memory assets = new address[](1);
         assets[0] = USDC;
-        
+
         uint256[] memory amounts = new uint256[](1);
         amounts[0] = 1e6;
-        
+
         uint256[] memory modes = new uint256[](1);
         modes[0] = 0;
 
         vm.prank(user);
         vm.expectRevert(DeltaErrors.INVALID_INITIATOR);
-        IAaveV2Pool(pc.poolAddr).flashLoan(
-            address(oneDV2),
-            assets,
-            amounts,
-            modes,
-            address(0),
-            abi.encodePacked(address(user), pc.poolId),
-            0
-        );
+        IAaveV2Pool(pc.poolAddr).flashLoan(address(oneDV2), assets, amounts, modes, address(0), abi.encodePacked(address(user), pc.poolId), 0);
     }
 
     function test_unit_lending_flashloans_aaveV2_callback_fuzzInvalidPoolIds(uint8 poolId) public {
@@ -122,7 +110,7 @@ contract AaveV2FlashLoanCallbackTest is BaseTest, DeltaErrors {
     }
 
     // Helper Functions
-        function sweepCall() internal returns (bytes memory){
+    function sweepCall() internal returns (bytes memory) {
         return CalldataLib.encodeSweep(USDC, user, 0, SweepType.VALIDATE);
     }
 
@@ -139,12 +127,10 @@ contract AaveV2FlashLoanCallbackTest is BaseTest, DeltaErrors {
         validPools.push(PoolCase({poolId: 0, poolAddr: AAVE_V2, asset: USDC}));
         validPools.push(PoolCase({poolId: 6, poolAddr: NEREUS, asset: USDC}));
         validPools.push(PoolCase({poolId: 7, poolAddr: GRANARY, asset: USDC}));
-
     }
 
     function mockERC20FunctionsForAllTokens() internal {
         mockERC20Functions(USDC);
-
     }
 
     function mockERC20Functions(address token) internal {

@@ -47,5 +47,3 @@ contract MaliciousPoolV3 {
         return (1, 0);
     }
 }
-
-

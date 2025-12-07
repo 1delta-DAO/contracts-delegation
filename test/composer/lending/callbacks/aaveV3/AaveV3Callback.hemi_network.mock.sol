@@ -1,4 +1,3 @@
-
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
@@ -19,7 +18,6 @@ contract AaveV3FlashLoanCallbackTest is BaseTest, DeltaErrors {
     address private LAYERBANK_V3;
 
     address private WBTC;
-
 
     struct PoolCase {
         uint8 poolId;
@@ -110,7 +108,7 @@ contract AaveV3FlashLoanCallbackTest is BaseTest, DeltaErrors {
     }
 
     // Helper Functions
-        function sweepCall() internal returns (bytes memory){
+    function sweepCall() internal returns (bytes memory) {
         return CalldataLib.encodeSweep(WBTC, user, 0, SweepType.VALIDATE);
     }
 
@@ -127,12 +125,10 @@ contract AaveV3FlashLoanCallbackTest is BaseTest, DeltaErrors {
         validPools.push(PoolCase({poolId: 20, poolAddr: ZEROLEND, asset: WBTC}));
         validPools.push(PoolCase({poolId: 83, poolAddr: LENDOS, asset: WBTC}));
         validPools.push(PoolCase({poolId: 91, poolAddr: LAYERBANK_V3, asset: WBTC}));
-
     }
 
     function mockERC20FunctionsForAllTokens() internal {
         mockERC20Functions(WBTC);
-
     }
 
     function mockERC20Functions(address token) internal {

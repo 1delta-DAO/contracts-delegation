@@ -26,5 +26,3 @@ contract MockPermitter {
         return isAuth;
     }
 }
-
-

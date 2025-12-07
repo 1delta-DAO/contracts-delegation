@@ -49,8 +49,8 @@ contract BalV2LightTest is BaseTest {
             rev ? rETH : WETH,
             uint8(0), // swaps max index
             uint8(0) // splits
-            // single split data (no data here)
-            // uint8(0), // swaps max index for inner path
+                // single split data (no data here)
+                // uint8(0), // swaps max index for inner path
         );
         data = abi.encodePacked(
             data,
@@ -69,8 +69,8 @@ contract BalV2LightTest is BaseTest {
             rev ? rETH : WETH,
             uint8(0), // swaps max index
             uint8(0) // splits
-            // single split data (no data here)
-            // uint8(0), // swaps max index for inner path
+                // single split data (no data here)
+                // uint8(0), // swaps max index for inner path
         );
         data = abi.encodePacked(
             data,

@@ -116,4 +116,3 @@ contract PermitsTest is Test, DeltaErrors {
         oneD.deltaCompose(data);
     }
 }
-

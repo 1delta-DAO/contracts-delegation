@@ -44,9 +44,7 @@ library ComposerPlugin {
     function getComposer(string memory chainName) public returns (IComposerLike) {
         if (keccak256(bytes(chainName)) == keccak256(bytes(Chains.ARBITRUM_ONE))) return IComposerLike(address(new OneDeltaComposerArbitrumOne()));
         if (keccak256(bytes(chainName)) == keccak256(bytes(Chains.HEMI_NETWORK))) return IComposerLike(address(new OneDeltaComposerHemi()));
-        if (keccak256(bytes(chainName)) == keccak256(bytes(Chains.BNB_SMART_CHAIN_MAINNET))) {
-            return IComposerLike(address(new OneDeltaComposerBnb()));
-        }
+        if (keccak256(bytes(chainName)) == keccak256(bytes(Chains.BNB_SMART_CHAIN_MAINNET))) return IComposerLike(address(new OneDeltaComposerBnb()));
         if (keccak256(bytes(chainName)) == keccak256(bytes(Chains.METIS_ANDROMEDA_MAINNET))) {
             return IComposerLike(address(new OneDeltaComposerMetisAndromeda()));
         }
@@ -56,9 +54,7 @@ library ComposerPlugin {
         if (keccak256(bytes(chainName)) == keccak256(bytes(Chains.MANTLE))) return IComposerLike(address(new OneDeltaComposerMantle()));
         if (keccak256(bytes(chainName)) == keccak256(bytes(Chains.CELO_MAINNET))) return IComposerLike(address(new OneDeltaComposerCelo()));
         if (keccak256(bytes(chainName)) == keccak256(bytes(Chains.GNOSIS))) return IComposerLike(address(new OneDeltaComposerGnosis()));
-        if (keccak256(bytes(chainName)) == keccak256(bytes(Chains.AVALANCHE_C_CHAIN))) {
-            return IComposerLike(address(new OneDeltaComposerAvalanche()));
-        }
+        if (keccak256(bytes(chainName)) == keccak256(bytes(Chains.AVALANCHE_C_CHAIN))) return IComposerLike(address(new OneDeltaComposerAvalanche()));
         if (keccak256(bytes(chainName)) == keccak256(bytes(Chains.SONIC_MAINNET))) return IComposerLike(address(new OneDeltaComposerSonic()));
         if (keccak256(bytes(chainName)) == keccak256(bytes(Chains.OP_MAINNET))) return IComposerLike(address(new OneDeltaComposerOp()));
         if (keccak256(bytes(chainName)) == keccak256(bytes(Chains.SCROLL))) return IComposerLike(address(new OneDeltaComposerScroll()));

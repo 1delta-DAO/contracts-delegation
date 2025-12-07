@@ -8,9 +8,6 @@ importers:
 
   .:
     dependencies:
-      '@1delta/asset-registry':
-        specifier: ^0.0.193
-        version: 0.0.193
       '@1delta/chain-registry':
         specifier: ^0.0.3
         version: 0.0.3
@@ -200,10 +197,6 @@ importers:
         version: 4.9.5
 
 packages:
-
-  '@1delta/asset-registry@0.0.193':
-    resolution: {integrity: sha512-ZFvSWFR9RXUW94c+MzZvL6iIb4HiHoflsBK+l28CFG6ww/ZHa1GuoslVqqMBnqzTD8us7IYR2k7/YaDlG90ikg==}
-    engines: {node: '>=20'}
 
   '@1delta/chain-registry@0.0.2':
     resolution: {integrity: sha512-zF0SxthRT3sQQ6evRR3TYqBJCKddfWuIeS2aFvsTVCKxNYGhlvY0O+PvXZElPFXiNgkWbTazuCLgQDCmnlJvYA==}
@@ -7008,8 +7001,6 @@ packages:
       ethers: ^5.7.0
 
 snapshots:
-
-  '@1delta/asset-registry@0.0.193': {}
 
   '@1delta/chain-registry@0.0.2': {}
 

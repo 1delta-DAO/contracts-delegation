@@ -27,4 +27,3 @@ contract TrivialMockRouter {
 
     receive() external payable {}
 }
-

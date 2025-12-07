@@ -115,4 +115,3 @@ contract MockERC20 is ERC20 {
         data = abi.encodeWithSelector(IPermit2.transferFrom.selector, user, spender, amount, token);
     }
 }
-
