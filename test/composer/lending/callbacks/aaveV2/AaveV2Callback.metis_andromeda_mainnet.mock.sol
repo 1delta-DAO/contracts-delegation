@@ -1,6 +1,6 @@
-
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
+
 import {Chains, Lenders, Tokens} from "test/data/LenderRegistry.sol";
 import {DeltaErrors} from "contracts/1delta/shared/errors/Errors.sol";
 import {ComposerPlugin, IComposerLike} from "plugins/ComposerPlugin.sol";
@@ -16,7 +16,6 @@ contract AaveV2FlashLoanCallbackTest is BaseTest, DeltaErrors {
     address private GRANARY;
 
     address private WETH;
-
 
     struct PoolCase {
         uint8 poolId;
@@ -43,8 +42,7 @@ contract AaveV2FlashLoanCallbackTest is BaseTest, DeltaErrors {
     }
 
     function test_unit_lending_flashloans_aaveV2_callback_granaryPool() public {
-
-    replaceLendingPoolWithMock(GRANARY);
+        replaceLendingPoolWithMock(GRANARY);
 
         bytes memory params = CalldataLib.encodeFlashLoan(WETH, 1e6, GRANARY, uint8(3), uint8(7), sweepCall());
 
@@ -67,24 +65,16 @@ contract AaveV2FlashLoanCallbackTest is BaseTest, DeltaErrors {
 
         address[] memory assets = new address[](1);
         assets[0] = WETH;
-        
+
         uint256[] memory amounts = new uint256[](1);
         amounts[0] = 1e6;
-        
+
         uint256[] memory modes = new uint256[](1);
         modes[0] = 0;
 
         vm.prank(user);
         vm.expectRevert(DeltaErrors.INVALID_INITIATOR);
-        IAaveV2Pool(pc.poolAddr).flashLoan(
-            address(oneDV2),
-            assets,
-            amounts,
-            modes,
-            address(0),
-            abi.encodePacked(address(user), pc.poolId),
-            0
-        );
+        IAaveV2Pool(pc.poolAddr).flashLoan(address(oneDV2), assets, amounts, modes, address(0), abi.encodePacked(address(user), pc.poolId), 0);
     }
 
     function test_unit_lending_flashloans_aaveV2_callback_fuzzInvalidPoolIds(uint8 poolId) public {
@@ -100,7 +90,7 @@ contract AaveV2FlashLoanCallbackTest is BaseTest, DeltaErrors {
     }
 
     // Helper Functions
-        function sweepCall() internal returns (bytes memory){
+    function sweepCall() internal returns (bytes memory) {
         return CalldataLib.encodeSweep(WETH, user, 0, SweepType.VALIDATE);
     }
 
@@ -113,12 +103,10 @@ contract AaveV2FlashLoanCallbackTest is BaseTest, DeltaErrors {
 
     function populateValidPools() internal {
         validPools.push(PoolCase({poolId: 7, poolAddr: GRANARY, asset: WETH}));
-
     }
 
     function mockERC20FunctionsForAllTokens() internal {
         mockERC20Functions(WETH);
-
     }
 
     function mockERC20Functions(address token) internal {

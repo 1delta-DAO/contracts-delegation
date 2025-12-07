@@ -54,8 +54,8 @@ contract CurveLightTest is BaseTest {
             WETH,
             uint8(0), // swaps max index
             uint8(0) // splits
-            // single split data (no data here)
-            // uint8(0), // swaps max index for inner path
+                // single split data (no data here)
+                // uint8(0), // swaps max index for inner path
         );
         data = abi.encodePacked(
             data,
@@ -88,8 +88,8 @@ contract CurveLightTest is BaseTest {
             cbETH,
             uint8(0), // swaps max index
             uint8(0) // splits
-            // single split data (no data here)
-            // uint8(0), // swaps max index for inner path
+                // single split data (no data here)
+                // uint8(0), // swaps max index for inner path
         );
         data = abi.encodePacked(
             data,
@@ -113,8 +113,8 @@ contract CurveLightTest is BaseTest {
             WETH,
             uint8(0), // swaps max index
             uint8(0) // splits
-            // single split data (no data here)
-            // uint8(0), // swaps max index for inner path
+                // single split data (no data here)
+                // uint8(0), // swaps max index for inner path
         );
         data = abi.encodePacked(
             data,

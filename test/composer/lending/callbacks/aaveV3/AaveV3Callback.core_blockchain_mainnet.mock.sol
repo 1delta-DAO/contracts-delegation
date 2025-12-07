@@ -1,4 +1,3 @@
-
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
@@ -23,7 +22,6 @@ contract AaveV3FlashLoanCallbackTest is BaseTest, DeltaErrors {
     address private SOLVBTC_B;
     address private USDC;
     address private STBTC;
-
 
     struct PoolCase {
         uint8 poolId;
@@ -134,7 +132,7 @@ contract AaveV3FlashLoanCallbackTest is BaseTest, DeltaErrors {
     }
 
     // Helper Functions
-        function sweepCall() internal returns (bytes memory){
+    function sweepCall() internal returns (bytes memory) {
         return CalldataLib.encodeSweep(SOLVBTC_B, user, 0, SweepType.VALIDATE);
     }
 
@@ -157,14 +155,12 @@ contract AaveV3FlashLoanCallbackTest is BaseTest, DeltaErrors {
         validPools.push(PoolCase({poolId: 60, poolAddr: AVALON_OBTC, asset: USDC}));
         validPools.push(PoolCase({poolId: 102, poolAddr: COLEND, asset: USDC}));
         validPools.push(PoolCase({poolId: 103, poolAddr: COLEND_LSTBTC, asset: STBTC}));
-
     }
 
     function mockERC20FunctionsForAllTokens() internal {
         mockERC20Functions(SOLVBTC_B);
         mockERC20Functions(USDC);
         mockERC20Functions(STBTC);
-
     }
 
     function mockERC20Functions(address token) internal {

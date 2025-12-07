@@ -81,7 +81,6 @@
         "verify-bytecode": "tsx scripts/verify-bytecode.ts"
     },
     "dependencies": {
-        "@1delta/asset-registry": "^0.0.193",
         "@1delta/chain-registry": "^0.0.3",
         "@1delta/data-sdk": "^0.0.10",
         "@1delta/dex-registry": "^0.0.97",

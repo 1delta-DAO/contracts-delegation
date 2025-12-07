@@ -31,4 +31,3 @@ contract MockERC20NoReturn {
         allowance[msg.sender][spender] = amount;
     }
 }
-

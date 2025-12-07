@@ -76,4 +76,3 @@ contract MockERC20Permit {
         _approve(owner, spender, value);
     }
 }
-

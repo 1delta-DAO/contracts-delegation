@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
+
 import {Test} from "forge-std/Test.sol";
 import {IComposerLike} from "test/shared/composers/IComposerLike.sol";
 import {ComposerPlugin} from "test/shared/composers/ComposerPlugin.sol";

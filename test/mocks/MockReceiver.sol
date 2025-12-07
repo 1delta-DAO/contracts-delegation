@@ -12,4 +12,3 @@ contract MockReceiver {
         require(canReceiveNative, "Cannot receive native");
     }
 }
-

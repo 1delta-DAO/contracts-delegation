@@ -544,12 +544,7 @@ contract StargateV2Test is BaseTest {
         uint256 slippage
     )
         private
-        returns (
-            uint256,
-            int256,
-            IStargate.SendParam memory sendParam,
-            IStargate.MessagingFee memory param
-        )
+        returns (uint256, int256, IStargate.SendParam memory sendParam, IStargate.MessagingFee memory param)
     {
         sendParam = IStargate.SendParam({
             dstEid: POLYGON_EID,

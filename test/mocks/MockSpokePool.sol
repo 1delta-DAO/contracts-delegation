@@ -61,5 +61,3 @@ contract MockSpokePool {
         return new bytes(0);
     }
 }
-
-

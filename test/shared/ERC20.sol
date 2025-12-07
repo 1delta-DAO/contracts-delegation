@@ -335,4 +335,3 @@ contract ERC20 is IERC20, Context {
      */
     function _afterTokenTransfer(address from, address to, uint256 amount) internal virtual {}
 }
-

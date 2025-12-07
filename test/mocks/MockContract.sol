@@ -29,5 +29,3 @@ contract MockContract {
         catchCalled = false;
     }
 }
-
-

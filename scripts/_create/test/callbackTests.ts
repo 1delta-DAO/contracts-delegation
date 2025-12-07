@@ -10,7 +10,7 @@ import {CANCUN_OR_HIGHER} from "../chain/evmVersion";
 import {fetchLenderMetaFromDirAndInitialize} from "../utils";
 import {aavePools} from "@1delta/data-sdk";
 import {Chain} from "@1delta/chain-registry";
-import {Lender} from "@1delta/asset-registry";
+import {Lender} from "@1delta/lender-registry";
 
 interface LenderData {
     entityName: string;
