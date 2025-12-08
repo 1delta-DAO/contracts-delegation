@@ -29,7 +29,7 @@ abstract contract AaveLending is ERC20Selectors, Masks {
     function _withdrawFromAave(uint256 currentOffset, address callerAddress) internal returns (uint256) {
         assembly {
             let ptr := mload(0x40)
-            // Aave types need to trasfer collateral tokens
+            // Aave types need to transfer collateral tokens
             let underlying := shr(96, calldataload(currentOffset))
             // offset for amount at lower bytes
             let amountData := shr(128, calldataload(add(currentOffset, 20)))

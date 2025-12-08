@@ -308,7 +308,7 @@ abstract contract MorphoLending is ERC20Selectors, Masks {
                     morpho,
                     0x0,
                     ptr,
-                    add(calldataLength, 292), // = 10 * 32 + 4
+                    add(calldataLength, 292), // = 9 * 32 + 4
                     0x0,
                     0x0 //
                 )

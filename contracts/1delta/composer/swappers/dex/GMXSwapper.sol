@@ -111,7 +111,7 @@ abstract contract GMXSwapper is ERC20Selectors, Masks {
                     vault,
                     0x0, // no native transfer
                     ptr,
-                    0x64, // input length 66 bytes
+                    0x64, // input length 100 bytes (selector 4bytes plus 3*32bytes)
                     ptr, // store output here
                     0x20 // output is just uint
                 )

@@ -48,7 +48,7 @@ abstract contract SharedSingletonActions is Masks {
              */
             mstore(ptr, UNLOCK)
             mstore(add(ptr, 4), 0x20) // offset
-            mstore(add(ptr, 36), add(dataLength, 88)) // selector, address, poolId, offset, length 4+32+32+20+1
+            mstore(add(ptr, 36), add(dataLength, 88)) // selector, offset, length, address 4+32+32+20
             mstore(add(ptr, 68), CB_SELECTOR)
             mstore(add(ptr, 72), 0x20) // offset as for cb selector
             mstore(add(ptr, 104), add(dataLength, 20)) // length for within cb selector
@@ -65,7 +65,7 @@ abstract contract SharedSingletonActions is Masks {
                     0x0,
                     ptr, //
                     add(dataLength, 156),
-                    // selector, 2x offset, 2x length, data * address + uint8
+                    // 2 selectors (8), 2 offsets (64), 2 lengths (64), address (20) = 156
                     0x0, // output = empty
                     0x0 // output size = zero
                 )

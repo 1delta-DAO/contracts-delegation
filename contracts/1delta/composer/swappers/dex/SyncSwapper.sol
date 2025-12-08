@@ -109,7 +109,7 @@ abstract contract SyncSwapper is ERC20Selectors, Masks {
                     pool, // pool
                     0x0,
                     ptr, // input selector
-                    292, // input size = 164 (selector (4bytes) plus 5*32bytes)
+                    292, // input size = 292 (selector (4bytes) plus 9*32bytes)
                     ptr, // output
                     0x40 // output size = 0x40
                 )
