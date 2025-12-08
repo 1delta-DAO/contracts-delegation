@@ -20,7 +20,7 @@ interface DVMF {
  * We test all morpho blue operations
  * - supply, supplyCollateral, borrow, repay, encodeErc4646Deposit, encodeErc4646Withdraw
  */
-contract DodoLightTest is BaseTest {
+contract FlashSwapTestDodo is BaseTest {
     using CalldataLib for bytes;
 
     uint256 internal constant forkBlock = 27970029;

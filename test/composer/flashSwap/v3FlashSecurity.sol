@@ -21,6 +21,9 @@ interface IUniswapV3SwapCallback {
     function uniswapV3SwapCallback(int256 amount0Delta, int256 amount1Delta, bytes calldata data) external;
 }
 
+/**
+ * Mimics a Uniswap V3 type pool
+ */
 contract FakePool {
     address internal immutable VICTIM;
     address internal immutable TOKEN;
@@ -53,7 +56,7 @@ contract FakePool {
     }
 }
 
-contract FlashSwapV3SecurityTest is BaseTest {
+contract FlashSwapTestV3Security is BaseTest {
     address internal constant UNI_FACTORY = 0x1F98431c8aD98523631AE4a59f267346ea31F984;
     IComposerLike oneDV2;
 

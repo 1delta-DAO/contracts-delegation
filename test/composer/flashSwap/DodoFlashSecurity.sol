@@ -5,7 +5,7 @@ import {console} from "forge-std/console.sol";
 
 import {IERC20All} from "../../shared/interfaces/IERC20All.sol";
 import {BaseTest} from "../../shared/BaseTest.sol";
-import {Chains, Tokens, Lenders} from "../../data/LenderRegistry.sol";
+import {Chains, Tokens} from "../../data/LenderRegistry.sol";
 import "contracts/utils/CalldataLib.sol";
 import {DexPayConfig, DodoSelector} from "contracts/1delta/composer/enums/MiscEnums.sol";
 import {ComposerPlugin, IComposerLike} from "plugins/ComposerPlugin.sol";
@@ -24,6 +24,9 @@ interface IDODOCallee {
     function DPPFlashLoanCall(address sender, uint256 baseAmount, uint256 quoteAmount, bytes calldata data) external;
 }
 
+/**
+ * Mimics a Dodo pool
+ */
 contract FakePool {
     address internal immutable VICTIM;
     address internal immutable TOKEN;
@@ -62,7 +65,7 @@ contract FakePool {
     }
 }
 
-contract DodoLightSecurityTest is BaseTest {
+contract FlashSwapTestDodoSecurity is BaseTest {
     using CalldataLib for bytes;
 
     uint256 internal attackerPk = 0xbad0;
@@ -122,7 +125,7 @@ contract DodoLightSecurityTest is BaseTest {
     }
 
     // we use a valid flash swap as baseline
-    function test_security_flashSwap_flash_swap_dodo_single_veri() external {
+    function test_integ_flashSwap_flash_swap_dodo_single_veri() external {
         vm.assume(user != address(0));
 
         address tokenIn = WETH;
@@ -171,7 +174,7 @@ contract DodoLightSecurityTest is BaseTest {
     }
 
     // we cover the reverse case, too
-    function test_security_flashSwap_flash_swap_dodo_single_veri_reverse() external {
+    function test_integ_flashSwap_flash_swap_dodo_single_veri_reverse() external {
         vm.assume(user != address(0));
 
         address tokenIn = VERI;

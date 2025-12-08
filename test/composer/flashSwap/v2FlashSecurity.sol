@@ -22,6 +22,9 @@ interface IUniswapV2Callee {
     function uniswapV2Call(address sender, uint256 amount0, uint256 amount1, bytes calldata data) external;
 }
 
+/**
+ * Mimics a uniswap v2 type pool
+ */
 contract FakePool {
     address internal immutable VICTIM;
     address internal immutable TOKEN;
@@ -54,7 +57,7 @@ contract FakePool {
     }
 }
 
-contract FlashSecuritySwapV2Test is BaseTest {
+contract FlashSwapTestV2Security is BaseTest {
     address internal constant UNI_V2_FACTORY = 0x5C69bEe701ef814a2B6a3EDD4B1652CB9cc5aA6f;
 
     uint256 internal attackerPk = 0xbad0;
