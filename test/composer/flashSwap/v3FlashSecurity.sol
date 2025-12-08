@@ -4,8 +4,9 @@ pragma solidity ^0.8.19;
 import {console} from "forge-std/console.sol";
 import {IERC20All} from "test/shared/interfaces/IERC20All.sol";
 import {BaseTest} from "test/shared/BaseTest.sol";
-import {Chains, Tokens} from "test/data/LenderRegistry.sol";
+import {Chains, Tokens, Lenders} from "test/data/LenderRegistry.sol";
 import "contracts/utils/CalldataLib.sol";
+import {SweepType} from "contracts/1delta/composer/enums/MiscEnums.sol";
 import {ComposerPlugin, IComposerLike} from "plugins/ComposerPlugin.sol";
 
 interface IFactoryAndPair {
@@ -14,12 +15,10 @@ interface IFactoryAndPair {
     function pool(address tokenA, address tokenB, uint24 fee) external view returns (address);
 
     function getPair(address tokenA, address tokenB) external view returns (address pair);
-
-    function swap(uint256 amount0Out, uint256 amount1Out, address to, bytes calldata data) external;
 }
 
-interface IUniswapV2Callee {
-    function uniswapV2Call(address sender, uint256 amount0, uint256 amount1, bytes calldata data) external;
+interface IUniswapV3SwapCallback {
+    function uniswapV3SwapCallback(int256 amount0Delta, int256 amount1Delta, bytes calldata data) external;
 }
 
 contract FakePool {
@@ -35,35 +34,36 @@ contract FakePool {
         attacker = msg.sender;
     }
 
-    function swap(uint256 amount0Out, uint256 amount1Out, address to, bytes calldata data) external {
+    function swap(
+        address recipient,
+        bool zeroForOne,
+        int256 amountSpecified,
+        uint160 sqrtPriceLimitX96,
+        bytes calldata data
+    )
+        external
+        returns (int256 amount0, int256 amount1)
+    {
         /// theft txn that would pull from callerAddress
         bytes memory stealFunds = CalldataLib.encodeTransferIn(TOKEN, attacker, IERC20All(TOKEN).balanceOf(VICTIM));
-        // inject a valid callback selecor with victim address
-        IUniswapV2Callee(to).uniswapV2Call(
-            msg.sender, amount0Out, amount1Out, abi.encodePacked(VICTIM, TOKEN, TOKEN_OUT, uint8(0), uint16(stealFunds.length), stealFunds)
-        );
-        // if we reach this, the composer got exploited
-        revert("EXPLOITED");
-    }
 
-    // this one is needed to comply with the quoting logic
-    function getReserves() public view returns (uint112 _reserve0, uint112 _reserve1, uint32 _blockTimestampLast) {
-        _reserve0 = 1000;
-        _reserve1 = 1000;
-        _blockTimestampLast = 99;
+        IUniswapV3SwapCallback(msg.sender).uniswapV3SwapCallback(
+            int256(99), int256(99), abi.encodePacked(VICTIM, TOKEN, TOKEN_OUT, uint8(0), uint16(500), uint16(stealFunds.length), stealFunds)
+        );
     }
 }
 
-contract FlashSecuritySwapV2Test is BaseTest {
-    address internal constant UNI_V2_FACTORY = 0x5C69bEe701ef814a2B6a3EDD4B1652CB9cc5aA6f;
+contract FlashSwapV3SecurityTest is BaseTest {
+    address internal constant UNI_FACTORY = 0x1F98431c8aD98523631AE4a59f267346ea31F984;
+    IComposerLike oneDV2;
 
     uint256 internal attackerPk = 0xbad0;
     address internal attacker = vm.addr(attackerPk);
 
-    IComposerLike oneDV2;
-
     address internal USDC;
     address internal WETH;
+
+    string internal lender;
 
     uint256 internal constant forkBlock = 23969720;
 
@@ -72,19 +72,20 @@ contract FlashSecuritySwapV2Test is BaseTest {
         string memory chainName = Chains.ETHEREUM_MAINNET;
 
         _init(chainName, forkBlock, true);
+        lender = Lenders.AAVE_V3;
         USDC = chain.getTokenAddress(Tokens.USDC);
         WETH = chain.getTokenAddress(Tokens.WETH);
 
         oneDV2 = ComposerPlugin.getComposer(chainName);
     }
 
-    function v2poolFlashSwapViaPool(
+    function v3poolFlashSwap(
         address assetIn,
         address assetOut, //
+        uint16 fee,
         address pool,
         address receiver,
-        uint256 amount,
-        uint256 forkId
+        uint256 amount
     )
         internal
         view
@@ -105,41 +106,20 @@ contract FlashSecuritySwapV2Test is BaseTest {
             data,
             assetOut,
             receiver,
-            uint8(DexTypeMappings.UNISWAP_V2_ID), // <- fix dexId
-            // v2 pool data
+            uint8(DexTypeMappings.UNISWAP_V3_ID),
+            // v3 pool data
             pool,
-            uint16(9970), // fee denom
-            uint8(forkId), // <- forkId
-            uint16(4), // <- ignore calldata
-            uint32(0) // empty
-        );
-    }
-
-    function test_securiy_flashSwap_flash_swap_v2_caller() external {
-        vm.assume(user != address(0));
-
-        address tokenIn = USDC;
-        address tokenOut = WETH;
-        uint256 amount = 0.1e18;
-        deal(tokenIn, user, 0.1e18);
-
-        vm.prank(user);
-        IERC20All(tokenIn).approve(address(oneDV2), type(uint256).max);
-
-        address pair = IFactoryAndPair(UNI_V2_FACTORY).getPair(tokenIn, tokenOut);
-        bytes memory stealFunds = CalldataLib.encodeTransferIn(tokenIn, attacker, IERC20All(tokenIn).balanceOf(user));
-
-        vm.prank(attacker);
-        vm.expectRevert("BadPool()");
-        IUniswapV2Callee(address(oneDV2)).uniswapV2Call(
-            address(oneDV2), 10, 10, abi.encodePacked(user, tokenIn, tokenOut, uint8(0), uint16(stealFunds.length), stealFunds)
+            uint8(DexForkMappings.UNISWAP_V3), // <- the actual uni v3
+            fee,
+            uint16(4), // cll length <- user pays
+            uint48(99) // 4 bytes to comply with composer calldata
         );
     }
 
     /**
-     * Exploit attempt: try to call the CB directly to the composer
+     * Exploit attempt: call callback and try re-enter with theft
      */
-    function test_securiy_flashSwap_flash_swap_v2_remote_call_to_composer() external {
+    function test_securiy_flashSwap_flash_swap_v3_caller() external {
         vm.assume(user != address(0));
 
         address tokenIn = USDC;
@@ -150,20 +130,20 @@ contract FlashSecuritySwapV2Test is BaseTest {
         vm.prank(user);
         IERC20All(tokenIn).approve(address(oneDV2), type(uint256).max);
 
-        address pair = IFactoryAndPair(UNI_V2_FACTORY).getPair(tokenIn, tokenOut);
+        address pair = IFactoryAndPair(UNI_FACTORY).getPool(tokenIn, tokenOut, 500);
         bytes memory stealFunds = CalldataLib.encodeTransferIn(tokenIn, attacker, IERC20All(tokenIn).balanceOf(user));
 
         vm.prank(attacker);
-        vm.expectRevert("InvalidCaller()");
-        IFactoryAndPair(pair).swap(
-            10000, 0, address(oneDV2), abi.encodePacked(user, tokenIn, tokenOut, uint8(0), uint16(stealFunds.length), stealFunds)
+        vm.expectRevert("BadPool()");
+        IUniswapV3SwapCallback(address(oneDV2)).uniswapV3SwapCallback(
+            int256(990), int256(990), abi.encodePacked(user, tokenIn, tokenOut, uint8(0), uint16(stealFunds.length), stealFunds)
         );
     }
 
     /**
      * Exploit attempt: create fake pool and try re-enter with theft
      */
-    function test_securiy_flashSwap_flash_swap_v2_scam_pool() external {
+    function test_securiy_flashSwap_flash_swap_v3_scam_pool() external {
         vm.assume(user != address(0));
 
         address tokenIn = USDC;
@@ -175,9 +155,18 @@ contract FlashSecuritySwapV2Test is BaseTest {
         IERC20All(tokenIn).approve(address(oneDV2), type(uint256).max);
 
         vm.prank(attacker);
-        address pair = address(new FakePool(user, tokenIn, tokenOut));
+        address pool = address(new FakePool(user, tokenIn, tokenOut));
 
-        bytes memory badCalldata = v2poolFlashSwapViaPool(tokenIn, tokenOut, pair, address(oneDV2), 100000, DexForkMappings.UNISWAP_V2);
+        // bytes memory badCalldata = v2poolFlashSwapViaPool(tokenIn, tokenOut, pair, address(oneDV2), 100000, DexForkMappings.UNISWAP_V2);
+
+        bytes memory badCalldata = v3poolFlashSwap(
+            tokenIn,
+            tokenOut, //
+            500,
+            pool,
+            address(oneDV2),
+            amount
+        );
 
         vm.prank(attacker);
         vm.expectRevert("BadPool()");
