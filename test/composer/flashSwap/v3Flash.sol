@@ -56,7 +56,6 @@ contract FlashSwapTest is BaseTest {
         returns (bytes memory data)
     {
         address pool = IF(UNI_FACTORY).getPool(assetIn, assetOut, fee);
-        console.log("pool", pool);
         data = abi.encodePacked(
             uint8(ComposerCommands.SWAPS),
             uint128(amount), //

@@ -222,7 +222,7 @@ contract DodoLightSecurityTest is BaseTest {
     /**
      * Exploit attempt: try to call the CB directly to the composer
      */
-    function test_securiy_flashSwap_flash_swap_dodo_caller() external {
+    function test_security_flashSwap_flash_swap_dodo_caller() external {
         vm.assume(user != address(0));
 
         address tokenIn = WETH;
@@ -246,7 +246,7 @@ contract DodoLightSecurityTest is BaseTest {
     /**
      * Exploit attempt: try to trigger the CB on the composer by calling swap with composer as target
      */
-    function test_securiy_flashSwap_flash_swap_dodo_remote_call_to_composer() external {
+    function test_security_flashSwap_flash_swap_dodo_remote_call_to_composer() external {
         vm.assume(user != address(0));
 
         address tokenIn = WETH;
@@ -274,7 +274,7 @@ contract DodoLightSecurityTest is BaseTest {
     /**
      * General issue: No fallthrough if wrong index
      */
-    function test_securiy_flashSwap_flash_swap_dodo_bad_index() external {
+    function test_security_flashSwap_flash_swap_dodo_bad_index() external {
         vm.assume(user != address(0));
 
         address tokenIn = WETH;
@@ -316,7 +316,7 @@ contract DodoLightSecurityTest is BaseTest {
     /**
      * General issue: no fallthrough if index overflow
      */
-    function test_securiy_flashSwap_flash_swap_dodo_bad_index_out_of_bounds() external {
+    function test_security_flashSwap_flash_swap_dodo_bad_index_out_of_bounds() external {
         vm.assume(user != address(0));
 
         address tokenIn = WETH;
@@ -358,7 +358,7 @@ contract DodoLightSecurityTest is BaseTest {
     /**
      * Exploit attempt: create fake pool and try re-enter with theft
      */
-    function test_securiy_flashSwap_flash_swap_dodo_scam_pool() external {
+    function test_security_flashSwap_flash_swap_dodo_scam_pool() external {
         vm.assume(user != address(0));
 
         address tokenIn = WETH;
@@ -391,7 +391,7 @@ contract DodoLightSecurityTest is BaseTest {
     /**
      * Exploit attempt: create fake pool and try re-enter with theft - try fallthrough
      */
-    function test_securiy_flashSwap_flash_swap_dodo_scam_pool_fallthrough() external {
+    function test_security_flashSwap_flash_swap_dodo_scam_pool_fallthrough() external {
         vm.assume(user != address(0));
 
         address tokenIn = WETH;

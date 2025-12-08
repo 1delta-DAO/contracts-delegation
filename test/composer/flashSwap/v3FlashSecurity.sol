@@ -119,7 +119,7 @@ contract FlashSwapV3SecurityTest is BaseTest {
     /**
      * Exploit attempt: call callback and try re-enter with theft
      */
-    function test_securiy_flashSwap_flash_swap_v3_caller() external {
+    function test_security_flashSwap_flash_swap_v3_caller() external {
         vm.assume(user != address(0));
 
         address tokenIn = USDC;
@@ -143,7 +143,7 @@ contract FlashSwapV3SecurityTest is BaseTest {
     /**
      * Exploit attempt: create fake pool and try re-enter with theft
      */
-    function test_securiy_flashSwap_flash_swap_v3_scam_pool() external {
+    function test_security_flashSwap_flash_swap_v3_scam_pool() external {
         vm.assume(user != address(0));
 
         address tokenIn = USDC;
