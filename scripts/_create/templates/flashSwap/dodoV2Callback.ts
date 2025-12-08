@@ -17,7 +17,7 @@ import {Masks} from "../../../../../shared/masks/Masks.sol";
 import {DeltaErrors} from "../../../../../shared/errors/Errors.sol";
 
 /**
- * @title DodoV2 flah-loan callbacks
+ * @title DodoV2 flash-loan callbacks
  */
 abstract contract DodoV2Callbacks is Masks, DeltaErrors {
 
@@ -96,7 +96,7 @@ abstract contract DodoV2Callbacks is Masks, DeltaErrors {
 
     /**
      * Generic executor for dodoV2 callbacks
-     * Dodo can have 3 selectors as callbacks, we switch case thorugh them here
+     * Dodo can have 3 selectors as callbacks, we switch case through them here
      */
     function _executeDodoV2IfSelector(bytes32 selector) internal {
         address factoryAddress;
@@ -117,7 +117,7 @@ abstract contract DodoV2Callbacks is Masks, DeltaErrors {
         }
         if (ValidatorLib._hasAddress(factoryAddress)) {
             // since we now know it is dodo,
-            // we can proceed with validaiton and parameter loading
+            // we can proceed with validation and parameter loading
             address sender;
             assembly {
                 sender := calldataload(4)
