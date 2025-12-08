@@ -31,7 +31,7 @@ contract LenderRegistry {
         chainInfo[Chains.MOONBEAM] = ChainInfo("https://rpc.api.moonbeam.network", 1284);
         chainInfo[Chains.CRONOS_MAINNET] = ChainInfo("https://evm.cronos.org", 25);
         chainInfo[Chains.MONAD_MAINNET] = ChainInfo("https://rpc.monad.xyz", 143);
-        chainInfo[Chains.ETHEREUM_MAINNET] = ChainInfo("https://api.mycryptoapi.com/eth", 1);
+        chainInfo[Chains.ETHEREUM_MAINNET] = ChainInfo("https://eth.drpc.org", 1);
         chainInfo[Chains.OP_MAINNET] = ChainInfo("https://mainnet.optimism.io", 10);
         chainInfo[Chains.BNB_SMART_CHAIN_MAINNET] = ChainInfo("https://bsc-dataseed1.bnbchain.org", 56);
         chainInfo[Chains.GNOSIS] = ChainInfo("https://rpc.gnosischain.com", 100);

@@ -8,9 +8,7 @@ import {Chains, Tokens, Lenders} from "test/data/LenderRegistry.sol";
 import "contracts/utils/CalldataLib.sol";
 import {ComposerPlugin, IComposerLike} from "plugins/ComposerPlugin.sol";
 
-contract BalancerFlashSwapTest is BaseTest {
-    uint8 internal constant UNI_V3_DEX_ID = 0;
-
+contract FlashSwapTestBalancer is BaseTest {
     IComposerLike oneDV2;
 
     address internal USDC;
