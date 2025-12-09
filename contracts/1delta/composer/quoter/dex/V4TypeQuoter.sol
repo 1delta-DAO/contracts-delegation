@@ -96,7 +96,7 @@ abstract contract V4TypeQuoter is QuoterUtils, Masks {
 
         try IUniswapV4Poolmanager(manager).unlock(
             abi.encodePacked(
-                // add quoite-relevant data
+                // add quoter-relevant data
                 uint128(fromAmount),
                 tokenIn, //
                 tokenOut,

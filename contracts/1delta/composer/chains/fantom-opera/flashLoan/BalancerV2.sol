@@ -11,20 +11,25 @@ import {Masks} from "../../../../shared/masks/Masks.sol";
 abstract contract BalancerV2FlashLoans is Slots, Masks {
     address private constant BALANCER_V2 = 0x20dd72Ed959b6147912C2e529F0a0C651c33c9ce;
 
-    /*
+    /**
+     * @notice Initiates a flash loan through Balancer V2
+     * @param currentOffset Current position in the calldata
+     * @param callerAddress Address of the caller
+     * @return Updated calldata offset after processing
+     * @custom:calldata-offset-table
      * | Offset | Length (bytes) | Description                     |
      * |--------|----------------|---------------------------------|
      * | 0      | 20             | asset                           |
      * | 20     | 16             | amount                          |
      * | 36     | 2              | paramsLength                    |
-     * | 38     | paramsLength   | params                          | <- the first param here is the poolId 
+     * | 38     | paramsLength   | params                          | <- the first param here is the poolId
      */
     function balancerV2FlashLoan(uint256 currentOffset, address callerAddress) internal returns (uint256) {
         assembly {
             // get token to loan
             let token := shr(96, calldataload(currentOffset))
 
-            // second calldata slice including amount annd params length
+            // second calldata slice including amount and params length
             let slice := calldataload(add(currentOffset, 20))
             let amount := shr(128, slice) // shr will already mask uint112 here
             // length of params
@@ -58,7 +63,7 @@ abstract contract BalancerV2FlashLoans is Slots, Masks {
                     pool,
                     0x0,
                     ptr,
-                    add(calldataLength, 312), // = 10 * 32 + 4
+                    add(calldataLength, 312), // = 9 * 32 + 4 + 20
                     0x0,
                     0x0 //
                 )
@@ -76,3 +81,4 @@ abstract contract BalancerV2FlashLoans is Slots, Masks {
         return currentOffset;
     }
 }
+

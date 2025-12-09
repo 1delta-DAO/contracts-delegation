@@ -79,7 +79,13 @@ ${cbs.map((a) => a.imports + `\n`).join("")}
 contract SwapCallbacks is 
 ${cbs.map((a) => a.name).join(",\n") + "//"}
 {
-    // override the compose
+    /**
+     * @notice Internal function to execute compose operations
+     * @dev Override point for swap callbacks to execute compose operations
+     * @param callerAddress Address of the original caller
+     * @param offset Current calldata offset
+     * @param length Length of remaining calldata
+     */
     function _deltaComposeInternal(
         address callerAddress,
         uint256 offset,
@@ -93,14 +99,10 @@ ${cbs.map((a) => a.name).join(",\n") + "//"}
     {}
 
     /**
-     * Swap callbacks are taken in the fallback
-     * We do this to have an easier time in validating similar callbacks
-     * with separate selectors
-     *
-     * We identify the selector in the fallback and then map it to the DEX
-     *
+     * @notice Fallback function that handles swap callbacks
+     * @dev Swap callbacks are taken in the fallback. We do this to have an easier time in validating similar callbacks with separate selectors.
+     * We identify the selector in the fallback and then map it to the DEX.
      * Note that each "_execute..." function returns (exits) when a callback is run.
-     *
      * If it falls through all variations, it reverts at the end.
      */
     fallback() external {

@@ -29,7 +29,7 @@ abstract contract CompoundV3Lending is ERC20Selectors, Masks {
     function _withdrawFromCompoundV3(uint256 currentOffset, address callerAddress) internal returns (uint256) {
         assembly {
             let ptr := mload(0x40)
-            // Compound V3 types need to trasfer collateral tokens
+            // Compound V3 types need to transfer collateral tokens
 
             let underlying := shr(96, calldataload(currentOffset))
             // offset for amount at lower bytes
@@ -104,7 +104,7 @@ abstract contract CompoundV3Lending is ERC20Selectors, Masks {
     function _borrowFromCompoundV3(uint256 currentOffset, address callerAddress) internal returns (uint256) {
         assembly {
             let ptr := mload(0x40)
-            // Compound V3 types need to trasfer collateral tokens
+            // Compound V3 types need to transfer collateral tokens
             let underlying := shr(96, calldataload(currentOffset))
             // offset for amount at lower bytes
             let amountData := shr(128, calldataload(add(currentOffset, 20)))

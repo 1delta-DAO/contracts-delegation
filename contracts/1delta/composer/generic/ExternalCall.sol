@@ -8,7 +8,7 @@ import {BaseUtils} from "contracts/1delta/composer/generic/BaseUtils.sol";
 
 /**
  * @notice External call on call forwarder which can safely execute any calls for a specific selector
- * without comprimising this contract
+ * without compromising this contract
  */
 abstract contract ExternalCall is BaseUtils {
     /// @notice selector for deltaForwardCompose(bytes)

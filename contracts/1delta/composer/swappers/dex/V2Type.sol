@@ -192,7 +192,7 @@ abstract contract V2TypeGeneric is ERC20Selectors, Masks {
                         pool,
                         0x0,
                         ptr, // input selector
-                        add(224, clLength), // 164 + (63+clLength)
+                        add(224, clLength), // 224 (base) + clLength
                         0x0, // output = 0
                         0x0 // output size = 0
                     )

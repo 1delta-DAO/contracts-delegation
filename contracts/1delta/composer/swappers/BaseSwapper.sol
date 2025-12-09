@@ -20,6 +20,7 @@ import {BalancerV3Swapper} from "./dex/BalancerV3Swapper.sol";
 // solhint-disable max-line-length
 
 /**
+ * @dev
  * Core logic: Encode swaps as nested matrices (r: rows - multihops; c:columns - splits)
  * Every element in a matrix can be another matrix
  * The nesting stops at a (0,0) entry
@@ -41,7 +42,7 @@ import {BalancerV3Swapper} from "./dex/BalancerV3Swapper.sol";
  * Multihops progressively update value (in amount -> out amount) too always ensure that values
  * within sub splits ((x,0) or (0,y)) are correctly accumulated
  *
- * A case like (1,2) is a violation as we always demand a clear gruping of the branch
+ * A case like (1,2) is a violation as we always demand a clear grouping of the branch
  * This is intuitive as we cannot have a split and a multihop at the same time.
  *
  * Every node with (x,0) is expected to have consistent multihop connections
@@ -144,7 +145,7 @@ abstract contract BaseSwapper is
      * | 0      | 1              | count                |
      * | 1      | 2*count - 1    | splits               | <- count = 0 means there is no data, otherwise uint16 splits
      *
-     * @custom:datas-format 
+     * @custom:datas-format
      * | Offset | Length (bytes) | Description          |
      * |--------|----------------|----------------------|
      * | 0      | 2              | (r,c)                | <- indicates whether the swap is non-simple (further splits or hops)

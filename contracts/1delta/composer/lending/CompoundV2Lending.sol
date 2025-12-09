@@ -164,7 +164,7 @@ abstract contract CompoundV2Lending is ERC20Selectors, Masks {
             // floor to the balance
             if gt(cTokenTransferAmount, refAmount) { cTokenTransferAmount := refAmount }
 
-            // siwtch-case over selectorId
+            // switch-case over selectorId
             switch and(UINT8_MASK, shr(120, amountData))
             case 0 {
                 // 2) TRANSFER VTOKENS

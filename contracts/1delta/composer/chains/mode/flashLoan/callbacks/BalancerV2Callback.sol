@@ -15,8 +15,15 @@ contract BalancerV2FlashLoanCallback is Slots, Masks, DeltaErrors {
     address private constant SWAAP = 0xd315a9C38eC871068FEC378E4Ce78AF528C76293;
 
     /**
-     * @dev Balancer flash loan call
-     * Gated via flash loan gateway flag to prevent calls from sources other than this contract
+     * @notice Handles Balancer V2 flash loan callback
+     * @dev Gated via flash loan gateway flag to prevent calls from sources other than this contract
+     
+     * @custom:calldata-offset-table
+     * | Offset | Length (bytes) | Description                  |
+     * |--------|----------------|------------------------------|
+     * | 0      | 20             | origCaller                   |
+     * | 20     | 1              | poolId                       |
+     * | 21     | Variable       | composeOperations            |
      */
     function receiveFlashLoan(
         address[] calldata,
@@ -38,11 +45,12 @@ contract BalancerV2FlashLoanCallback is Slots, Masks, DeltaErrors {
             // Validate the caller
             // We check that the caller is one of the lending pools
             // This is a crucial check since this makes
-            // the initiator paramter the caller of flashLoan
+            // the initiator parameter the caller of flashLoan
             let pool
             switch and(UINT8_MASK, shr(88, firstWord))
             case 0 { pool := BALANCER_V2 }
             case 2 { pool := SWAAP }
+
             // We revert on any other id
             default {
                 mstore(0, INVALID_FLASH_LOAN)
@@ -69,7 +77,7 @@ contract BalancerV2FlashLoanCallback is Slots, Masks, DeltaErrors {
             // Locking the callback again here (instead of after the flashLoan call)
             // prevents this scenario!
             sstore(FLASH_LOAN_GATEWAY_SLOT, 1)
-            // Get the original caller from the beginnig of the calldata
+            // Get the original caller from the beginning of the calldata
             // From here on we have validated that the origCaller
             // was attached in the deltaCompose function
             // Otherwise, this would be a vulnerability
@@ -83,5 +91,12 @@ contract BalancerV2FlashLoanCallback is Slots, Masks, DeltaErrors {
         _deltaComposeInternal(origCaller, calldataOffset, calldataLength);
     }
 
+    /**
+     * @notice Internal function to execute compose operations
+     * @dev Override point for flash loan callbacks to execute compose operations
+     * @param callerAddress Address of the original caller
+     * @param offset Current calldata offset
+     * @param length Length of remaining calldata
+     */
     function _deltaComposeInternal(address callerAddress, uint256 offset, uint256 length) internal virtual {}
 }

@@ -74,7 +74,7 @@ abstract contract CurveSwapper is ERC20Selectors, Masks {
     /// @notice selector exchange_received(int128,int128,uint256,uint256,address)
     bytes32 private constant EXCHANGE_RECEIVED_INT_WITH_RECEIVER = 0xafb4301200000000000000000000000000000000000000000000000000000000;
 
-    /// @notice selector for cuve forks using solidity swap(uint8,uint8,uint256,uint256,uint256)
+    /// @notice selector for Curve forks using solidity swap(uint8,uint8,uint256,uint256,uint256)
     bytes32 private constant SWAP = 0x9169558600000000000000000000000000000000000000000000000000000000;
 
     function _fundAndApproveIfNeeded(address callerAddress, address tokenIn, uint256 amount, uint256 data) private returns (address pool) {
@@ -280,7 +280,7 @@ abstract contract CurveSwapper is ERC20Selectors, Masks {
             ////////////////////////////////////////////////////
             // Send funds to receiver if needed
             // curveData is now the flag for manually
-            // transferuing to the receiver
+            // transferring to the receiver
             ////////////////////////////////////////////////////
             if and(curveData, xor(receiver, address())) {
                 // selector for transfer(address,uint256)
