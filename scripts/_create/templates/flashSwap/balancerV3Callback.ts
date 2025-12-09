@@ -24,7 +24,7 @@ abstract contract BalancerV3Callbacks is Masks, DeltaErrors {
     /**
      * @notice Callback from Balancer V3 type vaults
      * @dev Note that this selector is a custom choice
-     * @param calldata The callback calldata
+     
      * @custom:calldata-offset-table
      * | Offset | Length (bytes) | Description                  |
      * |--------|----------------|------------------------------|

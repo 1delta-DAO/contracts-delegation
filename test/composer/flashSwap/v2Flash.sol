@@ -16,10 +16,8 @@ interface IF {
     function getPair(address tokenA, address tokenB) external view returns (address pair);
 }
 
-contract FlashSwapTest is BaseTest {
-    address internal constant UNI_FACTORY = 0x33128a8fC17869897dcE68Ed026d694621f6FDfD;
+contract FlashSwapTestV2 is BaseTest {
     address internal constant UNI_V2_FACTORY = 0x8909Dc15e40173Ff4699343b6eB8132c65e18eC6;
-    address internal constant IZI_FACTORY = 0x8c7d3063579BdB0b90997e18A770eaE32E1eBb08;
     IComposerLike oneDV2;
 
     address internal USDC;

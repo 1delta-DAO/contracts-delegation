@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.19;
 
-import {MarketParams, IMorphoEverything} from "test/composer/lending/utils/Morpho.sol";
 import {DexPayConfig, SweepType} from "contracts/1delta/composer/enums/MiscEnums.sol";
 import {console} from "forge-std/console.sol";
 import {IERC20All} from "test/shared/interfaces/IERC20All.sol";
@@ -10,10 +9,8 @@ import {Chains, Tokens, Lenders} from "test/data/LenderRegistry.sol";
 import "contracts/utils/CalldataLib.sol";
 import {ComposerPlugin, IComposerLike} from "plugins/ComposerPlugin.sol";
 
-contract FlashSwapTest is BaseTest {
+contract FlashSwapTestV4 is BaseTest {
     using CalldataLib for bytes;
-
-    uint8 internal constant UNI_V3_DEX_ID = 0;
 
     IComposerLike oneDV2;
 

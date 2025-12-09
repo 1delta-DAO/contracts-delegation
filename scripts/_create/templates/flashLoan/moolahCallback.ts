@@ -16,7 +16,6 @@ contract MoolahFlashLoanCallback is Masks, DeltaErrors {
 
     /**
      * @notice Handles Moolah flash loan callback
-     * @param params Calldata containing the original caller and compose operations
      */
     function onMoolahFlashLoan(uint256, bytes calldata) external {
         _onMoolahCallback();
@@ -24,7 +23,6 @@ contract MoolahFlashLoanCallback is Masks, DeltaErrors {
 
     /**
      * @notice Handles Moolah supply callback
-     * @param params Calldata containing the original caller and compose operations
      */
     function onMoolahSupply(uint256, bytes calldata) external {
         _onMoolahCallback();
@@ -32,7 +30,6 @@ contract MoolahFlashLoanCallback is Masks, DeltaErrors {
 
     /**
      * @notice Handles Moolah repay callback
-     * @param params Calldata containing the original caller and compose operations
      */
     function onMoolahRepay(uint256, bytes calldata) external {
         _onMoolahCallback();
@@ -40,7 +37,6 @@ contract MoolahFlashLoanCallback is Masks, DeltaErrors {
 
     /**
      * @notice Handles Moolah supply collateral callback
-     * @param params Calldata containing the original caller and compose operations
      */
     function onMoolahSupplyCollateral(uint256, bytes calldata) external {
         _onMoolahCallback();
