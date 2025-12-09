@@ -9,7 +9,7 @@ import "contracts/utils/CalldataLib.sol";
 import {console} from "forge-std/console.sol";
 import {ComposerPlugin, IComposerLike} from "plugins/ComposerPlugin.sol";
 
-import "../../../contracts/external-protocols/misc/FeeOnTransferDetector.sol";
+import "contracts/external-protocols/misc/FeeOnTransferDetector.sol";
 
 // solhint-disable max-line-length
 
