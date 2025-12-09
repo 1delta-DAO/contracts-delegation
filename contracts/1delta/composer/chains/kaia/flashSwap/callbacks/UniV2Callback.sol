@@ -21,7 +21,21 @@ abstract contract UniV2Callbacks is Masks, DeltaErrors {
     bytes32 private constant DRAGONSWAP_V2_CODE_HASH = 0x1f07efc9aeaf9f1a5259be7f0e4bd52396274fcf450ef2efd01a1ac8965b12b2;
 
     /**
-     * Generic Uniswap v2 style callbck executor
+     * @notice Generic Uniswap V2 style callback executor
+     * @dev Validates the callback selector and executes compose operations
+     * @param selector The function selector to match
+     * @custom:calldata-offset-table
+     * | Offset | Length (bytes) | Description                  |
+     * |--------|----------------|------------------------------|
+     * | 0      | 4              | selector                     |
+     * | 4      | 20             | sender (must be this)        |
+     * | 24     | 140            | callbackData                 |
+     * | 164    | 20             | callerAddress                |
+     * | 184    | 20             | tokenIn                      |
+     * | 204    | 20             | tokenOut                     |
+     * | 224    | 1              | forkId                       |
+     * | 225    | 2              | calldataLength               |
+     * | 227    | Variable       | composeOperations            |
      */
     function _executeUniV2IfSelector(bytes32 selector) internal {
         bytes32 codeHash;
@@ -107,5 +121,12 @@ abstract contract UniV2Callbacks is Masks, DeltaErrors {
         }
     }
 
+    /**
+     * @notice Internal function to execute compose operations
+     * @dev Override point for swap callbacks to execute compose operations
+     * @param callerAddress Address of the original caller
+     * @param offset Current calldata offset
+     * @param length Length of remaining calldata
+     */
     function _deltaComposeInternal(address callerAddress, uint256 offset, uint256 length) internal virtual {}
 }

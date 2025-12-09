@@ -14,7 +14,17 @@ contract AaveV2FlashLoanCallback is Masks, DeltaErrors {
     address private constant AURELIUS = 0x7c9C6F5BEd9Cfe5B9070C7D3322CF39eAD2F9492;
 
     /**
-     * @dev Aave V2 style flash loan callback
+     * @notice Handles Aave V2 flash loan callback
+     * @dev Validates caller, extracts original caller from params, and executes compose operations
+     * @param initiator The address that initiated the flash loan
+     * @param params Calldata containing the original caller and compose operations
+     * @return Always returns true on success
+     * @custom:calldata-offset-table
+     * | Offset | Length (bytes) | Description                  |
+     * |--------|----------------|------------------------------|
+     * | 0      | 20             | origCaller                   |
+     * | 20     | 1              | poolId                       |
+     * | 21     | Variable       | composeOperations           |
      */
     function executeOperation(
         address[] calldata,
@@ -39,11 +49,12 @@ contract AaveV2FlashLoanCallback is Masks, DeltaErrors {
             // Validate the caller
             // We check that the caller is one of the lending pools
             // This is a crucial check since this makes
-            // the initiator paramter the caller of flashLoan
+            // the initiator parameter the caller of flashLoan
             let pool
             switch and(UINT8_MASK, shr(88, firstWord))
             case 1 { pool := LENDLE }
             case 2 { pool := AURELIUS }
+
             // We revert on any other id
             default {
                 mstore(0, INVALID_FLASH_LOAN)
@@ -63,7 +74,7 @@ contract AaveV2FlashLoanCallback is Masks, DeltaErrors {
                 mstore(0, INVALID_INITIATOR)
                 revert(0, 0x4)
             }
-            // Slice the original caller off the beginnig of the calldata
+            // Slice the original caller off the beginning of the calldata
             // From here on we have validated that the origCaller
             // was attached in the deltaCompose function
             // Otherwise, this would be a vulnerability
@@ -79,5 +90,12 @@ contract AaveV2FlashLoanCallback is Masks, DeltaErrors {
         return true;
     }
 
+    /**
+     * @notice Internal function to execute compose operations
+     * @dev Override point for flash loan callbacks to execute compose operations
+     * @param callerAddress Address of the original caller
+     * @param offset Current calldata offset
+     * @param length Length of remaining calldata
+     */
     function _deltaComposeInternal(address callerAddress, uint256 offset, uint256 length) internal virtual {}
 }

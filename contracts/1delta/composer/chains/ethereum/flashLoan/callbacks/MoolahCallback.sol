@@ -16,29 +16,49 @@ contract MoolahFlashLoanCallback is Masks, DeltaErrors {
      * Moolah callbacks
      */
 
-    /// @dev Moolah flash loan
+    /**
+     * @notice Handles Moolah flash loan callback
+     * @param params Calldata containing the original caller and compose operations
+     */
     function onMoolahFlashLoan(uint256, bytes calldata) external {
         _onMoolahCallback();
     }
 
-    /// @dev Moolah supply callback
+    /**
+     * @notice Handles Moolah supply callback
+     * @param params Calldata containing the original caller and compose operations
+     */
     function onMoolahSupply(uint256, bytes calldata) external {
         _onMoolahCallback();
     }
 
-    /// @dev Moolah repay callback
+    /**
+     * @notice Handles Moolah repay callback
+     * @param params Calldata containing the original caller and compose operations
+     */
     function onMoolahRepay(uint256, bytes calldata) external {
         _onMoolahCallback();
     }
 
-    /// @dev Moolah supply collateral callback
+    /**
+     * @notice Handles Moolah supply collateral callback
+     * @param params Calldata containing the original caller and compose operations
+     */
     function onMoolahSupplyCollateral(uint256, bytes calldata) external {
         _onMoolahCallback();
     }
 
-    /// @dev Moolah flash loans are callbacks to msg.sender,
-    /// Since it is universal batching and the same validation for all
-    /// Moolah callbacks, we can use the same logic everywhere
+    /**
+     * @notice Internal callback handler for all Moolah operations
+     * @dev Moolah flash loans are callbacks to msg.sender.
+     * Since it is universal batching and the same validation for all Moolah callbacks, we can use the same logic everywhere
+     * @custom:calldata-offset-table
+     * | Offset | Length (bytes) | Description                  |
+     * |--------|----------------|------------------------------|
+     * | 0      | 20             | origCaller                   |
+     * | 20     | 1              | poolId                       |
+     * | 21     | Variable       | composeOperations            |
+     */
     function _onMoolahCallback() internal {
         address origCaller;
         uint256 calldataLength;
@@ -58,7 +78,7 @@ contract MoolahFlashLoanCallback is Masks, DeltaErrors {
                 mstore(0, INVALID_FLASH_LOAN)
                 revert(0, 0x4)
             }
-            // Slice the original caller off the beginnig of the calldata
+            // Slice the original caller off the beginning of the calldata
             // From here on we have validated that the origCaller
             // was attached in the deltaCompose function
             // Otherwise, this would be a vulnerability
@@ -75,5 +95,12 @@ contract MoolahFlashLoanCallback is Masks, DeltaErrors {
         );
     }
 
+    /**
+     * @notice Internal function to execute compose operations
+     * @dev Override point for flash loan callbacks to execute compose operations
+     * @param callerAddress Address of the original caller
+     * @param offset Current calldata offset
+     * @param length Length of remaining calldata
+     */
     function _deltaComposeInternal(address callerAddress, uint256 offset, uint256 length) internal virtual {}
 }

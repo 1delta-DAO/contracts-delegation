@@ -7,7 +7,7 @@ out = "out"
 libs = ["lib"]
 
 [fmt]
-line_length = 150
+line_length = 130
 tab_width = 4
 multiline_func_header = "all"
 

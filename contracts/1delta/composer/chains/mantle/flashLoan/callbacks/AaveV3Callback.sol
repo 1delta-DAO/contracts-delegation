@@ -27,7 +27,17 @@ contract AaveV3FlashLoanCallback is Masks, DeltaErrors {
     address private constant LENDLE_WMNT_USDE = 0xecce86d3D3f1b33Fe34794708B7074CDe4aBe9d4;
 
     /**
-     * @dev Aave V3 style flash loan callback
+     * @notice Handles Aave V3 flash loan callback
+     * @dev Validates caller, extracts original caller from params, and executes compose operations
+     * @param initiator The address that initiated the flash loan
+     * @param params Calldata containing the original caller and compose operations
+     * @return Always returns true on success
+     * @custom:calldata-offset-table
+     * | Offset | Length (bytes) | Description                  |
+     * |--------|----------------|------------------------------|
+     * | 0      | 20             | origCaller                   |
+     * | 20     | 1              | poolId                       |
+     * | 21     | Variable       | composeOperations           |
      */
     function executeOperation(
         address,
@@ -50,7 +60,7 @@ contract AaveV3FlashLoanCallback is Masks, DeltaErrors {
 
             // We check that the caller is one of the lending pools
             // This is a crucial check since this makes
-            // the initiator paramter the caller of flashLoan
+            // the initiator parameter the caller of flashLoan
             let pool
             let poolId := and(UINT8_MASK, shr(88, firstWord))
 
@@ -58,8 +68,11 @@ contract AaveV3FlashLoanCallback is Masks, DeltaErrors {
             case 1 {
                 switch poolId
                 case 82 { pool := KINZA }
+
                 case 102 { pool := LENDLE_CMETH }
+
                 case 103 { pool := LENDLE_PT_CMETH }
+
                 case 104 { pool := LENDLE_SUSDE }
             }
             default {
@@ -67,18 +80,27 @@ contract AaveV3FlashLoanCallback is Masks, DeltaErrors {
                 case 1 {
                     switch poolId
                     case 105 { pool := LENDLE_SUSDE_USDT }
+
                     case 106 { pool := LENDLE_METH_WETH }
+
                     case 107 { pool := LENDLE_METH_USDE }
+
                     case 108 { pool := LENDLE_CMETH_WETH }
                 }
                 default {
                     switch poolId
                     case 109 { pool := LENDLE_CMETH_USDE }
+
                     case 110 { pool := LENDLE_CMETH_WMNT }
+
                     case 111 { pool := LENDLE_FBTC_WETH }
+
                     case 112 { pool := LENDLE_FBTC_USDE }
+
                     case 113 { pool := LENDLE_FBTC_WMNT }
+
                     case 114 { pool := LENDLE_WMNT_WETH }
+
                     case 115 { pool := LENDLE_WMNT_USDE }
                 }
             }
@@ -102,7 +124,7 @@ contract AaveV3FlashLoanCallback is Masks, DeltaErrors {
                 mstore(0, INVALID_INITIATOR)
                 revert(0, 0x4)
             }
-            // Slice the original caller off the beginnig of the calldata
+            // Slice the original caller off the beginning of the calldata
             // From here on we have validated that the origCaller
             // was attached in the deltaCompose function
             // Otherwise, this would be a vulnerability
@@ -120,5 +142,13 @@ contract AaveV3FlashLoanCallback is Masks, DeltaErrors {
         return true;
     }
 
+    /**
+     * @notice Internal function to execute compose operations
+     * @dev Override point for flash loan callbacks to execute compose operations
+     * @param callerAddress Address of the original caller
+     * @param offset Current calldata offset
+     * @param length Length of remaining calldata
+     */
     function _deltaComposeInternal(address callerAddress, uint256 offset, uint256 length) internal virtual {}
 }
+

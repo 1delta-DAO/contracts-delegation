@@ -36,13 +36,14 @@ abstract contract UniV4Callbacks is Masks, DeltaErrors {
             /**
              * Ensure that the caller is the singleton of choice
              */
+
             if xor(caller(), UNISWAP_V4) {
                 mstore(0, INVALID_CALLER)
                 revert(0, 0x4)
             }
         }
         /**
-         * This is to execute swaps or flash laons
+         * This is to execute swaps or flash loans
          * For swaps, one needs to bump the composer swap command in here
          * For Flash loan, the composer commands for take, sync and settle
          * have to be executed

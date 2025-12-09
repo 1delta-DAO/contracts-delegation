@@ -13,7 +13,13 @@ contract FlashLoanCallbacks is
     AaveV2FlashLoanCallback,
     BalancerV2FlashLoanCallback //
 {
-    // override the compose
+    /**
+     * @notice Internal function to execute compose operations
+     * @dev Override point for flash loan callbacks to execute compose operations
+     * @param callerAddress Address of the original caller
+     * @param offset Current calldata offset
+     * @param length Length of remaining calldata
+     */
     function _deltaComposeInternal(
         address callerAddress,
         uint256 offset,
@@ -27,3 +33,4 @@ contract FlashLoanCallbacks is
         )
     {}
 }
+

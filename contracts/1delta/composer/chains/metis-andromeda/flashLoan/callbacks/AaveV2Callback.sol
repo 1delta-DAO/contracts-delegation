@@ -13,7 +13,17 @@ contract AaveV2FlashLoanCallback is Masks, DeltaErrors {
     address private constant GRANARY = 0x65dEc665ea1e96Ee5203DB321b5Cd413b81B2bd2;
 
     /**
-     * @dev Aave V2 style flash loan callback
+     * @notice Handles Aave V2 flash loan callback
+     * @dev Validates caller, extracts original caller from params, and executes compose operations
+     * @param initiator The address that initiated the flash loan
+     * @param params Calldata containing the original caller and compose operations
+     * @return Always returns true on success
+     * @custom:calldata-offset-table
+     * | Offset | Length (bytes) | Description                  |
+     * |--------|----------------|------------------------------|
+     * | 0      | 20             | origCaller                   |
+     * | 20     | 1              | poolId                       |
+     * | 21     | Variable       | composeOperations           |
      */
     function executeOperation(
         address[] calldata,
@@ -54,7 +64,7 @@ contract AaveV2FlashLoanCallback is Masks, DeltaErrors {
                 mstore(0, INVALID_INITIATOR)
                 revert(0, 0x4)
             }
-            // Slice the original caller off the beginnig of the calldata
+            // Slice the original caller off the beginning of the calldata
             // From here on we have validated that the origCaller
             // was attached in the deltaCompose function
             // Otherwise, this would be a vulnerability
@@ -70,5 +80,12 @@ contract AaveV2FlashLoanCallback is Masks, DeltaErrors {
         return true;
     }
 
+    /**
+     * @notice Internal function to execute compose operations
+     * @dev Override point for flash loan callbacks to execute compose operations
+     * @param callerAddress Address of the original caller
+     * @param offset Current calldata offset
+     * @param length Length of remaining calldata
+     */
     function _deltaComposeInternal(address callerAddress, uint256 offset, uint256 length) internal virtual {}
 }

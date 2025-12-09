@@ -42,7 +42,7 @@ abstract contract UniV4Callbacks is Masks, DeltaErrors {
             }
         }
         /**
-         * This is to execute swaps or flash laons
+         * This is to execute swaps or flash loans
          * For swaps, one needs to bump the composer swap command in here
          * For Flash loan, the composer commands for take, sync and settle
          * have to be executed
