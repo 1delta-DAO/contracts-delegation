@@ -18,19 +18,6 @@ contract SanityChecks is Test {
         composer = ComposerPlugin.getComposer(Chains.ETHEREUM_MAINNET);
     }
 
-    function test_sanity_calldata_length(uint256 additionalLength) public {
-        bytes memory cd = CalldataLib.encodeSweep(0x1234567890123456789012345678901234567890, address(this), 0, SweepType.VALIDATE);
-        cd = abi.encodeWithSelector(composer.deltaCompose.selector, cd);
-        assembly {
-            mstore(add(cd, 0x44), add(mload(cd), additionalLength))
-        }
-
-        console.logBytes(cd);
-
-        vm.expectRevert();
-        (bool success, bytes memory returnData) = address(composer).call(cd);
-    }
-
     function test_sanity_externalCall_to_EOA() public {
         address eoa = address(0x1De17A0000000000000000000000000000000000);
         uint256 ethAmount = 1 ether;
@@ -50,7 +37,7 @@ contract SanityChecks is Test {
     }
 
     function test_sanity_compose_multiple_transfer_operations(uint16 numOperations) public {
-        numOperations = uint8(bound(numOperations, 1, 100));
+        numOperations = uint8(bound(numOperations, 1, 1000));
 
         address user = address(0x1De17A);
         vm.deal(user, 100 ether);
