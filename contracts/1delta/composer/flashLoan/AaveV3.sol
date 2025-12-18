@@ -34,7 +34,7 @@ contract AaveV3FlashLoans is Masks {
 
             // second calldata slice including amount annd params length
             let slice := calldataload(add(currentOffset, 40))
-            let amount := shr(128, slice) // shr will already mask uint112 here
+            let amount := shr(128, slice)
             // length of params
             let calldataLength := and(UINT16_MASK, shr(112, slice))
 

@@ -510,7 +510,7 @@ library CalldataLib {
     function swapHead(uint256 amount, uint256 amountOutMin, address assetIn) internal pure returns (bytes memory) {
         return abi.encodePacked(
             uint8(ComposerCommands.SWAPS),
-            generateAmountBitmap(uint128(amount), false, false),
+            uint128(amount),
             uint128(amountOutMin),
             assetIn //
         );
@@ -1092,6 +1092,31 @@ library CalldataLib {
         );
     }
 
+    function encodeErc4626Deposit(
+        address asset,
+        address vault,
+        bool isShares, //
+        uint256 assets,
+        address receiver
+    )
+        internal
+        pure
+        returns (bytes memory)
+    {
+        return abi.encodePacked(
+            encodeApprove(asset, vault), // always approve
+            uint8(ComposerCommands.ERC4626), // 1
+            uint8(0), // 1
+            asset, // 20
+            vault, // 20
+            generateAmountBitmap(uint128(assets), isShares, false),
+            receiver // 20
+        );
+    }
+
+    /**
+     * @custom:deprecated use encodeErc4626Deposit instead
+     */
     function encodeErc4646Deposit(
         address asset,
         address vault,

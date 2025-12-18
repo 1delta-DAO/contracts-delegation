@@ -284,7 +284,7 @@ abstract contract CompoundV2Lending is ERC20Selectors, Masks {
             case 0 {
                 let amount
 
-                amount := and(UINT120_MASK, amountData)
+                amount := and(UINT112_MASK, amountData)
                 // zero is this balance
                 if iszero(amount) { amount := selfbalance() }
 
