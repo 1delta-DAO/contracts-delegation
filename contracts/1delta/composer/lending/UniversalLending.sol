@@ -61,8 +61,11 @@ abstract contract UniversalLending is AaveLending, CompoundV3Lending, CompoundV2
                 return _depositToCompoundV2(currentOffset);
             } else if (lender < LenderIds.UP_TO_MORPHO) {
                 return _encodeMorphoDepositCollateral(currentOffset, callerAddress);
-            } else {
+            } else if (lender < LenderIds.UP_TO_SILO_V2) {
                 return _depositToSiloV2(currentOffset);
+            }
+            else{
+                _invalidOperation();
             }
         }
         /**
@@ -77,8 +80,11 @@ abstract contract UniversalLending is AaveLending, CompoundV3Lending, CompoundV2
                 return _borrowFromCompoundV2(currentOffset, callerAddress);
             } else if (lender < LenderIds.UP_TO_MORPHO) {
                 return _morphoBorrow(currentOffset, callerAddress);
-            } else {
+            } else if (lender < LenderIds.UP_TO_SILO_V2) {
                 return _borrowFromSiloV2(currentOffset, callerAddress);
+            }
+            else{
+                _invalidOperation();
             }
         }
         /**
@@ -93,8 +99,11 @@ abstract contract UniversalLending is AaveLending, CompoundV3Lending, CompoundV2
                 return _repayToCompoundV2(currentOffset);
             } else if (lender < LenderIds.UP_TO_MORPHO) {
                 return _morphoRepay(currentOffset, callerAddress);
-            } else {
+            } else if (lender < LenderIds.UP_TO_SILO_V2) {
                 return _repayToSiloV2(currentOffset);
+            }
+            else{
+                _invalidOperation();
             }
         }
         /**
@@ -109,8 +118,11 @@ abstract contract UniversalLending is AaveLending, CompoundV3Lending, CompoundV2
                 return _withdrawFromCompoundV2(currentOffset, callerAddress);
             } else if (lender < LenderIds.UP_TO_MORPHO) {
                 return _encodeMorphoWithdrawCollateral(currentOffset, callerAddress);
-            } else {
+            } else if (lender < LenderIds.UP_TO_SILO_V2) {
                 return _withdrawFromSiloV2(currentOffset, callerAddress);
+            }
+            else{
+                _invalidOperation();
             }
         }
         /**
