@@ -52,7 +52,7 @@ contract SanityChecks is Test {
     }
 
     function test_sanity_compose_multiple_transfer_operations(uint16 numOperations) public {
-        numOperations = uint8(bound(numOperations, 1, 100));
+        numOperations = uint8(bound(numOperations, 1, 1000));
 
         address user = address(0x1De17A);
         vm.deal(user, 100 ether);
