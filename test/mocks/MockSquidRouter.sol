@@ -48,10 +48,18 @@ contract MockSquidRouter {
         external
         payable
     {
-        require(keccak256(bytes(bridgedTokenSymbol)) == keccak256(bytes(expectedSquidBridgedTokenSymbol)), "bridgedTokenSymbol mismatch");
+        require(
+            keccak256(bytes(bridgedTokenSymbol)) == keccak256(bytes(expectedSquidBridgedTokenSymbol)),
+            "bridgedTokenSymbol mismatch"
+        );
         require(amount == expectedSquidAmount, "amount mismatch");
-        require(keccak256(bytes(destinationChain)) == keccak256(bytes(expectedSquidDestinationChain)), "destinationChain mismatch");
-        require(keccak256(bytes(destinationAddress)) == keccak256(bytes(expectedSquidDestinationAddress)), "destinationAddress mismatch");
+        require(
+            keccak256(bytes(destinationChain)) == keccak256(bytes(expectedSquidDestinationChain)), "destinationChain mismatch"
+        );
+        require(
+            keccak256(bytes(destinationAddress)) == keccak256(bytes(expectedSquidDestinationAddress)),
+            "destinationAddress mismatch"
+        );
         require(keccak256(payload) == keccak256(expectedSquidPayload), "payload mismatch");
         require(gasRefundRecipient == expectedSquidGasRefundRecipient, "gasRefundRecipient mismatch");
         require(enableExpress == expectedSquidEnableExpress, "enableExpress mismatch");

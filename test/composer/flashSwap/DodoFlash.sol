@@ -44,7 +44,15 @@ contract FlashSwapTestDodo is BaseTest {
         oneDV2 = ComposerPlugin.getComposer(chainName);
     }
 
-    function dodoPoolWETHJOJOSwap(address receiver, uint256 amount, bytes memory callbackData) internal view returns (bytes memory data) {
+    function dodoPoolWETHJOJOSwap(
+        address receiver,
+        uint256 amount,
+        bytes memory callbackData
+    )
+        internal
+        view
+        returns (bytes memory data)
+    {
         // create head config
         data = CalldataLib.swapHead(
             amount,

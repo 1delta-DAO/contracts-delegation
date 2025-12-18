@@ -68,7 +68,9 @@ contract Velodrome123Test is BaseTest {
     {
         console.log("assetIn, assetOut", assetIn, assetOut);
         console.logBytes32(
-            keccak256(hex"3d602d80600a3d3981f3363d3d373d3d3d363d7395885Af5492195F0754bE71AD1545Fe81364E5315af43d82803e903d91602b57fd5bf3")
+            keccak256(
+                hex"3d602d80600a3d3981f3363d3d373d3d3d363d7395885Af5492195F0754bE71AD1545Fe81364E5315af43d82803e903d91602b57fd5bf3"
+            )
         );
         //     console.logBytes32(keccak256(hex"363d3d373d3d3d363d73${95885Af5492195F0754bE71AD1545Fe81364E531}5af43d82803e903d91602b57fd5bf3"));
         address pool = IF(VELODROME_CL_FACTORY).getPool(assetIn, assetOut, int24(uint24(fee)));

@@ -30,7 +30,6 @@ contract AaveV3FlashLoanCallback is Masks, DeltaErrors {
      * @notice Handles Aave V3 flash loan callback
      * @dev Validates caller, extracts original caller from params, and executes compose operations
      * @param initiator The address that initiated the flash loan
-     
      * @return Always returns true on success
      * @custom:calldata-offset-table
      * | Offset | Length (bytes) | Description                  |
@@ -68,11 +67,8 @@ contract AaveV3FlashLoanCallback is Masks, DeltaErrors {
             case 1 {
                 switch poolId
                 case 82 { pool := KINZA }
-
                 case 102 { pool := LENDLE_CMETH }
-
                 case 103 { pool := LENDLE_PT_CMETH }
-
                 case 104 { pool := LENDLE_SUSDE }
             }
             default {
@@ -80,27 +76,18 @@ contract AaveV3FlashLoanCallback is Masks, DeltaErrors {
                 case 1 {
                     switch poolId
                     case 105 { pool := LENDLE_SUSDE_USDT }
-
                     case 106 { pool := LENDLE_METH_WETH }
-
                     case 107 { pool := LENDLE_METH_USDE }
-
                     case 108 { pool := LENDLE_CMETH_WETH }
                 }
                 default {
                     switch poolId
                     case 109 { pool := LENDLE_CMETH_USDE }
-
                     case 110 { pool := LENDLE_CMETH_WMNT }
-
                     case 111 { pool := LENDLE_FBTC_WETH }
-
                     case 112 { pool := LENDLE_FBTC_USDE }
-
                     case 113 { pool := LENDLE_FBTC_WMNT }
-
                     case 114 { pool := LENDLE_WMNT_WETH }
-
                     case 115 { pool := LENDLE_WMNT_USDE }
                 }
             }
@@ -151,4 +138,3 @@ contract AaveV3FlashLoanCallback is Masks, DeltaErrors {
      */
     function _deltaComposeInternal(address callerAddress, uint256 offset, uint256 length) internal virtual {}
 }
-

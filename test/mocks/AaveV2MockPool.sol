@@ -24,7 +24,8 @@ contract AaveV2MockPool {
             tempFees[i] = amounts[i] * 9 / 10000; // 0.09% fee for Aave V2
         }
 
-        bool success = IAaveV2FlashLoanReceiver(receiverAddress).executeOperation(tempAssets, tempAmounts, tempFees, msg.sender, params);
+        bool success =
+            IAaveV2FlashLoanReceiver(receiverAddress).executeOperation(tempAssets, tempAmounts, tempFees, msg.sender, params);
 
         require(success, "Callback failed");
     }

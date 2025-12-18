@@ -105,18 +105,22 @@ contract Across is BaseUtils {
                 case 7 { decimalAdjustment := 10000000 }
                 case 6 { decimalAdjustment := 1000000 }
                 // arbitrary loop
-                default { for { let i := 0 } lt(i, absDiff) { i := add(i, 1) } { decimalAdjustment := mul(decimalAdjustment, 10) } }
+                default {
+                    for { let i := 0 } lt(i, absDiff) { i := add(i, 1) } { decimalAdjustment := mul(decimalAdjustment, 10) }
+                }
             }
 
             // calculate percentage fee with decimal adjustment
             switch lt(toTokenDecimals, fromTokenDecimals)
             case 1 {
-                outputAmount := div(mul(amount, shr(224, calldataload(add(currentOffset, 124)))), mul(FEE_DENOMINATOR, decimalAdjustment))
+                outputAmount :=
+                    div(mul(amount, shr(224, calldataload(add(currentOffset, 124)))), mul(FEE_DENOMINATOR, decimalAdjustment))
                 ff := div(ff, decimalAdjustment) // apply decimal adjustment on amount with fixed fee
             }
             // none or output has more decimals
             default {
-                outputAmount := div(mul(decimalAdjustment, mul(amount, shr(224, calldataload(add(currentOffset, 124))))), FEE_DENOMINATOR)
+                outputAmount :=
+                    div(mul(decimalAdjustment, mul(amount, shr(224, calldataload(add(currentOffset, 124))))), FEE_DENOMINATOR)
                 ff := mul(ff, decimalAdjustment) // apply decimal adjustment on amount with fixed fee
             } // also handles the case where decimals are the same
 

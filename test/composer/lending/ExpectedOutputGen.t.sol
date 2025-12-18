@@ -76,8 +76,9 @@ contract ExpectedOutputGen is BaseTest {
 
         aaveV3DepositData = CalldataLib.encodeAaveDeposit(USDC, TEST_AMOUNT, TEST_RECEIVER, AAVE_V3_POOL);
 
-        compoundV2DepositData =
-            CalldataLib.encodeCompoundV2Deposit(USDC, TEST_AMOUNT, TEST_RECEIVER, COMPOUND_V2_CTOKEN, uint8(CompoundV2Selector.MINT_BEHALF));
+        compoundV2DepositData = CalldataLib.encodeCompoundV2Deposit(
+            USDC, TEST_AMOUNT, TEST_RECEIVER, COMPOUND_V2_CTOKEN, uint8(CompoundV2Selector.MINT_BEHALF)
+        );
 
         compoundV3DepositData = CalldataLib.encodeCompoundV3Deposit(USDC, TEST_AMOUNT, TEST_RECEIVER, COMPOUND_V3_COMET_WETH);
     }
@@ -86,14 +87,17 @@ contract ExpectedOutputGen is BaseTest {
         address aaveV2DebtToken = polygon.getLendingTokens(polygonUSDT, aaveV2Lender).debt;
         address aaveV3DebtToken = chain.getLendingTokens(USDC, aaveV3Lender).debt;
 
-        aaveV2WithdrawData = CalldataLib.encodeAaveV2Withdraw(polygonUSDT, TEST_AMOUNT, TEST_RECEIVER, aaveV2DebtToken, AAVE_V2_POOL);
+        aaveV2WithdrawData =
+            CalldataLib.encodeAaveV2Withdraw(polygonUSDT, TEST_AMOUNT, TEST_RECEIVER, aaveV2DebtToken, AAVE_V2_POOL);
 
         aaveV3WithdrawData = CalldataLib.encodeAaveWithdraw(USDC, TEST_AMOUNT, TEST_RECEIVER, aaveV3DebtToken, AAVE_V3_POOL);
 
-        compoundV2WithdrawData =
-            CalldataLib.encodeCompoundV2Withdraw(USDC, TEST_AMOUNT, TEST_RECEIVER, COMPOUND_V2_CTOKEN, uint8(CompoundV2Selector.REDEEM));
+        compoundV2WithdrawData = CalldataLib.encodeCompoundV2Withdraw(
+            USDC, TEST_AMOUNT, TEST_RECEIVER, COMPOUND_V2_CTOKEN, uint8(CompoundV2Selector.REDEEM)
+        );
 
-        compoundV3WithdrawData = CalldataLib.encodeCompoundV3Withdraw(USDC, TEST_AMOUNT, TEST_RECEIVER, COMPOUND_V3_COMET_WETH, false);
+        compoundV3WithdrawData =
+            CalldataLib.encodeCompoundV3Withdraw(USDC, TEST_AMOUNT, TEST_RECEIVER, COMPOUND_V3_COMET_WETH, false);
     }
 
     function test_unit_lending_expectedOutputs_generate_borrow() public {

@@ -115,7 +115,8 @@ contract CompoundV2NativeComposerLightTest is BaseTest {
         IERC20All(cToken).approve(address(oneDV2), type(uint256).max);
 
         uint256 amountToWithdraw = 0.1e18;
-        bytes memory d = CalldataLib.encodeCompoundV2Withdraw(token, amountToWithdraw, user, cToken, uint8(CompoundV2Selector.REDEEM));
+        bytes memory d =
+            CalldataLib.encodeCompoundV2Withdraw(token, amountToWithdraw, user, cToken, uint8(CompoundV2Selector.REDEEM));
 
         // balances before withdrawal
         uint256 collateralBefore = chain.getCollateralBalance(user, token, lender);
@@ -151,13 +152,22 @@ contract CompoundV2NativeComposerLightTest is BaseTest {
         );
 
         address cToken = _getCollateralToken(token);
-        bytes memory d = CalldataLib.encodeCompoundV2Deposit(token, amount, userAddress, cToken, uint8(CompoundV2Selector.MINT_BEHALF));
+        bytes memory d =
+            CalldataLib.encodeCompoundV2Deposit(token, amount, userAddress, cToken, uint8(CompoundV2Selector.MINT_BEHALF));
 
         vm.prank(userAddress);
         oneDV2.deltaCompose(abi.encodePacked(transferTo, d));
     }
 
-    function depositNativeToCompoundV2(address token, address userAddress, uint256 amount, address comptroller, uint8 altSelector) internal {
+    function depositNativeToCompoundV2(
+        address token,
+        address userAddress,
+        uint256 amount,
+        address comptroller,
+        uint8 altSelector
+    )
+        internal
+    {
         vm.deal(userAddress, amount);
 
         address cToken = _getCollateralToken(token);
@@ -176,7 +186,14 @@ contract CompoundV2NativeComposerLightTest is BaseTest {
     /**
      * native can only be borrowed directly
      */
-    function borrowNativeFromCompoundV2(address token, address userAddress, uint256 amountToBorrow, address comptroller) internal {
+    function borrowNativeFromCompoundV2(
+        address token,
+        address userAddress,
+        uint256 amountToBorrow,
+        address comptroller
+    )
+        internal
+    {
         vm.prank(userAddress);
         IERC20All(comptroller).updateDelegate(address(oneDV2), true);
 

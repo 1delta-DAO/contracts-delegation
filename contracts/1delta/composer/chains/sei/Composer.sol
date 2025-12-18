@@ -54,4 +54,3 @@ contract OneDeltaComposerSei is BaseComposer, UniversalFlashLoan, SwapCallbacks 
         );
     }
 }
-

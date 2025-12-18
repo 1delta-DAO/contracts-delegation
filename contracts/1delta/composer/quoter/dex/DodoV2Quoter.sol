@@ -21,7 +21,14 @@ abstract contract DodoV2Quoter is Masks {
      * | 23     | 2              | clLength / pay flag  | <- 0: caller pays; 1: contract pays; greater: pre-funded
      * | 25     | clLength       | calldata             | calldata for flash loan
      */
-    function _getDodoV2AmountOut(uint256 sellAmount, uint256 currentOffset) internal view returns (uint256 amountOut, uint256 newOffset) {
+    function _getDodoV2AmountOut(
+        uint256 sellAmount,
+        uint256 currentOffset
+    )
+        internal
+        view
+        returns (uint256 amountOut, uint256 newOffset)
+    {
         address pair;
         uint256 sellQuote;
         uint256 clLength;

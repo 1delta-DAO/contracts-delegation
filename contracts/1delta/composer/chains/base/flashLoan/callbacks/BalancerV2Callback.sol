@@ -17,7 +17,6 @@ contract BalancerV2FlashLoanCallback is Slots, Masks, DeltaErrors {
     /**
      * @notice Handles Balancer V2 flash loan callback
      * @dev Gated via flash loan gateway flag to prevent calls from sources other than this contract
-     
      * @custom:calldata-offset-table
      * | Offset | Length (bytes) | Description                  |
      * |--------|----------------|------------------------------|

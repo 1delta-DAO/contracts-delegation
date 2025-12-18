@@ -20,6 +20,9 @@ abstract contract UniV3Callbacks is V3Callbacker, Masks, DeltaErrors {
     bytes32 private constant UNISWAP_V3_FF_FACTORY = 0xffcb2436774C3e191c85056d248EF4260ce5f27A9D0000000000000000000000;
     bytes32 private constant UNISWAP_V3_CODE_HASH = 0xe34f199b19b2b4f47f68442619d555527d244f78a3297ea89325f843f87b8b54;
 
+    bytes32 private constant XSWAP_V3_FF_FACTORY = 0xff30F317A9EC0f0D06d5de0f8D248Ec3506b7E4a8A0000000000000000000000;
+    bytes32 private constant XSWAP_V3_CODE_HASH = 0xd191442867020895af7761f344ec15480865676419d842260d75b06e75e00136;
+
     /**
      * Generic UniswapV3 callback executor
      * The call looks like
@@ -38,6 +41,15 @@ abstract contract UniV3Callbacks is V3Callbacker, Masks, DeltaErrors {
             case 0xfa461e3300000000000000000000000000000000000000000000000000000000 {
                 ffFactoryAddress := UNISWAP_V3_FF_FACTORY
                 codeHash := UNISWAP_V3_CODE_HASH
+
+                let _amount1 := calldataload(36)
+                switch sgt(_amount1, 0)
+                case 1 { amountToPay := _amount1 }
+                default { amountToPay := calldataload(4) }
+            }
+            case 0x14cf788600000000000000000000000000000000000000000000000000000000 {
+                ffFactoryAddress := XSWAP_V3_FF_FACTORY
+                codeHash := XSWAP_V3_CODE_HASH
 
                 let _amount1 := calldataload(36)
                 switch sgt(_amount1, 0)

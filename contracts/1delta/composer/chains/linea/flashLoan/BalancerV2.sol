@@ -81,4 +81,3 @@ abstract contract BalancerV2FlashLoans is Slots, Masks {
         return currentOffset;
     }
 }
-

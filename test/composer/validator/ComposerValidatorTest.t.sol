@@ -82,8 +82,9 @@ contract ComposerValidatorTest is BaseTest {
         address target = address(0x1111111111111111111111111111111111111111);
         uint256 value = 0;
 
-        bytes memory calldataBytes =
-            CalldataLib.encodeExternalCall(target, value, false, hex"23b872dd00000000000000000000000000000000000000000000000000000000");
+        bytes memory calldataBytes = CalldataLib.encodeExternalCall(
+            target, value, false, hex"23b872dd00000000000000000000000000000000000000000000000000000000"
+        );
         calldataBytes = CalldataLib.encodeExternalCall(callForwarder, value, false, calldataBytes);
 
         (bool isValid, string memory errorMessage, uint256 failedAtOffset) = validator.validateComposerCalldata(calldataBytes);
@@ -250,7 +251,8 @@ contract ComposerValidatorTest is BaseTest {
     }
 
     function test_unit_validator_invalid_lender_id() external {
-        bytes memory calldataBytes = abi.encodePacked(uint8(ComposerCommands.LENDING), uint8(LenderOps.DEPOSIT), uint16(LenderIds.UP_TO_MORPHO + 1));
+        bytes memory calldataBytes =
+            abi.encodePacked(uint8(ComposerCommands.LENDING), uint8(LenderOps.DEPOSIT), uint16(LenderIds.UP_TO_MORPHO + 1));
 
         (bool isValid, string memory errorMessage, uint256 failedAtOffset) = validator.validateComposerCalldata(calldataBytes);
 
@@ -327,7 +329,8 @@ contract ComposerValidatorTest is BaseTest {
 
     function test_unit_validator_external_call_invalid_callforwarder_self() external {
         bytes memory data = abi.encodeWithSignature("balanceOf(address)", user); // arbitrary call
-        bytes memory catchData = CalldataLib.encodeSweep(0x1111111111111111111111111111111111111111, address(this), 1, SweepType.AMOUNT);
+        bytes memory catchData =
+            CalldataLib.encodeSweep(0x1111111111111111111111111111111111111111, address(this), 1, SweepType.AMOUNT);
 
         bytes memory calldataBytes = CalldataLib.encodeTryExternalCall(callForwarder, 0, false, false, data, catchData);
         calldataBytes = CalldataLib.encodeExternalCall(callForwarder, 0, false, calldataBytes);

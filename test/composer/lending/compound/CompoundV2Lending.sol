@@ -163,7 +163,8 @@ contract CompoundV2ComposerLightTest is BaseTest {
         approveWithdrawalDelegation(user, token, address(oneDV2), lender);
 
         uint256 amountToWithdraw = 10.0e6;
-        bytes memory d = CalldataLib.encodeCompoundV2Withdraw(token, amountToWithdraw, user, cToken, uint8(CompoundV2Selector.REDEEM));
+        bytes memory d =
+            CalldataLib.encodeCompoundV2Withdraw(token, amountToWithdraw, user, cToken, uint8(CompoundV2Selector.REDEEM));
 
         // Check balances before withdrawal
         uint256 collateralBefore = chain.getCollateralBalance(user, token, lender);
@@ -198,7 +199,8 @@ contract CompoundV2ComposerLightTest is BaseTest {
         approveBorrowDelegation(user, token, address(oneDV2), lender);
 
         uint256 amountToWithdraw = 10.0e6;
-        bytes memory d = CalldataLib.encodeCompoundV2Withdraw(token, amountToWithdraw, user, cToken, uint8(CompoundV2Selector.REDEEM_BEHALF));
+        bytes memory d =
+            CalldataLib.encodeCompoundV2Withdraw(token, amountToWithdraw, user, cToken, uint8(CompoundV2Selector.REDEEM_BEHALF));
 
         // Check balances before withdrawal
         uint256 collateralBefore = chain.getCollateralBalance(user, token, lender);
@@ -352,7 +354,15 @@ contract CompoundV2ComposerLightTest is BaseTest {
         assertApproxEqAbs(debtAfter, 1.0e6, 0);
     }
 
-    function depositToCompoundV2(address token, address userAddress, uint256 amount, address comptroller, uint8 altSelector) internal {
+    function depositToCompoundV2(
+        address token,
+        address userAddress,
+        uint256 amount,
+        address comptroller,
+        uint8 altSelector
+    )
+        internal
+    {
         deal(token, userAddress, amount);
 
         address[] memory cTokens = new address[](1);

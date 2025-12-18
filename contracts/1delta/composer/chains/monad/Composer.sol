@@ -54,4 +54,3 @@ contract OneDeltaComposerMonad is BaseComposer, UniversalFlashLoan, SwapCallback
         );
     }
 }
-

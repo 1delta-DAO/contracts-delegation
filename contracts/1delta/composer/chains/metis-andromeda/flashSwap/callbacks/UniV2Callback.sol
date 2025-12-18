@@ -64,7 +64,6 @@ abstract contract UniV2Callbacks is Masks, DeltaErrors {
             case 0x10d1e85c00000000000000000000000000000000000000000000000000000000 {
                 forkId := and(UINT8_MASK, shr(88, outData))
                 switch forkId
-
                 case 1 {
                     ffFactoryAddress := SUSHISWAP_V2_FF_FACTORY
                     codeHash := SUSHISWAP_V2_CODE_HASH

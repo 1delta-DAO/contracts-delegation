@@ -71,8 +71,9 @@ contract V3QuoterTest is BaseTest {
         uint256 amountIn = 1 * 1e18; // 1 WETH
 
         // Use utility function to encode path
-        bytes memory path =
-            CalldataLib.encodeUniswapV3StyleSwap(hex"", USDC, address(quoter), 0, WETH_USDC_500_POOL, 500, DexPayConfig.CALLER_PAYS, new bytes(0));
+        bytes memory path = CalldataLib.encodeUniswapV3StyleSwap(
+            hex"", USDC, address(quoter), 0, WETH_USDC_500_POOL, 500, DexPayConfig.CALLER_PAYS, new bytes(0)
+        );
         // single swap branch (0,0)
         bytes memory swapBranch = (new bytes(0)).attachBranch(0, 0, ""); //(0,0)
         uint256 gas = gasleft();
@@ -110,7 +111,15 @@ contract V3QuoterTest is BaseTest {
         console.log("Actual amount:", actualAmountOut);
     }
 
-    function multiPath(address[] memory assets, uint16[] memory fees, address receiver) internal view returns (bytes memory data) {
+    function multiPath(
+        address[] memory assets,
+        uint16[] memory fees,
+        address receiver
+    )
+        internal
+        view
+        returns (bytes memory data)
+    {
         data = abi.encodePacked(
             uint8(fees.length - 1), // path max index
             uint8(0) // no splits

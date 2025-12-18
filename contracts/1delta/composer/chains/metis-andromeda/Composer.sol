@@ -54,4 +54,3 @@ contract OneDeltaComposerMetisAndromeda is BaseComposer, UniversalFlashLoan, Swa
         );
     }
 }
-

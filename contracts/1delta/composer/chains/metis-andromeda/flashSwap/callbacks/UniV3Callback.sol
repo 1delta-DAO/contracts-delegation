@@ -46,7 +46,6 @@ abstract contract UniV3Callbacks is V3Callbacker, Masks, DeltaErrors {
             switch selector
             case 0xfa461e3300000000000000000000000000000000000000000000000000000000 {
                 switch and(UINT8_MASK, shr(88, calldataload(172)))
-
                 case 1 {
                     ffFactoryAddress := SUSHISWAP_V3_FF_FACTORY
                     codeHash := SUSHISWAP_V3_CODE_HASH
@@ -132,4 +131,3 @@ abstract contract UniV3Callbacks is V3Callbacker, Masks, DeltaErrors {
         }
     }
 }
-

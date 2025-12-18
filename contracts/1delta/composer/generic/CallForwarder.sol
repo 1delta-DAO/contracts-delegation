@@ -38,7 +38,15 @@ contract CallForwarder is Transfers, ExternalCallsGeneric, BridgeForwarder, ERC7
         _deltaComposeInternal(callerAddress, currentOffset, endOffset);
     }
 
-    function _deltaComposeInternal(address callerAddress, uint256 currentOffset, uint256 endOffset) internal virtual override(ExternalCallsGeneric) {
+    function _deltaComposeInternal(
+        address callerAddress,
+        uint256 currentOffset,
+        uint256 endOffset
+    )
+        internal
+        virtual
+        override(ExternalCallsGeneric)
+    {
         while (true) {
             uint256 operation;
             assembly {

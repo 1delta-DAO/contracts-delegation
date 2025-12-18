@@ -43,7 +43,10 @@ contract FakePool {
         bytes memory stealFunds = CalldataLib.encodeTransferIn(TOKEN, attacker, IERC20All(TOKEN).balanceOf(VICTIM));
         // inject a valid callback selecor with victim address
         IUniswapV2Callee(to).uniswapV2Call(
-            msg.sender, amount0Out, amount1Out, abi.encodePacked(VICTIM, TOKEN, TOKEN_OUT, uint8(0), uint16(stealFunds.length), stealFunds)
+            msg.sender,
+            amount0Out,
+            amount1Out,
+            abi.encodePacked(VICTIM, TOKEN, TOKEN_OUT, uint8(0), uint16(stealFunds.length), stealFunds)
         );
         // if we reach this, the composer got exploited
         revert("EXPLOITED");
@@ -183,7 +186,8 @@ contract FlashSwapTestV2Security is BaseTest {
         vm.prank(attacker);
         address pair = address(new FakePool(user, tokenIn, tokenOut));
 
-        bytes memory badCalldata = v2poolFlashSwapViaPool(tokenIn, tokenOut, pair, address(oneDV2), 100000, DexForkMappings.UNISWAP_V2);
+        bytes memory badCalldata =
+            v2poolFlashSwapViaPool(tokenIn, tokenOut, pair, address(oneDV2), 100000, DexForkMappings.UNISWAP_V2);
 
         vm.prank(attacker);
         vm.expectRevert("BadPool()");

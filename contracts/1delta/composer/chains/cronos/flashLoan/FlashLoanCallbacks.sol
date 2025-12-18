@@ -17,4 +17,3 @@ contract FlashLoanCallbacks {
      */
     function _deltaComposeInternal(address callerAddress, uint256 offset, uint256 length) internal virtual {}
 }
-

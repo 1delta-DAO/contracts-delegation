@@ -157,7 +157,16 @@ contract SwapHopsAndSplitsLightTest is BaseTest {
     // USDC ----------> WETH
     // USDC ----------> WETH ---uniV2---> KEYCAT
     // USDC -> cbBTC -> WETH
-    function v3poolUltiSwapWithRouteV2(uint16 fee, uint16 fee2, address receiver, uint256 amount) internal view returns (bytes memory data) {
+    function v3poolUltiSwapWithRouteV2(
+        uint16 fee,
+        uint16 fee2,
+        address receiver,
+        uint256 amount
+    )
+        internal
+        view
+        returns (bytes memory data)
+    {
         address assetIn = USDC;
         address assetOut = WETH;
         address v2pool = IF(UNI_V2_FACTORY).getPair(assetOut, KEYCAT);
@@ -229,7 +238,16 @@ contract SwapHopsAndSplitsLightTest is BaseTest {
     // USDC ----------> WETH
     // USDC ----------> WETH ---uniV3---> cbETH
     // USDC -> cbBTC -> WETH
-    function v3poolUltiSwapWithRoute(uint16 fee, uint16 fee2, address receiver, uint256 amount) internal view returns (bytes memory data) {
+    function v3poolUltiSwapWithRoute(
+        uint16 fee,
+        uint16 fee2,
+        address receiver,
+        uint256 amount
+    )
+        internal
+        view
+        returns (bytes memory data)
+    {
         address assetIn = USDC;
         address assetOut = WETH;
         address pool = IF(UNI_FACTORY).getPool(assetIn, assetOut, fee);

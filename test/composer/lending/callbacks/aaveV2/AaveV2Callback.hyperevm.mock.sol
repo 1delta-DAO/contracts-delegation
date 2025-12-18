@@ -74,7 +74,9 @@ contract AaveV2FlashLoanCallbackTest is BaseTest, DeltaErrors {
 
         vm.prank(user);
         vm.expectRevert(DeltaErrors.INVALID_INITIATOR);
-        IAaveV2Pool(pc.poolAddr).flashLoan(address(oneDV2), assets, amounts, modes, address(0), abi.encodePacked(address(user), pc.poolId), 0);
+        IAaveV2Pool(pc.poolAddr).flashLoan(
+            address(oneDV2), assets, amounts, modes, address(0), abi.encodePacked(address(user), pc.poolId), 0
+        );
     }
 
     function test_unit_lending_flashloans_aaveV2_callback_fuzzInvalidPoolIds(uint8 poolId) public {

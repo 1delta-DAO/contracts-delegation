@@ -17,7 +17,6 @@ contract AaveV3FlashLoanCallback is Masks, DeltaErrors {
      * @notice Handles Aave V3 flash loan callback
      * @dev Validates caller, extracts original caller from params, and executes compose operations
      * @param initiator The address that initiated the flash loan
-     
      * @return Always returns true on success
      * @custom:calldata-offset-table
      * | Offset | Length (bytes) | Description                  |
@@ -53,7 +52,6 @@ contract AaveV3FlashLoanCallback is Masks, DeltaErrors {
             switch and(UINT8_MASK, shr(88, firstWord))
             case 0 { pool := AAVE_V3 }
             case 100 { pool := YLDR }
-
             // We revert on any other id
             default {
                 mstore(0, INVALID_FLASH_LOAN)
@@ -100,4 +98,3 @@ contract AaveV3FlashLoanCallback is Masks, DeltaErrors {
      */
     function _deltaComposeInternal(address callerAddress, uint256 offset, uint256 length) internal virtual {}
 }
-

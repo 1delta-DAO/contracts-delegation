@@ -160,7 +160,16 @@ contract SwapsSplitsAndHopsLightTest is BaseTest {
     // 33% USDC ---uni----> WETH
     // 33% USDC ---izi----> WETH
     // 33% USDC -> cbBTC -> WETH  /// the last ones are all uni V3
-    function v3poolpSwapWithRoute(uint16 fee, uint16 fee2, address receiver, uint256 amount) internal view returns (bytes memory data) {
+    function v3poolpSwapWithRoute(
+        uint16 fee,
+        uint16 fee2,
+        address receiver,
+        uint256 amount
+    )
+        internal
+        view
+        returns (bytes memory data)
+    {
         address assetIn = USDC;
         address assetOut = WETH;
         address pool = IF(UNI_FACTORY).getPool(assetIn, assetOut, fee);

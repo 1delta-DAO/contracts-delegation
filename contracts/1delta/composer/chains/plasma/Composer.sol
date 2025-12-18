@@ -54,4 +54,3 @@ contract OneDeltaComposerPlasma is BaseComposer, UniversalFlashLoan, SwapCallbac
         );
     }
 }
-

@@ -274,6 +274,8 @@ contract FlashLoanLightTest is BaseTest {
         // oneD.unlockCallback(abi.encodeWithSelector(oneD.balancerUnlockCallback.selector, abi.encodePacked(address(99), uint8(1), dp)));
 
         vm.expectRevert(bytes4(keccak256("InvalidCaller()")));
-        oneD.unlockCallback(abi.encodeWithSelector(oneD.balancerUnlockCallback.selector, abi.encodePacked(address(99), uint8(0), dp)));
+        oneD.unlockCallback(
+            abi.encodeWithSelector(oneD.balancerUnlockCallback.selector, abi.encodePacked(address(99), uint8(0), dp))
+        );
     }
 }

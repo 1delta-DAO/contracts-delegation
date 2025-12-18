@@ -63,7 +63,9 @@ contract FlashSwapTestV4Security is BaseTest {
 
         vm.prank(attacker);
         vm.expectRevert("InvalidCaller()");
-        IUnlockCallback(address(oneDV2)).unlockCallback(abi.encodePacked(user, uint8(UNISWAP_V4_POOL_ID), uint16(stealFunds.length), stealFunds));
+        IUnlockCallback(address(oneDV2)).unlockCallback(
+            abi.encodePacked(user, uint8(UNISWAP_V4_POOL_ID), uint16(stealFunds.length), stealFunds)
+        );
     }
 
     /**

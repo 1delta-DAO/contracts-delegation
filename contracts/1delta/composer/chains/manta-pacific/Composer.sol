@@ -54,4 +54,3 @@ contract OneDeltaComposerMantaPacific is BaseComposer, UniversalFlashLoan, SwapC
         );
     }
 }
-

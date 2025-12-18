@@ -42,12 +42,32 @@ contract PermitsTest is Test, DeltaErrors {
         return vm.sign(userPrivateKey, digest);
     }
 
-    function encodeCompactERC20Permit(uint256 value, uint32 deadline, bytes32 r, bytes32 s, uint8 v) internal pure returns (bytes memory) {
+    function encodeCompactERC20Permit(
+        uint256 value,
+        uint32 deadline,
+        bytes32 r,
+        bytes32 s,
+        uint8 v
+    )
+        internal
+        pure
+        returns (bytes memory)
+    {
         uint256 vs = (uint256(v - 27) << 255) | uint256(s);
         return abi.encodePacked(value, deadline, r, vs);
     }
 
-    function encodeCompactDaiPermit(uint32 nonce, uint32 expiry, bytes32 r, bytes32 s, uint8 v) internal pure returns (bytes memory) {
+    function encodeCompactDaiPermit(
+        uint32 nonce,
+        uint32 expiry,
+        bytes32 r,
+        bytes32 s,
+        uint8 v
+    )
+        internal
+        pure
+        returns (bytes memory)
+    {
         uint256 vs = (uint256(v - 27) << 255) | uint256(s);
         return abi.encodePacked(nonce, expiry, r, vs);
     }
