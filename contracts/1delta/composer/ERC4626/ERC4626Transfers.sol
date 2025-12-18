@@ -52,7 +52,7 @@ abstract contract ERC4626Transfers is ERC20Selectors, Masks, DeltaErrors {
             currentOffset := add(currentOffset, 20)
 
             let amount := shr(128, calldataload(currentOffset))
-            let amountToDeposit := and(UINT120_MASK, amount)
+            let amountToDeposit := and(UINT112_MASK, amount)
 
             currentOffset := add(currentOffset, 16)
 
@@ -112,7 +112,7 @@ abstract contract ERC4626Transfers is ERC20Selectors, Masks, DeltaErrors {
             currentOffset := add(currentOffset, 20)
 
             let amount := shr(128, calldataload(currentOffset))
-            let amountToWithdrawOrRedeem := and(UINT120_MASK, amount)
+            let amountToWithdrawOrRedeem := and(UINT112_MASK, amount)
 
             currentOffset := add(currentOffset, 16)
 

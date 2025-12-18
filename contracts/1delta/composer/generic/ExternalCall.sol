@@ -44,7 +44,7 @@ abstract contract ExternalCall is BaseUtils {
             // this is a slightly different behavior as, unlike for ERC20, the
             // 0-value is a commonly used one, as such, a flag is used for this
             switch and(NATIVE_FLAG, callValue)
-            case 0 { callValue := and(callValue, UINT120_MASK) }
+            case 0 { callValue := and(callValue, UINT112_MASK) }
             default { callValue := selfbalance() }
 
             // free memo ptr for populating the tx

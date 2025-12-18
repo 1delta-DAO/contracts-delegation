@@ -49,7 +49,7 @@ abstract contract ExternalCallsGeneric is BaseUtils {
             currentOffset := add(2, currentOffset)
 
             switch and(NATIVE_FLAG, callValue)
-            case 0 { callValue := and(callValue, UINT120_MASK) }
+            case 0 { callValue := and(callValue, UINT112_MASK) }
             default { callValue := selfbalance() }
 
             // free memo ptr for populating the tx
@@ -124,7 +124,7 @@ abstract contract ExternalCallsGeneric is BaseUtils {
             currentOffset := add(2, currentOffset)
 
             switch and(NATIVE_FLAG, callValue)
-            case 0 { callValue := and(callValue, UINT120_MASK) }
+            case 0 { callValue := and(callValue, UINT112_MASK) }
             default { callValue := selfbalance() }
 
             // free memo ptr for populating the tx
@@ -238,7 +238,7 @@ abstract contract ExternalCallsGeneric is BaseUtils {
 
             // handle nativeValue flag
             switch and(NATIVE_FLAG, callValue)
-            case 0 { callValue := and(callValue, UINT120_MASK) }
+            case 0 { callValue := and(callValue, UINT112_MASK) }
             default { callValue := selfbalance() }
 
             let ptr := mload(0x40)
@@ -326,7 +326,7 @@ abstract contract ExternalCallsGeneric is BaseUtils {
 
             // handle nativeValue flag
             switch and(NATIVE_FLAG, callValue)
-            case 0 { callValue := and(callValue, UINT120_MASK) }
+            case 0 { callValue := and(callValue, UINT112_MASK) }
             default { callValue := selfbalance() }
 
             let ptr := mload(0x40)

@@ -39,7 +39,7 @@ abstract contract CompoundV2Lending is ERC20Selectors, Masks {
 
             let cToken := shr(96, calldataload(add(currentOffset, 56)))
 
-            let amount := and(UINT120_MASK, amountData)
+            let amount := and(UINT112_MASK, amountData)
 
             // selector for borrowBehalf(address,uint256)
             mstore(ptr, 0x856e5bb300000000000000000000000000000000000000000000000000000000)
@@ -114,7 +114,7 @@ abstract contract CompoundV2Lending is ERC20Selectors, Masks {
 
             let cToken := shr(96, calldataload(add(currentOffset, 56)))
 
-            let amount := and(UINT120_MASK, amountData)
+            let amount := and(UINT112_MASK, amountData)
             if eq(amount, 0xffffffffffffffffffffffffffff) {
                 // selector for balanceOfUnderlying(address)
                 mstore(0, 0x3af9e66900000000000000000000000000000000000000000000000000000000)
@@ -337,7 +337,7 @@ abstract contract CompoundV2Lending is ERC20Selectors, Masks {
             }
             // erc20 case
             default {
-                let amount := and(UINT120_MASK, amountData)
+                let amount := and(UINT112_MASK, amountData)
 
                 // zero is this balance
                 if iszero(amount) {
@@ -449,7 +449,7 @@ abstract contract CompoundV2Lending is ERC20Selectors, Masks {
             switch underlying
             // case native
             case 0 {
-                let amount := and(UINT120_MASK, amountData)
+                let amount := and(UINT112_MASK, amountData)
                 switch amount
                 case 0 {
                     // load the retrieved balance
@@ -494,7 +494,7 @@ abstract contract CompoundV2Lending is ERC20Selectors, Masks {
             }
             // case ERC20
             default {
-                let amount := and(UINT120_MASK, amountData)
+                let amount := and(UINT112_MASK, amountData)
                 switch amount
                 case 0 {
                     // selector for balanceOf(address)
