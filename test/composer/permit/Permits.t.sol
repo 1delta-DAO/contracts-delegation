@@ -110,22 +110,25 @@ contract PermitsTest is Test, DeltaErrors {
 
         assertEq(token.allowance(user, address(oneD)), type(uint256).max);
     }
+    /**
+    * since we allow fall through for permit calls (if they revert, we will continue the composition), 
+    * the following test is not applicable anymore
+     */
+    // function test_unit_permit_token_permit_expired_deadline() external {
+    //     MockERC20Permit token = new MockERC20Permit(1000e18);
+    //     token.transfer(user, 1000e18);
+    //     uint256 value = 500e18;
+    //     uint256 deadline = blockTimestamp - 1;
+    //     uint256 nonce = token.nonces(user);
 
-    function test_unit_permit_token_permit_expired_deadline() external {
-        MockERC20Permit token = new MockERC20Permit(1000e18);
-        token.transfer(user, 1000e18);
-        uint256 value = 500e18;
-        uint256 deadline = blockTimestamp - 1;
-        uint256 nonce = token.nonces(user);
+    //     (uint8 v, bytes32 r, bytes32 s) = signERC20Permit(address(token), user, address(oneD), value, deadline, nonce);
+    //     bytes memory permitData = encodeCompactERC20Permit(value, uint32(deadline + 1), r, s, v);
+    //     bytes memory data = CalldataLib.encodePermit(PermitIds.TOKEN_PERMIT, address(token), permitData);
 
-        (uint8 v, bytes32 r, bytes32 s) = signERC20Permit(address(token), user, address(oneD), value, deadline, nonce);
-        bytes memory permitData = encodeCompactERC20Permit(value, uint32(deadline + 1), r, s, v);
-        bytes memory data = CalldataLib.encodePermit(PermitIds.TOKEN_PERMIT, address(token), permitData);
-
-        vm.prank(user);
-        vm.expectRevert("EXPIRED");
-        oneD.deltaCompose(data);
-    }
+    //     vm.prank(user);
+    //     vm.expectRevert("EXPIRED");
+    //     oneD.deltaCompose(data);
+    // }
 
     function test_unit_permit_token_permit_invalid_length() external {
         bytes memory invalidData = abi.encodePacked(uint256(123));

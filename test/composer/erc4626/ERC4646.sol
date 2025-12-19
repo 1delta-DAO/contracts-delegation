@@ -53,7 +53,7 @@ contract ERC4626Test is BaseTest {
             assets //
         );
 
-        bytes memory deposit = CalldataLib.encodeErc4646Deposit(
+        bytes memory deposit = CalldataLib.encodeErc4626Deposit(
             asset,
             vault, //
             false,
@@ -88,7 +88,7 @@ contract ERC4626Test is BaseTest {
             assets //
         );
 
-        bytes memory deposit = CalldataLib.encodeErc4646Deposit(
+        bytes memory deposit = CalldataLib.encodeErc4626Deposit(
             asset,
             vault, //
             true,
@@ -115,7 +115,7 @@ contract ERC4626Test is BaseTest {
             assets //
         );
 
-        bytes memory deposit = CalldataLib.encodeErc4646Deposit(
+        bytes memory deposit = CalldataLib.encodeErc4626Deposit(
             asset,
             META_MORPHO_USDC, //
             false,
@@ -371,7 +371,7 @@ contract ERC4626Test is BaseTest {
 
         bytes memory cd = CalldataLib.encodeTransferIn(asset, address(oneD), assets);
 
-        cd = abi.encodePacked(cd, CalldataLib.encodeErc4646Deposit(asset, vault, false, 0, user));
+        cd = abi.encodePacked(cd, CalldataLib.encodeErc4626Deposit(asset, vault, false, 0, user));
 
         vm.prank(user);
         IERC20All(asset).approve(address(oneD), type(uint256).max);
@@ -394,7 +394,7 @@ contract ERC4626Test is BaseTest {
 
         bytes memory transferTo = CalldataLib.encodeTransferIn(asset, address(oneD), assets);
 
-        bytes memory deposit = CalldataLib.encodeErc4646Deposit(asset, vault, false, assets, receiver);
+        bytes memory deposit = CalldataLib.encodeErc4626Deposit(asset, vault, false, assets, receiver);
 
         vm.prank(user);
         IERC20All(asset).approve(address(oneD), type(uint256).max);
@@ -469,7 +469,7 @@ contract ERC4626Test is BaseTest {
 
         bytes memory transferTo = CalldataLib.encodeTransferIn(asset, address(oneD), assets);
 
-        bytes memory deposit = CalldataLib.encodeErc4646Deposit(asset, vault, false, assets, user);
+        bytes memory deposit = CalldataLib.encodeErc4626Deposit(asset, vault, false, assets, user);
 
         vm.prank(user);
         IERC20All(asset).approve(address(oneD), type(uint256).max);

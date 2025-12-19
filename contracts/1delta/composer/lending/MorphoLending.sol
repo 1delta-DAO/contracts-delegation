@@ -262,7 +262,7 @@ abstract contract MorphoLending is ERC20Selectors, Masks {
             mstore(add(ptr, 132), shr(128, lltvAndAmount)) // MarketParams.lltv
 
             // we ignore flags as this only allows assets
-            let amountToDeposit := and(UINT120_MASK, lltvAndAmount)
+            let amountToDeposit := and(UINT112_MASK, lltvAndAmount)
 
             /**
              * if the amount is zero, we assume that the contract balance is deposited
@@ -366,7 +366,7 @@ abstract contract MorphoLending is ERC20Selectors, Masks {
             let morpho := shr(96, calldataload(add(currentOffset, 132)))
 
             // get amount, ignore flags
-            lltvAndAmount := and(UINT120_MASK, lltvAndAmount)
+            lltvAndAmount := and(UINT112_MASK, lltvAndAmount)
 
             // technically not needed, hwoever, we keep it consistent
             // to withdraw all like this - maxUnit112 means read collateral balance
@@ -437,7 +437,7 @@ abstract contract MorphoLending is ERC20Selectors, Masks {
             let lltvAndAmount := calldataload(add(currentOffset, 80))
             mstore(add(ptr, 132), shr(128, lltvAndAmount)) // MarketParams.lltv
 
-            let withdrawAm := and(UINT120_MASK, lltvAndAmount)
+            let withdrawAm := and(UINT112_MASK, lltvAndAmount)
 
             mstore(add(ptr, 228), callerAddress) // onBehalfOf
             mstore(add(ptr, 260), shr(96, calldataload(add(currentOffset, 112)))) // receiver
@@ -550,7 +550,7 @@ abstract contract MorphoLending is ERC20Selectors, Masks {
             tempData := calldataload(add(currentOffset, 80))
             mstore(add(ptr, 132), shr(128, tempData)) // MarketParams.lltv
 
-            let repayAm := and(UINT120_MASK, tempData)
+            let repayAm := and(UINT112_MASK, tempData)
             // skip amounts
 
             // receiver address

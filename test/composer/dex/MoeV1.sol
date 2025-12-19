@@ -22,7 +22,7 @@ interface IF {
 
 /**
  * We test all morpho blue operations
- * - supply, supplyCollateral, borrow, repay, encodeErc4646Deposit, encodeErc4646Withdraw
+ * - supply, supplyCollateral, borrow, repay, encodeErc4626Deposit, encodeErc4646Withdraw
  */
 contract MoeV1Test is BaseTest {
     address internal constant MOE_FACTORY = 0x5bEf015CA9424A7C07B68490616a4C1F094BEdEc;

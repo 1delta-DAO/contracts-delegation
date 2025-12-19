@@ -38,7 +38,7 @@ abstract contract ERC4626Transfers is ERC20Selectors, Masks, DeltaErrors {
      * | 40     | 16             | amount (with flags)          |
      * | 56     | 20             | receiver                     |
      */
-    function _encodeErc4646Deposit(uint256 currentOffset) internal returns (uint256) {
+    function _encodeErc4626Deposit(uint256 currentOffset) internal returns (uint256) {
         assembly {
             let ptr := mload(0x40)
 
@@ -52,7 +52,7 @@ abstract contract ERC4626Transfers is ERC20Selectors, Masks, DeltaErrors {
             currentOffset := add(currentOffset, 20)
 
             let amount := shr(128, calldataload(currentOffset))
-            let amountToDeposit := and(UINT120_MASK, amount)
+            let amountToDeposit := and(UINT112_MASK, amount)
 
             currentOffset := add(currentOffset, 16)
 
@@ -112,7 +112,7 @@ abstract contract ERC4626Transfers is ERC20Selectors, Masks, DeltaErrors {
             currentOffset := add(currentOffset, 20)
 
             let amount := shr(128, calldataload(currentOffset))
-            let amountToWithdrawOrRedeem := and(UINT120_MASK, amount)
+            let amountToWithdrawOrRedeem := and(UINT112_MASK, amount)
 
             currentOffset := add(currentOffset, 16)
 

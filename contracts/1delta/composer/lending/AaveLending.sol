@@ -36,7 +36,7 @@ abstract contract AaveLending is ERC20Selectors, Masks {
             // receiver
             let receiver := shr(96, calldataload(add(currentOffset, 36)))
 
-            let amount := and(UINT120_MASK, amountData)
+            let amount := and(UINT112_MASK, amountData)
             // get aToken
             let collateralToken := shr(96, calldataload(add(currentOffset, 56)))
             // skip  to end
@@ -134,7 +134,7 @@ abstract contract AaveLending is ERC20Selectors, Masks {
             // skip pool (end of data)
             currentOffset := add(currentOffset, 77)
 
-            let amount := and(UINT120_MASK, amountData)
+            let amount := and(UINT112_MASK, amountData)
 
             let ptr := mload(0x40)
             switch mode
@@ -227,7 +227,7 @@ abstract contract AaveLending is ERC20Selectors, Masks {
             // skip pool (end of data)
             currentOffset := add(currentOffset, 76)
 
-            let amount := and(UINT120_MASK, amountData)
+            let amount := and(UINT112_MASK, amountData)
             // zero is this balance
             if iszero(amount) {
                 // selector for balanceOf(address)
@@ -282,7 +282,7 @@ abstract contract AaveLending is ERC20Selectors, Masks {
             // skip pool (end of data)
             currentOffset := add(currentOffset, 76)
 
-            let amount := and(UINT120_MASK, amountData)
+            let amount := and(UINT112_MASK, amountData)
             // zero is this balance
             if iszero(amount) {
                 // selector for balanceOf(address)
@@ -346,7 +346,7 @@ abstract contract AaveLending is ERC20Selectors, Masks {
             let receiver := shr(96, receiverAndMode)
             let mode := and(UINT8_MASK, shr(88, receiverAndMode))
 
-            let amount := and(UINT120_MASK, amountData)
+            let amount := and(UINT112_MASK, amountData)
             switch amount
             case 0 {
                 // selector for balanceOf(address)

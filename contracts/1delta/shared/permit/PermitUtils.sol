@@ -31,6 +31,8 @@ abstract contract PermitUtils is PermitConstants {
      * before invocation for optimized performance.
      * Note that the implementation does not perform dirty bits cleaning, so it is the responsibility of
      * the caller to make sure that the higher 96 bits of the `owner` and `spender` parameters are clean.
+     * @dev we use pop(call(...)) in calling permits, this avoids reverts if a frunrunner extracts and executes the permit before composed txn
+     * if the composer does not have the required allowance, it will revert in further operations
      * @param token The address of the ERC20 token on which to call the permit function.
      * @param permitOffset The off-chain permit data, containing different fields depending on the type of permit function.
      * @param permitLength Length of the permit calldata.
@@ -39,7 +41,6 @@ abstract contract PermitUtils is PermitConstants {
         assembly {
             // solhint-disable-line no-inline-assembly
             let ptr := mload(0x40)
-            let success
             // Switch case for different permit lengths, indicating different permit standards
             switch permitLength
             // Compact IERC20Permit
@@ -61,7 +62,7 @@ abstract contract PermitUtils is PermitConstants {
                     mstore(add(ptr, 0xc4), shr(1, shl(1, vs))) // store s         = vs without most significant bit
                 }
                 // IERC20Permit.permit(address owner, address spender, uint256 value, uint256 deadline, uint8 v, bytes32 r, bytes32 s)
-                success := call(gas(), token, 0, ptr, 0xe4, 0, 0)
+                pop(call(gas(), token, 0, ptr, 0xe4, 0, 0))
             }
             // Compact IDaiLikePermit
             case 72 {
@@ -83,7 +84,7 @@ abstract contract PermitUtils is PermitConstants {
                     mstore(add(ptr, 0xe4), shr(1, shl(1, vs))) // store s       = vs without most significant bit
                 }
                 // IDaiLikePermit.permit(address holder, address spender, uint256 nonce, uint256 expiry, bool allowed, uint8 v, bytes32 r, bytes32 s)
-                success := call(gas(), token, 0, ptr, 0x104, 0, 0)
+                pop(call(gas(), token, 0, ptr, 0x104, 0, 0))
             }
             // Compact IPermit2
             case 96 {
@@ -106,18 +107,12 @@ abstract contract PermitUtils is PermitConstants {
                 mstore(add(ptr, 0x144), shr(1, shl(1, vs))) // store s     = vs without most significant bit
                 mstore8(add(ptr, 0x164), add(27, shr(255, vs))) // store v     = copy permitOffset 0x40..0x5f
                 // IPermit2.permit(address owner, PermitSingle calldata permitSingle, bytes calldata signature)
-                success := call(gas(), PERMIT2, 0, ptr, 0x165, 0, 0)
+                pop(call(gas(), PERMIT2, 0, ptr, 0x165, 0, 0))
             }
             // Unknown
             default {
                 mstore(ptr, _PERMIT_LENGTH_ERROR)
                 revert(ptr, 4)
-            }
-
-            // revert if not successful
-            if iszero(success) {
-                returndatacopy(0, 0, returndatasize())
-                revert(0, returndatasize())
             }
         }
     }

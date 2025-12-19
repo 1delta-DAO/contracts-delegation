@@ -31,7 +31,7 @@ abstract contract BalancerV2FlashLoans is Slots, Masks {
 
             // second calldata slice including amount and params length
             let slice := calldataload(add(currentOffset, 20))
-            let amount := shr(128, slice) // shr will already mask uint112 here
+            let amount := shr(128, slice)
             // length of params
             let calldataLength := and(UINT16_MASK, shr(112, slice))
 

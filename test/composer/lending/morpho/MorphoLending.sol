@@ -18,7 +18,7 @@ import {MockPermitter} from "test/mocks/MockPermitter.sol";
 
 /**
  * We test all CalldataLib.morpho blue operations
- * - supply, supplyCollateral, borrow, repay, encodeErc4646Deposit, encodeErc4646Withdraw
+ * - supply, supplyCollateral, borrow, repay, encodeErc4626Deposit, encodeErc4646Withdraw
  */
 contract MorphoBlueTest is BaseTest {
     using MorphoMathLib for uint256;

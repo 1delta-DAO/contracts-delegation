@@ -309,17 +309,13 @@ contract AssetTransfers is BaseUtils {
                 mstore(ptr, ERC20_APPROVE)
                 mstore(add(ptr, 0x04), target)
                 mstore(add(ptr, 0x24), MAX_UINT256)
-                pop(
-                    call(
-                        gas(),
-                        underlying, //
-                        0,
-                        ptr,
-                        0x44,
-                        ptr,
-                        32
-                    )
-                )
+                let success := call(gas(), underlying, 0, ptr, 0x44, ptr, 32)
+                let rdsize := returndatasize()
+                if iszero(and(success, or(iszero(rdsize), eq(mload(ptr), 1)))) {
+                    mstore(0, APPROVE_FAILED)
+                    revert(0, 0x4)
+                }
+
                 sstore(key, 1)
             }
             currentOffset := add(currentOffset, 40)

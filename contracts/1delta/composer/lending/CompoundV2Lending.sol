@@ -39,15 +39,20 @@ abstract contract CompoundV2Lending is ERC20Selectors, Masks {
 
             let cToken := shr(96, calldataload(add(currentOffset, 56)))
 
-            let amount := and(UINT120_MASK, amountData)
+            let amount := and(UINT112_MASK, amountData)
 
             // selector for borrowBehalf(address,uint256)
             mstore(ptr, 0x856e5bb300000000000000000000000000000000000000000000000000000000)
             mstore(add(ptr, 0x4), callerAddress) // user
             mstore(add(ptr, 0x24), amount) // to this address
-            if iszero(call(gas(), cToken, 0x0, ptr, 0x44, ptr, 0x0)) {
+            if iszero(call(gas(), cToken, 0x0, ptr, 0x44, 0x0, 0x20)) {
                 returndatacopy(0, 0, returndatasize())
                 revert(0, returndatasize())
+            }
+            let rdsize := returndatasize()
+            if or(iszero(rdsize), xor(mload(0x0), 0)) {
+                returndatacopy(0, 0, rdsize)
+                revert(0, rdsize)
             }
             if xor(address(), receiver) {
                 let underlying := shr(96, calldataload(currentOffset))
@@ -62,7 +67,7 @@ abstract contract CompoundV2Lending is ERC20Selectors, Masks {
 
                 let success := call(gas(), underlying, 0, ptr, 0x44, ptr, 32)
 
-                let rdsize := returndatasize()
+                rdsize := returndatasize()
 
                 // Check for ERC20 success. ERC20 tokens should return a boolean,
                 // but some don't. We accept 0-length return data as success, or at
@@ -114,7 +119,7 @@ abstract contract CompoundV2Lending is ERC20Selectors, Masks {
 
             let cToken := shr(96, calldataload(add(currentOffset, 56)))
 
-            let amount := and(UINT120_MASK, amountData)
+            let amount := and(UINT112_MASK, amountData)
             if eq(amount, 0xffffffffffffffffffffffffffff) {
                 // selector for balanceOfUnderlying(address)
                 mstore(0, 0x3af9e66900000000000000000000000000000000000000000000000000000000)
@@ -175,9 +180,22 @@ abstract contract CompoundV2Lending is ERC20Selectors, Masks {
                 mstore(add(ptr, 0x24), address()) // to this address
                 mstore(add(ptr, 0x44), cTokenTransferAmount)
 
-                if iszero(call(gas(), cToken, 0, ptr, 0x64, ptr, 32)) {
-                    returndatacopy(0, 0, returndatasize())
-                    revert(0, returndatasize())
+                let success := call(gas(), cToken, 0, ptr, 0x64, ptr, 32)
+                let rdsize := returndatasize()
+                success :=
+                    and(
+                        success,
+                        or(
+                            iszero(rdsize),
+                            and(
+                                gt(rdsize, 31),
+                                eq(mload(ptr), 1)
+                            )
+                        )
+                    )
+                if iszero(success) {
+                    returndatacopy(0, 0, rdsize)
+                    revert(0, rdsize)
                 }
 
                 // 3) REDEEM
@@ -185,9 +203,14 @@ abstract contract CompoundV2Lending is ERC20Selectors, Masks {
                 mstore(0, 0xdb006a7500000000000000000000000000000000000000000000000000000000)
                 mstore(0x4, cTokenTransferAmount)
 
-                if iszero(call(gas(), cToken, 0x0, 0x0, 0x24, 0x0, 0x0)) {
+                if iszero(call(gas(), cToken, 0x0, 0x0, 0x24, 0x0, 0x20)) {
                     returndatacopy(0, 0, returndatasize())
                     revert(0, returndatasize())
+                }
+                rdsize := returndatasize()
+                if or(iszero(rdsize), xor(mload(0x0), 0)) {
+                    returndatacopy(0, 0, rdsize)
+                    revert(0, rdsize)
                 }
             }
             case 1 {
@@ -197,9 +220,14 @@ abstract contract CompoundV2Lending is ERC20Selectors, Masks {
                 mstore(add(ptr, 0x4), callerAddress)
                 mstore(add(ptr, 0x24), cTokenTransferAmount)
 
-                if iszero(call(gas(), cToken, 0x0, ptr, 0x44, 0x0, 0x0)) {
+                if iszero(call(gas(), cToken, 0x0, ptr, 0x44, 0x0, 0x20)) {
                     returndatacopy(0, 0, returndatasize())
                     revert(0, returndatasize())
+                }
+                let rdsize := returndatasize()
+                if or(iszero(rdsize), xor(mload(0), 0)) {
+                    returndatacopy(0, 0, rdsize)
+                    revert(0, rdsize)
                 }
             }
             default { revert(0, 0) }
@@ -284,17 +312,18 @@ abstract contract CompoundV2Lending is ERC20Selectors, Masks {
             case 0 {
                 let amount
 
-                amount := and(UINT120_MASK, amountData)
+                amount := and(UINT112_MASK, amountData)
                 // zero is this balance
                 if iszero(amount) { amount := selfbalance() }
 
                 // selector for mint()
                 mstore(0, 0x1249c58b00000000000000000000000000000000000000000000000000000000)
 
-                if iszero(call(gas(), cToken, amount, 0x0, 0x4, 0x0, 0x0)) {
+                if iszero(call(gas(), cToken, amount, 0x0, 0x4, 0x0, 0x20)) {
                     returndatacopy(0x0, 0, returndatasize())
                     revert(0x0, returndatasize())
                 }
+                let rdsize := returndatasize()
 
                 // need to transfer collateral to receiver
                 if xor(receiver, address()) {
@@ -316,7 +345,7 @@ abstract contract CompoundV2Lending is ERC20Selectors, Masks {
 
                     let success := call(gas(), cToken, 0, ptr, 0x44, ptr, 32)
 
-                    let rdsize := returndatasize()
+                    rdsize := returndatasize()
 
                     if iszero(
                         and(
@@ -337,7 +366,7 @@ abstract contract CompoundV2Lending is ERC20Selectors, Masks {
             }
             // erc20 case
             default {
-                let amount := and(UINT120_MASK, amountData)
+                let amount := and(UINT112_MASK, amountData)
 
                 // zero is this balance
                 if iszero(amount) {
@@ -361,9 +390,14 @@ abstract contract CompoundV2Lending is ERC20Selectors, Masks {
                     mstore(add(ptr, 0x04), receiver)
                     mstore(add(ptr, 0x24), amount)
 
-                    if iszero(call(gas(), cToken, 0x0, ptr, 0x44, 0x0, 0x0)) {
+                    if iszero(call(gas(), cToken, 0x0, ptr, 0x44, 0x0, 0x20)) {
                         returndatacopy(0, 0, returndatasize())
                         revert(0, returndatasize())
+                    }
+                    let rdsize := returndatasize()
+                    if or(iszero(rdsize), xor(mload(0), 0)) {
+                        returndatacopy(0, 0, rdsize)
+                        revert(0, rdsize)
                     }
                 }
                 case 1 {
@@ -371,9 +405,14 @@ abstract contract CompoundV2Lending is ERC20Selectors, Masks {
                     mstore(ptr, 0xa0712d6800000000000000000000000000000000000000000000000000000000)
                     mstore(add(ptr, 0x04), amount)
 
-                    if iszero(call(gas(), cToken, 0x0, ptr, 0x24, 0x0, 0x0)) {
+                    if iszero(call(gas(), cToken, 0x0, ptr, 0x24, 0x0, 0x20)) {
                         returndatacopy(0, 0, returndatasize())
                         revert(0, returndatasize())
+                    }
+                    let rdsize := returndatasize()
+                    if or(iszero(rdsize), xor(mload(0), 0)) {
+                        returndatacopy(0, 0, rdsize)
+                        revert(0, rdsize)
                     }
 
                     // need to transfer collateral to receiver
@@ -395,7 +434,7 @@ abstract contract CompoundV2Lending is ERC20Selectors, Masks {
 
                         let success := call(gas(), cToken, 0, ptr, 0x44, ptr, 32)
 
-                        let rdsize := returndatasize()
+                        rdsize := returndatasize()
 
                         if iszero(
                             and(
@@ -449,7 +488,7 @@ abstract contract CompoundV2Lending is ERC20Selectors, Masks {
             switch underlying
             // case native
             case 0 {
-                let amount := and(UINT120_MASK, amountData)
+                let amount := and(UINT112_MASK, amountData)
                 switch amount
                 case 0 {
                     // load the retrieved balance
@@ -494,7 +533,7 @@ abstract contract CompoundV2Lending is ERC20Selectors, Masks {
             }
             // case ERC20
             default {
-                let amount := and(UINT120_MASK, amountData)
+                let amount := and(UINT112_MASK, amountData)
                 switch amount
                 case 0 {
                     // selector for balanceOf(address)
@@ -542,11 +581,16 @@ abstract contract CompoundV2Lending is ERC20Selectors, Masks {
                         ptr, // input = empty for fallback
                         0x44, // input size = selector + address + uint256
                         ptr, // output
-                        0x0 // output size = zero
+                        0x20 // output size
                     )
                 ) {
                     returndatacopy(0x0, 0, returndatasize())
                     revert(0x0, returndatasize())
+                }
+                let rdsize := returndatasize()
+                if or(iszero(rdsize), xor(mload(ptr), 0)) {
+                    returndatacopy(0, 0, rdsize)
+                    revert(0, rdsize)
                 }
             }
         }

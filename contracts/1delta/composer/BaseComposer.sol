@@ -94,7 +94,7 @@ abstract contract BaseComposer is
             uint256 operation;
             // fetch op metadata
             assembly {
-                operation := shr(248, calldataload(currentOffset)) // last byte
+                operation := shr(248, calldataload(currentOffset)) // first byte
                 // we increment the current offset to skip the operation
                 currentOffset := add(1, currentOffset)
             }

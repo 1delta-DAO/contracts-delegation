@@ -45,7 +45,7 @@ abstract contract CompoundV3Lending is ERC20Selectors, Masks {
 
             currentOffset := add(currentOffset, 77)
 
-            let amount := and(UINT120_MASK, amountData)
+            let amount := and(UINT112_MASK, amountData)
             if eq(amount, 0xffffffffffffffffffffffffffff) {
                 switch and(UINT8_MASK, shr(88, isBase))
                 case 0 {
@@ -115,7 +115,7 @@ abstract contract CompoundV3Lending is ERC20Selectors, Masks {
 
             currentOffset := add(currentOffset, 76)
 
-            let amount := and(UINT120_MASK, amountData)
+            let amount := and(UINT112_MASK, amountData)
 
             // selector withdrawFrom(address,address,address,uint256)
             mstore(ptr, 0x2644131800000000000000000000000000000000000000000000000000000000)
@@ -156,7 +156,7 @@ abstract contract CompoundV3Lending is ERC20Selectors, Masks {
             let comet := shr(96, calldataload(add(currentOffset, 56)))
             currentOffset := add(currentOffset, 76)
 
-            let amount := and(UINT120_MASK, amountData)
+            let amount := and(UINT112_MASK, amountData)
             // zero is this balance
             if iszero(amount) {
                 // selector for balanceOf(address)
@@ -209,7 +209,7 @@ abstract contract CompoundV3Lending is ERC20Selectors, Masks {
             let comet := shr(96, calldataload(add(currentOffset, 56)))
             currentOffset := add(currentOffset, 76)
 
-            let amount := and(UINT120_MASK, amountData)
+            let amount := and(UINT112_MASK, amountData)
             switch amount
             case 0 {
                 // selector for balanceOf(address)

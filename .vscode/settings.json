@@ -3,6 +3,7 @@
     "solidity.packageDefaultDependenciesContractsDirectory": "node_modules/forge-std/src",
     "solidity.packageDefaultDependenciesDirectory": "/node_modules/forge-std/lib",
     "solidity.formatter": "forge",
+    "editor.formatOnSave": true,
     "cSpell.words": [
         "achi",
         "annualize",

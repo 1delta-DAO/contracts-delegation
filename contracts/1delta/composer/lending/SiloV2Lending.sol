@@ -37,7 +37,7 @@ abstract contract SiloV2Lending is ERC20Selectors, Masks {
             // receiver
             let receiver := shr(96, calldataload(add(currentOffset, 16)))
 
-            let amount := and(UINT120_MASK, amountData)
+            let amount := and(UINT112_MASK, amountData)
             // get silo address
             let silo := shr(96, calldataload(add(currentOffset, 36)))
             // skip  to end
@@ -149,7 +149,7 @@ abstract contract SiloV2Lending is ERC20Selectors, Masks {
             // skip silo (end of data)
             currentOffset := add(currentOffset, 56)
 
-            let amount := and(UINT120_MASK, amountData)
+            let amount := and(UINT112_MASK, amountData)
 
             let ptr := mload(0x40)
 
@@ -207,7 +207,7 @@ abstract contract SiloV2Lending is ERC20Selectors, Masks {
             // skip silo (end of data)
             currentOffset := add(currentOffset, 76)
 
-            let amount := and(UINT120_MASK, amountData)
+            let amount := and(UINT112_MASK, amountData)
             // zero is this balance
             if iszero(amount) {
                 // selector for balanceOf(address)
@@ -288,7 +288,7 @@ abstract contract SiloV2Lending is ERC20Selectors, Masks {
 
             let underlying := shr(96, calldataload(currentOffset))
             // offset for amount at lower bytes
-            let amount := and(UINT120_MASK, shr(128, calldataload(add(currentOffset, 20))))
+            let amount := and(UINT112_MASK, shr(128, calldataload(add(currentOffset, 20))))
             // receiver
             let receiver := shr(96, calldataload(add(currentOffset, 36)))
             // get silo

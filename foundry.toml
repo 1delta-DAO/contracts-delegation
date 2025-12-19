@@ -12,7 +12,7 @@ tab_width = 4
 multiline_func_header = "all"
 
 [lint]
-exclude_lints = ["mixed-case-variable"]
+exclude_lints = ["mixed-case-variable","named-struct-fields","unused-import","screaming-snake-case-const","mixed-case-function"]
 
 [fuzz]
 runs = 10000
