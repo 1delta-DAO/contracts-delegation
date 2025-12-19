@@ -20,6 +20,8 @@ import {BalancerV3Swapper} from "./dex/BalancerV3Swapper.sol";
 // solhint-disable max-line-length
 
 /**
+ * @title Base swapper contract
+ * @notice Contains basic logic for swap executions with DEXs
  * @dev
  * Core logic: Encode swaps as nested matrices (r: rows - multihops; c:columns - splits)
  * Every element in a matrix can be another matrix
@@ -57,12 +59,7 @@ import {BalancerV3Swapper} from "./dex/BalancerV3Swapper.sol";
  * This allows arbitrary deep nesting of sub-routes and splits
  *
  * Rows are prioritized over columns.
- * /
- *
- * /**
- * @title Base swapper contract
- * @notice Contains basic logic for swap executions with DEXs
- * DEX Id layout:
+ * @custom:dex-id-layout
  * 0 --- 100 : Self swappers (Uni V3, Curve, Clipper)
  * 100 - 255 : Funded swaps (Uni V2, Solidly, Moe,Joe LB, WooFI, GMX)
  *             Uni V2: 100 - 110
@@ -145,6 +142,12 @@ abstract contract BaseSwapper is
      * | 0      | 1              | count                |
      * | 1      | 2*count - 1    | splits               | <- count = 0 means there is no data, otherwise uint16 splits
      *
+     * @notice Split indices use complementary calculation: splits are stored as uint16 fractions of uint16.max,
+     *         but since exact matches are never guaranteed, only indices 0 through (splitsMaxIndex - 1) are
+     *         parameterized. The final split at index splitsMaxIndex is automatically calculated as the
+     *         remaining amount (total - sum of all previous splits). For example, if using 33% splits and
+     *         parameterizing only indices 0 and 1, index 2 will be calculated as 34% (100% - 33% - 33%).
+     *
      * @custom:datas-format
      * | Offset | Length (bytes) | Description          |
      * |--------|----------------|----------------------|
@@ -193,17 +196,16 @@ abstract contract BaseSwapper is
                     }
                     default {
                         // splits are uint16s as share of uint16.max
-                        split :=
-                            div(
-                                mul(
-                                    and(
-                                        UINT16_MASK,
-                                        shr(sub(112, mul(i, 16)), splits) // read the uin16 in the splits sequence
-                                    ),
-                                    amountIn //
+                        split := div(
+                            mul(
+                                and(
+                                    UINT16_MASK,
+                                    shr(sub(112, mul(i, 16)), splits) // read the uin16 in the splits sequence
                                 ),
-                                UINT16_MASK //
-                            )
+                                amountIn //
+                            ),
+                            UINT16_MASK //
+                        )
                     }
                     i := add(i, 1)
                 }
