@@ -70,8 +70,7 @@ abstract contract UniversalLending is
                 return _encodeMorphoDepositCollateral(currentOffset, callerAddress);
             } else if (lender < LenderIds.UP_TO_SILO_V2) {
                 return _depositToSiloV2(currentOffset);
-            }
-            else{
+            } else {
                 _invalidOperation();
             }
         }
@@ -89,8 +88,7 @@ abstract contract UniversalLending is
                 return _morphoBorrow(currentOffset, callerAddress);
             } else if (lender < LenderIds.UP_TO_SILO_V2) {
                 return _borrowFromSiloV2(currentOffset, callerAddress);
-            }
-            else{
+            } else {
                 _invalidOperation();
             }
         }
@@ -108,8 +106,7 @@ abstract contract UniversalLending is
                 return _morphoRepay(currentOffset, callerAddress);
             } else if (lender < LenderIds.UP_TO_SILO_V2) {
                 return _repayToSiloV2(currentOffset);
-            }
-            else{
+            } else {
                 _invalidOperation();
             }
         }
@@ -127,8 +124,7 @@ abstract contract UniversalLending is
                 return _encodeMorphoWithdrawCollateral(currentOffset, callerAddress);
             } else if (lender < LenderIds.UP_TO_SILO_V2) {
                 return _withdrawFromSiloV2(currentOffset, callerAddress);
-            }
-            else{
+            } else {
                 _invalidOperation();
             }
         }
