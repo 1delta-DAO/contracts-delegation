@@ -160,7 +160,16 @@ contract SwapsSplitsAndHopsLightTest is BaseTest {
     // 33% USDC ---uni----> WETH
     // 33% USDC ---izi----> WETH
     // 33% USDC -> cbBTC -> WETH  /// the last ones are all uni V3
-    function v3poolpSwapWithRoute(uint16 fee, uint16 fee2, address receiver, uint256 amount) internal view returns (bytes memory data) {
+    function v3poolpSwapWithRoute(
+        uint16 fee,
+        uint16 fee2,
+        address receiver,
+        uint256 amount
+    )
+        internal
+        view
+        returns (bytes memory data)
+    {
         address assetIn = USDC;
         address assetOut = WETH;
         address pool = IF(UNI_FACTORY).getPool(assetIn, assetOut, fee);
@@ -240,5 +249,107 @@ contract SwapsSplitsAndHopsLightTest is BaseTest {
         console.log("gas", gas);
         uint256 balAfter = IERC20All(tokenOut).balanceOf(user);
         console.log("received", balAfter - balBefore);
+    }
+
+    function v3poolpSwapSingle_head(address receiver, uint256 amount) internal view returns (bytes memory data) {
+        data = abi.encodePacked(
+            uint8(ComposerCommands.SWAPS), uint128(amount), uint128(1), USDC, uint8(0), uint8(0), WETH, receiver
+        );
+    }
+
+    function v3poolpSwapSingle(uint16 fee, address receiver, uint256 amount) internal view returns (bytes memory data) {
+        data = abi.encodePacked(
+            abi.encodePacked(v3poolpSwapSingle_head(receiver, amount)),
+            uint8(DexTypeMappings.UNISWAP_V3_ID),
+            IF(UNI_FACTORY).getPool(USDC, WETH, fee),
+            uint8(DexForkMappings.UNISWAP_V3),
+            fee,
+            uint16(0)
+        );
+    }
+
+    function v3poolpSwapWith8Splits(uint16 fee, address receiver, uint256 amount) internal view returns (bytes memory data) {
+        address assetIn = USDC;
+        address assetOut = WETH;
+        address pool = IF(UNI_FACTORY).getPool(assetIn, assetOut, fee);
+
+        data = abi.encodePacked(
+            uint8(ComposerCommands.SWAPS),
+            uint128(amount),
+            uint128(1),
+            assetIn,
+            uint8(0),
+            uint8(8),
+            (type(uint16).max / 8),
+            (type(uint16).max / 8),
+            (type(uint16).max / 8),
+            (type(uint16).max / 8),
+            (type(uint16).max / 8),
+            (type(uint16).max / 8),
+            (type(uint16).max / 8),
+            (type(uint16).max / 8)
+        );
+
+        for (uint256 i = 0; i < 9; i++) {
+            data = abi.encodePacked(
+                data,
+                uint16(0),
+                assetOut,
+                receiver,
+                uint8(DexTypeMappings.UNISWAP_V3_ID),
+                pool,
+                uint8(DexForkMappings.UNISWAP_V3),
+                fee,
+                uint16(0)
+            );
+        }
+    }
+
+    function test_integ_swap_v3_splits_with_8_splits() external {
+        vm.assume(user != address(0));
+
+        address tokenIn = USDC;
+        address tokenOut = WETH;
+        uint16 fee = 500;
+        deal(tokenIn, user, 200.0e6);
+        uint256 amount = 100.0e6;
+
+        vm.prank(user);
+        IERC20All(tokenIn).approve(address(oneDV2), type(uint256).max);
+
+        uint256 balBeforeSingle = IERC20All(tokenOut).balanceOf(user);
+
+        bytes memory swapSingle = v3poolpSwapSingle(fee, user, amount);
+
+        vm.prank(user);
+        oneDV2.deltaCompose(swapSingle);
+
+        uint256 balAfterSingle = IERC20All(tokenOut).balanceOf(user);
+        uint256 outputSingle = balAfterSingle - balBeforeSingle;
+        console.log("single swap output", outputSingle);
+
+        // reset fork to the forkBlock so both cases run on the same state
+        vm.rollFork(forkBlock);
+        string memory chainName = Chains.BASE;
+        oneDV2 = ComposerPlugin.getComposer(chainName);
+        deal(tokenIn, user, 200.0e6);
+
+        vm.prank(user);
+        IERC20All(tokenIn).approve(address(oneDV2), type(uint256).max);
+
+        uint256 balBefore8Splits = IERC20All(tokenOut).balanceOf(user);
+
+        bytes memory swap8Splits = v3poolpSwapWith8Splits(fee, user, amount);
+
+        vm.prank(user);
+        oneDV2.deltaCompose(swap8Splits);
+
+        uint256 balAfter8Splits = IERC20All(tokenOut).balanceOf(user);
+        uint256 output8Splits = balAfter8Splits - balBefore8Splits;
+        console.log("8 splits output", output8Splits);
+
+        uint256 diff = outputSingle > output8Splits ? outputSingle - output8Splits : output8Splits - outputSingle;
+        uint256 tolerance = outputSingle / 15_000_000;
+        assertLe(diff, tolerance, "single split and 8 split should approximately be equal");
     }
 }

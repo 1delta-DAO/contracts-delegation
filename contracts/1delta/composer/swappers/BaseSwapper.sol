@@ -272,7 +272,7 @@ abstract contract BaseSwapper is
             splitsMaxIndex := and(UINT8_MASK, shr(240, datas))
             currentOffset := add(currentOffset, 2)
         }
-        if (splitsMaxIndex > 7) revert InvalidCalldata();
+        if (splitsMaxIndex > 8) revert InvalidCalldata();
         // swapMaxIndex = 0 is simple single swap
         // that is where each single step MUST end
         if (swapMaxIndex == 0) {
