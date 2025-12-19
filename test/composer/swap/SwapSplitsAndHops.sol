@@ -18,7 +18,7 @@ interface IF {
 
 /**
  * We test all morpho blue operations
- * - supply, supplyCollateral, borrow, repay, encodeErc4646Deposit, encodeErc4646Withdraw
+ * - supply, supplyCollateral, borrow, repay, encodeErc4626Deposit, encodeErc4646Withdraw
  */
 contract SwapsSplitsAndHopsLightTest is BaseTest {
     uint8 internal UNISWAP_V3_DEX_ID = 0;
@@ -252,9 +252,8 @@ contract SwapsSplitsAndHopsLightTest is BaseTest {
     }
 
     function v3poolpSwapSingle_head(address receiver, uint256 amount) internal view returns (bytes memory data) {
-        data = abi.encodePacked(
-            uint8(ComposerCommands.SWAPS), uint128(amount), uint128(1), USDC, uint8(0), uint8(0), WETH, receiver
-        );
+        data =
+            abi.encodePacked(uint8(ComposerCommands.SWAPS), uint128(amount), uint128(1), USDC, uint8(0), uint8(0), WETH, receiver);
     }
 
     function v3poolpSwapSingle(uint16 fee, address receiver, uint256 amount) internal view returns (bytes memory data) {
@@ -268,7 +267,10 @@ contract SwapsSplitsAndHopsLightTest is BaseTest {
         );
     }
 
-    function v3poolpSwapWith8Splits(uint16 fee, address receiver, uint256 amount) internal view returns (bytes memory data) {
+    /**
+     * Create a swap with 9 splits (8 are provided, the 9th is calculated)
+     */
+    function v3poolpSwapWith9Splits(uint16 fee, address receiver, uint256 amount) internal view returns (bytes memory data) {
         address assetIn = USDC;
         address assetOut = WETH;
         address pool = IF(UNI_FACTORY).getPool(assetIn, assetOut, fee);
@@ -280,14 +282,14 @@ contract SwapsSplitsAndHopsLightTest is BaseTest {
             assetIn,
             uint8(0),
             uint8(8),
-            (type(uint16).max / 8),
-            (type(uint16).max / 8),
-            (type(uint16).max / 8),
-            (type(uint16).max / 8),
-            (type(uint16).max / 8),
-            (type(uint16).max / 8),
-            (type(uint16).max / 8),
-            (type(uint16).max / 8)
+            (type(uint16).max / 9),
+            (type(uint16).max / 9),
+            (type(uint16).max / 9),
+            (type(uint16).max / 9),
+            (type(uint16).max / 9),
+            (type(uint16).max / 9),
+            (type(uint16).max / 9),
+            (type(uint16).max / 9)
         );
 
         for (uint256 i = 0; i < 9; i++) {
@@ -305,7 +307,7 @@ contract SwapsSplitsAndHopsLightTest is BaseTest {
         }
     }
 
-    function test_integ_swap_v3_splits_with_8_splits() external {
+    function test_integ_swap_v3_splits_with_9_splits() external {
         vm.assume(user != address(0));
 
         address tokenIn = USDC;
@@ -337,19 +339,19 @@ contract SwapsSplitsAndHopsLightTest is BaseTest {
         vm.prank(user);
         IERC20All(tokenIn).approve(address(oneDV2), type(uint256).max);
 
-        uint256 balBefore8Splits = IERC20All(tokenOut).balanceOf(user);
+        uint256 balBefore9Splits = IERC20All(tokenOut).balanceOf(user);
 
-        bytes memory swap8Splits = v3poolpSwapWith8Splits(fee, user, amount);
+        bytes memory swap9Splits = v3poolpSwapWith9Splits(fee, user, amount);
 
         vm.prank(user);
-        oneDV2.deltaCompose(swap8Splits);
+        oneDV2.deltaCompose(swap9Splits);
 
-        uint256 balAfter8Splits = IERC20All(tokenOut).balanceOf(user);
-        uint256 output8Splits = balAfter8Splits - balBefore8Splits;
-        console.log("8 splits output", output8Splits);
+        uint256 balAfter9Splits = IERC20All(tokenOut).balanceOf(user);
+        uint256 output9Splits = balAfter9Splits - balBefore9Splits;
+        console.log("9 splits output", output9Splits);
 
-        uint256 diff = outputSingle > output8Splits ? outputSingle - output8Splits : output8Splits - outputSingle;
-        uint256 tolerance = outputSingle / 15_000_000;
-        assertLe(diff, tolerance, "single split and 8 split should approximately be equal");
+        // tolerance = 0.00001%
+        uint256 tolerance = outputSingle * 0.0000001e18 / 1.0e18;
+        assertApproxEqAbs(outputSingle, output9Splits, tolerance, "single split and 9 split should approximately be equal");
     }
 }

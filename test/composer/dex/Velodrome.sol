@@ -20,7 +20,7 @@ interface IF {
 
 /**
  * We test all morpho blue operations
- * - supply, supplyCollateral, borrow, repay, encodeErc4646Deposit, encodeErc4646Withdraw
+ * - supply, supplyCollateral, borrow, repay, encodeErc4626Deposit, encodeErc4646Withdraw
  */
 contract Velodrome123Test is BaseTest {
     address internal constant VELODROME_CL_FACTORY = 0xCc0bDDB707055e04e497aB22a59c2aF4391cd12F;

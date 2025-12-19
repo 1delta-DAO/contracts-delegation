@@ -17,9 +17,22 @@ import {DexPayConfig, SweepType, DodoSelector, WrapOperation} from "contracts/1d
  * - use if condition to revert (no require statements)
  */
 library CalldataLib {
-    function encodeExternalCall(address target, uint256 value, bool useSelfBalance, bytes memory data) internal pure returns (bytes memory) {
+    function encodeExternalCall(
+        address target,
+        uint256 value,
+        bool useSelfBalance,
+        bytes memory data
+    )
+        internal
+        pure
+        returns (bytes memory)
+    {
         return abi.encodePacked(
-            uint8(ComposerCommands.EXT_CALL), target, generateAmountBitmap(uint128(value), false, useSelfBalance), uint16(data.length), data
+            uint8(ComposerCommands.EXT_CALL),
+            target,
+            generateAmountBitmap(uint128(value), false, useSelfBalance),
+            uint16(data.length),
+            data
         );
     }
 
@@ -127,7 +140,14 @@ library CalldataLib {
             extraOptions
         );
         return abi.encodePacked(
-            uint8(ComposerCommands.BRIDGING), uint8(BridgeIds.STARGATE_V2), asset, stargatePool, dstEid, receiver, refundReceiver, partialData
+            uint8(ComposerCommands.BRIDGING),
+            uint8(BridgeIds.STARGATE_V2),
+            asset,
+            stargatePool,
+            dstEid,
+            receiver,
+            refundReceiver,
+            partialData
         );
     }
 
@@ -244,7 +264,9 @@ library CalldataLib {
     {
         return abi.encodePacked(
             encodeAcrossHeader(spokePool, depositor, sendingAssetId, receivingAssetId, amount, false),
-            encodeAcrossParams(fixedFee, feePercentage, destinationChainId, fromTokenDecimals, toTokenDecimals, receiver, deadline, message)
+            encodeAcrossParams(
+                fixedFee, feePercentage, destinationChainId, fromTokenDecimals, toTokenDecimals, receiver, deadline, message
+            )
         );
     }
 
@@ -269,7 +291,9 @@ library CalldataLib {
     {
         return abi.encodePacked(
             encodeAcrossHeader(spokePool, depositor, sendingAssetId, receivingAssetId, amount, true),
-            encodeAcrossParams(fixedFee, feePercentage, destinationChainId, fromTokenDecimals, toTokenDecimals, receiver, deadline, message)
+            encodeAcrossParams(
+                fixedFee, feePercentage, destinationChainId, fromTokenDecimals, toTokenDecimals, receiver, deadline, message
+            )
         );
     }
 
@@ -311,7 +335,15 @@ library CalldataLib {
         returns (bytes memory)
     {
         return abi.encodePacked(
-            fixedFee, feePercentage, destinationChainId, fromTokenDecimals, toTokenDecimals, receiver, deadline, uint16(message.length), message
+            fixedFee,
+            feePercentage,
+            destinationChainId,
+            fromTokenDecimals,
+            toTokenDecimals,
+            receiver,
+            deadline,
+            uint16(message.length),
+            message
         );
     }
 
@@ -331,8 +363,9 @@ library CalldataLib {
         pure
         returns (bytes memory)
     {
-        bytes memory partialData =
-            encodeSquidRouterCallPartial(asset, gateway, bridgedTokenSymbol, amount, destinationChain, destinationAddress, payload);
+        bytes memory partialData = encodeSquidRouterCallPartial(
+            asset, gateway, bridgedTokenSymbol, amount, destinationChain, destinationAddress, payload
+        );
         return abi.encodePacked(
             partialData,
             uint128(nativeAmount),
@@ -381,8 +414,9 @@ library CalldataLib {
         pure
         returns (bytes memory)
     {
-        return
-            abi.encodePacked(uint8(ComposerCommands.BRIDGING), uint8(BridgeIds.GASZIP), gasZipRouter, receiver, uint128(amount), destinationChainId);
+        return abi.encodePacked(
+            uint8(ComposerCommands.BRIDGING), uint8(BridgeIds.GASZIP), gasZipRouter, receiver, uint128(amount), destinationChainId
+        );
     }
 
     function encodeGasZipEvmBridge(
@@ -396,13 +430,20 @@ library CalldataLib {
         returns (bytes memory)
     {
         return abi.encodePacked(
-            uint8(ComposerCommands.BRIDGING), uint8(BridgeIds.GASZIP), gasZipRouter, rightPadZero(receiver), uint128(amount), destinationChainId
+            uint8(ComposerCommands.BRIDGING),
+            uint8(BridgeIds.GASZIP),
+            gasZipRouter,
+            rightPadZero(receiver),
+            uint128(amount),
+            destinationChainId
         );
     }
 
     //
     function encodePermit2TransferFrom(address token, address receiver, uint256 amount) internal pure returns (bytes memory) {
-        return abi.encodePacked(uint8(ComposerCommands.TRANSFERS), uint8(TransferIds.PERMIT2_TRANSFER_FROM), token, receiver, uint128(amount));
+        return abi.encodePacked(
+            uint8(ComposerCommands.TRANSFERS), uint8(TransferIds.PERMIT2_TRANSFER_FROM), token, receiver, uint128(amount)
+        );
     }
 
     // PathEdge internal constant NATIVE = PathEdge(0,0);
@@ -435,7 +476,15 @@ library CalldataLib {
         return encodeNextGenDexUnlock(singleton, poolId, encodeBalancerV3FlashLoanData(take, flashData, settle));
     }
 
-    function encodeBalancerV3FlashLoanData(bytes memory take, bytes memory flashData, bytes memory settle) internal pure returns (bytes memory) {
+    function encodeBalancerV3FlashLoanData(
+        bytes memory take,
+        bytes memory flashData,
+        bytes memory settle
+    )
+        internal
+        pure
+        returns (bytes memory)
+    {
         return abi.encodePacked(take, flashData, settle);
     }
 
@@ -475,7 +524,16 @@ library CalldataLib {
         );
     }
 
-    function encodeBalancerV3Take(address singleton, address asset, address receiver, uint256 amount) internal pure returns (bytes memory) {
+    function encodeBalancerV3Take(
+        address singleton,
+        address asset,
+        address receiver,
+        uint256 amount
+    )
+        internal
+        pure
+        returns (bytes memory)
+    {
         return abi.encodePacked(
             uint8(ComposerCommands.GEN_2025_SINGELTONS),
             uint8(Gen2025ActionIds.BAL_V3_TAKE),
@@ -496,7 +554,16 @@ library CalldataLib {
         ); // swaps max index for inner path
     }
 
-    function encodeUniswapV4Take(address singleton, address asset, address receiver, uint256 amount) internal pure returns (bytes memory) {
+    function encodeUniswapV4Take(
+        address singleton,
+        address asset,
+        address receiver,
+        uint256 amount
+    )
+        internal
+        pure
+        returns (bytes memory)
+    {
         return abi.encodePacked(
             uint8(ComposerCommands.GEN_2025_SINGELTONS),
             uint8(Gen2025ActionIds.UNI_V4_TAKE),
@@ -516,7 +583,16 @@ library CalldataLib {
         );
     }
 
-    function attachBranch(bytes memory data, uint256 hops, uint256 splits, bytes memory splitsData) internal pure returns (bytes memory) {
+    function attachBranch(
+        bytes memory data,
+        uint256 hops,
+        uint256 splits,
+        bytes memory splitsData
+    )
+        internal
+        pure
+        returns (bytes memory)
+    {
         if (hops != 0 && splits != 0) revert("Invalid branching");
         if (splitsData.length > 0 && splits == 0) revert("No splits but split data provided");
         return abi.encodePacked(
@@ -914,7 +990,15 @@ library CalldataLib {
         ); // swaps max index for inner path
     }
 
-    function encodeNextGenDexSettleBalancer(address singleton, address asset, uint256 amountHint) internal pure returns (bytes memory) {
+    function encodeNextGenDexSettleBalancer(
+        address singleton,
+        address asset,
+        uint256 amountHint
+    )
+        internal
+        pure
+        returns (bytes memory)
+    {
         return abi.encodePacked(
             uint8(ComposerCommands.GEN_2025_SINGELTONS),
             uint8(Gen2025ActionIds.BAL_V3_SETTLE),
@@ -934,7 +1018,16 @@ library CalldataLib {
         ); // 2 + 20 + 20 + 14 = 56 bytes
     }
 
-    function encodeSweep(address asset, address receiver, uint256 amount, SweepType sweepType) internal pure returns (bytes memory) {
+    function encodeSweep(
+        address asset,
+        address receiver,
+        uint256 amount,
+        SweepType sweepType
+    )
+        internal
+        pure
+        returns (bytes memory)
+    {
         return abi.encodePacked(
             uint8(ComposerCommands.TRANSFERS),
             uint8(TransferIds.SWEEP),
@@ -966,7 +1059,16 @@ library CalldataLib {
         ); // 14 bytes
     }
 
-    function encodeUnwrap(address target, address receiver, uint256 amount, SweepType sweepType) internal pure returns (bytes memory) {
+    function encodeUnwrap(
+        address target,
+        address receiver,
+        uint256 amount,
+        SweepType sweepType
+    )
+        internal
+        pure
+        returns (bytes memory)
+    {
         return abi.encodePacked(
             uint8(ComposerCommands.TRANSFERS),
             uint8(TransferIds.UNWRAP_WNATIVE),
@@ -1114,31 +1216,6 @@ library CalldataLib {
         );
     }
 
-    /**
-     * @custom:deprecated use encodeErc4626Deposit instead
-     */
-    function encodeErc4646Deposit(
-        address asset,
-        address vault,
-        bool isShares, //
-        uint256 assets,
-        address receiver
-    )
-        internal
-        pure
-        returns (bytes memory)
-    {
-        return abi.encodePacked(
-            encodeApprove(asset, vault), // always approve
-            uint8(ComposerCommands.ERC4626), // 1
-            uint8(0), // 1
-            asset, // 20
-            vault, // 20
-            generateAmountBitmap(uint128(assets), isShares, false),
-            receiver // 20
-        );
-    }
-
     function encodeErc4646Withdraw(
         address vault,
         bool isShares, //
@@ -1250,7 +1327,16 @@ library CalldataLib {
         );
     }
 
-    function encodeAaveDeposit(address token, uint256 amount, address receiver, address pool) internal pure returns (bytes memory) {
+    function encodeAaveDeposit(
+        address token,
+        uint256 amount,
+        address receiver,
+        address pool
+    )
+        internal
+        pure
+        returns (bytes memory)
+    {
         return abi.encodePacked(
             encodeApprove(token, pool),
             uint8(ComposerCommands.LENDING),
@@ -1263,7 +1349,17 @@ library CalldataLib {
         );
     }
 
-    function encodeAaveBorrow(address token, uint256 amount, address receiver, uint256 mode, address pool) internal pure returns (bytes memory) {
+    function encodeAaveBorrow(
+        address token,
+        uint256 amount,
+        address receiver,
+        uint256 mode,
+        address pool
+    )
+        internal
+        pure
+        returns (bytes memory)
+    {
         return abi.encodePacked(
             uint8(ComposerCommands.LENDING),
             uint8(LenderOps.BORROW),
@@ -1302,7 +1398,17 @@ library CalldataLib {
         );
     }
 
-    function encodeAaveWithdraw(address token, uint256 amount, address receiver, address aToken, address pool) internal pure returns (bytes memory) {
+    function encodeAaveWithdraw(
+        address token,
+        uint256 amount,
+        address receiver,
+        address aToken,
+        address pool
+    )
+        internal
+        pure
+        returns (bytes memory)
+    {
         return abi.encodePacked(
             uint8(ComposerCommands.LENDING),
             uint8(LenderOps.WITHDRAW),
@@ -1315,7 +1421,16 @@ library CalldataLib {
         );
     }
 
-    function encodeAaveV2Deposit(address token, uint256 amount, address receiver, address pool) internal pure returns (bytes memory) {
+    function encodeAaveV2Deposit(
+        address token,
+        uint256 amount,
+        address receiver,
+        address pool
+    )
+        internal
+        pure
+        returns (bytes memory)
+    {
         return abi.encodePacked(
             encodeApprove(token, pool),
             uint8(ComposerCommands.LENDING),
@@ -1328,7 +1443,17 @@ library CalldataLib {
         );
     }
 
-    function encodeAaveV2Borrow(address token, uint256 amount, address receiver, uint256 mode, address pool) internal pure returns (bytes memory) {
+    function encodeAaveV2Borrow(
+        address token,
+        uint256 amount,
+        address receiver,
+        uint256 mode,
+        address pool
+    )
+        internal
+        pure
+        returns (bytes memory)
+    {
         return abi.encodePacked(
             uint8(ComposerCommands.LENDING),
             uint8(LenderOps.BORROW),
@@ -1390,7 +1515,16 @@ library CalldataLib {
         );
     }
 
-    function encodeCompoundV3Deposit(address token, uint256 amount, address receiver, address comet) internal pure returns (bytes memory) {
+    function encodeCompoundV3Deposit(
+        address token,
+        uint256 amount,
+        address receiver,
+        address comet
+    )
+        internal
+        pure
+        returns (bytes memory)
+    {
         return abi.encodePacked(
             encodeApprove(token, comet),
             uint8(ComposerCommands.LENDING),
@@ -1403,7 +1537,16 @@ library CalldataLib {
         );
     }
 
-    function encodeCompoundV3Borrow(address token, uint256 amount, address receiver, address comet) internal pure returns (bytes memory) {
+    function encodeCompoundV3Borrow(
+        address token,
+        uint256 amount,
+        address receiver,
+        address comet
+    )
+        internal
+        pure
+        returns (bytes memory)
+    {
         return abi.encodePacked(
             uint8(ComposerCommands.LENDING),
             uint8(LenderOps.BORROW),
@@ -1415,7 +1558,16 @@ library CalldataLib {
         );
     }
 
-    function encodeCompoundV3Repay(address token, uint256 amount, address receiver, address comet) internal pure returns (bytes memory) {
+    function encodeCompoundV3Repay(
+        address token,
+        uint256 amount,
+        address receiver,
+        address comet
+    )
+        internal
+        pure
+        returns (bytes memory)
+    {
         return abi.encodePacked(
             encodeApprove(token, comet),
             uint8(ComposerCommands.LENDING),
@@ -1510,7 +1662,16 @@ library CalldataLib {
         );
     }
 
-    function encodeCompoundV2Borrow(address token, uint256 amount, address receiver, address cToken) internal pure returns (bytes memory) {
+    function encodeCompoundV2Borrow(
+        address token,
+        uint256 amount,
+        address receiver,
+        address cToken
+    )
+        internal
+        pure
+        returns (bytes memory)
+    {
         return abi.encodePacked(
             uint8(ComposerCommands.LENDING),
             uint8(LenderOps.BORROW),
@@ -1522,7 +1683,16 @@ library CalldataLib {
         );
     }
 
-    function encodeCompoundV2Repay(address token, uint256 amount, address receiver, address cToken) internal pure returns (bytes memory) {
+    function encodeCompoundV2Repay(
+        address token,
+        uint256 amount,
+        address receiver,
+        address cToken
+    )
+        internal
+        pure
+        returns (bytes memory)
+    {
         return abi.encodePacked(
             // no approves for native
             token == address(0) ? new bytes(0) : encodeApprove(token, cToken),
@@ -1558,7 +1728,16 @@ library CalldataLib {
         );
     }
 
-    function encodeSiloV2Withdraw(uint256 amount, address receiver, address silo, uint8 collateralMode) internal pure returns (bytes memory) {
+    function encodeSiloV2Withdraw(
+        uint256 amount,
+        address receiver,
+        address silo,
+        uint8 collateralMode
+    )
+        internal
+        pure
+        returns (bytes memory)
+    {
         return abi.encodePacked(
             uint8(ComposerCommands.LENDING),
             uint8(LenderOps.WITHDRAW),
@@ -1569,7 +1748,16 @@ library CalldataLib {
         );
     }
 
-    function encodeSiloV2Repay(address token, uint256 amount, address receiver, address silo) internal pure returns (bytes memory) {
+    function encodeSiloV2Repay(
+        address token,
+        uint256 amount,
+        address receiver,
+        address silo
+    )
+        internal
+        pure
+        returns (bytes memory)
+    {
         return abi.encodePacked(
             // no approves for native
             token == address(0) ? new bytes(0) : encodeApprove(token, silo),
