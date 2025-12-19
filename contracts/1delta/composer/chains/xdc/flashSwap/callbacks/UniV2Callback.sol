@@ -17,8 +17,17 @@ import {DeltaErrors} from "../../../../../shared/errors/Errors.sol";
 abstract contract UniV2Callbacks is Masks, DeltaErrors {
     // factories
 
+    bytes32 private constant XSWAP_V2_FF_FACTORY = 0xff347D14b13a68457186b2450bb2a6c2Fd7B38352f0000000000000000000000;
+    bytes32 private constant XSWAP_V2_CODE_HASH = 0x49d4a9f22dc2d1b9235b28fa91cd830a3dcadb8771a6c0393d88d7d2d07d896d;
+
+    bytes32 private constant NEXUS_FF_FACTORY = 0xffAf2977827a72e3CfE18104b0EDAF61Dd0689cd310000000000000000000000;
+    bytes32 private constant NEXUS_CODE_HASH = 0x69f87219435c6fe01b08d421b51fe0866c422f9b32e9e714e1f24068c99274fd;
+
     bytes32 private constant FATHOM_FF_FACTORY = 0xff9fAb572F75008A42c6aF80b36Ab20C76a38ABc4B0000000000000000000000;
     bytes32 private constant FATHOM_CODE_HASH = 0xa6d23746864049fd29713adbbf145eeecdddd2f9a91be053c057394dd5d7d9ad;
+
+    bytes32 private constant ICECREAM_V2_FF_FACTORY = 0xff9E6d21E759A7A288b80eef94E4737D313D31c13f0000000000000000000000;
+    bytes32 private constant ICECREAM_V2_CODE_HASH = 0x58c1b429d0ffdb4407396ae8118c58fed54898473076d0394163ea2198f7c4a3;
 
     /**
      * @notice Generic Uniswap V2 style callback executor
@@ -46,11 +55,30 @@ abstract contract UniV2Callbacks is Masks, DeltaErrors {
         assembly {
             outData := calldataload(204)
             switch selector
-            case 0x10d1e85c00000000000000000000000000000000000000000000000000000000 {
+            case 0xe145f34c00000000000000000000000000000000000000000000000000000000 {
                 forkId := and(UINT8_MASK, shr(88, outData))
 
-                ffFactoryAddress := FATHOM_FF_FACTORY
-                codeHash := FATHOM_CODE_HASH
+                ffFactoryAddress := XSWAP_V2_FF_FACTORY
+                codeHash := XSWAP_V2_CODE_HASH
+            }
+            case 0x6bbc7d9700000000000000000000000000000000000000000000000000000000 {
+                forkId := and(UINT8_MASK, shr(88, outData))
+
+                ffFactoryAddress := NEXUS_FF_FACTORY
+                codeHash := NEXUS_CODE_HASH
+            }
+            case 0x10d1e85c00000000000000000000000000000000000000000000000000000000 {
+                forkId := and(UINT8_MASK, shr(88, outData))
+                switch forkId
+                case 2 {
+                    ffFactoryAddress := FATHOM_FF_FACTORY
+                    codeHash := FATHOM_CODE_HASH
+                }
+                case 20 {
+                    ffFactoryAddress := ICECREAM_V2_FF_FACTORY
+                    codeHash := ICECREAM_V2_CODE_HASH
+                }
+                default { revert(0, 0) }
             }
         }
 

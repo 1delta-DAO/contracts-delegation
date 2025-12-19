@@ -56,7 +56,9 @@ contract BalancerV2FlashLoanCallbackTest is BaseTest, DeltaErrors, Slots {
 
         vm.prank(user);
         vm.expectRevert(DeltaErrors.INVALID_CALLER);
-        IVault(validPools[0].poolAddr).flashLoan(address(oneDV2), tokens, amounts, abi.encodePacked(address(user), uint8(validPools[0].poolId)));
+        IVault(validPools[0].poolAddr).flashLoan(
+            address(oneDV2), tokens, amounts, abi.encodePacked(address(user), uint8(validPools[0].poolId))
+        );
     }
 
     function test_unit_lending_flashloans_balancerV2_callback_fuzz_invalidPoolIds(uint8 poolId) public {

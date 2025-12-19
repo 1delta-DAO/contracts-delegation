@@ -18,4 +18,3 @@ contract UniversalFlashLoan is FlashLoanCallbacks {
         }
     }
 }
-

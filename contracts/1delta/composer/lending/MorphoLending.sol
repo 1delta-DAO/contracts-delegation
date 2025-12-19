@@ -525,7 +525,10 @@ abstract contract MorphoLending is ERC20Selectors, Masks {
      * | 152    | 2              | calldataLength                  |
      * | 154    | calldataLength | calldata                        |
      */
-    function _morphoRepay(uint256 currentOffset, address callerAddress)
+    function _morphoRepay(
+        uint256 currentOffset,
+        address callerAddress
+    )
         internal
         returns (
             // this will be returned as the offset, but initialized as lltvAndAmount

@@ -54,4 +54,3 @@ contract OneDeltaComposerCore is BaseComposer, UniversalFlashLoan, SwapCallbacks
         );
     }
 }
-

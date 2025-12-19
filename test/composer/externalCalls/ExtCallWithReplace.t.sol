@@ -60,7 +60,9 @@ contract ExtTryCatchWithReplace is BaseTest {
                 address(callForwarder),
                 uint256(0),
                 false,
-                abi.encodePacked(approveCalldata, tryCallCalldata, CalldataLib.encodeSweep(STELLA_STDOT, user, 0, SweepType.VALIDATE))
+                abi.encodePacked(
+                    approveCalldata, tryCallCalldata, CalldataLib.encodeSweep(STELLA_STDOT, user, 0, SweepType.VALIDATE)
+                )
             )
         );
 
@@ -90,8 +92,9 @@ contract ExtTryCatchWithReplace is BaseTest {
 
         bytes memory catchCalldata = CalldataLib.encodeSweep(XCDOT, user, 0, SweepType.VALIDATE);
 
-        bytes memory tryCallCalldata =
-            CalldataLib.encodeTryExternalCallWithReplace(STELLA_STDOT, 0, false, address(0), 0, depositCalldata, false, catchCalldata);
+        bytes memory tryCallCalldata = CalldataLib.encodeTryExternalCallWithReplace(
+            STELLA_STDOT, 0, false, address(0), 0, depositCalldata, false, catchCalldata
+        );
 
         bytes memory composerCalldata = abi.encodePacked(
             transferInCalldata,
@@ -99,7 +102,9 @@ contract ExtTryCatchWithReplace is BaseTest {
                 address(callForwarder),
                 uint256(0),
                 false,
-                abi.encodePacked(approveCalldata, tryCallCalldata, CalldataLib.encodeSweep(STELLA_STDOT, user, 0, SweepType.VALIDATE))
+                abi.encodePacked(
+                    approveCalldata, tryCallCalldata, CalldataLib.encodeSweep(STELLA_STDOT, user, 0, SweepType.VALIDATE)
+                )
             )
         );
 
@@ -127,12 +132,15 @@ contract ExtTryCatchWithReplace is BaseTest {
 
         bytes memory catchCalldata = CalldataLib.encodeSweep(XCDOT, user, 0, SweepType.VALIDATE);
 
-        bytes memory tryCallCalldata =
-            CalldataLib.encodeTryExternalCallWithReplace(STELLA_STDOT, 0, false, XCDOT, 100, DEPOSIT_CALLDATA, false, catchCalldata);
+        bytes memory tryCallCalldata = CalldataLib.encodeTryExternalCallWithReplace(
+            STELLA_STDOT, 0, false, XCDOT, 100, DEPOSIT_CALLDATA, false, catchCalldata
+        );
 
         bytes memory composerCalldata = abi.encodePacked(
             transferInCalldata,
-            CalldataLib.encodeExternalCall(address(callForwarder), uint256(0), false, abi.encodePacked(approveCalldata, tryCallCalldata))
+            CalldataLib.encodeExternalCall(
+                address(callForwarder), uint256(0), false, abi.encodePacked(approveCalldata, tryCallCalldata)
+            )
         );
 
         vm.startPrank(user);
@@ -155,12 +163,15 @@ contract ExtTryCatchWithReplace is BaseTest {
 
         bytes memory catchCalldata = CalldataLib.encodeSweep(XCDOT, user, 0, SweepType.VALIDATE);
 
-        bytes memory tryCallCalldata =
-            CalldataLib.encodeTryExternalCallWithReplace(STELLA_STDOT, 0, false, XCDOT, 0, transferFromCalldata, false, catchCalldata);
+        bytes memory tryCallCalldata = CalldataLib.encodeTryExternalCallWithReplace(
+            STELLA_STDOT, 0, false, XCDOT, 0, transferFromCalldata, false, catchCalldata
+        );
 
         bytes memory composerCalldata = abi.encodePacked(
             transferInCalldata,
-            CalldataLib.encodeExternalCall(address(callForwarder), uint256(0), false, abi.encodePacked(approveCalldata, tryCallCalldata))
+            CalldataLib.encodeExternalCall(
+                address(callForwarder), uint256(0), false, abi.encodePacked(approveCalldata, tryCallCalldata)
+            )
         );
 
         vm.startPrank(user);
@@ -186,7 +197,9 @@ contract ExtTryCatchWithReplace is BaseTest {
 
         bytes memory composerCalldata = abi.encodePacked(
             transferInCalldata,
-            CalldataLib.encodeExternalCall(address(callForwarder), uint256(0), false, abi.encodePacked(approveCalldata, tryCallCalldata))
+            CalldataLib.encodeExternalCall(
+                address(callForwarder), uint256(0), false, abi.encodePacked(approveCalldata, tryCallCalldata)
+            )
         );
 
         vm.startPrank(user);
@@ -213,7 +226,9 @@ contract ExtTryCatchWithReplace is BaseTest {
                 address(callForwarder),
                 uint256(0),
                 false,
-                abi.encodePacked(approveCalldata, callCalldata, CalldataLib.encodeSweep(STELLA_STDOT, user, 0, SweepType.VALIDATE))
+                abi.encodePacked(
+                    approveCalldata, callCalldata, CalldataLib.encodeSweep(STELLA_STDOT, user, 0, SweepType.VALIDATE)
+                )
             )
         );
 
@@ -241,7 +256,8 @@ contract ExtTryCatchWithReplace is BaseTest {
 
         bytes memory depositCalldata = abi.encodeWithSelector(DEPOSIT_SELECTOR, 500);
 
-        bytes memory callCalldata = CalldataLib.encodeExternalCallWithReplace(STELLA_STDOT, 0, false, address(0), 0, depositCalldata);
+        bytes memory callCalldata =
+            CalldataLib.encodeExternalCallWithReplace(STELLA_STDOT, 0, false, address(0), 0, depositCalldata);
 
         bytes memory composerCalldata = abi.encodePacked(
             transferInCalldata,
@@ -249,7 +265,9 @@ contract ExtTryCatchWithReplace is BaseTest {
                 address(callForwarder),
                 uint256(0),
                 false,
-                abi.encodePacked(approveCalldata, callCalldata, CalldataLib.encodeSweep(STELLA_STDOT, user, 0, SweepType.VALIDATE))
+                abi.encodePacked(
+                    approveCalldata, callCalldata, CalldataLib.encodeSweep(STELLA_STDOT, user, 0, SweepType.VALIDATE)
+                )
             )
         );
 
@@ -275,11 +293,14 @@ contract ExtTryCatchWithReplace is BaseTest {
 
         bytes memory approveCalldata = CalldataLib.encodeApprove(XCDOT, STELLA_STDOT);
 
-        bytes memory callCalldata = CalldataLib.encodeExternalCallWithReplace(STELLA_STDOT, 0, false, XCDOT, 100, DEPOSIT_CALLDATA);
+        bytes memory callCalldata =
+            CalldataLib.encodeExternalCallWithReplace(STELLA_STDOT, 0, false, XCDOT, 100, DEPOSIT_CALLDATA);
 
         bytes memory composerCalldata = abi.encodePacked(
             transferInCalldata,
-            CalldataLib.encodeExternalCall(address(callForwarder), uint256(0), false, abi.encodePacked(approveCalldata, callCalldata))
+            CalldataLib.encodeExternalCall(
+                address(callForwarder), uint256(0), false, abi.encodePacked(approveCalldata, callCalldata)
+            )
         );
 
         vm.startPrank(user);
@@ -300,11 +321,14 @@ contract ExtTryCatchWithReplace is BaseTest {
 
         bytes memory transferFromCalldata = abi.encodeWithSelector(TRANSFER_FROM_SELECTOR, address(0), address(0), uint256(0));
 
-        bytes memory callCalldata = CalldataLib.encodeExternalCallWithReplace(STELLA_STDOT, 0, false, XCDOT, 0, transferFromCalldata);
+        bytes memory callCalldata =
+            CalldataLib.encodeExternalCallWithReplace(STELLA_STDOT, 0, false, XCDOT, 0, transferFromCalldata);
 
         bytes memory composerCalldata = abi.encodePacked(
             transferInCalldata,
-            CalldataLib.encodeExternalCall(address(callForwarder), uint256(0), false, abi.encodePacked(approveCalldata, callCalldata))
+            CalldataLib.encodeExternalCall(
+                address(callForwarder), uint256(0), false, abi.encodePacked(approveCalldata, callCalldata)
+            )
         );
 
         vm.startPrank(user);
@@ -327,7 +351,9 @@ contract ExtTryCatchWithReplace is BaseTest {
 
         bytes memory composerCalldata = abi.encodePacked(
             transferInCalldata,
-            CalldataLib.encodeExternalCall(address(callForwarder), uint256(0), false, abi.encodePacked(approveCalldata, callCalldata))
+            CalldataLib.encodeExternalCall(
+                address(callForwarder), uint256(0), false, abi.encodePacked(approveCalldata, callCalldata)
+            )
         );
 
         vm.startPrank(user);
@@ -365,7 +391,9 @@ contract ExtTryCatchWithReplace is BaseTest {
                 address(callForwarder),
                 uint256(0),
                 false,
-                abi.encodePacked(approveCalldata, tryCallCalldata, CalldataLib.encodeSweep(STELLA_STDOT, user, 0, SweepType.VALIDATE))
+                abi.encodePacked(
+                    approveCalldata, tryCallCalldata, CalldataLib.encodeSweep(STELLA_STDOT, user, 0, SweepType.VALIDATE)
+                )
             )
         );
 
@@ -409,7 +437,9 @@ contract ExtTryCatchWithReplace is BaseTest {
                 address(callForwarder),
                 uint256(0),
                 false,
-                abi.encodePacked(approveCalldata, tryCallCalldata, CalldataLib.encodeSweep(STELLA_STDOT, user, 0, SweepType.VALIDATE))
+                abi.encodePacked(
+                    approveCalldata, tryCallCalldata, CalldataLib.encodeSweep(STELLA_STDOT, user, 0, SweepType.VALIDATE)
+                )
             )
         );
 

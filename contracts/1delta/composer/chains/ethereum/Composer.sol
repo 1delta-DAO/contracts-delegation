@@ -54,4 +54,3 @@ contract OneDeltaComposerEthereum is BaseComposer, UniversalFlashLoan, SwapCallb
         );
     }
 }
-

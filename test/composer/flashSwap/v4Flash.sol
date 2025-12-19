@@ -100,7 +100,9 @@ contract FlashSwapTestV4 is BaseTest {
                 UNI_V4_PM, //
                 borrowAmount
             );
-            settlementActions = abi.encodePacked(CalldataLib.encodeUnwrap(WETH, address(oneDV2), borrowAmount, SweepType.AMOUNT), settlementActions);
+            settlementActions = abi.encodePacked(
+                CalldataLib.encodeUnwrap(WETH, address(oneDV2), borrowAmount, SweepType.AMOUNT), settlementActions
+            );
 
             deposit = abi.encodePacked(
                 swapAction, // the swap

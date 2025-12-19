@@ -18,6 +18,20 @@ contract SanityChecks is Test {
         composer = ComposerPlugin.getComposer(Chains.ETHEREUM_MAINNET);
     }
 
+    function test_sanity_calldata_length(uint256 additionalLength) public {
+        bytes memory cd =
+            CalldataLib.encodeSweep(0x1234567890123456789012345678901234567890, address(this), 0, SweepType.VALIDATE);
+        cd = abi.encodeWithSelector(composer.deltaCompose.selector, cd);
+        assembly {
+            mstore(add(cd, 0x44), add(mload(cd), additionalLength))
+        }
+
+        console.logBytes(cd);
+
+        vm.expectRevert();
+        (bool success, bytes memory returnData) = address(composer).call(cd);
+    }
+
     function test_sanity_externalCall_to_EOA() public {
         address eoa = address(0x1De17A0000000000000000000000000000000000);
         uint256 ethAmount = 1 ether;
@@ -26,7 +40,8 @@ contract SanityChecks is Test {
         deal(address(composer), ethAmount);
         uint256 composerInitialBalance = address(composer).balance;
 
-        bytes memory cd = CalldataLib.encodeSweep(0x1De17A0000000000000000000000000000000000, address(this), 0, SweepType.VALIDATE);
+        bytes memory cd =
+            CalldataLib.encodeSweep(0x1De17A0000000000000000000000000000000000, address(this), 0, SweepType.VALIDATE);
         cd = CalldataLib.encodeExternalCall(eoa, ethAmount, false, cd);
         cd = abi.encodeWithSelector(composer.deltaCompose.selector, cd);
 
@@ -53,7 +68,8 @@ contract SanityChecks is Test {
         IERC20All(token).approve(address(composer), type(uint256).max);
 
         bytes memory cd = abi.encodePacked(
-            CalldataLib.encodeTransferIn(token, address(composer), amountPerOperation), CalldataLib.encodeSweep(token, user, 0, SweepType.VALIDATE)
+            CalldataLib.encodeTransferIn(token, address(composer), amountPerOperation),
+            CalldataLib.encodeSweep(token, user, 0, SweepType.VALIDATE)
         );
 
         bytes memory composedCalls = new bytes(0);

@@ -18,7 +18,6 @@ contract MorphoFlashLoanCallback is Masks, DeltaErrors {
 
     /**
      * @notice Handles Morpho Blue flash loan callback
-     
      */
     function onMorphoFlashLoan(uint256, bytes calldata) external {
         _onMorphoCallback();
@@ -26,7 +25,6 @@ contract MorphoFlashLoanCallback is Masks, DeltaErrors {
 
     /**
      * @notice Handles Morpho Blue supply callback
-     
      */
     function onMorphoSupply(uint256, bytes calldata) external {
         _onMorphoCallback();
@@ -34,7 +32,6 @@ contract MorphoFlashLoanCallback is Masks, DeltaErrors {
 
     /**
      * @notice Handles Morpho Blue repay callback
-     
      */
     function onMorphoRepay(uint256, bytes calldata) external {
         _onMorphoCallback();
@@ -42,7 +39,6 @@ contract MorphoFlashLoanCallback is Masks, DeltaErrors {
 
     /**
      * @notice Handles Morpho Blue supply collateral callback
-     
      */
     function onMorphoSupplyCollateral(uint256, bytes calldata) external {
         _onMorphoCallback();

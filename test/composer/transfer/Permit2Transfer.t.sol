@@ -209,7 +209,8 @@ contract Permit2TransferTest is BaseTest, DeltaErrors {
         return keccak256(abi.encode(_PERMIT_DETAILS_TYPEHASH, details));
     }
 
-    bytes32 public constant _PERMIT_DETAILS_TYPEHASH = keccak256("PermitDetails(address token,uint160 amount,uint48 expiration,uint48 nonce)");
+    bytes32 public constant _PERMIT_DETAILS_TYPEHASH =
+        keccak256("PermitDetails(address token,uint160 amount,uint48 expiration,uint48 nonce)");
 
     bytes32 public constant _PERMIT_SINGLE_TYPEHASH = keccak256(
         "PermitSingle(PermitDetails details,address spender,uint256 sigDeadline)PermitDetails(address token,uint160 amount,uint48 expiration,uint48 nonce)"

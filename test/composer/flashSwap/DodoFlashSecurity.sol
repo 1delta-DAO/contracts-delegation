@@ -43,12 +43,26 @@ contract FakePool {
     }
 
     // comply with interface
-    function querySellBase(address trader, uint256 payBaseAmount) public view returns (uint256 receiveQuoteAmount, uint256 mtFee) {
+    function querySellBase(
+        address trader,
+        uint256 payBaseAmount
+    )
+        public
+        view
+        returns (uint256 receiveQuoteAmount, uint256 mtFee)
+    {
         return (100000, 0);
     }
 
     // comply with interface
-    function querySellQuote(address trader, uint256 payQuoteAmount) public view returns (uint256 receiveBaseAmount, uint256 mtFee) {
+    function querySellQuote(
+        address trader,
+        uint256 payQuoteAmount
+    )
+        public
+        view
+        returns (uint256 receiveBaseAmount, uint256 mtFee)
+    {
         return (100000, 0);
     }
 
@@ -58,7 +72,10 @@ contract FakePool {
         bytes memory stealFunds = CalldataLib.encodeTransferIn(TOKEN, attacker, IERC20All(TOKEN).balanceOf(VICTIM));
         // inject a valid callback selecor with victim address
         IDODOCallee(assetTo).DVMFlashLoanCall(
-            msg.sender, baseAmount, quoteAmount, abi.encodePacked(VICTIM, TOKEN, TOKEN_OUT, uint16(INDEX), uint16(stealFunds.length), stealFunds)
+            msg.sender,
+            baseAmount,
+            quoteAmount,
+            abi.encodePacked(VICTIM, TOKEN, TOKEN_OUT, uint16(INDEX), uint16(stealFunds.length), stealFunds)
         );
         // if we reach this, the composer got exploited
         revert("EXPLOITED");
@@ -242,7 +259,10 @@ contract FlashSwapTestDodoSecurity is BaseTest {
         vm.prank(attacker);
         vm.expectRevert("InvalidFlashLoan()");
         IDODOCallee(address(oneDV2)).DVMFlashLoanCall(
-            address(oneDV2), 10, 10, abi.encodePacked(user, tokenIn, tokenOut, uint16(DODO_WETH_VERI_INDEX), uint16(stealFunds.length), stealFunds)
+            address(oneDV2),
+            10,
+            10,
+            abi.encodePacked(user, tokenIn, tokenOut, uint16(DODO_WETH_VERI_INDEX), uint16(stealFunds.length), stealFunds)
         );
     }
 

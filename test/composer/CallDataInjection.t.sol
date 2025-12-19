@@ -85,12 +85,14 @@ contract CallDataInjection is BaseTest, DeltaErrors {
         uint256 userInitialBalance = IERC20(WETH).balanceOf(address(user));
 
         bytes memory transferCall = CalldataLib.encodeTransferIn(WETH, attacker, userInitialBalance);
-        bytes memory maliciousCall =
-            abi.encodePacked(user, WETH, address(0), uint8(DexTypeMappings.UNISWAP_V3_ID), uint16(500), uint16(transferCall.length), transferCall);
+        bytes memory maliciousCall = abi.encodePacked(
+            user, WETH, address(0), uint8(DexTypeMappings.UNISWAP_V3_ID), uint16(500), uint16(transferCall.length), transferCall
+        );
 
         // try to execute the attack
         vm.startPrank(attacker);
-        (bool success, bytes memory data) = address(composer).call(abi.encodeWithSelector(uniV3CallbackSelector, 1, 0, maliciousCall));
+        (bool success, bytes memory data) =
+            address(composer).call(abi.encodeWithSelector(uniV3CallbackSelector, 1, 0, maliciousCall));
         vm.stopPrank();
         vm.assertEq(success, false);
         vm.assertEq(data, abi.encodeWithSignature("BadPool()"));
@@ -133,7 +135,9 @@ contract CallDataInjection is BaseTest, DeltaErrors {
         composer.deltaCompose(
             abi.encodePacked(
                 CalldataLib.swapHead(10, 0, WETH).attachBranch(0, 0, new bytes(0)),
-                CalldataLib.encodeUniswapV2StyleSwap(USDC, attacker, 0, address(maliciousPool), 9970, DexPayConfig.PRE_FUND, new bytes(1111))
+                CalldataLib.encodeUniswapV2StyleSwap(
+                    USDC, attacker, 0, address(maliciousPool), 9970, DexPayConfig.PRE_FUND, new bytes(1111)
+                )
             )
         );
         vm.stopPrank();

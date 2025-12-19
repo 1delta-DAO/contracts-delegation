@@ -167,7 +167,14 @@ abstract contract PermitUtils is PermitConstants {
      * @param permitOffset calldata
      * @param permitLength calldata
      */
-    function _tryFlagBasedLendingPermit(address target, uint256 permitOffset, uint256 permitLength, address callerAddress) internal {
+    function _tryFlagBasedLendingPermit(
+        address target,
+        uint256 permitOffset,
+        uint256 permitLength,
+        address callerAddress
+    )
+        internal
+    {
         assembly {
             let ptr := mload(0x40)
             switch permitLength

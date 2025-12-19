@@ -19,7 +19,7 @@ abstract contract BalancerV3Callbacks is Masks, DeltaErrors {
     /**
      * @notice Callback from Balancer V3 type vaults
      * @dev Note that this selector is a custom choice
-     
+     *
      * @custom:calldata-offset-table
      * | Offset | Length (bytes) | Description                  |
      * |--------|----------------|------------------------------|
@@ -43,7 +43,6 @@ abstract contract BalancerV3Callbacks is Masks, DeltaErrors {
             /**
              * Ensure that the caller is the singleton of choice
              */
-
             if xor(caller(), BALANCER_V3) {
                 mstore(0, INVALID_CALLER)
                 revert(0, 0x4)

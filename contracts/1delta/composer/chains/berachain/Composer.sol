@@ -54,4 +54,3 @@ contract OneDeltaComposerBerachain is BaseComposer, UniversalFlashLoan, SwapCall
         );
     }
 }
-

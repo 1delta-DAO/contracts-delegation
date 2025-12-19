@@ -36,7 +36,6 @@ abstract contract UniV4Callbacks is Masks, DeltaErrors {
             /**
              * Ensure that the caller is the singleton of choice
              */
-
             if xor(caller(), UNISWAP_V4) {
                 mstore(0, INVALID_CALLER)
                 revert(0, 0x4)

@@ -54,4 +54,3 @@ contract OneDeltaComposerTaiko is BaseComposer, UniversalFlashLoan, SwapCallback
         );
     }
 }
-

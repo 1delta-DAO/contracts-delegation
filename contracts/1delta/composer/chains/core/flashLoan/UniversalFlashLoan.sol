@@ -42,4 +42,3 @@ contract UniversalFlashLoan is
         }
     }
 }
-

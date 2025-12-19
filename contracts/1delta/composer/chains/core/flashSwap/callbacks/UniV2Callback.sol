@@ -6,7 +6,6 @@ pragma solidity 0.8.28;
  * Author: Achthar | 1delta
  * /*****************************************************************************
  */
-
 import {ValidatorLib} from "../../../../swappers/callbacks/ValidatorLib.sol";
 import {Masks} from "../../../../../shared/masks/Masks.sol";
 import {DeltaErrors} from "../../../../../shared/errors/Errors.sol";

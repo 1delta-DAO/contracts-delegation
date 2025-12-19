@@ -39,12 +39,18 @@ contract ExtTryCatch is BaseTest {
         mockContract.reset();
 
         // catch calldata, should not be called in this test
-        bytes memory composerCalldata =
-            CalldataLib.encodeExternalCall(address(mockContract), uint256(0), false, abi.encodeWithSelector(MockContract.catchBlock.selector));
+        bytes memory composerCalldata = CalldataLib.encodeExternalCall(
+            address(mockContract), uint256(0), false, abi.encodeWithSelector(MockContract.catchBlock.selector)
+        );
 
         // forwarder calldata
         composerCalldata = CalldataLib.encodeTryExternalCall(
-            address(mockContract), uint256(0), false, true, abi.encodeWithSelector(MockContract.testCall.selector), composerCalldata
+            address(mockContract),
+            uint256(0),
+            false,
+            true,
+            abi.encodeWithSelector(MockContract.testCall.selector),
+            composerCalldata
         );
 
         // composer calldata
@@ -68,12 +74,18 @@ contract ExtTryCatch is BaseTest {
         mockContract.reset();
 
         // catch calldata, should be called in this test
-        bytes memory composerCalldata =
-            CalldataLib.encodeExternalCall(address(mockContract), uint256(0), false, abi.encodeWithSelector(MockContract.catchBlock.selector));
+        bytes memory composerCalldata = CalldataLib.encodeExternalCall(
+            address(mockContract), uint256(0), false, abi.encodeWithSelector(MockContract.catchBlock.selector)
+        );
 
         // forwarder calldata
         composerCalldata = CalldataLib.encodeTryExternalCall(
-            address(mockContract), uint256(0), false, false, abi.encodeWithSelector(MockContract.testCall.selector), composerCalldata
+            address(mockContract),
+            uint256(0),
+            false,
+            false,
+            abi.encodeWithSelector(MockContract.testCall.selector),
+            composerCalldata
         );
 
         // composer calldata
@@ -97,12 +109,18 @@ contract ExtTryCatch is BaseTest {
         mockContract.reset();
 
         // catch calldata, should not be called in this test
-        bytes memory composerCalldata =
-            CalldataLib.encodeExternalCall(address(mockContract), uint256(0), false, abi.encodeWithSelector(MockContract.catchBlock.selector));
+        bytes memory composerCalldata = CalldataLib.encodeExternalCall(
+            address(mockContract), uint256(0), false, abi.encodeWithSelector(MockContract.catchBlock.selector)
+        );
 
         // forwarder calldata
         composerCalldata = CalldataLib.encodeTryExternalCall(
-            address(mockContract), uint256(0), false, false, abi.encodeWithSelector(MockContract.testCall.selector), composerCalldata
+            address(mockContract),
+            uint256(0),
+            false,
+            false,
+            abi.encodeWithSelector(MockContract.testCall.selector),
+            composerCalldata
         );
 
         // composer calldata

@@ -79,6 +79,8 @@ contract FlashSwapTestBalancerSecurity is BaseTest {
 
         vm.prank(attacker);
         vm.expectRevert("InvalidCaller()");
-        IBalancerV3CAllback(address(oneDV2)).balancerUnlockCallback(abi.encodePacked(user, uint8(2), uint16(stealFunds.length), stealFunds));
+        IBalancerV3CAllback(address(oneDV2)).balancerUnlockCallback(
+            abi.encodePacked(user, uint8(2), uint16(stealFunds.length), stealFunds)
+        );
     }
 }

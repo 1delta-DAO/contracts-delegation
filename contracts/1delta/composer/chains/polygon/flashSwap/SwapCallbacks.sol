@@ -65,4 +65,3 @@ contract SwapCallbacks is
         }
     }
 }
-

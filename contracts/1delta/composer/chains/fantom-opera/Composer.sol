@@ -54,4 +54,3 @@ contract OneDeltaComposerFantomOpera is BaseComposer, UniversalFlashLoan, SwapCa
         );
     }
 }
-

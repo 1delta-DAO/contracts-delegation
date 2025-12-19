@@ -59,7 +59,6 @@ abstract contract UniV3Callbacks is V3Callbacker, Masks, DeltaErrors {
                 case 1 { amountToPay := _amount1 }
                 default { amountToPay := calldataload(4) }
             }
-
             // SELECTOR_IZI_XY
             case 0x1878068400000000000000000000000000000000000000000000000000000000 {
                 ffFactoryAddress := IZUMI_FF_FACTORY
@@ -132,4 +131,3 @@ abstract contract UniV3Callbacks is V3Callbacker, Masks, DeltaErrors {
         }
     }
 }
-

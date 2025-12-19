@@ -108,7 +108,16 @@ abstract contract CurveQuoter is Masks {
         }
     }
 
-    function getCurveAmountIn(address pool, uint256 indexIn, uint256 indexOut, uint256 amountOut) internal view returns (uint256 amountIn) {
+    function getCurveAmountIn(
+        address pool,
+        uint256 indexIn,
+        uint256 indexOut,
+        uint256 amountOut
+    )
+        internal
+        view
+        returns (uint256 amountIn)
+    {
         assembly {
             let ptr := mload(0x40)
 

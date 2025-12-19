@@ -54,4 +54,3 @@ contract OneDeltaComposerOp is BaseComposer, UniversalFlashLoan, SwapCallbacks {
         );
     }
 }
-

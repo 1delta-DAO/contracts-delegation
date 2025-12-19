@@ -149,7 +149,8 @@ contract SiloV2ComposerLightTest is BaseTest {
         IERC20All(collateralShareToken).approve(address(oneDV2), type(uint256).max);
 
         uint256 amountToWithdraw = 0.5e18;
-        bytes memory d = CalldataLib.encodeSiloV2Withdraw(amountToWithdraw, user, collateralSilo, uint8(SiloV2CollateralType.COLLATERAL));
+        bytes memory d =
+            CalldataLib.encodeSiloV2Withdraw(amountToWithdraw, user, collateralSilo, uint8(SiloV2CollateralType.COLLATERAL));
 
         // Check balances before withdrawal
         uint256 collateralBefore = _getAssetBalance(collateralSilo, user);
@@ -183,7 +184,8 @@ contract SiloV2ComposerLightTest is BaseTest {
         IERC20All(collateralShareToken).approve(address(oneDV2), type(uint256).max);
 
         uint256 amountToWithdraw = type(uint112).max;
-        bytes memory d = CalldataLib.encodeSiloV2Withdraw(amountToWithdraw, user, collateralSilo, uint8(SiloV2CollateralType.COLLATERAL));
+        bytes memory d =
+            CalldataLib.encodeSiloV2Withdraw(amountToWithdraw, user, collateralSilo, uint8(SiloV2CollateralType.COLLATERAL));
 
         // Check balances before withdrawal
         uint256 collateralBefore = _getAssetBalance(collateralSilo, user);
@@ -293,7 +295,9 @@ contract SiloV2ComposerLightTest is BaseTest {
         uint256 underlyingBefore = IERC20All(token).balanceOf(user);
 
         vm.prank(user);
-        oneDV2.deltaCompose(abi.encodePacked(transferTo, composerCall, CalldataLib.encodeSweep(token, user, 0, SweepType.VALIDATE)));
+        oneDV2.deltaCompose(
+            abi.encodePacked(transferTo, composerCall, CalldataLib.encodeSweep(token, user, 0, SweepType.VALIDATE))
+        );
 
         uint256 borrowBalanceAfter = _getDebtBalance(borrowSilo, user);
         uint256 underlyingAfter = IERC20All(token).balanceOf(user);

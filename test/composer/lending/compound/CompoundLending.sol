@@ -304,23 +304,31 @@ contract CompoundV3ComposerLightTest is BaseTest {
         returns (bytes memory composedCalldata)
     {
         // approve comet
-        composedCalldata =
-            abi.encodePacked(CalldataLib.encodeApprove(WETH, COMPOUND_V3_USDC_COMET), CalldataLib.encodeApprove(USDC, COMPOUND_V3_USDC_COMET));
+        composedCalldata = abi.encodePacked(
+            CalldataLib.encodeApprove(WETH, COMPOUND_V3_USDC_COMET), CalldataLib.encodeApprove(USDC, COMPOUND_V3_USDC_COMET)
+        );
         // transfer collateral to composer
-        composedCalldata = abi.encodePacked(composedCalldata, CalldataLib.encodeTransferIn(WETH, address(oneDV2), collateralAmount));
-        // deposit collateral
         composedCalldata =
-            abi.encodePacked(composedCalldata, CalldataLib.encodeCompoundV3Deposit(WETH, collateralAmount, user, COMPOUND_V3_USDC_COMET));
+            abi.encodePacked(composedCalldata, CalldataLib.encodeTransferIn(WETH, address(oneDV2), collateralAmount));
+        // deposit collateral
+        composedCalldata = abi.encodePacked(
+            composedCalldata, CalldataLib.encodeCompoundV3Deposit(WETH, collateralAmount, user, COMPOUND_V3_USDC_COMET)
+        );
         // borrow
-        composedCalldata = abi.encodePacked(composedCalldata, CalldataLib.encodeCompoundV3Borrow(USDC, borrowAmount, user, COMPOUND_V3_USDC_COMET));
+        composedCalldata = abi.encodePacked(
+            composedCalldata, CalldataLib.encodeCompoundV3Borrow(USDC, borrowAmount, user, COMPOUND_V3_USDC_COMET)
+        );
         // transfer repay amount to composer
         composedCalldata = abi.encodePacked(composedCalldata, CalldataLib.encodeTransferIn(USDC, address(oneDV2), repayAmount));
         // repay
-        composedCalldata = abi.encodePacked(composedCalldata, CalldataLib.encodeCompoundV3Repay(USDC, repayAmount, user, COMPOUND_V3_USDC_COMET));
+        composedCalldata =
+            abi.encodePacked(composedCalldata, CalldataLib.encodeCompoundV3Repay(USDC, repayAmount, user, COMPOUND_V3_USDC_COMET));
         // withdraw to composer
         composedCalldata = abi.encodePacked(
             composedCalldata,
-            CalldataLib.encodeCompoundV3Withdraw(WETH, withdrawAmount, address(oneDV2), COMPOUND_V3_USDC_COMET, WETH == chain.getCometToBase(lender))
+            CalldataLib.encodeCompoundV3Withdraw(
+                WETH, withdrawAmount, address(oneDV2), COMPOUND_V3_USDC_COMET, WETH == chain.getCometToBase(lender)
+            )
         );
         // sweep to receiver
         composedCalldata = abi.encodePacked(composedCalldata, CalldataLib.encodeSweep(WETH, user, 0, SweepType.VALIDATE));

@@ -18,7 +18,14 @@ import {DeltaErrors} from "contracts/1delta/shared/errors/Errors.sol";
  * - paramPush for receiving funds (e.g. receiving funds from swaps or flash loans)
  * - paramPull for being required to pay an exact amount (e.g. DEX swap payments, flash loan amounts)
  */
-abstract contract UniversalLending is AaveLending, CompoundV3Lending, CompoundV2Lending, MorphoLending, SiloV2Lending, DeltaErrors {
+abstract contract UniversalLending is
+    AaveLending,
+    CompoundV3Lending,
+    CompoundV2Lending,
+    MorphoLending,
+    SiloV2Lending,
+    DeltaErrors
+{
     /**
      * @notice Executes any lending operation across various lenders
      * @dev Routes to appropriate lender based on operation and lender ID

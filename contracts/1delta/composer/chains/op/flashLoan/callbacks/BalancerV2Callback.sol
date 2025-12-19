@@ -17,7 +17,6 @@ contract BalancerV2FlashLoanCallback is Slots, Masks, DeltaErrors {
     /**
      * @notice Handles Balancer V2 flash loan callback
      * @dev Gated via flash loan gateway flag to prevent calls from sources other than this contract
-     
      * @custom:calldata-offset-table
      * | Offset | Length (bytes) | Description                  |
      * |--------|----------------|------------------------------|
@@ -50,7 +49,6 @@ contract BalancerV2FlashLoanCallback is Slots, Masks, DeltaErrors {
             switch and(UINT8_MASK, shr(88, firstWord))
             case 0 { pool := BALANCER_V2 }
             case 2 { pool := SWAAP }
-
             // We revert on any other id
             default {
                 mstore(0, INVALID_FLASH_LOAN)

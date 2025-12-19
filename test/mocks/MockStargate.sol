@@ -104,7 +104,12 @@ contract MockStargate is IStargate {
         revert("Not implemented in mock");
     }
 
-    function quoteOFT(SendParam calldata) external view override returns (OFTLimit memory, OFTFeeDetail[] memory, OFTReceipt memory) {
+    function quoteOFT(SendParam calldata)
+        external
+        view
+        override
+        returns (OFTLimit memory, OFTFeeDetail[] memory, OFTReceipt memory)
+    {
         revert("Not implemented in mock");
     }
 }

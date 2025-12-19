@@ -19,7 +19,6 @@ contract AaveV3FlashLoanCallback is Masks, DeltaErrors {
      * @notice Handles Aave V3 flash loan callback
      * @dev Validates caller, extracts original caller from params, and executes compose operations
      * @param initiator The address that initiated the flash loan
-     
      * @return Always returns true on success
      * @custom:calldata-offset-table
      * | Offset | Length (bytes) | Description                  |

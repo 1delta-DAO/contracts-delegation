@@ -42,4 +42,3 @@ contract FlashLoanCallbacks is
         )
     {}
 }
-

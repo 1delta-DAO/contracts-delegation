@@ -15,8 +15,8 @@ importers:
         specifier: ^0.0.10
         version: 0.0.10
       '@1delta/dex-registry':
-        specifier: ^0.0.97
-        version: 0.0.97
+        specifier: ^0.0.98
+        version: 0.0.98
       '@1delta/lender-registry':
         specifier: ^0.0.13
         version: 0.0.13
@@ -206,6 +206,10 @@ packages:
     resolution: {integrity: sha512-4X81kspkONwukhkjgNzPlgZNhp9lA4sDO+9aQc0pd6Qf8L/kFUtcZpnA0JI5MvoZVkqSJ+D5m2RaToydKfP+2Q==}
     engines: {node: '>=20'}
 
+  '@1delta/chain-registry@0.0.4':
+    resolution: {integrity: sha512-+Y8f2pD+JZxjvNPF4ZDW10ol1hTm16bjGW9hTxh/j0N/yQmkgYzKyVRnjQbtY25JgByYLED4ca/si9TNSWVeWg==}
+    engines: {node: '>=20'}
+
   '@1delta/data-sdk@0.0.10':
     resolution: {integrity: sha512-f7rky9K9SY/3zT3ClDZQYegcKfgQiJq+VYWIuFpNTkD8JaPRDnw0himdfOqTFUEgZUoAtrICzLqUQgW88/IyHg==}
     engines: {node: '>=20'}
@@ -214,8 +218,8 @@ packages:
     resolution: {integrity: sha512-HtgzyehozIc7tAdaRE7pTlQGFJpsUMnpYpAL3DLWgkoYDqeI0b8VjYUyag4TXSseHSWFx5yNKa+Ow60fuNxmdQ==}
     engines: {node: '>=20'}
 
-  '@1delta/dex-registry@0.0.97':
-    resolution: {integrity: sha512-7373BbiLrnv/Erdhnbm76BNxu11vQxF3BMrC3UtlaHtSRJS6LzwMC3i0XpIwZn74ytepQ5equF6zw/5ejycuZA==}
+  '@1delta/dex-registry@0.0.98':
+    resolution: {integrity: sha512-NNVpL2gwrC7HBE9newIxrXVqZu0VfeNKGSjle0nshEZJA73VKEuspREwM7xVLWkXL3w1jsz8GLU2NnAgN/UUBA==}
     engines: {node: '>=20'}
 
   '@1delta/lender-registry@0.0.12':
@@ -7006,6 +7010,8 @@ snapshots:
 
   '@1delta/chain-registry@0.0.3': {}
 
+  '@1delta/chain-registry@0.0.4': {}
+
   '@1delta/data-sdk@0.0.10': {}
 
   '@1delta/dex-registry@0.0.91':
@@ -7013,9 +7019,9 @@ snapshots:
       '@1delta/chain-registry': 0.0.2
       '@1delta/lender-registry': 0.0.12
 
-  '@1delta/dex-registry@0.0.97':
+  '@1delta/dex-registry@0.0.98':
     dependencies:
-      '@1delta/chain-registry': 0.0.3
+      '@1delta/chain-registry': 0.0.4
       '@1delta/lender-registry': 0.0.13
 
   '@1delta/lender-registry@0.0.12': {}
