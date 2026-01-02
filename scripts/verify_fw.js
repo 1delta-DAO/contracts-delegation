@@ -42,6 +42,7 @@ module.exports = [
 // npx hardhat verify --network linea 0xb63e6455858887c8f6bda75c44c41570be989597 --contract contracts/external-protocols/openzeppelin/proxy/transparent/ProxyAdmin.sol:ProxyAdmin  --constructor-args scripts/verify_fw.js
 // npx hardhat verify --network katana 0xbb7eaaaf2c7208384f6297c2b73935d257698c78 --contract contracts/external-protocols/openzeppelin/proxy/transparent/ProxyAdmin.sol:ProxyAdmin  --constructor-args scripts/verify_fw.js
 // npx hardhat verify --network mainnet 0xbb7eaaaf2c7208384f6297c2b73935d257698c78 --contract contracts/external-protocols/openzeppelin/proxy/transparent/ProxyAdmin.sol:ProxyAdmin  --constructor-args scripts/verify_fw.js
+// npx hardhat verify --network monad 0xbb7eaaaf2c7208384f6297c2b73935d257698c78 --contract contracts/external-protocols/openzeppelin/proxy/transparent/ProxyAdmin.sol:ProxyAdmin  --constructor-args scripts/verify_fw.js
 
 
 
@@ -166,3 +167,5 @@ module.exports = [
 
 // npx hardhat verify --network moonbeam 0xCe434378adacC51d54312c872113D687Ac19B516 --contract contracts/1delta/composer/chains/moonbeam/Composer.sol:OneDeltaComposerMoonbeam
 // npx hardhat verify --network moonbeam 0x8E24CfC19c6C00c524353CB8816f5f1c2F33c201 --contract contracts/external-protocols/openzeppelin/proxy/transparent/TransparentUpgradeableProxy.sol:TransparentUpgradeableProxy  --constructor-args scripts/verify_fw.js
+
+// npx hardhat verify --network monad 0x8E24CfC19c6C00c524353CB8816f5f1c2F33c201 --contract contracts/external-protocols/openzeppelin/proxy/transparent/TransparentUpgradeableProxy.sol:TransparentUpgradeableProxy  --constructor-args scripts/verify_fw.js

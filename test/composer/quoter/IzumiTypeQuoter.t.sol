@@ -6,7 +6,7 @@ import "../../../contracts/1delta/composer//quoter/QuoterLight.sol";
 import "../../shared/BaseTest.sol";
 import {Chains, Tokens, Lenders} from "../../data/LenderRegistry.sol";
 import {DexTypeMappings} from "../../../contracts/1delta/composer//swappers/dex/DexTypeMappings.sol";
-import {CalldataLib} from "../utils/CalldataLib.sol";
+import {CalldataLib} from "contracts/utils/CalldataLib.sol";
 import {DexPayConfig} from "contracts/1delta/composer/enums/MiscEnums.sol";
 import {ComposerPlugin, IComposerLike} from "plugins/ComposerPlugin.sol";
 
@@ -90,14 +90,15 @@ contract IzumiQuoterTest is BaseTest {
     /**
      * END OF CALLDATA UTILS
      */
-    function test_light_quoter_simple_swap_izi() public {
+    function test_integ_quoter_simple_swap_izi() public {
         /**
          * WETH -> USDC (0,0)
          */
         uint256 amountIn = 0.01e18; // 1 WETH
 
         // Use utility function to encode path
-        bytes memory path = encodeIzumiStyleSwap(USDC, address(quoter), 0, WETH_USDC_500_POOL, 500, DexPayConfig.CALLER_PAYS, new bytes(0));
+        bytes memory path =
+            encodeIzumiStyleSwap(USDC, address(quoter), 0, WETH_USDC_500_POOL, 500, DexPayConfig.CALLER_PAYS, new bytes(0));
         // single swap branch (0,0)
         bytes memory swapBranch = (new bytes(0)).attachBranch(0, 0, ""); //(0,0)
         uint256 gas = gasleft();
@@ -135,7 +136,15 @@ contract IzumiQuoterTest is BaseTest {
         console.log("Actual amount:", actualAmountOut);
     }
 
-    function multiPath(address[] memory assets, uint16[] memory fees, address receiver) internal view returns (bytes memory data) {
+    function multiPath(
+        address[] memory assets,
+        uint16[] memory fees,
+        address receiver
+    )
+        internal
+        view
+        returns (bytes memory data)
+    {
         data = abi.encodePacked(
             uint8(fees.length - 1), // path max index
             uint8(0) // no splits
@@ -164,7 +173,7 @@ contract IzumiQuoterTest is BaseTest {
         return data;
     }
 
-    function test_light_quoter_multihop_swap() public {
+    function test_integ_quoter_multihop_swap() public {
         /**
          * USDC -> WETH -> cbETH (1,0) - two hops
          */
@@ -208,7 +217,7 @@ contract IzumiQuoterTest is BaseTest {
         console.log("Actual amount:", actualAmountOut);
     }
 
-    function test_light_quoter_split_swap() public {
+    function test_integ_quoter_split_swap() public {
         /**
          * WETH -> USDC (2 splits with different fees, 50/50)
          */

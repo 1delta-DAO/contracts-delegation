@@ -18,9 +18,21 @@ import {DeltaErrors} from "contracts/1delta/shared/errors/Errors.sol";
  * - paramPush for receiving funds (e.g. receiving funds from swaps or flash loans)
  * - paramPull for being required to pay an exact amount (e.g. DEX swap payments, flash loan amounts)
  */
-abstract contract UniversalLending is AaveLending, CompoundV3Lending, CompoundV2Lending, MorphoLending, SiloV2Lending, DeltaErrors {
+abstract contract UniversalLending is
+    AaveLending,
+    CompoundV3Lending,
+    CompoundV2Lending,
+    MorphoLending,
+    SiloV2Lending,
+    DeltaErrors
+{
     /**
-     * execute ANY lending operation across various lenders
+     * @notice Executes any lending operation across various lenders
+     * @dev Routes to appropriate lender based on operation and lender ID
+     * @param callerAddress Address of the caller
+     * @param currentOffset Current position in the calldata
+     * @return Updated calldata offset after processing
+     * @custom:calldata-offset-table
      * | Offset | Length (bytes) | Description                     |
      * |--------|----------------|---------------------------------|
      * | 0      | 1              | lendingOperation                |
@@ -56,8 +68,10 @@ abstract contract UniversalLending is AaveLending, CompoundV3Lending, CompoundV2
                 return _depositToCompoundV2(currentOffset);
             } else if (lender < LenderIds.UP_TO_MORPHO) {
                 return _encodeMorphoDepositCollateral(currentOffset, callerAddress);
-            } else {
+            } else if (lender < LenderIds.UP_TO_SILO_V2) {
                 return _depositToSiloV2(currentOffset);
+            } else {
+                _invalidOperation();
             }
         }
         /**
@@ -72,8 +86,10 @@ abstract contract UniversalLending is AaveLending, CompoundV3Lending, CompoundV2
                 return _borrowFromCompoundV2(currentOffset, callerAddress);
             } else if (lender < LenderIds.UP_TO_MORPHO) {
                 return _morphoBorrow(currentOffset, callerAddress);
-            } else {
+            } else if (lender < LenderIds.UP_TO_SILO_V2) {
                 return _borrowFromSiloV2(currentOffset, callerAddress);
+            } else {
+                _invalidOperation();
             }
         }
         /**
@@ -88,8 +104,10 @@ abstract contract UniversalLending is AaveLending, CompoundV3Lending, CompoundV2
                 return _repayToCompoundV2(currentOffset);
             } else if (lender < LenderIds.UP_TO_MORPHO) {
                 return _morphoRepay(currentOffset, callerAddress);
-            } else {
+            } else if (lender < LenderIds.UP_TO_SILO_V2) {
                 return _repayToSiloV2(currentOffset);
+            } else {
+                _invalidOperation();
             }
         }
         /**
@@ -104,8 +122,10 @@ abstract contract UniversalLending is AaveLending, CompoundV3Lending, CompoundV2
                 return _withdrawFromCompoundV2(currentOffset, callerAddress);
             } else if (lender < LenderIds.UP_TO_MORPHO) {
                 return _encodeMorphoWithdrawCollateral(currentOffset, callerAddress);
-            } else {
+            } else if (lender < LenderIds.UP_TO_SILO_V2) {
                 return _withdrawFromSiloV2(currentOffset, callerAddress);
+            } else {
+                _invalidOperation();
             }
         }
         /**

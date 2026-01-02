@@ -21,7 +21,7 @@ export const templateAaveV3Test = (chainKey: string, lenders: {entityName: strin
 
         // Create an individual test function for each lender
         individualTestFunctions += `
-    function test_flash_loan_aaveV3_type_${lender.entityName.toLowerCase()}_pool_with_callbacks() public {
+    function test_unit_lending_flashloans_aaveV3_callback_${lender.entityName.toLowerCase()}Pool() public {
         // mock implementation
         replaceLendingPoolWithMock(${lender.entityName});
 
@@ -45,15 +45,12 @@ export const templateAaveV3Test = (chainKey: string, lenders: {entityName: strin
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
-import {console} from "forge-std/console.sol";
-import {Vm} from "forge-std/Vm.sol";
 import {Chains, Lenders, Tokens} from "test/data/LenderRegistry.sol";
 import {DeltaErrors} from "contracts/1delta/shared/errors/Errors.sol";
 import {ComposerPlugin, IComposerLike} from "plugins/ComposerPlugin.sol";
-import {CalldataLib} from "test/composer/utils/CalldataLib.sol";
+import {CalldataLib} from "contracts/utils/CalldataLib.sol";
 import {BaseTest} from "test/shared/BaseTest.sol";
-import {AaveMockPool, IAaveFlashLoanReceiver, IAavePool} from "test/mocks/AaveMockPool.sol";
-import {IERC20} from "openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
+import {AaveMockPool, IAavePool} from "test/mocks/AaveMockPool.sol";
 import {SweepType} from "contracts/1delta/composer/enums/MiscEnums.sol";
 
 contract AaveV3FlashLoanCallbackTest is BaseTest, DeltaErrors {
@@ -87,7 +84,7 @@ ${tokenDeclarations}
         mockPool = new AaveMockPool();
     }
 ${individualTestFunctions}
-    function test_flash_loan_aaveV3_type_wrongCaller_revert() public {
+    function test_unit_lending_flashloans_aaveV3_callback_wrongCallerRevert() public {
         for (uint256 i = 0; i < validPools.length; i++) {
             bytes memory params = CalldataLib.encodeFlashLoan(${
                 uniqueTokens.values().next().value || "address(0)"
@@ -99,7 +96,7 @@ ${individualTestFunctions}
         }
     }
 
-    function test_flash_loan_aaveV3_type_WrongInitiator_revert() public {
+    function test_unit_lending_flashloans_aaveV3_callback_wrongInitiatorRevert() public {
         for (uint256 i = 0; i < validPools.length; i++) {
             PoolCase memory pc = validPools[i];
             // mock implementation
@@ -113,15 +110,15 @@ ${individualTestFunctions}
         }
     }
 
-    function test_flash_loan_aaveV3_type_fuzz_invalidPoolIds(uint8 poolId) public {
+    function test_unit_lending_flashloans_aaveV3_callback_fuzzInvalidPoolIds(uint8 poolId) public {
         replaceLendingPoolWithMock(${lenders[0]?.entityName || "address(0)"});
 
         for (uint256 i = 0; i < validPools.length; i++) {
             if (poolId == validPools[i].poolId) return;
         }
         bytes memory params = CalldataLib.encodeFlashLoan(${uniqueTokens.values().next().value || "address(0)"}, 1e6, ${
-        lenders[0]?.entityName || "address(0)"
-    }, uint8(2), uint8(poolId), sweepCall());
+            lenders[0]?.entityName || "address(0)"
+        }, uint8(2), uint8(poolId), sweepCall());
         vm.prank(user);
         vm.expectRevert(DeltaErrors.INVALID_FLASH_LOAN);
         oneDV2.deltaCompose(params);

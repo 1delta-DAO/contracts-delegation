@@ -4,7 +4,7 @@ pragma solidity ^0.8.19;
 import {IERC20All} from "test/shared/interfaces/IERC20All.sol";
 import {BaseTest} from "test/shared/BaseTest.sol";
 import {Chains, Tokens, Lenders} from "test/data/LenderRegistry.sol";
-import "test/composer/utils/CalldataLib.sol";
+import "contracts/utils/CalldataLib.sol";
 import {ComposerPlugin, IComposerLike} from "plugins/ComposerPlugin.sol";
 import "test/shared/chains/ChainInitializer.sol";
 import "test/shared/chains/ChainFactory.sol";
@@ -34,7 +34,7 @@ contract CompoundV2ComposerLightTest is BaseTest {
         oneDV2 = ComposerPlugin.getComposer(chainName);
     }
 
-    function test_light_lending_compoundV2_deposit() external {
+    function test_integ_lending_compoundV2_deposit() external {
         vm.assume(user != address(0));
 
         address token = USDC;
@@ -71,7 +71,7 @@ contract CompoundV2ComposerLightTest is BaseTest {
         assertApproxEqAbs(underlyingBefore - underlyingAfter, amount, 1);
     }
 
-    function test_light_lending_compoundV2_deposit_with_use_mint() external {
+    function test_integ_lending_compoundV2_deposit_with_use_mint() external {
         vm.assume(user != address(0));
 
         IChain base = chainFactory.getChain(Chains.BASE);
@@ -113,7 +113,7 @@ contract CompoundV2ComposerLightTest is BaseTest {
         assertApproxEqAbs(underlyingBefore - underlyingAfter, amount, 1);
     }
 
-    function test_light_lending_compoundV2_borrow() external {
+    function test_integ_lending_compoundV2_borrow() external {
         vm.assume(user != address(0));
 
         address depositToken = WETH;
@@ -148,7 +148,7 @@ contract CompoundV2ComposerLightTest is BaseTest {
         assertApproxEqAbs(underlyingAfter - underlyingBefore, amountToBorrow, 1);
     }
 
-    function test_light_lending_compoundV2_withdraw() external {
+    function test_integ_lending_compoundV2_withdraw() external {
         vm.assume(user != address(0));
 
         address token = USDC;
@@ -163,7 +163,8 @@ contract CompoundV2ComposerLightTest is BaseTest {
         approveWithdrawalDelegation(user, token, address(oneDV2), lender);
 
         uint256 amountToWithdraw = 10.0e6;
-        bytes memory d = CalldataLib.encodeCompoundV2Withdraw(token, amountToWithdraw, user, cToken, uint8(CompoundV2Selector.REDEEM));
+        bytes memory d =
+            CalldataLib.encodeCompoundV2Withdraw(token, amountToWithdraw, user, cToken, uint8(CompoundV2Selector.REDEEM));
 
         // Check balances before withdrawal
         uint256 collateralBefore = chain.getCollateralBalance(user, token, lender);
@@ -182,7 +183,7 @@ contract CompoundV2ComposerLightTest is BaseTest {
         assertApproxEqAbs(underlyingAfter - underlyingBefore, amountToWithdraw, 1);
     }
 
-    function test_light_lending_compoundV2_withdraw_behalf() external {
+    function test_integ_lending_compoundV2_withdraw_behalf() external {
         vm.assume(user != address(0));
 
         address token = USDC;
@@ -198,7 +199,8 @@ contract CompoundV2ComposerLightTest is BaseTest {
         approveBorrowDelegation(user, token, address(oneDV2), lender);
 
         uint256 amountToWithdraw = 10.0e6;
-        bytes memory d = CalldataLib.encodeCompoundV2Withdraw(token, amountToWithdraw, user, cToken, uint8(CompoundV2Selector.REDEEM_BEHALF));
+        bytes memory d =
+            CalldataLib.encodeCompoundV2Withdraw(token, amountToWithdraw, user, cToken, uint8(CompoundV2Selector.REDEEM_BEHALF));
 
         // Check balances before withdrawal
         uint256 collateralBefore = chain.getCollateralBalance(user, token, lender);
@@ -217,7 +219,7 @@ contract CompoundV2ComposerLightTest is BaseTest {
         assertApproxEqAbs(underlyingAfter - underlyingBefore, amountToWithdraw, 1);
     }
 
-    function test_light_lending_compoundV2_repay() external {
+    function test_integ_lending_compoundV2_repay() external {
         vm.assume(user != address(0));
 
         address depositToken = WETH;
@@ -263,7 +265,7 @@ contract CompoundV2ComposerLightTest is BaseTest {
         assertApproxEqAbs(underlyingBefore - underlyingAfter, amountToRepay, 1);
     }
 
-    function test_light_lending_compoundV2_repay_max() external {
+    function test_integ_lending_compoundV2_repay_max() external {
         vm.assume(user != address(0));
 
         address depositToken = WETH;
@@ -309,7 +311,7 @@ contract CompoundV2ComposerLightTest is BaseTest {
     /**
      * repay maximum but do not hold enough in the contract
      */
-    function test_light_lending_compoundV2_repay_try_max() external {
+    function test_integ_lending_compoundV2_repay_try_max() external {
         vm.assume(user != address(0));
 
         address depositToken = WETH;
@@ -352,7 +354,15 @@ contract CompoundV2ComposerLightTest is BaseTest {
         assertApproxEqAbs(debtAfter, 1.0e6, 0);
     }
 
-    function depositToCompoundV2(address token, address userAddress, uint256 amount, address comptroller, uint8 altSelector) internal {
+    function depositToCompoundV2(
+        address token,
+        address userAddress,
+        uint256 amount,
+        address comptroller,
+        uint8 altSelector
+    )
+        internal
+    {
         deal(token, userAddress, amount);
 
         address[] memory cTokens = new address[](1);

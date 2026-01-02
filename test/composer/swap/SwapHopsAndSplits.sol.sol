@@ -5,7 +5,7 @@ import {console} from "forge-std/console.sol";
 import {IERC20All} from "../../shared/interfaces/IERC20All.sol";
 import {BaseTest} from "../../shared/BaseTest.sol";
 import {Chains, Tokens, Lenders} from "../../data/LenderRegistry.sol";
-import "../utils/CalldataLib.sol";
+import "contracts/utils/CalldataLib.sol";
 import {ComposerPlugin, IComposerLike} from "plugins/ComposerPlugin.sol";
 
 interface IF {
@@ -18,7 +18,7 @@ interface IF {
 
 /**
  * We test all morpho blue operations
- * - supply, supplyCollateral, borrow, repay, encodeErc4646Deposit, encodeErc4646Withdraw
+ * - supply, supplyCollateral, borrow, repay, encodeErc4626Deposit, encodeErc4646Withdraw
  */
 contract SwapHopsAndSplitsLightTest is BaseTest {
     address internal constant UNI_FACTORY = 0x33128a8fC17869897dcE68Ed026d694621f6FDfD;
@@ -157,7 +157,16 @@ contract SwapHopsAndSplitsLightTest is BaseTest {
     // USDC ----------> WETH
     // USDC ----------> WETH ---uniV2---> KEYCAT
     // USDC -> cbBTC -> WETH
-    function v3poolUltiSwapWithRouteV2(uint16 fee, uint16 fee2, address receiver, uint256 amount) internal view returns (bytes memory data) {
+    function v3poolUltiSwapWithRouteV2(
+        uint16 fee,
+        uint16 fee2,
+        address receiver,
+        uint256 amount
+    )
+        internal
+        view
+        returns (bytes memory data)
+    {
         address assetIn = USDC;
         address assetOut = WETH;
         address v2pool = IF(UNI_V2_FACTORY).getPair(assetOut, KEYCAT);
@@ -229,7 +238,16 @@ contract SwapHopsAndSplitsLightTest is BaseTest {
     // USDC ----------> WETH
     // USDC ----------> WETH ---uniV3---> cbETH
     // USDC -> cbBTC -> WETH
-    function v3poolUltiSwapWithRoute(uint16 fee, uint16 fee2, address receiver, uint256 amount) internal view returns (bytes memory data) {
+    function v3poolUltiSwapWithRoute(
+        uint16 fee,
+        uint16 fee2,
+        address receiver,
+        uint256 amount
+    )
+        internal
+        view
+        returns (bytes memory data)
+    {
         address assetIn = USDC;
         address assetOut = WETH;
         address pool = IF(UNI_FACTORY).getPool(assetIn, assetOut, fee);
@@ -297,7 +315,7 @@ contract SwapHopsAndSplitsLightTest is BaseTest {
         ); //
     }
 
-    function test_light_swap_v3_route_splits_with_route() external {
+    function test_integ_swap_v3_route_splits_with_route() external {
         vm.assume(user != address(0));
 
         address tokenIn = USDC;
@@ -328,7 +346,7 @@ contract SwapHopsAndSplitsLightTest is BaseTest {
         console.log("received", balAfter - balBefore);
     }
 
-    function test_light_swap_v3_route_splits_with_v2_route() external {
+    function test_integ_swap_v3_route_splits_with_v2_route() external {
         vm.assume(user != address(0));
 
         address tokenIn = USDC;

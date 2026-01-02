@@ -7,12 +7,12 @@ import {console} from "forge-std/console.sol";
 import {CallForwarder} from "contracts/1delta/composer/generic/CallForwarder.sol";
 import {BaseUtils} from "contracts/1delta/composer/generic/BaseUtils.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import {CalldataLib} from "test/composer/utils/CalldataLib.sol";
+import {CalldataLib} from "contracts/utils/CalldataLib.sol";
 import {Chains, Tokens} from "test/data/LenderRegistry.sol";
 import {ComposerPlugin, IComposerLike} from "plugins/ComposerPlugin.sol";
 import {IStargate} from "contracts/1delta/composer/generic/bridges/StargateV2/IStargate.sol";
 import {SweepType} from "contracts/1delta/composer/enums/MiscEnums.sol";
-import {MockStargate} from "./MockStargate.sol";
+import {MockStargate} from "test/mocks/MockStargate.sol";
 
 // solhint-disable max-line-length
 
@@ -38,7 +38,6 @@ contract StargateV2Test is BaseTest {
     uint256 public BRIDGE_AMOUNT = 1000 * 1e6;
 
     function setUp() public {
-        rpcOverrides[Chains.ARBITRUM_ONE] = "https://arbitrum.blockpi.network/v1/rpc/public";
         _init(Chains.ARBITRUM_ONE, 333862337, true);
 
         callForwarder = new CallForwarder();
@@ -61,7 +60,31 @@ contract StargateV2Test is BaseTest {
         vm.label(user, "User");
     }
 
-    function test_stargate_v2_bridge_taxi_native_balance() public {
+    function setUpUnit() internal {
+        _init(Chains.ARBITRUM_ONE, 0, false);
+
+        callForwarder = new CallForwarder();
+
+        composer = ComposerPlugin.getComposer(Chains.ARBITRUM_ONE);
+
+        USDC = chain.getTokenAddress(Tokens.USDC);
+
+        _fundUserWithToken(USDC, BRIDGE_AMOUNT);
+
+        STARGATE_MOCK = new MockStargate();
+
+        STARGATE_USDC = address(STARGATE_MOCK);
+
+        vm.label(address(callForwarder), "CallForwarder");
+        vm.label(address(composer), "Composer");
+        vm.label(STARGATE_USDC, "StargateUSDC");
+        vm.label(address(STARGATE_MOCK), "StargateUSDC Mock");
+        vm.label(USDC, "USDC");
+        vm.label(user, "User");
+    }
+
+    function test_unit_externalCall_stargate_v2_bridge_taxi_native_balance() public {
+        setUpUnit();
         uint32 baseId = 30184;
         address nativePool = address(STARGATE_MOCK);
         // 1. quote the fee
@@ -70,7 +93,7 @@ contract StargateV2Test is BaseTest {
             int256 sgFee,
             IStargate.SendParam memory sendParam,
             IStargate.MessagingFee memory param //
-        ) = _quote(false, 1);
+        ) = _quoteMock(false, 1);
 
         uint256 eth_amount = 1 ether;
         // set expected params
@@ -111,14 +134,15 @@ contract StargateV2Test is BaseTest {
         vm.stopPrank();
     }
 
-    function test_stargate_v2_bridge_taxi_token_amount() public {
+    function test_unit_externalCall_stargate_v2_bridge_taxi_token_amount() public {
+        setUpUnit();
         // 1. quote the fee
         (
             uint256 fee,
             int256 sgFee,
             IStargate.SendParam memory sendParam,
             IStargate.MessagingFee memory param //
-        ) = _quote(false, 1);
+        ) = _quoteMock(false, 1);
 
         uint256 minAmountLD = uint256(int256(BRIDGE_AMOUNT) + sgFee); // sgFee is negative for fee and positive for rewards
         sendParam.minAmountLD = minAmountLD;
@@ -170,14 +194,15 @@ contract StargateV2Test is BaseTest {
         vm.stopPrank();
     }
 
-    function test_stargate_v2_bridge_taxi_token_balance() public {
+    function test_unit_externalCall_stargate_v2_bridge_taxi_token_balance() public {
+        setUpUnit();
         // 1. quote the fee
         (
             uint256 fee,
             int256 sgFee,
             IStargate.SendParam memory sendParam,
             IStargate.MessagingFee memory param //
-        ) = _quote(false, 1);
+        ) = _quoteMock(false, 1);
 
         uint256 minAmountLD = uint256(int256(BRIDGE_AMOUNT) + sgFee); // sgFee is negative for fee and positive for rewards
         uint32 slippage = uint32((BRIDGE_AMOUNT - minAmountLD) * 1e9 / BRIDGE_AMOUNT); // percentage
@@ -227,7 +252,8 @@ contract StargateV2Test is BaseTest {
         vm.stopPrank();
     }
 
-    function test_stargate_v2_bridge_taxi_revert_slippage() public {
+    function test_unit_externalCall_stargate_v2_bridge_taxi_revert_slippage() public {
+        setUpUnit();
         // 1. quote the fee
         uint256 fee;
         int256 sgFee;
@@ -239,7 +265,7 @@ contract StargateV2Test is BaseTest {
                 sgFee,
                 sendParam,
                 param //
-            ) = _quote(false, 1);
+            ) = _quoteMock(false, 1);
 
             STARGATE_MOCK.setExpectedParams(sendParam, param, user);
         }
@@ -291,14 +317,15 @@ contract StargateV2Test is BaseTest {
         vm.stopPrank();
     }
 
-    function test_stargate_v2_bridge_bus_token_amount() public {
+    function test_unit_externalCall_stargate_v2_bridge_bus_token_amount() public {
+        setUpUnit();
         // 1. quote the fee
         (
             uint256 fee,
             int256 sgFee,
             IStargate.SendParam memory sendParam,
             IStargate.MessagingFee memory param //
-        ) = _quote(true, 1);
+        ) = _quoteMock(true, 1);
         uint256 minAmountLD; // sgFee is negative for fee and positive for rewards
         uint32 slippage;
         {
@@ -366,14 +393,15 @@ contract StargateV2Test is BaseTest {
         vm.stopPrank();
     }
 
-    function test_stargate_v2_bridge_bus_token_balance() public {
+    function test_unit_externalCall_stargate_v2_bridge_bus_token_balance() public {
+        setUpUnit();
         // 1. quote the fee
         (
             uint256 fee,
             int256 sgFee,
             IStargate.SendParam memory sendParam,
             IStargate.MessagingFee memory param //
-        ) = _quote(true, 1);
+        ) = _quoteMock(true, 1);
 
         uint256 minAmountLD = uint256(int256(BRIDGE_AMOUNT) + sgFee); // sgFee is negative for fee and positive for rewards
         uint32 slippage = uint32((BRIDGE_AMOUNT - minAmountLD) * 1e9 / BRIDGE_AMOUNT); // percentage
@@ -423,7 +451,7 @@ contract StargateV2Test is BaseTest {
         vm.stopPrank();
     }
 
-    function test_stargate_v2_fork_bridge_taxi_balance() public {
+    function test_integ_externalCall_stargate_v2_fork_bridge_taxi_balance() public {
         // 1. quote the fee
         (uint256 fee, int256 sgFee,,) = _quote(false, 1);
 
@@ -509,6 +537,31 @@ contract StargateV2Test is BaseTest {
         param = IStargate.MessagingFee(msgFee, 0);
 
         return (msgFee, oftFeeDetails[0].amount, sendParam, param);
+    }
+
+    function _quoteMock(
+        bool busMode,
+        uint256 slippage
+    )
+        private
+        returns (uint256, int256, IStargate.SendParam memory sendParam, IStargate.MessagingFee memory param)
+    {
+        sendParam = IStargate.SendParam({
+            dstEid: POLYGON_EID,
+            to: bytes32(uint256(uint160(user))),
+            amountLD: BRIDGE_AMOUNT,
+            minAmountLD: (BRIDGE_AMOUNT * (FEE_DENOMINATOR - slippage)) / FEE_DENOMINATOR,
+            extraOptions: new bytes(0),
+            composeMsg: new bytes(0),
+            oftCmd: busMode ? new bytes(1) : new bytes(0)
+        });
+
+        uint256 msgFee = 0.001 ether;
+        int256 sgFee = -int256(BRIDGE_AMOUNT * 1 / 1000);
+
+        param = IStargate.MessagingFee(msgFee, 0);
+
+        return (msgFee, sgFee, sendParam, param);
     }
 
     function toReceiver(address r) internal pure returns (bytes32 receiver) {

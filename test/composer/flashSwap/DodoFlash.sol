@@ -6,7 +6,7 @@ import {console} from "forge-std/console.sol";
 import {IERC20All} from "../../shared/interfaces/IERC20All.sol";
 import {BaseTest} from "../../shared/BaseTest.sol";
 import {Chains, Tokens, Lenders} from "../../data/LenderRegistry.sol";
-import "../utils/CalldataLib.sol";
+import "contracts/utils/CalldataLib.sol";
 import {DexPayConfig, DodoSelector} from "contracts/1delta/composer/enums/MiscEnums.sol";
 import {ComposerPlugin, IComposerLike} from "plugins/ComposerPlugin.sol";
 
@@ -18,9 +18,9 @@ interface DVMF {
 
 /**
  * We test all morpho blue operations
- * - supply, supplyCollateral, borrow, repay, encodeErc4646Deposit, encodeErc4646Withdraw
+ * - supply, supplyCollateral, borrow, repay, encodeErc4626Deposit, encodeErc4646Withdraw
  */
-contract DodoLightTest is BaseTest {
+contract FlashSwapTestDodo is BaseTest {
     using CalldataLib for bytes;
 
     uint256 internal constant forkBlock = 27970029;
@@ -31,11 +31,7 @@ contract DodoLightTest is BaseTest {
 
     uint256 internal constant DODO_WETH_JOJO_INDEX = 0;
 
-    address internal USDC;
     address internal WETH;
-    address internal cbETH;
-    address internal cbBTC;
-    address internal LBTC;
     address internal constant SUPEROBETH = 0xDBFeFD2e8460a6Ee4955A68582F85708BAEA60A3;
     address internal constant JOJO = 0x0645bC5cDff2376089323Ac20Df4119e48e4BCc4;
 
@@ -44,15 +40,19 @@ contract DodoLightTest is BaseTest {
         string memory chainName = Chains.BASE;
 
         _init(chainName, forkBlock, true);
-        LBTC = chain.getTokenAddress(Tokens.LBTC);
         WETH = chain.getTokenAddress(Tokens.WETH);
-        cbETH = chain.getTokenAddress(Tokens.CBETH);
-        cbBTC = chain.getTokenAddress(Tokens.CBBTC);
-        USDC = chain.getTokenAddress(Tokens.USDC);
         oneDV2 = ComposerPlugin.getComposer(chainName);
     }
 
-    function dodoPoolWETHJOJOSwap(address receiver, uint256 amount, bytes memory callbackData) internal view returns (bytes memory data) {
+    function dodoPoolWETHJOJOSwap(
+        address receiver,
+        uint256 amount,
+        bytes memory callbackData
+    )
+        internal
+        view
+        returns (bytes memory data)
+    {
         // create head config
         data = CalldataLib.swapHead(
             amount,
@@ -66,13 +66,13 @@ contract DodoLightTest is BaseTest {
             receiver,
             DODO_WETH_JOJO,
             DodoSelector.SELL_QUOTE, // sell quote
-            0,
+            DODO_WETH_JOJO_INDEX,
             DexPayConfig.FLASH, // payMode <- user pays
             callbackData
         );
     }
 
-    function test_light_flash_swap_dodo_single() external {
+    function test_integ_flashSwap_flash_swap_dodo_single() external {
         vm.assume(user != address(0));
 
         address tokenIn = WETH;

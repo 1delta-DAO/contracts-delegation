@@ -3,7 +3,7 @@ import {getAddress} from "ethers/lib/utils";
 export const templateBalancerV2Test = (
     chainKey: string,
     lenders: {entityName: string; entityId: string; pool: string; assetType: string}[],
-    isCancun = false
+    isCancun = false,
 ) => {
     // Generate private address declarations
     let addressDeclarations = "";
@@ -29,7 +29,7 @@ export const templateBalancerV2Test = (
         individualTestFunctions += isCancun
             ? ``
             : `
-    function test_flash_loan_balancerV2_type_${lender.entityName.toLowerCase()}_pool_with_callbacks() public {
+    function test_unit_lending_flashloans_balancerV2_callback_${lender.entityName.toLowerCase()}Pool() public {
         // mock implementation
         replaceLendingPoolWithMock(${lender.entityName});
 
@@ -57,12 +57,10 @@ export const templateBalancerV2Test = (
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
-import {console} from "forge-std/console.sol";
-import {Vm} from "forge-std/Vm.sol";
-import {Chains, Lenders, Tokens} from "test/data/LenderRegistry.sol";
+import {Chains, Tokens} from "test/data/LenderRegistry.sol";
 import {DeltaErrors} from "contracts/1delta/shared/errors/Errors.sol";
 import {ComposerPlugin, IComposerLike} from "plugins/ComposerPlugin.sol";
-import {CalldataLib} from "test/composer/utils/CalldataLib.sol";
+import {CalldataLib} from "contracts/utils/CalldataLib.sol";
 import {BaseTest} from "test/shared/BaseTest.sol";
 import {Slots} from "contracts/1delta/composer/slots/Slots.sol";
 import {BalancerV2MockVault, IVault} from "test/mocks/BalancerV2MockVault.sol";
@@ -100,7 +98,7 @@ ${tokenDeclarations}
         mockVault = new BalancerV2MockVault();
     }
 ${individualTestFunctions}
-    function test_flash_loan_balancerV2_type_wrongCaller_revert() public {
+    function test_unit_lending_flashloans_balancerV2_callback_wrongCallerRevert() public {
                 replaceLendingPoolWithMock(validPools[0].poolAddr);
 
         address[] memory tokens = new address[](1);
@@ -115,7 +113,7 @@ ${individualTestFunctions}
     }
 
 
-    function test_flash_loan_balancerV2_type_fuzz_invalidPoolIds(uint8 poolId) public {
+    function test_unit_lending_flashloans_balancerV2_callback_fuzzInvalidPoolIds(uint8 poolId) public {
         replaceLendingPoolWithMock(${lenders[0]?.entityName || "address(0)"});
 
         for (uint256 i = 0; i < validPools.length; i++) {

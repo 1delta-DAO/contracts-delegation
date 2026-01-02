@@ -34,6 +34,12 @@ abstract contract MorphoLending is ERC20Selectors, Masks {
     bytes32 private constant MORPHO_WITHDRAW_COLLATERAL = 0x8720316d00000000000000000000000000000000000000000000000000000000;
 
     /**
+     * @notice Borrows from Morpho Blue lending pool
+     * @dev Supports borrowing by assets or shares. We allow all morphos (incl forks).
+     * @param currentOffset Current position in the calldata
+     * @param callerAddress Address of the caller
+     * @return Updated calldata offset after processing
+     * @custom:calldata-offset-table
      * | Offset | Length (bytes) | Description                     |
      * |--------|----------------|---------------------------------|
      * | 0      | 20             | MarketParams.loanToken          |
@@ -106,7 +112,12 @@ abstract contract MorphoLending is ERC20Selectors, Masks {
     }
 
     /**
-     * This deposits LENDING TOKEN
+     * @notice Deposits lending token to Morpho Blue
+     * @dev This deposits LENDING TOKEN. Supports deposits by assets or shares. We allow all morphos (incl forks).
+     * @param currentOffset Current position in the calldata
+     * @param callerAddress Address of the caller
+     * @return Updated calldata offset after processing
+     * @custom:calldata-offset-table
      * | Offset | Length (bytes) | Description                     |
      * |--------|----------------|---------------------------------|
      * | 0      | 20             | MarketParams.loanToken          |
@@ -213,7 +224,12 @@ abstract contract MorphoLending is ERC20Selectors, Masks {
     }
 
     /**
-     * This deposits COLLATERAL - never uses shares
+     * @notice Deposits collateral to Morpho Blue
+     * @dev This deposits COLLATERAL - never uses shares. We allow all morphos (incl forks).
+     * @param currentOffset Current position in the calldata
+     * @param callerAddress Address of the caller
+     * @return Updated calldata offset after processing
+     * @custom:calldata-offset-table
      * | Offset | Length (bytes) | Description                     |
      * |--------|----------------|---------------------------------|
      * | 0      | 20             | MarketParams.loanToken          |
@@ -246,7 +262,7 @@ abstract contract MorphoLending is ERC20Selectors, Masks {
             mstore(add(ptr, 132), shr(128, lltvAndAmount)) // MarketParams.lltv
 
             // we ignore flags as this only allows assets
-            let amountToDeposit := and(UINT120_MASK, lltvAndAmount)
+            let amountToDeposit := and(UINT112_MASK, lltvAndAmount)
 
             /**
              * if the amount is zero, we assume that the contract balance is deposited
@@ -292,7 +308,7 @@ abstract contract MorphoLending is ERC20Selectors, Masks {
                     morpho,
                     0x0,
                     ptr,
-                    add(calldataLength, 292), // = 10 * 32 + 4
+                    add(calldataLength, 292), // = 9 * 32 + 4
                     0x0,
                     0x0 //
                 )
@@ -305,7 +321,23 @@ abstract contract MorphoLending is ERC20Selectors, Masks {
         return currentOffset;
     }
 
-    /// @notice Withdraw collateral from Morpho Blue
+    /**
+     * @notice Withdraws collateral from Morpho Blue
+     * @param currentOffset Current position in the calldata
+     * @param callerAddress Address of the caller
+     * @return Updated calldata offset after processing
+     * @custom:calldata-offset-table
+     * | Offset | Length (bytes) | Description                     |
+     * |--------|----------------|---------------------------------|
+     * | 0      | 20             | MarketParams.loanToken          |
+     * | 20     | 20             | MarketParams.collateralToken    |
+     * | 40     | 20             | MarketParams.oracle             |
+     * | 60     | 20             | MarketParams.irm                |
+     * | 80     | 16             | MarketParams.lltv               |
+     * | 96     | 16             | Amount                          |
+     * | 112    | 20             | receiver                        |
+     * | 132    | 20             | morpho                          |
+     */
     function _encodeMorphoWithdrawCollateral(uint256 currentOffset, address callerAddress) internal returns (uint256) {
         assembly {
             // morpho should be the primary choice
@@ -334,7 +366,7 @@ abstract contract MorphoLending is ERC20Selectors, Masks {
             let morpho := shr(96, calldataload(add(currentOffset, 132)))
 
             // get amount, ignore flags
-            lltvAndAmount := and(UINT120_MASK, lltvAndAmount)
+            lltvAndAmount := and(UINT112_MASK, lltvAndAmount)
 
             // technically not needed, hwoever, we keep it consistent
             // to withdraw all like this - maxUnit112 means read collateral balance
@@ -373,7 +405,24 @@ abstract contract MorphoLending is ERC20Selectors, Masks {
         return currentOffset;
     }
 
-    /// @notice Withdraw borrowAsset from Morpho
+    /**
+     * @notice Withdraws borrow asset from Morpho Blue
+     * @dev Supports withdrawal by assets or shares
+     * @param currentOffset Current position in the calldata
+     * @param callerAddress Address of the caller
+     * @return Updated calldata offset after processing
+     * @custom:calldata-offset-table
+     * | Offset | Length (bytes) | Description                     |
+     * |--------|----------------|---------------------------------|
+     * | 0      | 20             | MarketParams.loanToken          |
+     * | 20     | 20             | MarketParams.collateralToken    |
+     * | 40     | 20             | MarketParams.oracle             |
+     * | 60     | 20             | MarketParams.irm                |
+     * | 80     | 16             | MarketParams.lltv               |
+     * | 96     | 16             | Amount                          |
+     * | 112    | 20             | receiver                        |
+     * | 132    | 20             | morpho                          |
+     */
     function _encodeMorphoWithdraw(uint256 currentOffset, address callerAddress) internal returns (uint256) {
         assembly {
             // morpho should be the primary choice
@@ -388,7 +437,7 @@ abstract contract MorphoLending is ERC20Selectors, Masks {
             let lltvAndAmount := calldataload(add(currentOffset, 80))
             mstore(add(ptr, 132), shr(128, lltvAndAmount)) // MarketParams.lltv
 
-            let withdrawAm := and(UINT120_MASK, lltvAndAmount)
+            let withdrawAm := and(UINT112_MASK, lltvAndAmount)
 
             mstore(add(ptr, 228), callerAddress) // onBehalfOf
             mstore(add(ptr, 260), shr(96, calldataload(add(currentOffset, 112)))) // receiver
@@ -456,7 +505,26 @@ abstract contract MorphoLending is ERC20Selectors, Masks {
         return currentOffset;
     }
 
-    /// @notice Repay to morpho blue
+    /**
+     * @notice Repays debt to Morpho Blue
+     * @dev Supports repayment by assets or shares. Max amount repays safe maximum.
+     * @param currentOffset Current position in the calldata
+     * @param callerAddress Address of the caller
+     * @return tempData Updated calldata offset after processing
+     * @custom:calldata-offset-table
+     * | Offset | Length (bytes) | Description                     |
+     * |--------|----------------|---------------------------------|
+     * | 0      | 20             | MarketParams.loanToken          |
+     * | 20     | 20             | MarketParams.collateralToken    |
+     * | 40     | 20             | MarketParams.oracle             |
+     * | 60     | 20             | MarketParams.irm                |
+     * | 80     | 16             | MarketParams.lltv               |
+     * | 96     | 16             | Amount                          |
+     * | 112    | 20             | receiver                        |
+     * | 132    | 20             | morpho                          |
+     * | 152    | 2              | calldataLength                  |
+     * | 154    | calldataLength | calldata                        |
+     */
     function _morphoRepay(
         uint256 currentOffset,
         address callerAddress
@@ -482,7 +550,7 @@ abstract contract MorphoLending is ERC20Selectors, Masks {
             tempData := calldataload(add(currentOffset, 80))
             mstore(add(ptr, 132), shr(128, tempData)) // MarketParams.lltv
 
-            let repayAm := and(UINT120_MASK, tempData)
+            let repayAm := and(UINT112_MASK, tempData)
             // skip amounts
 
             // receiver address

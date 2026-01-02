@@ -82,6 +82,8 @@ library ComposerCommands {
     uint256 internal constant SWAPS = 0x10;
     uint256 internal constant EXT_CALL = 0x20;
     uint256 internal constant EXT_TRY_CALL = 0x21;
+    uint256 internal constant EXT_CALL_WITH_REPLACE = 0x22;
+    uint256 internal constant EXT_TRY_CALL_WITH_REPLACE = 0x23;
     uint256 internal constant LENDING = 0x30;
     uint256 internal constant TRANSFERS = 0x40;
     uint256 internal constant PERMIT = 0x50;

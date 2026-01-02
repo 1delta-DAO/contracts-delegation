@@ -12,7 +12,7 @@ npx hardhat verify --network sonic 0xB7ea94340e65CC68d1274aE483dfBE593fD6f21e --
 
 npx hardhat verify --network hemi 0xbaEe36c9ef69b0F8454e379314c7CBA628Fc6B61 --contract contracts/1delta/composer/chains/hemi/Composer.sol:OneDeltaComposerHemi
 
-npx hardhat verify --network taiko 0xA15fd23A1F1bdE0a5fe05025C24628eBA2E1D25f --contract contracts/1delta/composer/chains/taiko/Composer.sol:OneDeltaComposerTaiko
+npx hardhat verify --network taiko 0xb5D7E44438e7b8c94b4FE3aB466259cC6d2ab0B8 --contract contracts/1delta/composer/chains/taiko/Composer.sol:OneDeltaComposerTaiko
 
 npx hardhat verify --network metis 0x13D9c35f4901491Ac4FFebd3100238BBfFBD7181 --contract contracts/1delta/composer/chains/metis-andromeda/Composer.sol:OneDeltaComposerMetisAndromeda
 
@@ -24,7 +24,7 @@ npx hardhat verify --network mode 0x85D682FA4115f6a1Ed91170E705A50D532e3B6BD --c
 
 npx hardhat verify --network scroll 0x97648606fcc22Bd96F87345Ac83Bd6cFCdF0ACBa --contract contracts/1delta/composer/chains/scroll/Composer.sol:OneDeltaComposerScroll
 
-npx hardhat verify --network core 0x8a5b01FD188785D0eb4578899f1aECD74b4C3071 --contract contracts/1delta/composer/chains/core/Composer.sol:OneDeltaComposerCore
+npx hardhat verify --network core 0xCDef0A216fcEF809258aA4f341dB1A5aB296ea72 --contract contracts/1delta/composer/chains/core/Composer.sol:OneDeltaComposerCore
 
 npx hardhat verify --network fantom 0xA453ba397c61B0c292EA3959A858821145B2707F --contract contracts/1delta/composer/chains/fantom-opera/Composer.sol:OneDeltaComposerFantomOpera
 
@@ -58,4 +58,8 @@ npx hardhat verify --network morph 0x7e2D250E4FD0EeD6BD2cB3DC525A2b9f12508152 --
 
 npx hardhat verify --network plasma 0x91549bad7A081742dEC72E2CF55a2477A880a798 --contract contracts/1delta/composer/chains/plasma/Composer.sol:OneDeltaComposerPlasma
 
-npx hardhat verify --network moonbeam 0x7e2D250E4FD0EeD6BD2cB3DC525A2b9f12508152 --contract contracts/1delta/composer/chains/moonbeam/Composer.sol:OneDeltaComposerMoonbeam
+npx hardhat verify --network moonbeam 0x8a5b01FD188785D0eb4578899f1aECD74b4C3071 --contract contracts/1delta/composer/chains/moonbeam/Composer.sol:OneDeltaComposerMoonbeam
+
+npx hardhat verify --network sei 0x816EBC5cb8A5651C902Cb06659907A93E574Db0B --contract contracts/1delta/composer/chains/sei/Composer.sol:OneDeltaComposerSei
+
+npx hardhat verify --network monad 0x816EBC5cb8A5651C902Cb06659907A93E574Db0B --contract contracts/1delta/composer/chains/monad/Composer.sol:OneDeltaComposerMonad

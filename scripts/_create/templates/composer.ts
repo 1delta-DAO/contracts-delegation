@@ -17,7 +17,10 @@ import {UniversalFlashLoan} from "./flashLoan/UniversalFlashLoan.sol";
 contract OneDeltaComposer${name} is BaseComposer, UniversalFlashLoan, SwapCallbacks {
 
     /**
-     * Execute a set of packed operations
+     * @notice Execute a set of packed operations
+     * @param callerAddress Address of the original caller
+     * @param currentOffset Current position in the calldata
+     * @param calldataLength Length of remaining calldata
      */
     function _deltaComposeInternal(
         address callerAddress,
@@ -32,6 +35,13 @@ contract OneDeltaComposer${name} is BaseComposer, UniversalFlashLoan, SwapCallba
             );
     }
 
+    /**
+     * @notice Executes universal flash loan operations
+     * @dev Routes flash loan requests to appropriate provider
+     * @param currentOffset Current position in the calldata
+     * @param callerAddress Address of the original caller
+     * @return Updated calldata offset after processing
+     */
     function _universalFlashLoan(
         uint256 currentOffset,
         address callerAddress

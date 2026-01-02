@@ -15,8 +15,14 @@ contract BalancerV2FlashLoanCallback is Slots, Masks, DeltaErrors {
     // Balancer V2 vaults
     ${addressContants}
     /**
-     * @dev Balancer flash loan call
-     * Gated via flash loan gateway flag to prevent calls from sources other than this contract
+     * @notice Handles Balancer V2 flash loan callback
+     * @dev Gated via flash loan gateway flag to prevent calls from sources other than this contract
+     * @custom:calldata-offset-table
+     * | Offset | Length (bytes) | Description                  |
+     * |--------|----------------|------------------------------|
+     * | 0      | 20             | origCaller                   |
+     * | 20     | 1              | poolId                       |
+     * | 21     | Variable       | composeOperations            |
      */
     function receiveFlashLoan(
         address[] calldata,
@@ -48,7 +54,7 @@ contract BalancerV2FlashLoanCallback is Slots, Masks, DeltaErrors {
             // Locking the callback again here (instead of after the flashLoan call)
             // prevents this scenario!
             ${cancun ? "tstore(FLASH_LOAN_GATEWAY_SLOT, 0)" : "sstore(FLASH_LOAN_GATEWAY_SLOT, 1)"}
-            // Get the original caller from the beginnig of the calldata
+            // Get the original caller from the beginning of the calldata
             // From here on we have validated that the origCaller
             // was attached in the deltaCompose function
             // Otherwise, this would be a vulnerability
@@ -62,6 +68,13 @@ contract BalancerV2FlashLoanCallback is Slots, Masks, DeltaErrors {
         _deltaComposeInternal(origCaller, calldataOffset, calldataLength);
     }
 
+    /**
+     * @notice Internal function to execute compose operations
+     * @dev Override point for flash loan callbacks to execute compose operations
+     * @param callerAddress Address of the original caller
+     * @param offset Current calldata offset
+     * @param length Length of remaining calldata
+     */
     function _deltaComposeInternal(address callerAddress, uint256 offset, uint256 length) internal virtual {}
 }
 `

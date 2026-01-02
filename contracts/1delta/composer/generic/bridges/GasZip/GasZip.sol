@@ -6,8 +6,10 @@ import {BaseUtils} from "contracts/1delta/composer/generic/BaseUtils.sol";
 contract GasZip is BaseUtils {
     /**
      * @notice Handles GasZip bridging (GasZip v1)
-     * https://dev.gas.zip/gas/code-examples/evm-deposit/contract-forwarder
-     *
+     * @dev https://dev.gas.zip/gas/code-examples/evm-deposit/contract-forwarder
+     * @param currentOffset Current position in the calldata
+     * @return Updated calldata offset after processing
+     * @custom:calldata-offset-table
      * | Offset | Length (bytes) | Description                  |
      * |--------|----------------|------------------------------|
      * | 0      | 20             | gasZipRouter                 |

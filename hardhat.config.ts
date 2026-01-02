@@ -151,6 +151,14 @@ const config: HardhatUserConfig = {
                 },
             },
             {
+                network: "monad",
+                chainId: 143,
+                urls: {
+                    browserURL: "https://xdcscan.com/",
+                    apiURL: "https://api.etherscan.io/v2/api?chainid=143",
+                },
+            },
+            {
                 network: "soneium",
                 chainId: 1868,
                 urls: {
@@ -215,6 +223,14 @@ const config: HardhatUserConfig = {
                 },
             },
             {
+                network: "sei",
+                chainId: 1329,
+                urls: {
+                    apiURL: "https://api.etherscan.io/v2/api?chainid=1329",
+                    browserURL: "https://katanascan.com/",
+                },
+            },
+            {
                 network: "unichain",
                 chainId: 130,
                 urls: {
@@ -236,6 +252,7 @@ const config: HardhatUserConfig = {
         //     mantle: process.env.ETHERSCAN_API_KEY ?? "abc",
         //     arbitrumOne: process.env.ARBISCAN_API_KEY ?? "",
         //     mainnet: process.env.ETHERSCAN_API_KEY ?? "",
+        //     sei: process.env.ETHERSCAN_API_KEY ?? "",
         //     polygon: process.env.POLYGONSCAN_API_KEY ?? "",
         //     taiko: process.env.TAIKOSCAN_API_KEY ?? "",
         //     linea: process.env.ETHERSCAN_API_KEY ?? "",
@@ -287,36 +304,6 @@ const config: HardhatUserConfig = {
             live: false,
             accounts,
         },
-        hardhat: {
-            mining: {
-                // auto: false,
-                // interval: 0
-            },
-            // allowUnlimitedContractSize: true,
-
-            // forking: {
-            //   blockNumber: 53244031,
-            //   url: `https://rpc.ankr.com/polygon`,
-            // },
-            // forking:{
-            //   blockNumber: 18748428,
-            //   url: 'https://rpc.ankr.com/eth'
-            // },
-            forking: {
-                blockNumber: 320071,
-                url: `https://rpc.ankr.com/taiko`,
-            },
-            // forking: {
-            //   blockNumber: 35180036,
-            //   url: `https://rpc.ankr.com/bsc`,
-            // },
-        },
-        rinkeby: {
-            url: `https://rinkeby.infura.io/v3/${process.env.INFURA_API_KEY}`,
-            accounts,
-            chainId: 4,
-            live: true,
-        },
         taiko: {
             url: "https://rpc.taiko.xyz",
             accounts,
@@ -326,13 +313,6 @@ const config: HardhatUserConfig = {
             url: "https://rpc.api.moonbeam.network",
             accounts,
             chainId: 1284,
-        },
-        moonbase: {
-            url: "https://rpc.testnet.moonbeam.network",
-            accounts,
-            chainId: 1287,
-            live: true,
-            gas: 5198000,
         },
         fantom: {
             url: "https://rpcapi.fantom.network",
@@ -362,6 +342,12 @@ const config: HardhatUserConfig = {
             url: "https://rpc.coredao.org",
             accounts,
             chainId: 1116,
+            live: true,
+        },
+        sei: {
+            url: "https://sei.drpc.org",
+            accounts,
+            chainId: 1329,
             live: true,
         },
         scroll: {
@@ -425,6 +411,12 @@ const config: HardhatUserConfig = {
             chainId: 34443,
             live: true,
         },
+        monad: {
+            url: "https://rpc-mainnet.monadinfra.com",
+            accounts,
+            chainId: 143,
+            live: true,
+        },
         avalanche: {
             url: "https://api.avax.network/ext/bc/C/rpc",
             accounts,
@@ -474,7 +466,7 @@ const config: HardhatUserConfig = {
             live: true,
         },
         cronos: {
-            url: "https://rpc.vvs.finance",
+            url: "https://1rpc.io/cro",
             accounts,
             chainId: 25,
             live: true,
@@ -654,17 +646,6 @@ const config: HardhatUserConfig = {
                     evmVersion: "paris",
                 },
             },
-            // ma
-            "contracts/1delta/contracts/1delta/shared/MetaAggregator.sol": {
-                version: "0.8.28",
-                settings: {
-                    optimizer: {
-                        enabled: true,
-                        runs: 1_000_000,
-                    },
-                    evmVersion: "paris",
-                },
-            },
             // forwarder
             "contracts/1delta/composer/generic/CallForwarder.sol": {
                 version: "0.8.28",
@@ -779,6 +760,16 @@ const config: HardhatUserConfig = {
                 },
             },
             "contracts/1delta/composer/chains/pulsechain/Composer.sol": {
+                version: "0.8.28",
+                settings: {
+                    optimizer: {
+                        enabled: true,
+                        runs: 10_000,
+                    },
+                    evmVersion: "cancun",
+                },
+            },
+            "contracts/1delta/composer/chains/sei/Composer.sol": {
                 version: "0.8.28",
                 settings: {
                     optimizer: {
@@ -1008,22 +999,22 @@ const config: HardhatUserConfig = {
                     evmVersion: "cancun",
                 },
             },
-            "contracts/external-protocols/misc/UniswapMulticall.sol": {
-                version: "0.7.6",
-                settings: {
-                    optimizer: {
-                        enabled: true,
-                        runs: 10_000_000,
-                    },
-                    evmVersion: "istanbul",
-                },
-            },
             "contracts/1delta/composer/chains/base/Composer.sol": {
                 version: "0.8.28",
                 settings: {
                     optimizer: {
                         enabled: true,
                         runs: 500,
+                    },
+                    evmVersion: "cancun",
+                },
+            },
+            "contracts/1delta/composer/chains/monad/Composer.sol": {
+                version: "0.8.28",
+                settings: {
+                    optimizer: {
+                        enabled: true,
+                        runs: 10_000,
                     },
                     evmVersion: "cancun",
                 },
@@ -1046,16 +1037,6 @@ const config: HardhatUserConfig = {
                         runs: 1_000,
                     },
                     evmVersion: "shanghai",
-                },
-            },
-            "contracts/1delta/quoter/MoeJoeLens.sol": {
-                version: "0.8.28",
-                settings: {
-                    optimizer: {
-                        enabled: true,
-                        runs: 1_000_000,
-                    },
-                    evmVersion: "paris",
                 },
             },
             "contracts/external-protocols/misc/CometLens.sol": {

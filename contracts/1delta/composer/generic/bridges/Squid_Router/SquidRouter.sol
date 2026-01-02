@@ -6,10 +6,11 @@ import {BaseUtils} from "contracts/1delta/composer/generic/BaseUtils.sol";
 contract SquidRouter is BaseUtils {
     /**
      * @notice Handles SquidRouter bridging operations
+     * @dev Decodes gateway and token addresses, then forwards to bridge call handler
+     * @dev Refactored to fix the stack too deep issue
      * @param currentOffset Current position in the calldata
      * @return Updated calldata offset after processing
-     *
-     * Generic layout:
+     * @custom:calldata-offset-table
      * | Offset | Length (bytes) | Description                                |
      * |--------|----------------|--------------------------------------------|
      * | 0      | 20             | gateway                                    |
@@ -29,8 +30,14 @@ contract SquidRouter is BaseUtils {
         return _squidRouterBridgeCall(gateway, asset, currentOffset);
     }
 
-    /*
-     *
+    /**
+     * @notice Executes the actual SquidRouter bridge call with encoded parameters
+     * @dev Handles variable-length fields for bridgedTokenSymbol, destinationChain, destinationAddress, and payload
+     * @param gateway The SquidRouter gateway address
+     * @param asset The token to be bridged
+     * @param currentOffset Current position in the calldata
+     * @return ptr Updated calldata offset after processing
+     * @custom:calldata-offset-table
      * | Offset       | Length (bytes) | Description                                |
      * |--------------|----------------|--------------------------------------------|
      * | 0            | 2              | bridgedTokenSymbol.length: sl              |
@@ -41,10 +48,10 @@ contract SquidRouter is BaseUtils {
      * | 24           | 16             | nativeAmount                               |
      * | 40           | 20             | gasRefundRecipient                         |
      * | 60           | 1              | enableExpress                              |
-     * | 61           | s1             | bridgedTokenSymbol                         |
-     * | 61+s1        | dl             | destinationChain                           |
-     * | 61+s1+dl     | al             | destinationAddress                         |
-     * | 61+s1+dl+al  | pl             | payload                                    |
+     * | 61           | sl             | bridgedTokenSymbol                         |
+     * | 61+sl        | dl             | destinationChain                           |
+     * | 61+sl+dl     | al             | destinationAddress                         |
+     * | 61+sl+dl+al  | pl             | payload                                    |
      */
     function _squidRouterBridgeCall(address gateway, address asset, uint256 currentOffset) private returns (uint256 ptr) {
         assembly {

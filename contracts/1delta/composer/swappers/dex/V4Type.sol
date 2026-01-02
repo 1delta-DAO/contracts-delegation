@@ -42,7 +42,18 @@ abstract contract V4TypeGeneric is ERC20Selectors, Masks {
 
     constructor() {}
 
-    /*
+    /**
+     * @notice Swaps exact input on Uniswap V4 pools
+     * @dev Can only be executed within `manager.unlock()`. Cannot unlock multiple times.
+     * @param fromAmount Input amount
+     * @param tokenIn Input token address
+     * @param tokenOut Output token address
+     * @param receiver Receiver address
+     * @param currentOffset Current position in the calldata
+     * @param callerAddress Address of the caller
+     * @return receivedAmount Output amount
+     * @return tempVar Updated calldata offset after processing
+     * @custom:calldata-offset-table
      * | Offset | Length (bytes) | Description          |
      * |--------|----------------|----------------------|
      * | 0      | 20             | hooks                |

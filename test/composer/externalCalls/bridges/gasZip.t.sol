@@ -5,8 +5,9 @@ import {BaseTest} from "test/shared/BaseTest.sol";
 import {Chains, Tokens} from "test/data/LenderRegistry.sol";
 import {CallForwarder} from "contracts/1delta/composer/generic/CallForwarder.sol";
 import {ComposerPlugin, IComposerLike} from "plugins/ComposerPlugin.sol";
-import {CalldataLib} from "test/composer/utils/CalldataLib.sol";
+import {CalldataLib} from "contracts/utils/CalldataLib.sol";
 import {console} from "forge-std/console.sol";
+import {GasZipMock} from "test/mocks/GasZipMock.sol";
 
 contract GasZipTest is BaseTest {
     using CalldataLib for bytes;
@@ -17,7 +18,7 @@ contract GasZipTest is BaseTest {
     IComposerLike private composer;
     address private gasZipRouter = 0x2a37D63EAdFe4b4682a3c28C1c2cD4F109Cc2762;
 
-    function setUp() public {
+    function setUp() public virtual {
         rpcOverrides[Chains.ETHEREUM_MAINNET] = "wss://0xrpc.io/eth";
         _init(Chains.ETHEREUM_MAINNET, 0, true);
 
@@ -30,7 +31,18 @@ contract GasZipTest is BaseTest {
         vm.label(gasZipRouter, "gasZipRouter");
     }
 
-    function test_gaszip_bridge() public {
+    function setUpUnit() internal {
+        _init(Chains.ETHEREUM_MAINNET, 0, false);
+
+        callForwarder = new CallForwarder();
+
+        composer = ComposerPlugin.getComposer(Chains.ETHEREUM_MAINNET);
+
+        vm.label(address(callForwarder), "CallForwarder");
+        vm.label(address(composer), "Composer");
+    }
+
+    function test_integ_externalCall_gaszip_bridge() public {
         deal(address(callForwarder), 1 ether);
         bytes memory data = CalldataLib.encodeGasZipEvmBridge(gasZipRouter, user, 1 ether, 10);
         data = CalldataLib.encodeExternalCall(address(callForwarder), 0, false, data);
@@ -42,7 +54,7 @@ contract GasZipTest is BaseTest {
         composer.deltaCompose(data);
     }
 
-    function test_gaszip_bridge_balance() public {
+    function test_integ_externalCall_gaszip_bridge_balance() public {
         deal(address(callForwarder), 1 ether);
         bytes memory data = CalldataLib.encodeGasZipEvmBridge(gasZipRouter, user, 0, 10);
         data = CalldataLib.encodeExternalCall(address(callForwarder), 0, false, data);
@@ -54,7 +66,8 @@ contract GasZipTest is BaseTest {
         composer.deltaCompose(data);
     }
 
-    function test_gaszip_mock() public {
+    function test_unit_externalCall_gaszip_mock() public {
+        setUpUnit();
         deal(address(callForwarder), 1 ether);
         GasZipMock gz = new GasZipMock(10, bytes32(bytes20(uint160(user))), 1 ether);
         vm.label(address(gz), "GasZipMock");
@@ -63,30 +76,5 @@ contract GasZipTest is BaseTest {
 
         vm.prank(user);
         composer.deltaCompose(data);
-    }
-}
-
-contract GasZipMock {
-    constructor(uint256 destinationChains, bytes32 to, uint256 amount) {
-        expectedDestinationChains = destinationChains;
-        expectedTo = to;
-        expectedAmount = amount;
-    }
-
-    uint256 public expectedDestinationChains;
-    bytes32 public expectedTo;
-    uint256 public expectedAmount;
-
-    function deposit(uint256 destinationChains, bytes32 to) external payable {
-        if (destinationChains != expectedDestinationChains) {
-            console.log("Invalid destination chain", destinationChains);
-            revert("Invalid destination chain");
-        }
-        if (to != expectedTo) {
-            revert("Invalid receiver");
-        }
-        if (msg.value != expectedAmount) {
-            revert("Invalid amount");
-        }
     }
 }

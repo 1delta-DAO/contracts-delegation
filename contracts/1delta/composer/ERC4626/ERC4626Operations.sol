@@ -21,7 +21,7 @@ abstract contract ERC4626Operations is ERC4626Transfers {
          * ERC6464 deposit
          */
         if (erc4626Operation == ERC4626Ids.DEPOSIT) {
-            currentOffset = _encodeErc4646Deposit(currentOffset);
+            currentOffset = _encodeErc4626Deposit(currentOffset);
         }
         /**
          * ERC6464 withdraw

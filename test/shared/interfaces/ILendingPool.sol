@@ -100,7 +100,14 @@ interface ILendingPool {
      * @param referralCode The referral code used
      *
      */
-    event FlashLoan(address indexed target, address indexed initiator, address indexed asset, uint256 amount, uint256 premium, uint16 referralCode);
+    event FlashLoan(
+        address indexed target,
+        address indexed initiator,
+        address indexed asset,
+        uint256 amount,
+        uint256 premium,
+        uint16 referralCode
+    );
 
     /**
      * @dev Emitted when the pause is triggered.
@@ -259,7 +266,14 @@ interface ILendingPool {
      * to receive the underlying collateral asset directly
      *
      */
-    function liquidationCall(address collateralAsset, address debtAsset, address user, uint256 debtToCover, bool receiveAToken) external;
+    function liquidationCall(
+        address collateralAsset,
+        address debtAsset,
+        address user,
+        uint256 debtToCover,
+        bool receiveAToken
+    )
+        external;
 
     /**
      * @dev Allows smartcontracts to access the liquidity of the pool within one transaction,

@@ -1,18 +1,17 @@
-
-import { ethers } from "hardhat";
-import { OneDeltaComposerMode__factory } from "../../../types";
-import { Chain } from "@1delta/asset-registry";
+import {ethers} from "hardhat";
+import {OneDeltaComposerMode__factory} from "../../../types";
+import {Chain} from "@1delta/chain-registry";
 
 async function main() {
-    const accounts = await ethers.getSigners()
-    const operator = accounts[1]
+    const accounts = await ethers.getSigners();
+    const operator = accounts[1];
     const chainId = await operator.getChainId();
-    if (String(chainId) !== Chain.MODE) throw new Error("IC")
-    console.log("operator", operator.address, "on", chainId)
-    const composer = await new OneDeltaComposerMode__factory(operator).deploy()
-    await composer.deployed()
+    if (String(chainId) !== Chain.MODE) throw new Error("IC");
+    console.log("operator", operator.address, "on", chainId);
+    const composer = await new OneDeltaComposerMode__factory(operator).deploy();
+    await composer.deployed();
 
-    console.log("deployed expected to", composer.address)
+    console.log("deployed expected to", composer.address);
 }
 
 main()

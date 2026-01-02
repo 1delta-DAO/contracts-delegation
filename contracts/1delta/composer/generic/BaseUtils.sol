@@ -5,7 +5,7 @@ import {ERC20Selectors} from "contracts/1delta/shared/selectors/ERC20Selectors.s
 import {Masks} from "contracts/1delta/shared/masks/Masks.sol";
 import {DeltaErrors} from "contracts/1delta/shared/errors/Errors.sol";
 
-contract BaseUtils is ERC20Selectors, Masks, DeltaErrors {
+abstract contract BaseUtils is ERC20Selectors, Masks, DeltaErrors {
     error InvalidAssetId(uint16 assetId);
     error InsufficientValue();
     error InsufficientAmount();
@@ -14,6 +14,8 @@ contract BaseUtils is ERC20Selectors, Masks, DeltaErrors {
     error BridgeFailed();
     error InvalidDestination();
     error InvalidReceiver();
+    error ReplaceOffsetOutOfBounds();
+    error ApproveFailed();
 
     uint256 internal constant FEE_DENOMINATOR = 1e9;
     uint256 internal constant INSUFFICIENT_VALUE = 0x1101129400000000000000000000000000000000000000000000000000000000;
@@ -22,4 +24,6 @@ contract BaseUtils is ERC20Selectors, Masks, DeltaErrors {
     uint256 internal constant BRIDGE_FAILED = 0xc3b9eede00000000000000000000000000000000000000000000000000000000;
     uint256 internal constant INVALID_DESTINATION = 0xac6b05f500000000000000000000000000000000000000000000000000000000;
     uint256 internal constant INVALID_RECEIVER = 0x1e4ec46b00000000000000000000000000000000000000000000000000000000;
+    uint256 internal constant REPLACE_OFFSET_OUT_OF_BOUNDS = 0x5395d85400000000000000000000000000000000000000000000000000000000;
+    uint256 internal constant APPROVE_FAILED = 0x3e3f8f7300000000000000000000000000000000000000000000000000000000;
 }

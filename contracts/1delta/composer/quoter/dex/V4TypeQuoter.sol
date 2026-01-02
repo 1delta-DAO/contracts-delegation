@@ -46,7 +46,15 @@ abstract contract V4TypeQuoter is QuoterUtils, Masks {
         );
     }
 
-    /*
+    /**
+     * @notice Calculates amountOut for Uniswap V4 style pools
+     * @param fromAmount Input amount
+     * @param tokenIn Input token address
+     * @param tokenOut Output token address
+     * @param currentOffset Current position in the calldata
+     * @return receivedAmount Output amount
+     * @return tempVar Updated calldata offset after processing
+     * @custom:calldata-offset-table
      * | Offset | Length (bytes) | Description          |
      * |--------|----------------|----------------------|
      * | 0      | 20             | hooks                |
@@ -88,7 +96,7 @@ abstract contract V4TypeQuoter is QuoterUtils, Masks {
 
         try IUniswapV4Poolmanager(manager).unlock(
             abi.encodePacked(
-                // add quoite-relevant data
+                // add quoter-relevant data
                 uint128(fromAmount),
                 tokenIn, //
                 tokenOut,
@@ -100,7 +108,13 @@ abstract contract V4TypeQuoter is QuoterUtils, Masks {
         revert("Did not revert in V4 CB");
     }
 
-    /*
+    /**
+     * @notice Simulates a swap on Uniswap V4 pools
+     * @param fromAmount Input amount
+     * @param tokenIn Input token address
+     * @param tokenOut Output token address
+     * @param currentOffset Current position in the calldata
+     * @custom:calldata-offset-table
      * | Offset | Length (bytes) | Description          |
      * |--------|----------------|----------------------|
      * | 0      | 20             | hooks                |

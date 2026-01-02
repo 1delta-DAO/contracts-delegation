@@ -15,29 +15,45 @@ contract MorphoFlashLoanCallback is Masks, DeltaErrors {
     ${addressContants}
     /** Morpho blue callbacks */
 
-    /// @dev Morpho Blue flash loan
+    /**
+     * @notice Handles Morpho Blue flash loan callback
+     */
     function onMorphoFlashLoan(uint256, bytes calldata) external {
         _onMorphoCallback();
     }
 
-    /// @dev Morpho Blue supply callback
+    /**
+     * @notice Handles Morpho Blue supply callback
+     */
     function onMorphoSupply(uint256, bytes calldata) external {
         _onMorphoCallback();
     }
 
-    /// @dev Morpho Blue repay callback
+    /**
+     * @notice Handles Morpho Blue repay callback
+     */
     function onMorphoRepay(uint256, bytes calldata) external {
         _onMorphoCallback();
     }
 
-    /// @dev Morpho Blue supply collateral callback
+    /**
+     * @notice Handles Morpho Blue supply collateral callback
+     */
     function onMorphoSupplyCollateral(uint256, bytes calldata) external {
         _onMorphoCallback();
     }
 
-    /// @dev Morpho Blue is immutable and their flash loans are callbacks to msg.sender,
-    /// Since it is universal batching and the same validation for all
-    /// Morpho callbacks, we can use the same logic everywhere
+    /**
+     * @notice Internal callback handler for all Morpho Blue operations
+     * @dev Morpho Blue is immutable and their flash loans are callbacks to msg.sender.
+     * Since it is universal batching and the same validation for all Morpho callbacks, we can use the same logic everywhere
+     * @custom:calldata-offset-table
+     * | Offset | Length (bytes) | Description                  |
+     * |--------|----------------|------------------------------|
+     * | 0      | 20             | origCaller                   |
+     * | 20     | 1              | poolId                       |
+     * | 21     | Variable       | composeOperations            |
+     */
     function _onMorphoCallback() internal {
         address origCaller;
         uint256 calldataLength;
@@ -46,7 +62,7 @@ contract MorphoFlashLoanCallback is Masks, DeltaErrors {
             // - extract id from params
             let firstWord := calldataload(100)
             ${switchCaseContent}
-            // Slice the original caller off the beginnig of the calldata
+            // Slice the original caller off the beginning of the calldata
             // From here on we have validated that the origCaller
             // was attached in the deltaCompose function
             // Otherwise, this would be a vulnerability
@@ -63,6 +79,13 @@ contract MorphoFlashLoanCallback is Masks, DeltaErrors {
         );
     }
 
+    /**
+     * @notice Internal function to execute compose operations
+     * @dev Override point for flash loan callbacks to execute compose operations
+     * @param callerAddress Address of the original caller
+     * @param offset Current calldata offset
+     * @param length Length of remaining calldata
+     */
     function _deltaComposeInternal(address callerAddress, uint256 offset, uint256 length) internal virtual {}
 }
 `

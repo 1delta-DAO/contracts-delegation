@@ -1,4 +1,4 @@
-import {AAVE_FORK_POOL_DATA, AAVE_V2_LENDERS, AAVE_V3_LENDERS, Chain} from "@1delta/asset-registry";
+import {AAVE_V2_LENDERS, AAVE_V3_LENDERS} from "@1delta/lender-registry";
 import {BALANCER_V2_FORKS, FLASH_LOAN_IDS} from "@1delta/dex-registry";
 import * as fs from "fs";
 import {CREATE_CHAIN_IDS, getChainEnum} from "../config";
@@ -7,6 +7,10 @@ import {templateAaveV3Test} from "../templates/test/templates/aaveV3CallbackTest
 import {templateAaveV2Test} from "../templates/test/templates/aaveV2CallbackTest";
 import {templateBalancerV2Test} from "../templates/test/templates/balancerV2CallbackTest";
 import {CANCUN_OR_HIGHER} from "../chain/evmVersion";
+import {fetchLenderMetaFromDirAndInitialize} from "../utils";
+import {aavePools} from "@1delta/data-sdk";
+import {Chain} from "@1delta/chain-registry";
+import {Lender} from "@1delta/lender-registry";
 
 interface LenderData {
     entityName: string;
@@ -16,6 +20,7 @@ interface LenderData {
 }
 
 async function main() {
+    await fetchLenderMetaFromDirAndInitialize();
     const chains = CREATE_CHAIN_IDS;
 
     for (let i = 0; i < chains.length; i++) {
@@ -29,7 +34,7 @@ async function main() {
         let poolsBalancerV2: LenderData[] = [];
 
         // Collect AaveV2 and AaveV3 lenders
-        Object.entries(AAVE_FORK_POOL_DATA).forEach(([lender, maps]) => {
+        Object.entries(aavePools()).forEach(([lender, maps]) => {
             Object.entries(maps).forEach(([chainId, e]) => {
                 if (chainId === chain) {
                     // Determine default asset type for this lender
@@ -128,6 +133,8 @@ function determineDefaultAssetType(lenderName: string, chainId: string): string 
         defaultAsset = "LISTA";
     } else if (lenderName.includes("USDX")) {
         defaultAsset = "USDX";
+    } else if (lenderName === Lender.SEISMIC) {
+        defaultAsset = "WETH";
     }
 
     if (chainId === Chain.METIS_ANDROMEDA_MAINNET) {
@@ -135,6 +142,20 @@ function determineDefaultAssetType(lenderName: string, chainId: string): string 
     } else if (chainId === Chain.HEMI_NETWORK) {
         defaultAsset = "WBTC";
     } else if (chainId === Chain.SONIC_MAINNET) {
+        defaultAsset = "WETH";
+    }
+
+    if (chainId === Chain.XDC_NETWORK && lenderName === Lender.FATHOM) {
+        defaultAsset = "WXDC";
+    } else if (chainId === Chain.PLASMA_MAINNET && lenderName === Lender.AAVE_V3) {
+        defaultAsset = "WETH";
+    } else if (chainId === Chain.CORE_BLOCKCHAIN_MAINNET && lenderName === Lender.AVALON) {
+        defaultAsset = "SOLVBTC_B";
+    } else if (chainId === Chain.FANTOM_OPERA && lenderName === Lender.GRANARY) {
+        defaultAsset = "WFTM";
+    } else if (chainId === Chain.BERACHAIN && lenderName === Lender.ZEROLEND) {
+        defaultAsset = "WETH";
+    } else if (chainId === Chain.BLAST) {
         defaultAsset = "WETH";
     }
 

@@ -1,6 +1,6 @@
 import {ethers} from "hardhat";
 import {OneDeltaComposerCronos__factory} from "../../../types";
-import {Chain} from "@1delta/asset-registry";
+import {Chain} from "@1delta/chain-registry";
 
 async function main() {
     const accounts = await ethers.getSigners();

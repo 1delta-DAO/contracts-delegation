@@ -14,7 +14,17 @@ abstract contract BalancerV2Swapper is ERC20Selectors, Masks {
     bytes32 private constant BALANCER_SWAP = 0x52bbbe2900000000000000000000000000000000000000000000000000000000;
 
     /**
-     * Swaps exact input on Balancer V2
+     * @notice Swaps exact input on Balancer V2
+     * @dev Pay flag: 0 = caller pays; 1 = contract pays; greater = pre-funded
+     * @param tokenIn Input token address
+     * @param tokenOut Output token address
+     * @param amountIn Input amount
+     * @param receiver Receiver address
+     * @param callerAddress Address of the caller
+     * @param currentOffset Current position in the calldata
+     * @return amountOut Output amount
+     * @return balancerData Updated calldata offset after processing
+     * @custom:calldata-offset-table
      * | Offset | Length (bytes) | Description          |
      * |--------|----------------|----------------------|
      * | 0      | 32             | pool                 |

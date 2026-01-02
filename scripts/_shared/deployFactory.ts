@@ -33,6 +33,8 @@ import {DeployFactory__factory} from "../../types";
 // telos
 // morph
 // moonbeam
+// sei
+// monad
 
 async function main() {
     const accounts = await ethers.getSigners();

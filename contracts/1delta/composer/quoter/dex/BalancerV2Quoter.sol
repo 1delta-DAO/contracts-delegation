@@ -10,12 +10,24 @@ import {Masks} from "../../../shared/masks/Masks.sol";
  */
 abstract contract BalancerV2Quoter is Masks {
     /**
-     *  Call queryBatchSwap on the Balancer V2 vault.
-     *  Should be avoided if possible as it executes (but reverts) state changes in the balancer vault
+     *  @notice Call queryBatchSwap on the Balancer V2 vault.
+     *  @dev Should be avoided if possible as it executes (but reverts) state changes in the balancer vault
      *  Executes `call` and therefore is non-view
      *  Will allow to save a refund transfer since we calculate the exact amount
      *  Since we check slippage manually, the concerns mentioned in https://docs.balancer.fi/reference/contracts/query-functions.html
      *  do not apply.
+     * @param tokenIn Input token address
+     * @param tokenOut Output token address
+     * @param amountIn Input amount
+     * @param currentOffset Current position in the calldata
+     * @return amountOut Output amount
+     * @return Updated calldata offset after processing
+     * @custom:calldata-offset-table
+     * | Offset | Length (bytes) | Description          |
+     * |--------|----------------|----------------------|
+     * | 0      | 32             | poolId               |
+     * | 32     | 20             | vault                 |
+     * | 52     | 1              | payFlag               |
      */
     function _getBalancerAmountOut(
         address tokenIn,

@@ -5,7 +5,7 @@ import {console} from "forge-std/console.sol";
 import {IERC20All} from "test/shared/interfaces/IERC20All.sol";
 import {BaseTest} from "test/shared/BaseTest.sol";
 import {Chains, Tokens, Lenders} from "test/data/LenderRegistry.sol";
-import "test/composer/utils/CalldataLib.sol";
+import "contracts/utils/CalldataLib.sol";
 import {ComposerPlugin, IComposerLike} from "plugins/ComposerPlugin.sol";
 
 interface IF {
@@ -16,10 +16,8 @@ interface IF {
     function getPair(address tokenA, address tokenB) external view returns (address pair);
 }
 
-contract FlashSwapTest is BaseTest {
-    address internal constant UNI_FACTORY = 0x33128a8fC17869897dcE68Ed026d694621f6FDfD;
+contract FlashSwapTestV2 is BaseTest {
     address internal constant UNI_V2_FACTORY = 0x8909Dc15e40173Ff4699343b6eB8132c65e18eC6;
-    address internal constant IZI_FACTORY = 0x8c7d3063579BdB0b90997e18A770eaE32E1eBb08;
     IComposerLike oneDV2;
 
     address internal USDC;
@@ -87,7 +85,7 @@ contract FlashSwapTest is BaseTest {
     /**
      * Flash swap open on aave v3 using Uniswap V2
      */
-    function test_light_aave_flash_swap_v2_single() external {
+    function test_integ_flashSwap_aave_flash_swap_v2_single() external {
         vm.assume(user != address(0));
 
         address tokenIn = USDC;

@@ -61,7 +61,7 @@ const multiSwitchCaseHead = `
             // Validate the caller
             // We check that the caller is one of the lending pools
             // This is a crucial check since this makes
-            // the initiator paramter the caller of flashLoan
+            // the initiator parameter the caller of flashLoan
             let pool
             switch and(UINT8_MASK, shr(88, firstWord))
             `;
@@ -310,7 +310,7 @@ async function main() {
             switchCaseContentV3 += `
             // We check that the caller is one of the lending pools
             // This is a crucial check since this makes
-            // the initiator paramter the caller of flashLoan
+            // the initiator parameter the caller of flashLoan
             let pool
             let poolId := and(UINT8_MASK, shr(88, firstWord))
             ${generateSwitchCaseStructure(lenderIdsAaveV3)}

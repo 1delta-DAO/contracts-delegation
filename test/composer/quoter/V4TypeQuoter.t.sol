@@ -7,7 +7,7 @@ import "../../../contracts/1delta/composer//quoter/QuoterLight.sol";
 import "../../shared/BaseTest.sol";
 import {Chains, Tokens, Lenders} from "../../data/LenderRegistry.sol";
 import {DexTypeMappings} from "../../../contracts/1delta/composer//swappers/dex/DexTypeMappings.sol";
-import "../utils/CalldataLib.sol";
+import "contracts/utils/CalldataLib.sol";
 import {ComposerPlugin, IComposerLike} from "plugins/ComposerPlugin.sol";
 
 interface IF {
@@ -79,7 +79,7 @@ contract V4QuoterTest is BaseTest {
     /**
      * END OF CALLDATA UTILS
      */
-    function test_light_quoter_simple_swap_v4() public {
+    function test_integ_quoter_simple_swap_v4() public {
         /**
          * WETH -> USDC (0,0)
          */

@@ -11,19 +11,25 @@ import {Masks} from "../../shared/masks/Masks.sol";
  * @notice Lending base contract that wraps Cmpound V3 markets
  */
 abstract contract CompoundV3Lending is ERC20Selectors, Masks {
-    /*
+    /**
+     * @notice Withdraws from Compound V3 lending pool
+     * @dev Supports both base and collateral token withdrawals
+     * @param currentOffset Current position in the calldata
+     * @param callerAddress Address of the caller
+     * @return Updated calldata offset after processing
+     * @custom:calldata-offset-table
      * | Offset | Length (bytes) | Description                     |
      * |--------|----------------|---------------------------------|
      * | 0      | 20             | underlying                      |
      * | 20     | 16             | amount                          |
      * | 36     | 20             | receiver                        |
-     * | 76     | 1              | isBase                          |
-     * | 77     | 20             | pool                            |
+     * | 56     | 1              | isBase                          |
+     * | 57     | 20             | pool                            |
      */
     function _withdrawFromCompoundV3(uint256 currentOffset, address callerAddress) internal returns (uint256) {
         assembly {
             let ptr := mload(0x40)
-            // Compound V3 types need to trasfer collateral tokens
+            // Compound V3 types need to transfer collateral tokens
 
             let underlying := shr(96, calldataload(currentOffset))
             // offset for amount at lower bytes
@@ -39,7 +45,7 @@ abstract contract CompoundV3Lending is ERC20Selectors, Masks {
 
             currentOffset := add(currentOffset, 77)
 
-            let amount := and(UINT120_MASK, amountData)
+            let amount := and(UINT112_MASK, amountData)
             if eq(amount, 0xffffffffffffffffffffffffffff) {
                 switch and(UINT8_MASK, shr(88, isBase))
                 case 0 {
@@ -82,18 +88,23 @@ abstract contract CompoundV3Lending is ERC20Selectors, Masks {
         return currentOffset;
     }
 
-    /*
+    /**
+     * @notice Borrows from Compound V3 lending pool
+     * @param currentOffset Current position in the calldata
+     * @param callerAddress Address of the caller
+     * @return Updated calldata offset after processing
+     * @custom:calldata-offset-table
      * | Offset | Length (bytes) | Description                     |
      * |--------|----------------|---------------------------------|
      * | 0      | 20             | underlying                      |
      * | 20     | 16             | amount                          |
      * | 36     | 20             | receiver                        |
-     * | 76     | 20             | comet                           |
+     * | 56     | 20             | comet                           |
      */
     function _borrowFromCompoundV3(uint256 currentOffset, address callerAddress) internal returns (uint256) {
         assembly {
             let ptr := mload(0x40)
-            // Compound V3 types need to trasfer collateral tokens
+            // Compound V3 types need to transfer collateral tokens
             let underlying := shr(96, calldataload(currentOffset))
             // offset for amount at lower bytes
             let amountData := shr(128, calldataload(add(currentOffset, 20)))
@@ -104,7 +115,7 @@ abstract contract CompoundV3Lending is ERC20Selectors, Masks {
 
             currentOffset := add(currentOffset, 76)
 
-            let amount := and(UINT120_MASK, amountData)
+            let amount := and(UINT112_MASK, amountData)
 
             // selector withdrawFrom(address,address,address,uint256)
             mstore(ptr, 0x2644131800000000000000000000000000000000000000000000000000000000)
@@ -121,15 +132,19 @@ abstract contract CompoundV3Lending is ERC20Selectors, Masks {
         return currentOffset;
     }
 
-    /*
+    /**
+     * @notice Deposits to Compound V3 lending pool
+     * @dev Zero amount uses contract balance
+     * @param currentOffset Current position in the calldata
+     * @return Updated calldata offset after processing
+     * @custom:calldata-offset-table
      * | Offset | Length (bytes) | Description                     |
      * |--------|----------------|---------------------------------|
      * | 0      | 20             | underlying                      |
      * | 20     | 16             | amount                          |
      * | 36     | 20             | receiver                        |
-     * | 76     | 20             | comet                           |
+     * | 56     | 20             | comet                           |
      */
-    /// @notice Withdraw from lender lastgiven user address and lender Id
     function _depositToCompoundV3(uint256 currentOffset) internal returns (uint256) {
         assembly {
             let underlying := shr(96, calldataload(currentOffset))
@@ -141,7 +156,7 @@ abstract contract CompoundV3Lending is ERC20Selectors, Masks {
             let comet := shr(96, calldataload(add(currentOffset, 56)))
             currentOffset := add(currentOffset, 76)
 
-            let amount := and(UINT120_MASK, amountData)
+            let amount := and(UINT112_MASK, amountData)
             // zero is this balance
             if iszero(amount) {
                 // selector for balanceOf(address)
@@ -170,13 +185,18 @@ abstract contract CompoundV3Lending is ERC20Selectors, Masks {
         return currentOffset;
     }
 
-    /*
+    /**
+     * @notice Repays debt to Compound V3 lending pool
+     * @dev Zero amount uses contract balance. Max amount (0xffffffffffffffffffffffffffff) repays minimum of contract balance and user debt.
+     * @param currentOffset Current position in the calldata
+     * @return Updated calldata offset after processing
+     * @custom:calldata-offset-table
      * | Offset | Length (bytes) | Description                     |
      * |--------|----------------|---------------------------------|
      * | 0      | 20             | underlying                      |
      * | 20     | 16             | amount                          |
      * | 36     | 20             | receiver                        |
-     * | 76     | 20             | comet                           |
+     * | 56     | 20             | comet                           |
      */
     function _repayToCompoundV3(uint256 currentOffset) internal returns (uint256) {
         assembly {
@@ -189,7 +209,7 @@ abstract contract CompoundV3Lending is ERC20Selectors, Masks {
             let comet := shr(96, calldataload(add(currentOffset, 56)))
             currentOffset := add(currentOffset, 76)
 
-            let amount := and(UINT120_MASK, amountData)
+            let amount := and(UINT112_MASK, amountData)
             switch amount
             case 0 {
                 // selector for balanceOf(address)
