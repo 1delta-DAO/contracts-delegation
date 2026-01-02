@@ -323,7 +323,7 @@ contract MorphoLens {
                     temp = abi.encodePacked(temp, uint256(0));
                 }
                 // add minLoan
-                temp = abi.encodePacked(temp, minLoan(oracle, loanToken, loanPrice, minLoanUSD));
+                temp = abi.encodePacked(temp, minLoan(loanToken, loanPrice, minLoanUSD));
 
                 // encode rate and market
                 if (irm != address(0)) {
@@ -386,7 +386,7 @@ contract MorphoLens {
     }
 
     /// @notice an optimized getter with only one additional call
-    function minLoan(address oracle, address loanToken, uint256 loanPrice, uint256 minLoanUSD) internal view returns (uint128) {
+    function minLoan(address loanToken, uint256 loanPrice, uint256 minLoanUSD) internal view returns (uint128) {
         return uint128(loanPrice == 0 ? 0 : MathLib.mulDivDown(minLoanUSD, 10 ** Decimals(loanToken).decimals(), loanPrice));
     }
 }
