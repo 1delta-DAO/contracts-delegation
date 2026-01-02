@@ -28,7 +28,7 @@ contract MorphoLensTest is Test {
         marketIds[4] = id5;
         morphoLens.getUserDataCompact(marketIds, user, moolah);
 
-        bytes memory data = morphoLens.getMoolahMarketDataCompact(moolah, marketIds);
-        vm.assertEq(data.length, 290 * marketIds.length);
+        bytes memory data = morphoLens.getListaMarketDataCompact(moolah, marketIds);
+        vm.assertEq(data.length, 309 * marketIds.length);
     }
 }

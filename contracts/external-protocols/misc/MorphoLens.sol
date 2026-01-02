@@ -203,7 +203,7 @@ contract MorphoLens {
         return data;
     }
 
-    /// @notice use to get the market data for Moolah protocol
+    /// @notice use to get the market data for Moolah protocol - note that this one misses crucial data such as whitelists
     function getMoolahMarketDataCompact(
         address morpho,
         bytes32[] calldata marketsIds
@@ -212,6 +212,52 @@ contract MorphoLens {
         view
         returns (bytes memory data)
     {
+        // each entry makes 4*20 (addresses) + 16 (lltv) + 32 (loanPrice) + 32 (collateralPrice) + 32 (rateAtTarget)
+        // + 96 bytes (market) (=288) in size. The return data is therfore implicitly indexed
+        for (uint256 i; i < marketsIds.length; i++) {
+            bytes32 id = marketsIds[i];
+            // pack market supply statuses
+            bytes memory market = getPackedMarket(morpho, id);
+            // get metadata
+            (
+                address loanToken,
+                address collateralToken, //
+                address oracle,
+                address irm,
+                uint256 lltv
+            ) = IMorpho(morpho).idToMarketParams(id);
+
+            // get prices from moolah oracle for both loan and collateral tokens
+            bytes memory temp;
+            if (oracle != address(0)) {
+                try IMoolahOracle(oracle).peek(loanToken) returns (uint256 _loanPrice) {
+                    temp = abi.encodePacked(_loanPrice);
+                } catch {
+                    temp = abi.encodePacked(uint256(0));
+                }
+                try IMoolahOracle(oracle).peek(collateralToken) returns (uint256 _collateralPrice) {
+                    temp = abi.encodePacked(temp, _collateralPrice);
+                } catch {
+                    temp = abi.encodePacked(temp, uint256(0));
+                }
+            }
+            // get rate
+            uint256 rateAtTarget;
+            if (irm != address(0)) {
+                try IAdaptiveCurveIrm(irm).rateAtTarget(id) returns (int256 _rateAtTarget) {
+                    rateAtTarget = uint256(_rateAtTarget);
+                } catch {}
+            }
+
+            // progressively pack the data
+            data = abi.encodePacked(data, loanToken, collateralToken, oracle, irm, uint128(lltv), temp, rateAtTarget, market);
+        }
+
+        return data;
+    }
+
+    /// @notice use to get the market data for Lista protocol
+    function getListaMarketDataCompact(address morpho, bytes32[] calldata marketsIds) external view returns (bytes memory data) {
         // each entry makes 4*20 (addresses) + 16 (lltv) + 32 (loanPrice) + 32 (collateralPrice) + 32 (rateAtTarget)
         // + 96 bytes (market) + 1 byte (hasWhitelist) + 1 byte (hasProvider)(=290) in size. The return data is therfore implicitly indexed
         for (uint256 i; i < marketsIds.length; i++) {
@@ -250,14 +296,14 @@ contract MorphoLens {
                 }
             }
             // encode hasWhitelist
-            if (irm != address(0)) {
-                try IMoolah(morpho).isWhiteList(id, 0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045) returns (bool _isWhitelisted) {
-                    temp = abi.encodePacked(temp, !_isWhitelisted);
-                } catch {
-                    temp = abi.encodePacked(temp, bytes1(0));
-                }
+
+            try IMoolah(morpho).isWhiteList(id, address(0)) returns (bool _isWhitelisted) {
+                temp = abi.encodePacked(temp, !_isWhitelisted);
+            } catch {
+                temp = abi.encodePacked(temp, bytes1(0));
             }
-            // encode hasProvider
+
+            // encode provider - zero address if none
             try IMoolah(morpho).providers(id, collateralToken) returns (address provider) {
                 temp = abi.encodePacked(temp, provider);
             } catch {
