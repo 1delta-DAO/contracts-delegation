@@ -22,8 +22,18 @@ abstract contract BalancerV3Callbacks is Masks, DeltaErrors {
     // v3 vault addresses
     ${constants}
     /**
-     * Callback from balancer V3 type vaults
-     * Note that this selector is a custom choice
+     * @notice Callback from Balancer V3 type vaults
+     * @dev Note that this selector is a custom choice
+     
+     * @custom:calldata-offset-table
+     * | Offset | Length (bytes) | Description                  |
+     * |--------|----------------|------------------------------|
+     * | 0      | 4              | selector                     |
+     * | 4      | 32             | offset                       |
+     * | 36     | 32             | length                       |
+     * | 68     | 20             | callerAddress                |
+     * | 88     | 1              | poolId                       |
+     * | 89     | Variable       | composeOperations            |
      */
     function balancerUnlockCallback(bytes calldata) external {
         address callerAddress;
@@ -37,7 +47,7 @@ abstract contract BalancerV3Callbacks is Masks, DeltaErrors {
             ${switchCaseContent}
         }
         /**
-         * This is to execute swaps or flash laons
+         * This is to execute swaps or flash loans
          * For swaps, one needs to bump the composer swap command in here
          * For Flash loan, the composer commands for take, sync and settle
          * have to be executed
@@ -49,7 +59,13 @@ abstract contract BalancerV3Callbacks is Masks, DeltaErrors {
         );
     }
 
-    /** A composer contract should override this */
+    /**
+     * @notice Internal function to execute compose operations
+     * @dev A composer contract should override this
+     * @param callerAddress Address of the original caller
+     * @param offset Current calldata offset
+     * @param length Length of remaining calldata
+     */
     function _deltaComposeInternal(address callerAddress, uint256 offset, uint256 length) internal virtual {}
 }
 `

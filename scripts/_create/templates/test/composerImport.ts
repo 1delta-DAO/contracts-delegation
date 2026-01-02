@@ -1,19 +1,20 @@
-import { CHAIN_INFO } from "@1delta/asset-registry"
-import { getChainKey, toCamelCaseWithFirstUpper } from "../../config"
+import {chains} from "@1delta/data-sdk";
+import {getChainKey, toCamelCaseWithFirstUpper} from "../../config";
 
-export const composerTestImports = (chains: string[]) => {
+export const composerTestImports = (chainsList: string[]) => {
+    let imports: string[] = [];
+    let ifelses: string[] = [];
 
-    let imports: string[] = []
-    let ifelses: string[] = []
-
-    chains.forEach(chain => {
-        const chainKey = getChainKey(chain)
-        const composerName = `OneDeltaComposer${toCamelCaseWithFirstUpper(chainKey)}`
-        imports.push(`import {${composerName}} from "../../../contracts/1delta/composer//chains/${chainKey}/Composer.sol";`)
-        ifelses.push(`if (keccak256(bytes(chainName)) == keccak256(bytes(Chains.${CHAIN_INFO[chain].enum //
-            }))) return IComposerLike(address(new ${composerName}()));`)
-    })
-
+    chainsList.forEach((chain) => {
+        const chainKey = getChainKey(chain);
+        const composerName = `OneDeltaComposer${toCamelCaseWithFirstUpper(chainKey)}`;
+        imports.push(`import {${composerName}} from "../../../contracts/1delta/composer//chains/${chainKey}/Composer.sol";`);
+        ifelses.push(
+            `if (keccak256(bytes(chainName)) == keccak256(bytes(Chains.${
+                chains()[chain].enum //
+            }))) return IComposerLike(address(new ${composerName}()));`
+        );
+    });
 
     return `
 // SPDX-License-Identifier: NONE
@@ -29,5 +30,5 @@ library ComposerPlugin {
         revert("No composer for chain");
     }
 }
-`
-}
+`;
+};

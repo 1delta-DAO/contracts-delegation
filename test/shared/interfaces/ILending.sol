@@ -5,7 +5,6 @@ interface ILending {
     /**
      * LENDING GENERAL
      */
-
     // deposit ERC20 to Aave types on behalf of recipient
     function deposit(address asset, address recipient, uint8 lenderId) external payable;
 
@@ -78,5 +77,14 @@ interface ILending {
     function selfPermitAllowed(address token, uint256 nonce, uint256 expiry, uint8 v, bytes32 r, bytes32 s) external payable;
 
     // Aave credit delegation permit
-    function selfCreditDelegate(address creditToken, uint256 value, uint256 deadline, uint8 v, bytes32 r, bytes32 s) external payable;
+    function selfCreditDelegate(
+        address creditToken,
+        uint256 value,
+        uint256 deadline,
+        uint8 v,
+        bytes32 r,
+        bytes32 s
+    )
+        external
+        payable;
 }

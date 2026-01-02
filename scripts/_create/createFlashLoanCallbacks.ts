@@ -14,6 +14,7 @@ import {BALANCER_V2_FORKS, FLASH_LOAN_IDS} from "@1delta/dex-registry";
 import {CANCUN_OR_HIGHER} from "./chain/evmVersion";
 import {fetchLenderMetaFromDirAndInitialize} from "./utils";
 import {aavePools, morphoPools} from "@1delta/data-sdk";
+import {templateMoolah} from "./templates/flashLoan/moolahCallback";
 
 /** constant for the head part */
 function createConstant(pool: string, lender: string) {
@@ -60,7 +61,7 @@ const multiSwitchCaseHead = `
             // Validate the caller
             // We check that the caller is one of the lending pools
             // This is a crucial check since this makes
-            // the initiator paramter the caller of flashLoan
+            // the initiator parameter the caller of flashLoan
             let pool
             switch and(UINT8_MASK, shr(88, firstWord))
             `;
@@ -224,14 +225,22 @@ async function main() {
         });
 
         let lenderIdsMorphoBlue: FlashLoanIdData[] = [];
+        let lenderIdsLista: FlashLoanIdData[] = [];
         Object.entries(morphoPools()).forEach(([lender, maps]) => {
             Object.entries(maps).forEach(([chains, e]) => {
                 if (chains === chain) {
-                    lenderIdsMorphoBlue.push({
-                        entityName: lender,
-                        entityId: FLASH_LOAN_IDS[lender].toString(),
-                        pool: e,
-                    });
+                    if (lender === "LISTA_DAO")
+                        lenderIdsLista.push({
+                            entityName: lender,
+                            entityId: FLASH_LOAN_IDS[lender].toString(),
+                            pool: e,
+                        });
+                    else
+                        lenderIdsMorphoBlue.push({
+                            entityName: lender,
+                            entityId: FLASH_LOAN_IDS[lender].toString(),
+                            pool: e,
+                        });
                 }
             });
         });
@@ -301,7 +310,7 @@ async function main() {
             switchCaseContentV3 += `
             // We check that the caller is one of the lending pools
             // This is a crucial check since this makes
-            // the initiator paramter the caller of flashLoan
+            // the initiator parameter the caller of flashLoan
             let pool
             let poolId := and(UINT8_MASK, shr(88, firstWord))
             ${generateSwitchCaseStructure(lenderIdsAaveV3)}
@@ -325,6 +334,25 @@ async function main() {
                 switchCaseContentMorpho += createCase(entityName, entityId);
             });
             switchCaseContentMorpho += multiSwitchCaseEnd;
+        }
+
+        /**
+         * Lista D
+         */
+        let constantsDataLista = ``;
+        let switchCaseContentLista = ``;
+        lenderIdsLista = lenderIdsLista.sort((a, b) => (Number(a.entityId) < Number(b.entityId) ? -1 : 1));
+        if (lenderIdsLista.length === 1) {
+            const {pool, entityName, entityId} = lenderIdsLista[0];
+            constantsDataLista += createConstant(pool, entityName);
+            switchCaseContentLista += createCaseSolo(entityName, entityId);
+        } else {
+            switchCaseContentLista += multiSwitchCaseHead;
+            lenderIdsLista.forEach(({pool, entityName, entityId}) => {
+                constantsDataLista += createConstant(pool, entityName);
+                switchCaseContentLista += createCase(entityName, entityId);
+            });
+            switchCaseContentLista += multiSwitchCaseEnd;
         }
         /**
          * Balancer V2
@@ -375,6 +403,11 @@ async function main() {
             fs.writeFileSync(filePathMorpho, templateMorphoBlue(constantsDataMorpho, switchCaseContentMorpho));
         }
 
+        if (lenderIdsLista.length > 0) {
+            const filePathMoolah = flashLoanCallbackDir + "MoolahCallback.sol";
+            fs.writeFileSync(filePathMoolah, templateMoolah(constantsDataLista, switchCaseContentLista));
+        }
+
         if (poolIdsBalancerV2.length > 0) {
             const filePathBalancerV2 = flashLoanCallbackDir + "BalancerV2Callback.sol";
             fs.writeFileSync(filePathBalancerV2, templateBalancerV2(constantsDataBalancerV2, switchCaseContentBalancerV2, isCancun));
@@ -383,7 +416,13 @@ async function main() {
         const filePathFlashCallbacks = `./contracts/1delta/composer/chains/${key}/flashLoan/FlashLoanCallbacks.sol`;
         fs.writeFileSync(
             filePathFlashCallbacks,
-            templateFlashLoan(lenderIdsAaveV2.length > 0, lenderIdsAaveV3.length > 0, lenderIdsMorphoBlue.length > 0, poolIdsBalancerV2.length > 0)
+            templateFlashLoan(
+                lenderIdsAaveV2.length > 0,
+                lenderIdsAaveV3.length > 0,
+                lenderIdsMorphoBlue.length > 0,
+                poolIdsBalancerV2.length > 0,
+                lenderIdsLista.length > 0
+            )
         );
 
         const filePathFlashLoans = `./contracts/1delta/composer/chains/${key}/flashLoan/UniversalFlashLoan.sol`;

@@ -10,7 +10,17 @@ import {Masks} from "../../../shared/masks/Masks.sol";
  */
 abstract contract GMXSwapper is ERC20Selectors, Masks {
     /**
-     * Swaps exact input on GMX V1
+     * @notice Swaps exact input on GMX V1
+     * @dev Works for most forks too. Pay flag: 0 = caller pays; 1 = contract pays; greater = pre-funded.
+     * @param fromAmount Input amount
+     * @param tokenIn Input token address
+     * @param tokenOut Output token address
+     * @param receiver Receiver address
+     * @param callerAddress Address of the caller
+     * @param currentOffset Current position in the calldata
+     * @return amountOut Output amount
+     * @return Updated calldata offset after processing
+     * @custom:calldata-offset-table
      * | Offset | Length (bytes) | Description          |
      * |--------|----------------|----------------------|
      * | 0      | 20             | pool                 |
@@ -101,7 +111,7 @@ abstract contract GMXSwapper is ERC20Selectors, Masks {
                     vault,
                     0x0, // no native transfer
                     ptr,
-                    0x64, // input length 66 bytes
+                    0x64, // input length 100 bytes (selector 4bytes plus 3*32bytes)
                     ptr, // store output here
                     0x20 // output is just uint
                 )

@@ -26,6 +26,9 @@ abstract contract UniV2Callbacks is Masks, DeltaErrors {
     bytes32 private constant ZENLINK_FF_FACTORY = 0xff079710316b06BBB2c0FF4bEFb7D2DaC206c716A00000000000000000000000;
     bytes32 private constant ZENLINK_CODE_HASH = 0x4d57d13eb6abe5cc425bd08deb1f15f0562098dddc340a700527b4d98f95f4dd;
 
+    bytes32 private constant BEAMSWAP_V2_FF_FACTORY = 0xff985BcA32293A7A496300a48081947321177a86FD0000000000000000000000;
+    bytes32 private constant BEAMSWAP_V2_CODE_HASH = 0xe31da4209ffcce713230a74b5287fa8ec84797c9e77e1f7cfeccea015cdc97ea;
+
     bytes32 private constant SUSHISWAP_V2_FF_FACTORY = 0xffc35DADB65012eC5796536bD9864eD8773aBc74C40000000000000000000000;
     bytes32 private constant SUSHISWAP_V2_CODE_HASH = 0x96e8ac4277198ff8b6f785478aa9a39f403cb768dd02cbee326c3e7da348845f;
 
@@ -36,7 +39,21 @@ abstract contract UniV2Callbacks is Masks, DeltaErrors {
     bytes32 private constant PADSWAP_CODE_HASH = 0x3eb475f0bc063c4f457199bae925b27d909f4af70ef7db78ba734972fc1a8543;
 
     /**
-     * Generic Uniswap v2 style callbck executor
+     * @notice Generic Uniswap V2 style callback executor
+     * @dev Validates the callback selector and executes compose operations
+     * @param selector The function selector to match
+     * @custom:calldata-offset-table
+     * | Offset | Length (bytes) | Description                  |
+     * |--------|----------------|------------------------------|
+     * | 0      | 4              | selector                     |
+     * | 4      | 20             | sender (must be this)        |
+     * | 24     | 140            | callbackData                 |
+     * | 164    | 20             | callerAddress                |
+     * | 184    | 20             | tokenIn                      |
+     * | 204    | 20             | tokenOut                     |
+     * | 224    | 1              | forkId                       |
+     * | 225    | 2              | calldataLength               |
+     * | 227    | Variable       | composeOperations            |
      */
     function _executeUniV2IfSelector(bytes32 selector) internal {
         bytes32 codeHash;
@@ -64,6 +81,12 @@ abstract contract UniV2Callbacks is Masks, DeltaErrors {
 
                 ffFactoryAddress := ZENLINK_FF_FACTORY
                 codeHash := ZENLINK_CODE_HASH
+            }
+            case 0x99f9fa5100000000000000000000000000000000000000000000000000000000 {
+                forkId := and(UINT8_MASK, shr(88, outData))
+
+                ffFactoryAddress := BEAMSWAP_V2_FF_FACTORY
+                codeHash := BEAMSWAP_V2_CODE_HASH
             }
             case 0x10d1e85c00000000000000000000000000000000000000000000000000000000 {
                 forkId := and(UINT8_MASK, shr(88, outData))
@@ -153,5 +176,12 @@ abstract contract UniV2Callbacks is Masks, DeltaErrors {
         }
     }
 
+    /**
+     * @notice Internal function to execute compose operations
+     * @dev Override point for swap callbacks to execute compose operations
+     * @param callerAddress Address of the original caller
+     * @param offset Current calldata offset
+     * @param length Length of remaining calldata
+     */
     function _deltaComposeInternal(address callerAddress, uint256 offset, uint256 length) internal virtual {}
 }

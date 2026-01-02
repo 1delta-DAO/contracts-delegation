@@ -8,7 +8,13 @@ import {DeltaErrors} from "../../shared/errors/Errors.sol";
 import {PermitIds} from "../enums/DeltaEnums.sol";
 
 abstract contract Permits is Masks, PermitUtils, DeltaErrors {
-    /*
+    /**
+     * @notice Executes a permit operation
+     * @dev Supports token permits, Aave V3 credit permits, and flag-based lending permits
+     * @param currentOffset Current position in the calldata
+     * @param callerAddress Address of the caller
+     * @return Updated calldata offset after processing
+     * @custom:calldata-offset-table
      * | Offset | Length (bytes) | Description                     |
      * |--------|----------------|---------------------------------|
      * | 0      | 1              | permitOperation                 |

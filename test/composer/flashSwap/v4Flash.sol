@@ -1,19 +1,16 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.19;
 
-import {MarketParams, IMorphoEverything} from "test/composer/lending/utils/Morpho.sol";
 import {DexPayConfig, SweepType} from "contracts/1delta/composer/enums/MiscEnums.sol";
 import {console} from "forge-std/console.sol";
 import {IERC20All} from "test/shared/interfaces/IERC20All.sol";
 import {BaseTest} from "test/shared/BaseTest.sol";
 import {Chains, Tokens, Lenders} from "test/data/LenderRegistry.sol";
-import "test/composer/utils/CalldataLib.sol";
+import "contracts/utils/CalldataLib.sol";
 import {ComposerPlugin, IComposerLike} from "plugins/ComposerPlugin.sol";
 
-contract FlashSwapTest is BaseTest {
+contract FlashSwapTestV4 is BaseTest {
     using CalldataLib for bytes;
-
-    uint8 internal constant UNI_V3_DEX_ID = 0;
 
     IComposerLike oneDV2;
 
@@ -76,7 +73,7 @@ contract FlashSwapTest is BaseTest {
     /**
      * Flash swap open on aave v3 using Uniswap V3
      */
-    function test_light_aave_flash_swap_v4_single() external {
+    function test_integ_flashSwap_aave_flash_swap_v4_single() external {
         vm.assume(user != address(0));
 
         address tokenIn = ETH;
@@ -103,7 +100,9 @@ contract FlashSwapTest is BaseTest {
                 UNI_V4_PM, //
                 borrowAmount
             );
-            settlementActions = abi.encodePacked(CalldataLib.encodeUnwrap(WETH, address(oneDV2), borrowAmount, SweepType.AMOUNT), settlementActions);
+            settlementActions = abi.encodePacked(
+                CalldataLib.encodeUnwrap(WETH, address(oneDV2), borrowAmount, SweepType.AMOUNT), settlementActions
+            );
 
             deposit = abi.encodePacked(
                 swapAction, // the swap

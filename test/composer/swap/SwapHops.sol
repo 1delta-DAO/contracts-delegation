@@ -6,7 +6,7 @@ import {OneDeltaComposerBase} from "../../../contracts/1delta/composer//chains/b
 import {IERC20All} from "../../shared/interfaces/IERC20All.sol";
 import {BaseTest} from "../../shared/BaseTest.sol";
 import {Chains, Tokens, Lenders} from "../../data/LenderRegistry.sol";
-import "../utils/CalldataLib.sol";
+import "contracts/utils/CalldataLib.sol";
 import {ComposerPlugin, IComposerLike} from "plugins/ComposerPlugin.sol";
 
 interface IF {
@@ -19,7 +19,7 @@ interface IF {
 
 /**
  * We test all morpho blue operations
- * - supply, supplyCollateral, borrow, repay, encodeErc4646Deposit, encodeErc4646Withdraw
+ * - supply, supplyCollateral, borrow, repay, encodeErc4626Deposit, encodeErc4646Withdraw
  */
 contract SwapHopsLightTest is BaseTest {
     address internal constant UNI_FACTORY = 0x33128a8fC17869897dcE68Ed026d694621f6FDfD;
@@ -154,7 +154,7 @@ contract SwapHopsLightTest is BaseTest {
         );
     }
 
-    function test_light_swap_v3_route_no_splits() external {
+    function test_integ_swap_v3_route_no_splits() external {
         vm.assume(user != address(0));
 
         address tokenIn = USDC;

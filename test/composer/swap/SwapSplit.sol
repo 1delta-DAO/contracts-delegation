@@ -5,7 +5,7 @@ import {console} from "forge-std/console.sol";
 import {IERC20All} from "../../shared/interfaces/IERC20All.sol";
 import {BaseTest} from "../../shared/BaseTest.sol";
 import {Chains, Tokens, Lenders} from "../../data/LenderRegistry.sol";
-import "../utils/CalldataLib.sol";
+import "contracts/utils/CalldataLib.sol";
 import {ComposerPlugin, IComposerLike} from "plugins/ComposerPlugin.sol";
 
 interface IF {
@@ -18,7 +18,7 @@ interface IF {
 
 /**
  * We test all morpho blue operations
- * - supply, supplyCollateral, borrow, repay, encodeErc4646Deposit, encodeErc4646Withdraw
+ * - supply, supplyCollateral, borrow, repay, encodeErc4626Deposit, encodeErc4646Withdraw
  */
 contract SwapSplitTest is BaseTest {
     uint8 internal UNISWAP_V3_DEX_ID = 0;
@@ -121,7 +121,7 @@ contract SwapSplitTest is BaseTest {
         ); //
     }
 
-    function test_light_swap_v3_splits_only() external {
+    function test_integ_swap_v3_splits_only() external {
         vm.assume(user != address(0));
 
         address tokenIn = USDC;

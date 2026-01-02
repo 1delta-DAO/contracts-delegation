@@ -1,6 +1,6 @@
 import {ethers} from "ethers";
 import {ProxyAdmin__factory} from "../../../../types";
-import {Chain} from "@1delta/asset-registry";
+import {Chain} from "@1delta/chain-registry";
 import {COMPOSER_LOGICS, COMPOSER_PROXIES, PROXY_ADMINS} from "../../addresses";
 
 async function main() {

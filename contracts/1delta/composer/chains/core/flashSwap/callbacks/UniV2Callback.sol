@@ -26,8 +26,28 @@ abstract contract UniV2Callbacks is Masks, DeltaErrors {
     bytes32 private constant SUSHISWAP_V2_FF_FACTORY = 0xffB45e53277a7e0F1D35f2a77160e91e25507f17630000000000000000000000;
     bytes32 private constant SUSHISWAP_V2_CODE_HASH = 0x96e8ac4277198ff8b6f785478aa9a39f403cb768dd02cbee326c3e7da348845f;
 
+    bytes32 private constant ICECREAM_V2_FF_FACTORY = 0xff9E6d21E759A7A288b80eef94E4737D313D31c13f0000000000000000000000;
+    bytes32 private constant ICECREAM_V2_CODE_HASH = 0x58c1b429d0ffdb4407396ae8118c58fed54898473076d0394163ea2198f7c4a3;
+
+    bytes32 private constant GLYPH_FF_FACTORY = 0xff3E723C7B6188E8Ef638DB9685Af45c7CB66f77B90000000000000000000000;
+    bytes32 private constant GLYPH_CODE_HASH = 0xee028118a054757b5daded92bc998b195fc653d33f3214aaabeec98d7599f6b8;
+
     /**
-     * Generic Uniswap v2 style callbck executor
+     * @notice Generic Uniswap V2 style callback executor
+     * @dev Validates the callback selector and executes compose operations
+     * @param selector The function selector to match
+     * @custom:calldata-offset-table
+     * | Offset | Length (bytes) | Description                  |
+     * |--------|----------------|------------------------------|
+     * | 0      | 4              | selector                     |
+     * | 4      | 20             | sender (must be this)        |
+     * | 24     | 140            | callbackData                 |
+     * | 164    | 20             | callerAddress                |
+     * | 184    | 20             | tokenIn                      |
+     * | 204    | 20             | tokenOut                     |
+     * | 224    | 1              | forkId                       |
+     * | 225    | 2              | calldataLength               |
+     * | 227    | Variable       | composeOperations            |
      */
     function _executeUniV2IfSelector(bytes32 selector) internal {
         bytes32 codeHash;
@@ -38,13 +58,13 @@ abstract contract UniV2Callbacks is Masks, DeltaErrors {
         assembly {
             outData := calldataload(204)
             switch selector
-            case 0xabe68bdc00000000000000000000000000000000000000000000000000000000 {
+            case 0x835962f900000000000000000000000000000000000000000000000000000000 {
                 forkId := and(UINT8_MASK, shr(88, outData))
 
                 ffFactoryAddress := SHADOW_CORE_FF_FACTORY
                 codeHash := SHADOW_CORE_CODE_HASH
             }
-            case 0xb9f03bd800000000000000000000000000000000000000000000000000000000 {
+            case 0xe4dd2fec00000000000000000000000000000000000000000000000000000000 {
                 forkId := and(UINT8_MASK, shr(88, outData))
 
                 ffFactoryAddress := ARCHERSWAP_FF_FACTORY
@@ -52,9 +72,22 @@ abstract contract UniV2Callbacks is Masks, DeltaErrors {
             }
             case 0x10d1e85c00000000000000000000000000000000000000000000000000000000 {
                 forkId := and(UINT8_MASK, shr(88, outData))
+                switch forkId
+                case 1 {
+                    ffFactoryAddress := SUSHISWAP_V2_FF_FACTORY
+                    codeHash := SUSHISWAP_V2_CODE_HASH
+                }
+                case 20 {
+                    ffFactoryAddress := ICECREAM_V2_FF_FACTORY
+                    codeHash := ICECREAM_V2_CODE_HASH
+                }
+                default { revert(0, 0) }
+            }
+            case 0xdf9aee6800000000000000000000000000000000000000000000000000000000 {
+                forkId := and(UINT8_MASK, shr(88, outData))
 
-                ffFactoryAddress := SUSHISWAP_V2_FF_FACTORY
-                codeHash := SUSHISWAP_V2_CODE_HASH
+                ffFactoryAddress := GLYPH_FF_FACTORY
+                codeHash := GLYPH_CODE_HASH
             }
         }
 
@@ -125,5 +158,12 @@ abstract contract UniV2Callbacks is Masks, DeltaErrors {
         }
     }
 
+    /**
+     * @notice Internal function to execute compose operations
+     * @dev Override point for swap callbacks to execute compose operations
+     * @param callerAddress Address of the original caller
+     * @param offset Current calldata offset
+     * @param length Length of remaining calldata
+     */
     function _deltaComposeInternal(address callerAddress, uint256 offset, uint256 length) internal virtual {}
 }

@@ -6,6 +6,7 @@ import {AaveLending} from "./AaveLending.sol";
 import {CompoundV3Lending} from "./CompoundV3Lending.sol";
 import {CompoundV2Lending} from "./CompoundV2Lending.sol";
 import {MorphoLending} from "./MorphoLending.sol";
+import {SiloV2Lending} from "./SiloV2Lending.sol";
 import {LenderIds, LenderOps} from "../enums/DeltaEnums.sol";
 import {DeltaErrors} from "contracts/1delta/shared/errors/Errors.sol";
 
@@ -17,9 +18,21 @@ import {DeltaErrors} from "contracts/1delta/shared/errors/Errors.sol";
  * - paramPush for receiving funds (e.g. receiving funds from swaps or flash loans)
  * - paramPull for being required to pay an exact amount (e.g. DEX swap payments, flash loan amounts)
  */
-abstract contract UniversalLending is AaveLending, CompoundV3Lending, CompoundV2Lending, MorphoLending, DeltaErrors {
+abstract contract UniversalLending is
+    AaveLending,
+    CompoundV3Lending,
+    CompoundV2Lending,
+    MorphoLending,
+    SiloV2Lending,
+    DeltaErrors
+{
     /**
-     * execute ANY lending operation across various lenders
+     * @notice Executes any lending operation across various lenders
+     * @dev Routes to appropriate lender based on operation and lender ID
+     * @param callerAddress Address of the caller
+     * @param currentOffset Current position in the calldata
+     * @return Updated calldata offset after processing
+     * @custom:calldata-offset-table
      * | Offset | Length (bytes) | Description                     |
      * |--------|----------------|---------------------------------|
      * | 0      | 1              | lendingOperation                |
@@ -53,8 +66,12 @@ abstract contract UniversalLending is AaveLending, CompoundV3Lending, CompoundV2
                 return _depositToCompoundV3(currentOffset);
             } else if (lender < LenderIds.UP_TO_COMPOUND_V2) {
                 return _depositToCompoundV2(currentOffset);
-            } else {
+            } else if (lender < LenderIds.UP_TO_MORPHO) {
                 return _encodeMorphoDepositCollateral(currentOffset, callerAddress);
+            } else if (lender < LenderIds.UP_TO_SILO_V2) {
+                return _depositToSiloV2(currentOffset);
+            } else {
+                _invalidOperation();
             }
         }
         /**
@@ -67,8 +84,12 @@ abstract contract UniversalLending is AaveLending, CompoundV3Lending, CompoundV2
                 return _borrowFromCompoundV3(currentOffset, callerAddress);
             } else if (lender < LenderIds.UP_TO_COMPOUND_V2) {
                 return _borrowFromCompoundV2(currentOffset, callerAddress);
-            } else {
+            } else if (lender < LenderIds.UP_TO_MORPHO) {
                 return _morphoBorrow(currentOffset, callerAddress);
+            } else if (lender < LenderIds.UP_TO_SILO_V2) {
+                return _borrowFromSiloV2(currentOffset, callerAddress);
+            } else {
+                _invalidOperation();
             }
         }
         /**
@@ -76,13 +97,17 @@ abstract contract UniversalLending is AaveLending, CompoundV3Lending, CompoundV2
          */
         else if (lendingOperation == LenderOps.REPAY) {
             if (lender < LenderIds.UP_TO_AAVE_V2) {
-                return _repayToAave(currentOffset, callerAddress);
+                return _repayToAave(currentOffset);
             } else if (lender < LenderIds.UP_TO_COMPOUND_V3) {
                 return _repayToCompoundV3(currentOffset);
             } else if (lender < LenderIds.UP_TO_COMPOUND_V2) {
                 return _repayToCompoundV2(currentOffset);
-            } else {
+            } else if (lender < LenderIds.UP_TO_MORPHO) {
                 return _morphoRepay(currentOffset, callerAddress);
+            } else if (lender < LenderIds.UP_TO_SILO_V2) {
+                return _repayToSiloV2(currentOffset);
+            } else {
+                _invalidOperation();
             }
         }
         /**
@@ -95,8 +120,12 @@ abstract contract UniversalLending is AaveLending, CompoundV3Lending, CompoundV2
                 return _withdrawFromCompoundV3(currentOffset, callerAddress);
             } else if (lender < LenderIds.UP_TO_COMPOUND_V2) {
                 return _withdrawFromCompoundV2(currentOffset, callerAddress);
-            } else {
+            } else if (lender < LenderIds.UP_TO_MORPHO) {
                 return _encodeMorphoWithdrawCollateral(currentOffset, callerAddress);
+            } else if (lender < LenderIds.UP_TO_SILO_V2) {
+                return _withdrawFromSiloV2(currentOffset, callerAddress);
+            } else {
+                _invalidOperation();
             }
         }
         /**

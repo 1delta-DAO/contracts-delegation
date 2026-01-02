@@ -47,13 +47,15 @@ abstract contract CurveSwapper is ERC20Selectors, Masks {
     bytes32 private constant EXCHANGE_UNDERLYING = 0x65b2489b00000000000000000000000000000000000000000000000000000000;
 
     /// @notice selector exchange_underlying(uint256,uint256,uint256,uint256,address)
-    bytes32 private constant EXCHANGE_UNDERLYING_WITH_RECEIVER = 0xe2ad025a00000000000000000000000000000000000000000000000000000000;
+    bytes32 private constant EXCHANGE_UNDERLYING_WITH_RECEIVER =
+        0xe2ad025a00000000000000000000000000000000000000000000000000000000;
 
     /// @notice selector exchange_underlying(uint256,uint256,uint256,uint256)
     bytes32 private constant EXCHANGE_UNDERLYING_INT = 0xa6417ed600000000000000000000000000000000000000000000000000000000;
 
     /// @notice selector exchange_underlying(uint256,uint256,uint256,uint256,address)
-    bytes32 private constant EXCHANGE_UNDERLYING_INT_WITH_RECEIVER = 0x44ee198600000000000000000000000000000000000000000000000000000000;
+    bytes32 private constant EXCHANGE_UNDERLYING_INT_WITH_RECEIVER =
+        0x44ee198600000000000000000000000000000000000000000000000000000000;
 
     ////////////////////////////////////////////////////
     // General info on the selectors for Curve Received:
@@ -72,12 +74,21 @@ abstract contract CurveSwapper is ERC20Selectors, Masks {
     bytes32 private constant EXCHANGE_RECEIVED_INT = 0x7e3db03000000000000000000000000000000000000000000000000000000000;
 
     /// @notice selector exchange_received(int128,int128,uint256,uint256,address)
-    bytes32 private constant EXCHANGE_RECEIVED_INT_WITH_RECEIVER = 0xafb4301200000000000000000000000000000000000000000000000000000000;
+    bytes32 private constant EXCHANGE_RECEIVED_INT_WITH_RECEIVER =
+        0xafb4301200000000000000000000000000000000000000000000000000000000;
 
-    /// @notice selector for cuve forks using solidity swap(uint8,uint8,uint256,uint256,uint256)
+    /// @notice selector for Curve forks using solidity swap(uint8,uint8,uint256,uint256,uint256)
     bytes32 private constant SWAP = 0x9169558600000000000000000000000000000000000000000000000000000000;
 
-    function _fundAndApproveIfNeeded(address callerAddress, address tokenIn, uint256 amount, uint256 data) private returns (address pool) {
+    function _fundAndApproveIfNeeded(
+        address callerAddress,
+        address tokenIn,
+        uint256 amount,
+        uint256 data
+    )
+        private
+        returns (address pool)
+    {
         assembly {
             let ptr := mload(0x40)
             pool := shr(96, data)
@@ -137,11 +148,19 @@ abstract contract CurveSwapper is ERC20Selectors, Masks {
     }
 
     /**
-     * Swaps using a standard curve pool
-     * Data is supposed to be packed as follows
-     * tokenIn | actionId | dexId | pool | i | j | sm | tokenOut
-     * sm is the selector,
-     * i,j are the swap indexes for the pool
+     * @notice Swaps using a standard curve pool
+     * @dev Data is supposed to be packed as follows: tokenIn | actionId | dexId | pool | i | j | sm | tokenOut.
+     * sm is the selector, i,j are the swap indexes for the pool.
+     * Pay mode: 0 = pay from self; 1 = caller pays; 3 = pre-funded.
+     * @param tokenIn Input token address
+     * @param tokenOut Output token address
+     * @param amountIn Input amount
+     * @param receiver Receiver address
+     * @param callerAddress Address of the caller
+     * @param currentOffset Current position in the calldata
+     * @return amountOut Output amount
+     * @return curveData Updated calldata offset after processing
+     * @custom:calldata-offset-table
      * | Offset | Length (bytes) | Description          |
      * |--------|----------------|----------------------|
      * | 0      | 20             | pool                 |
@@ -272,7 +291,7 @@ abstract contract CurveSwapper is ERC20Selectors, Masks {
             ////////////////////////////////////////////////////
             // Send funds to receiver if needed
             // curveData is now the flag for manually
-            // transferuing to the receiver
+            // transferring to the receiver
             ////////////////////////////////////////////////////
             if and(curveData, xor(receiver, address())) {
                 // selector for transfer(address,uint256)
@@ -309,11 +328,19 @@ abstract contract CurveSwapper is ERC20Selectors, Masks {
     }
 
     /**
-     * Swaps using a standard curve pool
-     * Data is supposed to be packed as follows
-     * tokenIn | actionId | dexId | pool | i | j | sm | tokenOut
-     * sm is the selector,
-     * i,j are the swap indexes for the pool
+     * @notice Swaps using a standard curve fork pool
+     * @dev Data is supposed to be packed as follows: tokenIn | actionId | dexId | pool | i | j | sm | tokenOut.
+     * sm is the selector, i,j are the swap indexes for the pool.
+     * Pay mode: 0 = pay from self; 1 = caller pays; 3 = pre-funded.
+     * @param tokenIn Input token address
+     * @param tokenOut Output token address
+     * @param amountIn Input amount
+     * @param receiver Receiver address
+     * @param callerAddress Address of the caller
+     * @param currentOffset Current position in the calldata
+     * @return amountOut Output amount
+     * @return curveData Updated calldata offset after processing
+     * @custom:calldata-offset-table
      * | Offset | Length (bytes) | Description          |
      * |--------|----------------|----------------------|
      * | 0      | 20             | pool                 |
@@ -455,11 +482,18 @@ abstract contract CurveSwapper is ERC20Selectors, Masks {
     }
 
     /**
-     * Swaps using a NG pool that allows for pre-funded swaps
-     * Data is supposed to be packed as follows
-     * tokenIn | actionId | dexId | pool | sm | i | j | tokenOut
-     * sm is the selector,
-     * i,j are the swap indexes for the pool
+     * @notice Swaps using a NG pool that allows for pre-funded swaps
+     * @dev Data is supposed to be packed as follows: tokenIn | actionId | dexId | pool | sm | i | j | tokenOut.
+     * sm is the selector, i,j are the swap indexes for the pool.
+     * Pay mode: 0 = pay from self; 1 = caller pays; 3 = pre-funded.
+     * @param tokenIn Input token address
+     * @param amountIn Input amount
+     * @param receiver Receiver address
+     * @param callerAddress Address of the caller
+     * @param currentOffset Current position in the calldata
+     * @return payFlagAmountOut Output amount (with pay flag)
+     * @return curveData Updated calldata offset after processing
+     * @custom:calldata-offset-table
      * | Offset | Length (bytes) | Description          |
      * |--------|----------------|----------------------|
      * | 0      | 20             | pool                 |

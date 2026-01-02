@@ -13,21 +13,26 @@ import {BaseSwapper} from "./BaseSwapper.sol";
  *   add calldata to the respective call to trigger it
  */
 abstract contract Swaps is BaseSwapper {
+    /**
+     * @notice Executes a swap operation
+     * @dev Decodes swap parameters and routes to appropriate DEX handler. Supports flash-swaps.
+     * @param currentOffset Current position in the calldata
+     * @param callerAddress Address of the caller
+     * @return Updated calldata offset after processing
+     * @custom:calldata-offset-table
+     * | Offset | Length (bytes) | Description          |
+     * |--------|----------------|----------------------|
+     * | 0      | 16             | amount               | <-- input amount
+     * | 16     | 16             | amountMax            | <-- slippage check
+     * | 32     | 20             | tokenIn              |
+     * | 52     | any            | data                 |
+     *
+     * `data` is a path matrix definition (see BaseSwapper)
+     */
     function _swap(uint256 currentOffset, address callerAddress) internal returns (uint256) {
         uint256 amountIn;
         uint256 minimumAmountReceived;
         address tokenIn;
-        /*
-         * Store the data for the callback as follows
-         * | Offset | Length (bytes) | Description          |
-         * |--------|----------------|----------------------|
-         * | 0      | 16             | amount               | <-- input amount
-         * | 16     | 16             | amountMax            | <-- slippage check
-         * | 32     | 20             | tokenIn              |
-         * | 52     | any            | data                 |
-         *
-         * `data` is a path matrix definition (see BaseSwapepr)
-         */
         assembly {
             minimumAmountReceived := calldataload(currentOffset)
             amountIn := shr(128, minimumAmountReceived)

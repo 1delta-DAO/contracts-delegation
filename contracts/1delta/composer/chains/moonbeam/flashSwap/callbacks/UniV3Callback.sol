@@ -23,6 +23,9 @@ abstract contract UniV3Callbacks is V3Callbacker, Masks, DeltaErrors {
     bytes32 private constant SUSHISWAP_V3_FF_FACTORY = 0xff2ecd58F51819E8F8BA08A650BEA04Fc0DEa1d5230000000000000000000000;
     bytes32 private constant SUSHISWAP_V3_CODE_HASH = 0xe34f199b19b2b4f47f68442619d555527d244f78a3297ea89325f843f87b8b54;
 
+    bytes32 private constant BEAMSWAP_V3_FF_FACTORY = 0xff99bf59Eb23C1B3594764662Ad052f5C42Bfd681e0000000000000000000000;
+    bytes32 private constant BEAMSWAP_V3_CODE_HASH = 0x56b18efe15e1c2147cb76980b82af9abdb11804d1023cea47ed03a9482bd30d3;
+
     bytes32 private constant STELLASWAP_V3_FF_FACTORY = 0xff965A857955d868fd98482E9439b1aF297623fb94ffffffffffffffffffffff;
     bytes32 private constant STELLASWAP_V3_CODE_HASH = 0x424896f6cdc5182412012e0779626543e1dc4b12e1c45ee5718ae92f10ad97f2;
 
@@ -55,6 +58,15 @@ abstract contract UniV3Callbacks is V3Callbacker, Masks, DeltaErrors {
                     codeHash := SUSHISWAP_V3_CODE_HASH
                 }
                 default { revert(0, 0) }
+                let _amount1 := calldataload(36)
+                switch sgt(_amount1, 0)
+                case 1 { amountToPay := _amount1 }
+                default { amountToPay := calldataload(4) }
+            }
+            case 0xa6e9347900000000000000000000000000000000000000000000000000000000 {
+                ffFactoryAddress := BEAMSWAP_V3_FF_FACTORY
+                codeHash := BEAMSWAP_V3_CODE_HASH
+
                 let _amount1 := calldataload(36)
                 switch sgt(_amount1, 0)
                 case 1 { amountToPay := _amount1 }

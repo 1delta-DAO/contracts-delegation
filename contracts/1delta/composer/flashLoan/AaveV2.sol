@@ -9,7 +9,13 @@ import {Masks} from "../../shared/masks/Masks.sol";
  * @author 1delta Labs AG
  */
 contract AaveV2FlashLoans is Masks {
-    /*
+    /**
+     * @notice Executes Aave V2 flash loan
+     * @dev We allow ANY aave v2 style pool here
+     * @param currentOffset Current position in the calldata
+     * @param callerAddress Address of the caller
+     * @return Updated calldata offset after processing
+     * @custom:calldata-offset-table
      * | Offset | Length (bytes) | Description                     |
      * |--------|----------------|---------------------------------|
      * | 0      | 20             | asset                           |
@@ -28,7 +34,7 @@ contract AaveV2FlashLoans is Masks {
 
             // second calldata slice including amount annd params length
             let slice := calldataload(add(currentOffset, 40))
-            let amount := shr(128, slice) // shr will already mask uint112 here
+            let amount := shr(128, slice)
             // length of params
             let calldataLength := and(UINT16_MASK, shr(112, slice))
 

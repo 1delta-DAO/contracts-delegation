@@ -29,12 +29,24 @@ abstract contract Wrapper is ERC20Selectors, Masks {
     // WrapFailed()
     bytes4 private constant WRAP = 0xc30d93ce;
 
-    // Note that the for native wrapping, the assetIn/assetOut constellation defines the direction
-    // For ERC4626, the direction is defined by the operation parameter
-    // 1: deposit: deposit to vault, assetIn is the underlying and assetOut is the vault
-    // 2: redeem: redeem shares, assetIn is the vault, assetOut is the underlyinh
     /**
-     * This one is for overring the DEX implementation
+     * @notice Wrapper operation for ERC4626 vault and native wrap
+     * @dev This one is for overriding the DEX implementation.
+     * For native wrapping, the assetIn/assetOut constellation defines the direction.
+     * For ERC4626, the direction is defined by the operation parameter:
+     * - 0: native wrap/unwrap
+     * - 1: deposit - deposit to vault, assetIn is the underlying and assetOut is the vault
+     * - 2: redeem - redeem shares, assetIn is the vault, assetOut is the underlying
+     * Pay config: 0 = caller pays; 1 = contract pays; greater = pre-funded.
+     * @param assetIn Input asset address
+     * @param assetOut Output asset address
+     * @param amount Amount to process
+     * @param receiver Receiver address
+     * @param callerAddress Address of the caller
+     * @param currentOffset Current position in the calldata
+     * @return amountOut Output amount
+     * @return operationThenOffset Updated calldata offset after processing
+     * @custom:calldata-offset-table
      * | Offset | Length (bytes) | Description         |
      * |--------|----------------|---------------------|
      * | 0      | 1              | operation           |

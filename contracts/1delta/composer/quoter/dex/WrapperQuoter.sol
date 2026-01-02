@@ -15,7 +15,15 @@ abstract contract WrapperQuoter {
     bytes32 private constant ERC4626_PREVIEW_REDEEM = 0x4cdad50600000000000000000000000000000000000000000000000000000000;
 
     /**
-     * This one is for overring the DEX implementation
+     * @notice Quotes amountOut for wrapper operations (ERC4626 vaults)
+     * @dev This one is for overriding the DEX implementation
+     * @param assetIn Input asset address
+     * @param assetOut Output asset address
+     * @param amount Input amount
+     * @param currentOffset Current position in the calldata
+     * @return amountOut Output amount
+     * @return operationThenOffset Updated calldata offset after processing
+     * @custom:calldata-offset-table
      * | Offset | Length (bytes) | Description         |
      * |--------|----------------|---------------------|
      * | 0      | 1              | operation           |

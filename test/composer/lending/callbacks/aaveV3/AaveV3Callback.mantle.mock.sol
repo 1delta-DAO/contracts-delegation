@@ -1,15 +1,12 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
-import {console} from "forge-std/console.sol";
-import {Vm} from "forge-std/Vm.sol";
 import {Chains, Lenders, Tokens} from "test/data/LenderRegistry.sol";
 import {DeltaErrors} from "contracts/1delta/shared/errors/Errors.sol";
 import {ComposerPlugin, IComposerLike} from "plugins/ComposerPlugin.sol";
-import {CalldataLib} from "test/composer/utils/CalldataLib.sol";
+import {CalldataLib} from "contracts/utils/CalldataLib.sol";
 import {BaseTest} from "test/shared/BaseTest.sol";
-import {AaveMockPool, IAaveFlashLoanReceiver, IAavePool} from "test/mocks/AaveMockPool.sol";
-import {IERC20} from "openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
+import {AaveMockPool, IAavePool} from "test/mocks/AaveMockPool.sol";
 import {SweepType} from "contracts/1delta/composer/enums/MiscEnums.sol";
 
 contract AaveV3FlashLoanCallbackTest is BaseTest, DeltaErrors {
@@ -20,6 +17,17 @@ contract AaveV3FlashLoanCallbackTest is BaseTest, DeltaErrors {
     address private LENDLE_CMETH;
     address private LENDLE_PT_CMETH;
     address private LENDLE_SUSDE;
+    address private LENDLE_SUSDE_USDT;
+    address private LENDLE_METH_WETH;
+    address private LENDLE_METH_USDE;
+    address private LENDLE_CMETH_WETH;
+    address private LENDLE_CMETH_USDE;
+    address private LENDLE_CMETH_WMNT;
+    address private LENDLE_FBTC_WETH;
+    address private LENDLE_FBTC_USDE;
+    address private LENDLE_FBTC_WMNT;
+    address private LENDLE_WMNT_WETH;
+    address private LENDLE_WMNT_USDE;
 
     address private USDC;
 
@@ -47,7 +55,7 @@ contract AaveV3FlashLoanCallbackTest is BaseTest, DeltaErrors {
         mockPool = new AaveMockPool();
     }
 
-    function test_flash_loan_aaveV3_type_kinza_pool_with_callbacks() public {
+    function test_unit_lending_flashloans_aaveV3_callback_kinzaPool() public {
         // mock implementation
         replaceLendingPoolWithMock(KINZA);
 
@@ -57,7 +65,7 @@ contract AaveV3FlashLoanCallbackTest is BaseTest, DeltaErrors {
         oneDV2.deltaCompose(params);
     }
 
-    function test_flash_loan_aaveV3_type_lendle_cmeth_pool_with_callbacks() public {
+    function test_unit_lending_flashloans_aaveV3_callback_lendle_cmethPool() public {
         // mock implementation
         replaceLendingPoolWithMock(LENDLE_CMETH);
 
@@ -67,7 +75,7 @@ contract AaveV3FlashLoanCallbackTest is BaseTest, DeltaErrors {
         oneDV2.deltaCompose(params);
     }
 
-    function test_flash_loan_aaveV3_type_lendle_pt_cmeth_pool_with_callbacks() public {
+    function test_unit_lending_flashloans_aaveV3_callback_lendle_pt_cmethPool() public {
         // mock implementation
         replaceLendingPoolWithMock(LENDLE_PT_CMETH);
 
@@ -77,7 +85,7 @@ contract AaveV3FlashLoanCallbackTest is BaseTest, DeltaErrors {
         oneDV2.deltaCompose(params);
     }
 
-    function test_flash_loan_aaveV3_type_lendle_susde_pool_with_callbacks() public {
+    function test_unit_lending_flashloans_aaveV3_callback_lendle_susdePool() public {
         // mock implementation
         replaceLendingPoolWithMock(LENDLE_SUSDE);
 
@@ -87,9 +95,120 @@ contract AaveV3FlashLoanCallbackTest is BaseTest, DeltaErrors {
         oneDV2.deltaCompose(params);
     }
 
-    function test_flash_loan_aaveV3_type_wrongCaller_revert() public {
+    function test_unit_lending_flashloans_aaveV3_callback_lendle_susde_usdtPool() public {
+        // mock implementation
+        replaceLendingPoolWithMock(LENDLE_SUSDE_USDT);
+
+        bytes memory params = CalldataLib.encodeFlashLoan(USDC, 1e6, LENDLE_SUSDE_USDT, uint8(2), uint8(105), sweepCall());
+
+        vm.prank(user);
+        oneDV2.deltaCompose(params);
+    }
+
+    function test_unit_lending_flashloans_aaveV3_callback_lendle_meth_wethPool() public {
+        // mock implementation
+        replaceLendingPoolWithMock(LENDLE_METH_WETH);
+
+        bytes memory params = CalldataLib.encodeFlashLoan(USDC, 1e6, LENDLE_METH_WETH, uint8(2), uint8(106), sweepCall());
+
+        vm.prank(user);
+        oneDV2.deltaCompose(params);
+    }
+
+    function test_unit_lending_flashloans_aaveV3_callback_lendle_meth_usdePool() public {
+        // mock implementation
+        replaceLendingPoolWithMock(LENDLE_METH_USDE);
+
+        bytes memory params = CalldataLib.encodeFlashLoan(USDC, 1e6, LENDLE_METH_USDE, uint8(2), uint8(107), sweepCall());
+
+        vm.prank(user);
+        oneDV2.deltaCompose(params);
+    }
+
+    function test_unit_lending_flashloans_aaveV3_callback_lendle_cmeth_wethPool() public {
+        // mock implementation
+        replaceLendingPoolWithMock(LENDLE_CMETH_WETH);
+
+        bytes memory params = CalldataLib.encodeFlashLoan(USDC, 1e6, LENDLE_CMETH_WETH, uint8(2), uint8(108), sweepCall());
+
+        vm.prank(user);
+        oneDV2.deltaCompose(params);
+    }
+
+    function test_unit_lending_flashloans_aaveV3_callback_lendle_cmeth_usdePool() public {
+        // mock implementation
+        replaceLendingPoolWithMock(LENDLE_CMETH_USDE);
+
+        bytes memory params = CalldataLib.encodeFlashLoan(USDC, 1e6, LENDLE_CMETH_USDE, uint8(2), uint8(109), sweepCall());
+
+        vm.prank(user);
+        oneDV2.deltaCompose(params);
+    }
+
+    function test_unit_lending_flashloans_aaveV3_callback_lendle_cmeth_wmntPool() public {
+        // mock implementation
+        replaceLendingPoolWithMock(LENDLE_CMETH_WMNT);
+
+        bytes memory params = CalldataLib.encodeFlashLoan(USDC, 1e6, LENDLE_CMETH_WMNT, uint8(2), uint8(110), sweepCall());
+
+        vm.prank(user);
+        oneDV2.deltaCompose(params);
+    }
+
+    function test_unit_lending_flashloans_aaveV3_callback_lendle_fbtc_wethPool() public {
+        // mock implementation
+        replaceLendingPoolWithMock(LENDLE_FBTC_WETH);
+
+        bytes memory params = CalldataLib.encodeFlashLoan(USDC, 1e6, LENDLE_FBTC_WETH, uint8(2), uint8(111), sweepCall());
+
+        vm.prank(user);
+        oneDV2.deltaCompose(params);
+    }
+
+    function test_unit_lending_flashloans_aaveV3_callback_lendle_fbtc_usdePool() public {
+        // mock implementation
+        replaceLendingPoolWithMock(LENDLE_FBTC_USDE);
+
+        bytes memory params = CalldataLib.encodeFlashLoan(USDC, 1e6, LENDLE_FBTC_USDE, uint8(2), uint8(112), sweepCall());
+
+        vm.prank(user);
+        oneDV2.deltaCompose(params);
+    }
+
+    function test_unit_lending_flashloans_aaveV3_callback_lendle_fbtc_wmntPool() public {
+        // mock implementation
+        replaceLendingPoolWithMock(LENDLE_FBTC_WMNT);
+
+        bytes memory params = CalldataLib.encodeFlashLoan(USDC, 1e6, LENDLE_FBTC_WMNT, uint8(2), uint8(113), sweepCall());
+
+        vm.prank(user);
+        oneDV2.deltaCompose(params);
+    }
+
+    function test_unit_lending_flashloans_aaveV3_callback_lendle_wmnt_wethPool() public {
+        // mock implementation
+        replaceLendingPoolWithMock(LENDLE_WMNT_WETH);
+
+        bytes memory params = CalldataLib.encodeFlashLoan(USDC, 1e6, LENDLE_WMNT_WETH, uint8(2), uint8(114), sweepCall());
+
+        vm.prank(user);
+        oneDV2.deltaCompose(params);
+    }
+
+    function test_unit_lending_flashloans_aaveV3_callback_lendle_wmnt_usdePool() public {
+        // mock implementation
+        replaceLendingPoolWithMock(LENDLE_WMNT_USDE);
+
+        bytes memory params = CalldataLib.encodeFlashLoan(USDC, 1e6, LENDLE_WMNT_USDE, uint8(2), uint8(115), sweepCall());
+
+        vm.prank(user);
+        oneDV2.deltaCompose(params);
+    }
+
+    function test_unit_lending_flashloans_aaveV3_callback_wrongCallerRevert() public {
         for (uint256 i = 0; i < validPools.length; i++) {
-            bytes memory params = CalldataLib.encodeFlashLoan(USDC, 1e6, address(mockPool), uint8(2), uint8(validPools[0].poolId), sweepCall());
+            bytes memory params =
+                CalldataLib.encodeFlashLoan(USDC, 1e6, address(mockPool), uint8(2), uint8(validPools[0].poolId), sweepCall());
 
             vm.prank(user);
             vm.expectRevert(DeltaErrors.INVALID_CALLER);
@@ -97,7 +216,7 @@ contract AaveV3FlashLoanCallbackTest is BaseTest, DeltaErrors {
         }
     }
 
-    function test_flash_loan_aaveV3_type_WrongInitiator_revert() public {
+    function test_unit_lending_flashloans_aaveV3_callback_wrongInitiatorRevert() public {
         for (uint256 i = 0; i < validPools.length; i++) {
             PoolCase memory pc = validPools[i];
             // mock implementation
@@ -109,7 +228,7 @@ contract AaveV3FlashLoanCallbackTest is BaseTest, DeltaErrors {
         }
     }
 
-    function test_flash_loan_aaveV3_type_fuzz_invalidPoolIds(uint8 poolId) public {
+    function test_unit_lending_flashloans_aaveV3_callback_fuzzInvalidPoolIds(uint8 poolId) public {
         replaceLendingPoolWithMock(KINZA);
 
         for (uint256 i = 0; i < validPools.length; i++) {
@@ -131,6 +250,17 @@ contract AaveV3FlashLoanCallbackTest is BaseTest, DeltaErrors {
         LENDLE_CMETH = chain.getLendingController(Lenders.LENDLE_CMETH);
         LENDLE_PT_CMETH = chain.getLendingController(Lenders.LENDLE_PT_CMETH);
         LENDLE_SUSDE = chain.getLendingController(Lenders.LENDLE_SUSDE);
+        LENDLE_SUSDE_USDT = chain.getLendingController(Lenders.LENDLE_SUSDE_USDT);
+        LENDLE_METH_WETH = chain.getLendingController(Lenders.LENDLE_METH_WETH);
+        LENDLE_METH_USDE = chain.getLendingController(Lenders.LENDLE_METH_USDE);
+        LENDLE_CMETH_WETH = chain.getLendingController(Lenders.LENDLE_CMETH_WETH);
+        LENDLE_CMETH_USDE = chain.getLendingController(Lenders.LENDLE_CMETH_USDE);
+        LENDLE_CMETH_WMNT = chain.getLendingController(Lenders.LENDLE_CMETH_WMNT);
+        LENDLE_FBTC_WETH = chain.getLendingController(Lenders.LENDLE_FBTC_WETH);
+        LENDLE_FBTC_USDE = chain.getLendingController(Lenders.LENDLE_FBTC_USDE);
+        LENDLE_FBTC_WMNT = chain.getLendingController(Lenders.LENDLE_FBTC_WMNT);
+        LENDLE_WMNT_WETH = chain.getLendingController(Lenders.LENDLE_WMNT_WETH);
+        LENDLE_WMNT_USDE = chain.getLendingController(Lenders.LENDLE_WMNT_USDE);
 
         // Get token addresses
         USDC = chain.getTokenAddress(Tokens.USDC);
@@ -141,6 +271,17 @@ contract AaveV3FlashLoanCallbackTest is BaseTest, DeltaErrors {
         validPools.push(PoolCase({poolId: 102, poolAddr: LENDLE_CMETH, asset: USDC}));
         validPools.push(PoolCase({poolId: 103, poolAddr: LENDLE_PT_CMETH, asset: USDC}));
         validPools.push(PoolCase({poolId: 104, poolAddr: LENDLE_SUSDE, asset: USDC}));
+        validPools.push(PoolCase({poolId: 105, poolAddr: LENDLE_SUSDE_USDT, asset: USDC}));
+        validPools.push(PoolCase({poolId: 106, poolAddr: LENDLE_METH_WETH, asset: USDC}));
+        validPools.push(PoolCase({poolId: 107, poolAddr: LENDLE_METH_USDE, asset: USDC}));
+        validPools.push(PoolCase({poolId: 108, poolAddr: LENDLE_CMETH_WETH, asset: USDC}));
+        validPools.push(PoolCase({poolId: 109, poolAddr: LENDLE_CMETH_USDE, asset: USDC}));
+        validPools.push(PoolCase({poolId: 110, poolAddr: LENDLE_CMETH_WMNT, asset: USDC}));
+        validPools.push(PoolCase({poolId: 111, poolAddr: LENDLE_FBTC_WETH, asset: USDC}));
+        validPools.push(PoolCase({poolId: 112, poolAddr: LENDLE_FBTC_USDE, asset: USDC}));
+        validPools.push(PoolCase({poolId: 113, poolAddr: LENDLE_FBTC_WMNT, asset: USDC}));
+        validPools.push(PoolCase({poolId: 114, poolAddr: LENDLE_WMNT_WETH, asset: USDC}));
+        validPools.push(PoolCase({poolId: 115, poolAddr: LENDLE_WMNT_USDE, asset: USDC}));
     }
 
     function mockERC20FunctionsForAllTokens() internal {

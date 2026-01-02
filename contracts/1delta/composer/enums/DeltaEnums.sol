@@ -32,6 +32,7 @@ library LenderIds {
     uint256 internal constant UP_TO_COMPOUND_V3 = 3000;
     uint256 internal constant UP_TO_COMPOUND_V2 = 4000;
     uint256 internal constant UP_TO_MORPHO = 5000;
+    uint256 internal constant UP_TO_SILO_V2 = 6000;
 }
 
 /**
@@ -81,6 +82,8 @@ library ComposerCommands {
     uint256 internal constant SWAPS = 0x10;
     uint256 internal constant EXT_CALL = 0x20;
     uint256 internal constant EXT_TRY_CALL = 0x21;
+    uint256 internal constant EXT_CALL_WITH_REPLACE = 0x22;
+    uint256 internal constant EXT_TRY_CALL_WITH_REPLACE = 0x23;
     uint256 internal constant LENDING = 0x30;
     uint256 internal constant TRANSFERS = 0x40;
     uint256 internal constant PERMIT = 0x50;
@@ -104,4 +107,9 @@ library CompoundV2Selector {
 
     uint256 internal constant REDEEM = 0;
     uint256 internal constant REDEEM_BEHALF = 1;
+}
+
+library SiloV2CollateralType {
+    uint256 internal constant PROTECTED = 0;
+    uint256 internal constant COLLATERAL = 1;
 }

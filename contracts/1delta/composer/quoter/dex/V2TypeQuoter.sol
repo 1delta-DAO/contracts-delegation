@@ -6,7 +6,16 @@ import {ERC20Selectors} from "../../../shared/selectors/ERC20Selectors.sol";
 import {Masks} from "../../../shared/masks/Masks.sol";
 
 abstract contract V2TypeQuoter is ERC20Selectors, Masks {
-    /*
+    /**
+     * @notice Calculates amountOut for Uniswap V2 style pools
+     * @dev Does not require overflow checks
+     * @param sellAmount Input amount
+     * @param tokenIn Input token address
+     * @param tokenOut Output token address
+     * @param currentOffset Current position in the calldata
+     * @return buyAmount Output amount
+     * @return Updated calldata offset after processing
+     * @custom:calldata-offset-table
      * | Offset | Length (bytes) | Description          |
      * |--------|----------------|----------------------|
      * | 0      | 20             | pool                 |
@@ -15,7 +24,6 @@ abstract contract V2TypeQuoter is ERC20Selectors, Masks {
      * | 23     | 2              | calldataLength       | <-- 0: pay from self; 1: caller pays; 3: pre-funded;
      * | 25     | calldataLength | calldata             |
      */
-    /// @dev calculate amountOut for uniV2 style pools - does not require overflow checks
     function _getV2TypeAmountOut(
         uint256 sellAmount,
         address tokenIn,

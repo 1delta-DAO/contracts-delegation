@@ -1,8 +1,8 @@
-import {ASSET_META, CHAIN_INFO} from "@1delta/asset-registry";
 import {
     aavePools,
     aaveReserves,
     aaveTokens,
+    chains,
     compoundV2Pools,
     compoundV2Reserves,
     compoundV2Tokens,
@@ -15,6 +15,7 @@ import {fetchLenderMetaFromDirAndInitialize} from "./utils";
 import {getAddress} from "ethers/lib/utils";
 import * as fs from "fs";
 import {uniq} from "lodash";
+import {loadTokenLists, getTokenFromCache} from "../_shared/tokenLists";
 
 const contractHeader = () => `
 // SPDX-License-Identifier: BUSL-1.1
@@ -69,15 +70,15 @@ const isCompoundV2 = (arr: string[]) => {
 };
 
 function getChainString(s: any) {
-    return CHAIN_INFO[s].enum;
+    return chains()[s].enum;
 }
 
 function getChainId(s: any) {
-    return CHAIN_INFO[s].chainId;
+    return chains()[s].chainId;
 }
 
 function getChainRpc(s: any) {
-    return CHAIN_INFO[s].rpc?.filter((rpc) => !rpc.includes("$"))[0] || ""; // filter out the ones with env vars
+    return chains()[s].rpc?.filter((rpc) => !rpc.includes("$"))[0] || ""; // filter out the ones with env vars
 }
 
 const chainLibHeader = () => `
@@ -111,6 +112,7 @@ async function main() {
     // manual overrides for chains
     chainIdsCovered.push("1284"); // Moonbeam
     chainIdsCovered.push("25"); // cronos
+    chainIdsCovered.push("143"); // Monad
 
     // aave
     Object.entries(aavePools()).forEach(([lender, maps]) => {
@@ -140,6 +142,11 @@ async function main() {
             chainIdsCovered.push(chains);
         });
     });
+
+    const uniqueChainIds = uniq(chainIdsCovered);
+    console.log(`Fetching token lists for ${uniqueChainIds.length} chains...`);
+    await loadTokenLists(uniqueChainIds);
+    console.log(`Token lists loaded successfully`);
 
     ///////////////////////////////////////////////////////////////
     // Create libraries first to reference them in the constructor
@@ -182,11 +189,11 @@ async function main() {
     // 3. Create token symbols library
     ///////////////////////////////////////////////////////////////
     let tokenSymbols: string[] = [];
-    Object.entries(chainToToken).forEach(([chain, tokenList]) => {
+    Object.entries(chainToToken ?? {}).forEach(([chain, tokenList]) => {
         const _tokenListClean = uniq(tokenList);
         _tokenListClean.forEach((token) => {
-            const meta = ASSET_META[chain]?.[token];
-            if (meta && !meta.assetGroup?.endsWith(")")) {
+            const meta = getTokenFromCache(chain, token);
+            if (meta && !meta.assetGroup?.endsWith(")") && meta.symbol) {
                 const key = symbolToKey(meta.symbol) ?? meta.symbol;
                 tokenSymbols.push(key);
             }
@@ -222,7 +229,6 @@ async function main() {
     data += `constructor() {\n`;
 
     // Add Chain Info
-    const uniqueChainIds = uniq(chainIdsCovered);
     uniqueChainIds.forEach((chain) => {
         const chainConstant = `Chains.${getChainString(chain)}`;
         const rpcUrl = getChainRpc(chain);
@@ -238,12 +244,12 @@ async function main() {
         const tokens = aaveTokens()[lender];
 
         // add aave tokens
-        Object.entries(tokens).forEach(([chainId, tokens]) => {
+        Object.entries(tokens ?? {}).forEach(([chainId, tokens]) => {
             const chainConstant = `Chains.${getChainString(chainId)}`;
             const lenderConstant = `Lenders.${lender}`;
 
             Object.entries(tokens).forEach(([reserve, lenderTokens]) => {
-                const meta = ASSET_META[chainId]?.[reserve];
+                const meta = getTokenFromCache(chainId, reserve);
                 if (meta && !meta.assetGroup?.endsWith(")")) {
                     data += `    lendingTokens[${chainConstant}][${lenderConstant}][${getAddress(reserve)}] = LenderTokens(${getAddress(
                         lenderTokens.aToken
@@ -295,7 +301,7 @@ async function main() {
             const chainConstant = `Chains.${getChainString(chainId)}`;
 
             Object.entries(tokens).forEach(([reserve, lenderTokens]) => {
-                const meta = ASSET_META[chainId]?.[reserve];
+                const meta = getTokenFromCache(chainId, reserve);
                 if ((meta && !meta.assetGroup?.endsWith(")")) || reserve === "0x0000000000000000000000000000000000000000") {
                     data += `    lendingTokens[${chainConstant}][${lenderConstant}][${getAddress(reserve)}] = LenderTokens(${getAddress(
                         lenderTokens
@@ -319,9 +325,9 @@ async function main() {
         const _tokenListClean = uniq(tokenList);
 
         _tokenListClean.forEach((token) => {
-            const meta = ASSET_META[chain]?.[token];
+            const meta = getTokenFromCache(chain, token);
             // skip non-mapped for now
-            if (meta && !meta.assetGroup?.endsWith(")")) {
+            if (meta && !meta.assetGroup?.endsWith(")") && meta.symbol) {
                 const key = symbolToKey(meta.symbol) ?? meta.symbol;
                 const tokenConstant = `Tokens.${key}`;
                 data += `    tokens[${chainConstant}][${tokenConstant}] = ${getAddress(token)};\n`;

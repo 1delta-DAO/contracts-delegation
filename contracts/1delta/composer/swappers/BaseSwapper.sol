@@ -20,6 +20,9 @@ import {BalancerV3Swapper} from "./dex/BalancerV3Swapper.sol";
 // solhint-disable max-line-length
 
 /**
+ * @title Base swapper contract
+ * @notice Contains basic logic for swap executions with DEXs
+ * @dev
  * Core logic: Encode swaps as nested matrices (r: rows - multihops; c:columns - splits)
  * Every element in a matrix can be another matrix
  * The nesting stops at a (0,0) entry
@@ -41,7 +44,7 @@ import {BalancerV3Swapper} from "./dex/BalancerV3Swapper.sol";
  * Multihops progressively update value (in amount -> out amount) too always ensure that values
  * within sub splits ((x,0) or (0,y)) are correctly accumulated
  *
- * A case like (1,2) is a violation as we always demand a clear gruping of the branch
+ * A case like (1,2) is a violation as we always demand a clear grouping of the branch
  * This is intuitive as we cannot have a split and a multihop at the same time.
  *
  * Every node with (x,0) is expected to have consistent multihop connections
@@ -56,12 +59,7 @@ import {BalancerV3Swapper} from "./dex/BalancerV3Swapper.sol";
  * This allows arbitrary deep nesting of sub-routes and splits
  *
  * Rows are prioritized over columns.
- * /
- *
- * /**
- * @title Base swapper contract
- * @notice Contains basic logic for swap executions with DEXs
- * DEX Id layout:
+ * @custom:dex-id-layout
  * 0 --- 100 : Self swappers (Uni V3, Curve, Clipper)
  * 100 - 255 : Funded swaps (Uni V2, Solidly, Moe,Joe LB, WooFI, GMX)
  *             Uni V2: 100 - 110
@@ -122,20 +120,35 @@ abstract contract BaseSwapper is
     }
 
     /**
-     * Ensure that all paths end with the same CCY
-     * parallel swaps a->...->b; a->...->b for different dexs
+     * @notice Ensures that all paths end with the same currency
+     * @dev Parallel swaps a->...->b; a->...->b for different DEXs
+     * @param amountIn Input amount
+     * @param splitsMaxIndex Maximum split index
+     * @param tokenIn Input token address
+     * @param callerAddress Address of the caller
+     * @param currentOffset Current position in the calldata
+     * @return Updated amount after swaps
+     * @return Updated calldata offset after processing
+     * @return nextToken Next token address
+     * @custom:calldata-offset-table
      * | Offset | Length (bytes) | Description          |
      * |--------|----------------|----------------------|
      * | 0      | 0-16           | splits               |
      * | sC     | Variable       | datas                |
      *
-     * `splits` looks like follows
+     * @custom:split-format
      * | Offset | Length (bytes) | Description          |
      * |--------|----------------|----------------------|
      * | 0      | 1              | count                |
      * | 1      | 2*count - 1    | splits               | <- count = 0 means there is no data, otherwise uint16 splits
      *
-     * `datas` looks like follows
+     * @notice Split indices use complementary calculation: splits are stored as uint16 fractions of uint16.max,
+     *         but since exact matches are never guaranteed, only indices 0 through (splitsMaxIndex - 1) are
+     *         parameterized. The final split at index splitsMaxIndex is automatically calculated as the
+     *         remaining amount (total - sum of all previous splits). For example, if using 33% splits and
+     *         parameterizing only indices 0 and 1, index 2 will be calculated as 34% (100% - 33% - 33%).
+     *
+     * @custom:datas-format
      * | Offset | Length (bytes) | Description          |
      * |--------|----------------|----------------------|
      * | 0      | 2              | (r,c)                | <- indicates whether the swap is non-simple (further splits or hops)
@@ -145,8 +158,6 @@ abstract contract BaseSwapper is
      * | 4+v    | 1              | dexId                |
      * | ...    | variable       | params               | <- depends on dexId (fixed for each one)
      * | ...    | ...            | ...                  | <- count + 1 times of repeating this pattern
-     *
-     * returns cumulative output, updated offset and nextToken address
      */
     function _singleSwapOrSplit(
         uint256 amountIn,
@@ -185,17 +196,16 @@ abstract contract BaseSwapper is
                     }
                     default {
                         // splits are uint16s as share of uint16.max
-                        split :=
-                            div(
-                                mul(
-                                    and(
-                                        UINT16_MASK,
-                                        shr(sub(112, mul(i, 16)), splits) // read the uin16 in the splits sequence
-                                    ),
-                                    amountIn //
+                        split := div(
+                            mul(
+                                and(
+                                    UINT16_MASK,
+                                    shr(sub(112, mul(i, 16)), splits) // read the uin16 in the splits sequence
                                 ),
-                                UINT16_MASK //
-                            )
+                                amountIn //
+                            ),
+                            UINT16_MASK //
+                        )
                     }
                     i := add(i, 1)
                 }
@@ -227,20 +237,23 @@ abstract contract BaseSwapper is
         return (amountIn, currentOffset, nextToken);
     }
 
-    /*
-     * execute swap or split amounts
+    /**
+     * @notice Executes swap or split amounts
+     * @dev If r=0: if c=0 then single swap, else split swap. If r!=0: multihop swap.
+     * Always returns output amount, updated offset and nextToken address.
+     * @param amountIn Input amount
+     * @param tokenIn Input token address
+     * @param callerAddress Address of the caller
+     * @param currentOffset Current position in the calldata
+     * @return received Output amount
+     * @return Updated calldata offset after processing
+     * @return nextToken Next token address
+     * @custom:calldata-offset-table
      * | Offset | Length (bytes) | Description          |
      * |--------|----------------|----------------------|
      * | 0      | 2              | (r,c)                |
      * | 2      | 20             | nextToken            |
      * | 22     | any            | swapData             |
-     *
-     * if r=0
-     *      if c=0 : single swap
-     *      else: split swap
-     * else: multihop swap
-     *
-     * always return output amount, updated offset and nextToken address
      */
     function _singleSwapSplitOrRoute(
         uint256 amountIn,
@@ -259,6 +272,7 @@ abstract contract BaseSwapper is
             splitsMaxIndex := and(UINT8_MASK, shr(240, datas))
             currentOffset := add(currentOffset, 2)
         }
+        if (splitsMaxIndex > 8) revert InvalidCalldata();
         // swapMaxIndex = 0 is simple single swap
         // that is where each single step MUST end
         if (swapMaxIndex == 0) {

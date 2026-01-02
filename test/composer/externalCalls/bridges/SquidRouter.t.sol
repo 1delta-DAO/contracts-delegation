@@ -5,10 +5,10 @@ import {Test} from "forge-std/Test.sol";
 import {console} from "forge-std/console.sol";
 import {CallForwarder} from "contracts/1delta/composer/generic/CallForwarder.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import {CalldataLib} from "test/composer/utils/CalldataLib.sol";
+import {CalldataLib} from "contracts/utils/CalldataLib.sol";
 import {Chains} from "test/data/LenderRegistry.sol";
 import {ComposerPlugin, IComposerLike} from "plugins/ComposerPlugin.sol";
-import {MockSquidRouter} from "./MockSquidRouter.sol";
+import {MockSquidRouter} from "test/mocks/MockSquidRouter.sol";
 
 contract SquidRouterTest is Test {
     using CalldataLib for bytes;
@@ -41,19 +41,30 @@ contract SquidRouterTest is Test {
 
         vm.deal(address(composer), 1e10);
 
-        MockSquidRouter(gateway).setExpectedSquidCall(symbol, BRIDGE_AMOUNT, destChain, destAddress, payload, refundRecipient, enableExpress, 1e10);
+        MockSquidRouter(gateway).setExpectedSquidCall(
+            symbol, BRIDGE_AMOUNT, destChain, destAddress, payload, refundRecipient, enableExpress, 1e10
+        );
 
         return CalldataLib.encodeExternalCall(
             address(callForwarder),
             1e10,
             false,
             CalldataLib.encodeSquidRouterCall(
-                USDC, address(gateway), bytes(symbol), amount, bytes(destChain), bytes(destAddress), payload, refundRecipient, enableExpress, 1e10
+                USDC,
+                address(gateway),
+                bytes(symbol),
+                amount,
+                bytes(destChain),
+                bytes(destAddress),
+                payload,
+                refundRecipient,
+                enableExpress,
+                1e10
             )
         );
     }
 
-    function test_squid_router_bridge_call_amount() public {
+    function test_unit_externalCall_squid_router_bridge_call_amount() public {
         MockSquidRouter gateway = new MockSquidRouter();
         vm.label(address(gateway), "MockSquidRouter");
 
@@ -64,7 +75,7 @@ contract SquidRouterTest is Test {
         vm.stopPrank();
     }
 
-    function test_squid_router_bridge_call_balance() public {
+    function test_unit_externalCall_squid_router_bridge_call_balance() public {
         MockSquidRouter gateway = new MockSquidRouter();
         vm.label(address(gateway), "MockSquidRouter");
 

@@ -5,7 +5,7 @@ import {MarketParams, IMorphoEverything} from "test/composer/lending/utils/Morph
 import {IERC20All} from "test/shared/interfaces/IERC20All.sol";
 import {BaseTest} from "test/shared/BaseTest.sol";
 import {Chains, Tokens, Lenders} from "test/data/LenderRegistry.sol";
-import "test/composer/utils/CalldataLib.sol";
+import "contracts/utils/CalldataLib.sol";
 import {ComposerPlugin, IComposerLike} from "plugins/ComposerPlugin.sol";
 
 contract CompoundV2NativeComposerLightTest is BaseTest {
@@ -37,7 +37,7 @@ contract CompoundV2NativeComposerLightTest is BaseTest {
         oneDV2 = ComposerPlugin.getComposer(Chains.BASE);
     }
 
-    function test_light_lending_compoundV2_deposit_native() external {
+    function test_integ_lending_compoundV2_deposit_native() external {
         vm.assume(user != address(0));
 
         address token = address(0);
@@ -65,7 +65,7 @@ contract CompoundV2NativeComposerLightTest is BaseTest {
         assertApproxEqAbs(underlyingBefore - underlyingAfter, amount, 0);
     }
 
-    function test_light_lending_compoundV2_repay_native() external {
+    function test_integ_lending_compoundV2_repay_native() external {
         vm.assume(user != address(0));
 
         address depositToken = USDC;
@@ -100,6 +100,39 @@ contract CompoundV2NativeComposerLightTest is BaseTest {
         assertApproxEqAbs(underlyingBefore - underlyingAfter, amountToRepay, 1);
     }
 
+    function test_integ_lending_compoundV2_withdraw_native() external {
+        address token = address(0);
+        address comptroller = VENUS_COMPTROLLER;
+        uint256 amount = 1.0e18;
+
+        vm.deal(user, amount);
+
+        address cToken = _getCollateralToken(token);
+
+        depositNativeToCompoundV2(token, user, amount, comptroller, uint8(CompoundV2Selector.MINT));
+
+        vm.prank(user);
+        IERC20All(cToken).approve(address(oneDV2), type(uint256).max);
+
+        uint256 amountToWithdraw = 0.1e18;
+        bytes memory d =
+            CalldataLib.encodeCompoundV2Withdraw(token, amountToWithdraw, user, cToken, uint8(CompoundV2Selector.REDEEM));
+
+        // balances before withdrawal
+        uint256 collateralBefore = chain.getCollateralBalance(user, token, lender);
+        uint256 underlyingBefore = user.balance;
+
+        vm.prank(user);
+        oneDV2.deltaCompose(d);
+
+        // balances after withdrawal
+        uint256 collateralAfter = chain.getCollateralBalance(user, token, lender);
+        uint256 underlyingAfter = user.balance;
+
+        assertApproxEqAbs(collateralBefore - collateralAfter, amountToWithdraw, (amountToWithdraw * 9999) / 10000);
+        assertApproxEqAbs(underlyingAfter - underlyingBefore, amountToWithdraw, 0);
+    }
+
     function depositToCompoundV2(address token, address userAddress, uint256 amount, address comptroller) internal {
         deal(token, userAddress, amount);
 
@@ -119,16 +152,48 @@ contract CompoundV2NativeComposerLightTest is BaseTest {
         );
 
         address cToken = _getCollateralToken(token);
-        bytes memory d = CalldataLib.encodeCompoundV2Deposit(token, amount, userAddress, cToken, uint8(CompoundV2Selector.MINT_BEHALF));
+        bytes memory d =
+            CalldataLib.encodeCompoundV2Deposit(token, amount, userAddress, cToken, uint8(CompoundV2Selector.MINT_BEHALF));
 
         vm.prank(userAddress);
         oneDV2.deltaCompose(abi.encodePacked(transferTo, d));
     }
 
+    function depositNativeToCompoundV2(
+        address token,
+        address userAddress,
+        uint256 amount,
+        address comptroller,
+        uint8 altSelector
+    )
+        internal
+    {
+        vm.deal(userAddress, amount);
+
+        address cToken = _getCollateralToken(token);
+        address[] memory cTokens = new address[](1);
+        cTokens[0] = cToken;
+
+        vm.prank(userAddress);
+        IERC20All(comptroller).enterMarkets(cTokens);
+
+        bytes memory d = CalldataLib.encodeCompoundV2Deposit(token, amount, userAddress, cToken, altSelector);
+
+        vm.prank(userAddress);
+        oneDV2.deltaCompose{value: amount}(d);
+    }
+
     /**
      * native can only be borrowed directly
      */
-    function borrowNativeFromCompoundV2(address token, address userAddress, uint256 amountToBorrow, address comptroller) internal {
+    function borrowNativeFromCompoundV2(
+        address token,
+        address userAddress,
+        uint256 amountToBorrow,
+        address comptroller
+    )
+        internal
+    {
         vm.prank(userAddress);
         IERC20All(comptroller).updateDelegate(address(oneDV2), true);
 

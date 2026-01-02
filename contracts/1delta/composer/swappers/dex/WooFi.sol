@@ -17,11 +17,21 @@ abstract contract WooFiSwapper is ERC20Selectors, Masks {
     constructor() {}
 
     /**
-     * Swaps exact input on WOOFi DEX
+     * @notice Swaps exact input on WOOFi DEX
+     * @dev Pay flag: 0 = caller pays; 1 = contract pays; greater = pre-funded.
+     * @param fromAmount Input amount
+     * @param tokenIn Input token address
+     * @param tokenOut Output token address
+     * @param receiver Receiver address
+     * @param callerAddress Address of the caller
+     * @param currentOffset Current position in the calldata
+     * @return poolThenAmountOut Output amount
+     * @return payFlagCurrentOffset Updated calldata offset after processing
+     * @custom:calldata-offset-table
      * | Offset | Length (bytes) | Description          |
      * |--------|----------------|----------------------|
      * | 0      | 20             | pool                 |
-     * | 21     | 1              | pay flag             | <- 0: caller pays; 1: contract pays; greater: pre-funded
+     * | 20     | 1              | pay flag             | <- 0: caller pays; 1: contract pays; greater: pre-funded
      */
     function _swapWooFiExactIn(
         uint256 fromAmount,

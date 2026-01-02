@@ -4,7 +4,7 @@ pragma solidity ^0.8.19;
 import {IERC20All} from "test/shared/interfaces/IERC20All.sol";
 import {BaseTest} from "test/shared/BaseTest.sol";
 import {Chains, Tokens, Lenders} from "test/data/LenderRegistry.sol";
-import "test/composer/utils/CalldataLib.sol";
+import "contracts/utils/CalldataLib.sol";
 import {ComposerPlugin, IComposerLike} from "plugins/ComposerPlugin.sol";
 import {SweepType} from "contracts/1delta/composer/enums/MiscEnums.sol";
 
@@ -12,7 +12,7 @@ import {SweepType} from "contracts/1delta/composer/enums/MiscEnums.sol";
 
 /**
  * We test all morpho blue operations
- * - supply, supplyCollateral, borrow, repay, encodeErc4646Deposit, encodeErc4646Withdraw
+ * - supply, supplyCollateral, borrow, repay, encodeErc4626Deposit, encodeErc4646Withdraw
  */
 contract CompoundV3ComposerLightTest is BaseTest {
     uint16 internal constant COMPOUND_V3_ID = 2000;
@@ -42,7 +42,7 @@ contract CompoundV3ComposerLightTest is BaseTest {
         vm.label(address(oneDV2), "composer");
     }
 
-    function test_light_lending_compoundV3_deposit() external {
+    function test_unit_lending_compoundV3_deposit() external {
         vm.assume(user != address(0));
 
         address token = USDC;
@@ -78,7 +78,7 @@ contract CompoundV3ComposerLightTest is BaseTest {
         assertApproxEqAbs(underlyingBefore - underlyingAfter, amount, 1);
     }
 
-    function test_light_lending_compoundV3_borrow() external {
+    function test_unit_lending_compoundV3_borrow() external {
         vm.assume(user != address(0));
 
         address depositToken = WETH;
@@ -111,7 +111,7 @@ contract CompoundV3ComposerLightTest is BaseTest {
         assertApproxEqAbs(tokenAfter - tokenBefore, amountToBorrow, 1, "3");
     }
 
-    function test_light_lending_compoundV3_withdraw() external {
+    function test_unit_lending_compoundV3_withdraw() external {
         vm.assume(user != address(0));
 
         address token = USDC;
@@ -144,7 +144,7 @@ contract CompoundV3ComposerLightTest is BaseTest {
         assertApproxEqAbs(underlyingAfter - underlyingBefore, amountToWithdraw, 1);
     }
 
-    function test_light_lending_compoundV3_repay() external {
+    function test_unit_lending_compoundV3_repay() external {
         vm.assume(user != address(0));
 
         address depositToken = WETH;
@@ -189,7 +189,7 @@ contract CompoundV3ComposerLightTest is BaseTest {
         assertApproxEqAbs(tokenBefore - tokenAfter, amountToRepay, 1, "3");
     }
 
-    function test_light_lending_compoundV3_repay_max() external {
+    function test_unit_lending_compoundV3_repay_max() external {
         vm.assume(user != address(0));
 
         address depositToken = WETH;
@@ -233,7 +233,7 @@ contract CompoundV3ComposerLightTest is BaseTest {
         assertApproxEqAbs(debtAfter, 0, 0, "0");
     }
 
-    function test_light_lending_compoundV3_try_repay_max() external {
+    function test_unit_lending_compoundV3_try_repay_max() external {
         vm.assume(user != address(0));
 
         address depositToken = WETH;
@@ -275,7 +275,7 @@ contract CompoundV3ComposerLightTest is BaseTest {
         assertApproxEqAbs(debtAfter, 10.0e6, 0, "0");
     }
 
-    function test_light_lending_compoundV3_full_compose() external {
+    function test_unit_lending_compoundV3_full_compose() external {
         uint256 collateralAmount = 1.0e18;
         uint256 borrowAmount = 500.0e6;
         uint256 repayAmount = 200.0e6;
@@ -304,23 +304,31 @@ contract CompoundV3ComposerLightTest is BaseTest {
         returns (bytes memory composedCalldata)
     {
         // approve comet
-        composedCalldata =
-            abi.encodePacked(CalldataLib.encodeApprove(WETH, COMPOUND_V3_USDC_COMET), CalldataLib.encodeApprove(USDC, COMPOUND_V3_USDC_COMET));
+        composedCalldata = abi.encodePacked(
+            CalldataLib.encodeApprove(WETH, COMPOUND_V3_USDC_COMET), CalldataLib.encodeApprove(USDC, COMPOUND_V3_USDC_COMET)
+        );
         // transfer collateral to composer
-        composedCalldata = abi.encodePacked(composedCalldata, CalldataLib.encodeTransferIn(WETH, address(oneDV2), collateralAmount));
-        // deposit collateral
         composedCalldata =
-            abi.encodePacked(composedCalldata, CalldataLib.encodeCompoundV3Deposit(WETH, collateralAmount, user, COMPOUND_V3_USDC_COMET));
+            abi.encodePacked(composedCalldata, CalldataLib.encodeTransferIn(WETH, address(oneDV2), collateralAmount));
+        // deposit collateral
+        composedCalldata = abi.encodePacked(
+            composedCalldata, CalldataLib.encodeCompoundV3Deposit(WETH, collateralAmount, user, COMPOUND_V3_USDC_COMET)
+        );
         // borrow
-        composedCalldata = abi.encodePacked(composedCalldata, CalldataLib.encodeCompoundV3Borrow(USDC, borrowAmount, user, COMPOUND_V3_USDC_COMET));
+        composedCalldata = abi.encodePacked(
+            composedCalldata, CalldataLib.encodeCompoundV3Borrow(USDC, borrowAmount, user, COMPOUND_V3_USDC_COMET)
+        );
         // transfer repay amount to composer
         composedCalldata = abi.encodePacked(composedCalldata, CalldataLib.encodeTransferIn(USDC, address(oneDV2), repayAmount));
         // repay
-        composedCalldata = abi.encodePacked(composedCalldata, CalldataLib.encodeCompoundV3Repay(USDC, repayAmount, user, COMPOUND_V3_USDC_COMET));
+        composedCalldata =
+            abi.encodePacked(composedCalldata, CalldataLib.encodeCompoundV3Repay(USDC, repayAmount, user, COMPOUND_V3_USDC_COMET));
         // withdraw to composer
         composedCalldata = abi.encodePacked(
             composedCalldata,
-            CalldataLib.encodeCompoundV3Withdraw(WETH, withdrawAmount, address(oneDV2), COMPOUND_V3_USDC_COMET, WETH == chain.getCometToBase(lender))
+            CalldataLib.encodeCompoundV3Withdraw(
+                WETH, withdrawAmount, address(oneDV2), COMPOUND_V3_USDC_COMET, WETH == chain.getCometToBase(lender)
+            )
         );
         // sweep to receiver
         composedCalldata = abi.encodePacked(composedCalldata, CalldataLib.encodeSweep(WETH, user, 0, SweepType.VALIDATE));

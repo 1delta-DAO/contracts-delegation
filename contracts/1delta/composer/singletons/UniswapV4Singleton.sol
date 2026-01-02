@@ -17,15 +17,20 @@ abstract contract UniswapV4SingletonActions is Masks, DeltaErrors {
     bytes32 private constant SETTLE = 0x11da60b400000000000000000000000000000000000000000000000000000000;
     bytes32 private constant SYNC = 0xa584119400000000000000000000000000000000000000000000000000000000;
 
+    /**
+     * @notice Executes Uniswap V4 take operation
+     * @dev Takes tokens from Uniswap V4 pool manager
+     * @param currentOffset Current position in the calldata
+     * @return Updated calldata offset after processing
+     * @custom:calldata-offset-table
+     * | Offset | Length (bytes) | Description         |
+     * |--------|----------------|---------------------|
+     * | 0      | 20             | manager             |
+     * | 20     | 20             | asset               |
+     * | 40     | 20             | receiver            |
+     * | 60     | 16             | amount              |
+     */
     function _unoV4Take(uint256 currentOffset) internal returns (uint256) {
-        /*
-         * | Offset | Length (bytes) | Description         |
-         * |--------|----------------|---------------------|
-         * | 0      | 20             | manager             |
-         * | 20     | 20             | asset               |
-         * | 40     | 20             | receiver            |
-         * | 60     | 16             | amount              |
-         */
         assembly {
             let manager := shr(96, calldataload(currentOffset))
             currentOffset := add(20, currentOffset)
@@ -64,13 +69,18 @@ abstract contract UniswapV4SingletonActions is Masks, DeltaErrors {
         return currentOffset;
     }
 
+    /**
+     * @notice Executes Uniswap V4 sync operation
+     * @dev Syncs token balance in Uniswap V4 pool manager
+     * @param currentOffset Current position in the calldata
+     * @return Updated calldata offset after processing
+     * @custom:calldata-offset-table
+     * | Offset | Length (bytes) | Description   |
+     * |--------|----------------|---------------|
+     * | 0      | 20             | manager       |
+     * | 20     | 20             | asset         |
+     */
     function _unoV4Sync(uint256 currentOffset) internal returns (uint256) {
-        /*
-         * | Offset | Length (bytes) | Description   |
-         * |--------|----------------|---------------|
-         * | 0      | 20             | manager       |
-         * | 20     | 20             | asset         |
-         */
         assembly {
             let manager := shr(96, calldataload(currentOffset))
             currentOffset := add(20, currentOffset)
@@ -99,13 +109,18 @@ abstract contract UniswapV4SingletonActions is Masks, DeltaErrors {
         return currentOffset;
     }
 
+    /**
+     * @notice Executes Uniswap V4 settle operation
+     * @dev Settles flash loan debt with native tokens
+     * @param currentOffset Current position in the calldata
+     * @return Updated calldata offset after processing
+     * @custom:calldata-offset-table
+     * | Offset | Length (bytes) | Description       |
+     * |--------|----------------|-------------------|
+     * | 0      | 20             | manager           |
+     * | 20     | 16             | nativeAmount      |
+     */
     function _unoV4Settle(uint256 currentOffset) internal returns (uint256) {
-        /*
-         * | Offset | Length (bytes) | Description       |
-         * |--------|----------------|-------------------|
-         * | 0      | 20             | manager           |
-         * | 20     | 16             | nativeAmount      |
-         */
         assembly {
             let manager := shr(96, calldataload(currentOffset))
             currentOffset := add(20, currentOffset)

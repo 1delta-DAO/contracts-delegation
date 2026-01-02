@@ -5,7 +5,7 @@ import {console} from "forge-std/console.sol";
 import {IERC20All} from "../../shared/interfaces/IERC20All.sol";
 import {BaseTest} from "../../shared/BaseTest.sol";
 import {Chains, Tokens, Lenders} from "../../data/LenderRegistry.sol";
-import "../utils/CalldataLib.sol";
+import "contracts/utils/CalldataLib.sol";
 import {ComposerPlugin, IComposerLike} from "plugins/ComposerPlugin.sol";
 
 interface IF {
@@ -20,7 +20,7 @@ interface IF {
 
 /**
  * We test all morpho blue operations
- * - supply, supplyCollateral, borrow, repay, encodeErc4646Deposit, encodeErc4646Withdraw
+ * - supply, supplyCollateral, borrow, repay, encodeErc4626Deposit, encodeErc4646Withdraw
  */
 contract Velodrome123Test is BaseTest {
     address internal constant VELODROME_CL_FACTORY = 0xCc0bDDB707055e04e497aB22a59c2aF4391cd12F;
@@ -68,7 +68,9 @@ contract Velodrome123Test is BaseTest {
     {
         console.log("assetIn, assetOut", assetIn, assetOut);
         console.logBytes32(
-            keccak256(hex"3d602d80600a3d3981f3363d3d373d3d3d363d7395885Af5492195F0754bE71AD1545Fe81364E5315af43d82803e903d91602b57fd5bf3")
+            keccak256(
+                hex"3d602d80600a3d3981f3363d3d373d3d3d363d7395885Af5492195F0754bE71AD1545Fe81364E5315af43d82803e903d91602b57fd5bf3"
+            )
         );
         //     console.logBytes32(keccak256(hex"363d3d373d3d3d363d73${95885Af5492195F0754bE71AD1545Fe81364E531}5af43d82803e903d91602b57fd5bf3"));
         address pool = IF(VELODROME_CL_FACTORY).getPool(assetIn, assetOut, int24(uint24(fee)));
@@ -137,7 +139,7 @@ contract Velodrome123Test is BaseTest {
         );
     }
 
-    function test_light_swap_velodrome3_single() external {
+    function test_integ_swap_velodrome3_single() external {
         vm.assume(user != address(0));
 
         address tokenIn = USDC;
@@ -164,7 +166,7 @@ contract Velodrome123Test is BaseTest {
     /**
      * Flash swap open on aave v3 using Velodrome V2
      */
-    function test_light_aave_flash_swap_velo2_single() external {
+    function test_integ_swap_velodrome_aaveFlashSwapVelo2Single() external {
         vm.assume(user != address(0));
 
         address tokenIn = USDC;

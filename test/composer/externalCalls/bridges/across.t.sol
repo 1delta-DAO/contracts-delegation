@@ -7,11 +7,12 @@ import {console} from "forge-std/console.sol";
 import {CallForwarder} from "contracts/1delta/composer/generic/CallForwarder.sol";
 import {BaseUtils} from "contracts/1delta/composer/generic/BaseUtils.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import {CalldataLib} from "test/composer/utils/CalldataLib.sol";
+import {CalldataLib} from "contracts/utils/CalldataLib.sol";
 import {Chains, Tokens} from "test/data/LenderRegistry.sol";
 import {ComposerPlugin, IComposerLike} from "plugins/ComposerPlugin.sol";
 import {IAcrossSpokePool} from "contracts/1delta/composer/generic/bridges/Across/IAcross.sol";
 import {SweepType} from "contracts/1delta/composer/enums/MiscEnums.sol";
+import {MockSpokePool} from "test/mocks/MockSpokePool.sol";
 
 // solhint-disable max-line-length
 
@@ -39,7 +40,7 @@ contract AcrossTest is BaseTest {
     uint128 public FIXED_FEE = 5 * 1e5; // 0.5 USDC
     uint32 public FEE_PERCENTAGE = 10e7; // 10% (100% is 1e9)
 
-    function setUp() public {
+    function setUp() public virtual {
         rpcOverrides[Chains.ARBITRUM_ONE] = "https://api.zan.top/arb-one";
 
         _init(Chains.ARBITRUM_ONE, 0, true);
@@ -62,7 +63,26 @@ contract AcrossTest is BaseTest {
         vm.label(WETH9_arb, "Arbitrum WETH9");
     }
 
-    function test_across_bridge_token_balance() public {
+    function setUpUnit() internal {
+        _init(Chains.ARBITRUM_ONE, 0, false);
+
+        callForwarder = new CallForwarder();
+
+        composer = ComposerPlugin.getComposer(Chains.ARBITRUM_ONE);
+
+        USDC = chain.getTokenAddress(Tokens.USDC);
+        WETH9_arb = 0x82aF49447D8a07e3bd95BD0d56f35241523fBab1;
+        WETH = 0x7ceB23fD6bC0adD59E62ac25578270cFf1b9f619;
+
+        vm.label(address(callForwarder), "CallForwarder");
+        vm.label(address(composer), "Composer");
+        vm.label(USDC, "Arbitrum USDC");
+        vm.label(WETH, "Polygon WETH");
+        vm.label(user, "User");
+        vm.label(WETH9_arb, "Arbitrum WETH9");
+    }
+
+    function test_integ_externalCall_across_bridge_token_balance() public {
         vm.startPrank(user);
         IERC20(USDC).approve(address(composer), BRIDGE_AMOUNT);
 
@@ -99,7 +119,7 @@ contract AcrossTest is BaseTest {
         vm.stopPrank();
     }
 
-    function test_across_bridge_token_amount() public {
+    function test_integ_externalCall_across_bridge_token_amount() public {
         vm.startPrank(user);
         IERC20(USDC).approve(address(composer), BRIDGE_AMOUNT);
 
@@ -137,7 +157,7 @@ contract AcrossTest is BaseTest {
         vm.stopPrank();
     }
 
-    function test_across_bridge_native_balance() public {
+    function test_integ_externalCall_across_bridge_native_balance() public {
         deal(address(composer), 1 ether + 0.001 ether);
 
         vm.startPrank(user);
@@ -172,7 +192,7 @@ contract AcrossTest is BaseTest {
         vm.stopPrank();
     }
 
-    function test_across_bridge_native_amount() public {
+    function test_integ_externalCall_across_bridge_native_amount() public {
         deal(address(composer), 1 ether);
 
         vm.startPrank(user);
@@ -207,10 +227,10 @@ contract AcrossTest is BaseTest {
         vm.stopPrank();
     }
 
-    function init_mockSpokePool() public returns (mockSpokePool) {
+    function init_mockSpokePool() public returns (MockSpokePool) {
         deal(address(composer), 1 ether);
 
-        return new mockSpokePool(
+        return new MockSpokePool(
             bytes32(uint256(uint160(user))),
             bytes32(uint256(uint160(user))),
             bytes32(uint256(uint160(WETH9_arb))),
@@ -222,8 +242,9 @@ contract AcrossTest is BaseTest {
         );
     }
 
-    function test_across_bridge_validate_params() public {
-        mockSpokePool spokePool = init_mockSpokePool();
+    function test_unit_externalCall_across_bridge_validate_params() public {
+        setUpUnit();
+        MockSpokePool spokePool = init_mockSpokePool();
 
         vm.startPrank(user);
         composer.deltaCompose(
@@ -257,7 +278,7 @@ contract AcrossTest is BaseTest {
         vm.stopPrank();
     }
 
-    function test_across_bridge_token_scale_down() public {
+    function test_integ_externalCall_across_bridge_token_scale_down() public {
         _fundUserWithToken(WETH9_arb, 1 ether);
 
         vm.startPrank(user);
@@ -295,7 +316,7 @@ contract AcrossTest is BaseTest {
         vm.stopPrank();
     }
 
-    function test_across_bridge_token_scale_up() public {
+    function test_integ_externalCall_across_bridge_token_scale_up() public {
         _fundUserWithToken(USDC, 1000 * 1e6);
 
         vm.startPrank(user);
@@ -333,7 +354,7 @@ contract AcrossTest is BaseTest {
         vm.stopPrank();
     }
 
-    function test_dec_logic() public {
+    function decimal_adjustment_logic() public {
         uint256 absDiff = 0;
         uint256 decimalAdjustment = 0;
         uint256 fromTokenDecimals = 6;
@@ -365,67 +386,5 @@ contract AcrossTest is BaseTest {
         console.log("toTokenDecimals", toTokenDecimals);
         console.log("decimalAdjustment", decimalAdjustment);
         console.log("absDiff", absDiff);
-    }
-}
-
-contract mockSpokePool {
-    constructor(
-        bytes32 _depositor,
-        bytes32 _recipient,
-        bytes32 _inputToken,
-        bytes32 _outputToken,
-        uint256 _inputAmount,
-        uint256 _destinationChainId,
-        uint32 _fillDeadline,
-        bytes memory _message
-    ) {
-        depositor = _depositor;
-        recipient = _recipient;
-        inputToken = _inputToken;
-        outputToken = _outputToken;
-        inputAmount = _inputAmount;
-        destinationChainId = _destinationChainId;
-        fillDeadline = _fillDeadline;
-        message = keccak256(_message);
-    }
-
-    bytes32 public depositor;
-    bytes32 public recipient;
-    bytes32 public inputToken;
-    bytes32 public outputToken;
-    uint256 public inputAmount;
-    uint256 public destinationChainId;
-    uint32 public fillDeadline;
-    bytes32 public message;
-
-    function deposit(
-        bytes32 _depositor,
-        bytes32 _recipient,
-        bytes32 _inputToken,
-        bytes32 _outputToken,
-        uint256 _inputAmount,
-        uint256 _outputAmount,
-        uint256 _destinationChainId,
-        bytes32 _exclusiveRelayer,
-        uint32 _quoteTimestamp,
-        uint32 _fillDeadline,
-        uint32 _exclusivityDeadline,
-        bytes memory _message
-    )
-        external
-        payable
-        returns (bytes memory)
-    {
-        // check fill deadline
-        require(_fillDeadline == fillDeadline, "fill deadline mismatch");
-
-        require(_depositor == depositor, "depositor mismatch");
-        require(_recipient == recipient, "recipient mismatch");
-        require(_inputToken == inputToken, "inputToken mismatch");
-        require(_outputToken == outputToken, "outputToken mismatch");
-        require(_inputAmount == inputAmount, "inputAmount mismatch");
-        require(_destinationChainId == destinationChainId, "destinationChainId mismatch");
-        require(message == keccak256(_message), "message mismatch");
-        return new bytes(0);
     }
 }

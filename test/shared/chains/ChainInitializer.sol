@@ -92,7 +92,15 @@ contract Chain is LenderRegistry, IChain {
     }
 
     // for compound v2, this might accure interest
-    function getCollateralBalance(address user, address underlying, string memory lender) public override returns (uint256 balance) {
+    function getCollateralBalance(
+        address user,
+        address underlying,
+        string memory lender
+    )
+        public
+        override
+        returns (uint256 balance)
+    {
         if (Lenders.isAave(lender)) {
             return ILendingTools(lendingTokens[getChainName()][lender][underlying].collateral).balanceOf(user);
         } else if (Lenders.isCompoundV2(lender)) {

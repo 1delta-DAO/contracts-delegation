@@ -12,7 +12,19 @@ abstract contract KTXQuoter {
     bytes32 private constant PF_SELECOR = 0x741bef1a00000000000000000000000000000000000000000000000000000000;
 
     /**
-     * readerParm = vaultUtils address
+     * @notice Calculates amountOut for KTX swaps
+     * @param _tokenIn Input token address
+     * @param _tokenOut Output token address
+     * @param amountIn Input amount
+     * @param readerParam VaultUtils address for oracle queries
+     * @param currentOffset Current position in the calldata
+     * @return amountOut Output amount
+     * @return Updated calldata offset after processing
+     * @custom:calldata-offset-table
+     * | Offset | Length (bytes) | Description          |
+     * |--------|----------------|----------------------|
+     * | 0      | 20             | pool                 |
+     * | 20     | 1              | not used in quoter   |
      */
     function _getKTXAmountOut(
         address _tokenIn,
