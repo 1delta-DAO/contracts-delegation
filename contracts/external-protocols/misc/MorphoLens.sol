@@ -52,7 +52,13 @@ library SharesMathLib {
 }
 
 interface IMorpho {
-    function position(bytes32 id, address user) external view returns (uint256 supplyShares, uint128 borrowShares, uint128 collateral);
+    function position(
+        bytes32 id,
+        address user
+    )
+        external
+        view
+        returns (uint256 supplyShares, uint128 borrowShares, uint128 collateral);
 
     function market(bytes32 id)
         external
@@ -102,7 +108,15 @@ contract MorphoLens {
      * Get the user data if exists as packed bytes (len, data[]), data = (id,sShares,bShares,sAssets,bAssets,collateral)
      * `id` maps the data to the market in the original array
      */
-    function getUserDataCompact(bytes32[] calldata marketsIds, address user, address morpho) external view returns (bytes memory data) {
+    function getUserDataCompact(
+        bytes32[] calldata marketsIds,
+        address user,
+        address morpho
+    )
+        external
+        view
+        returns (bytes memory data)
+    {
         uint256 totalCount;
         for (uint256 i; i < marketsIds.length; i++) {
             bytes32 id = marketsIds[i];
@@ -116,7 +130,8 @@ contract MorphoLens {
                 uint128 totalSupplyAssets,
                 uint128 totalSupplyShares, //
                 uint128 totalBorrowAssets,
-                uint128 totalBorrowShares,,
+                uint128 totalBorrowShares,
+                ,
             ) = IMorpho(morpho).market(id);
             // progressively pack the data
             data = abi.encodePacked(
@@ -189,7 +204,14 @@ contract MorphoLens {
     }
 
     /// @notice use to get the market data for Moolah protocol
-    function getMoolahMarketDataCompact(address morpho, bytes32[] calldata marketsIds) external view returns (bytes memory data) {
+    function getMoolahMarketDataCompact(
+        address morpho,
+        bytes32[] calldata marketsIds
+    )
+        external
+        view
+        returns (bytes memory data)
+    {
         // each entry makes 4*20 (addresses) + 16 (lltv) + 32 (loanPrice) + 32 (collateralPrice) + 32 (rateAtTarget)
         // + 96 bytes (market) + 1 byte (hasWhitelist) + 1 byte (hasProvider)(=290) in size. The return data is therfore implicitly indexed
         for (uint256 i; i < marketsIds.length; i++) {
@@ -237,9 +259,9 @@ contract MorphoLens {
             }
             // encode hasProvider
             try IMoolah(morpho).providers(id, collateralToken) returns (address provider) {
-                temp = abi.encodePacked(temp, provider != address(0));
+                temp = abi.encodePacked(temp, provider);
             } catch {
-                temp = abi.encodePacked(temp, bytes1(0));
+                temp = abi.encodePacked(temp, address(0));
             }
 
             // progressively pack the data

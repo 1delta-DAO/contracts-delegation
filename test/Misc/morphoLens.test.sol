@@ -2,7 +2,7 @@
 pragma solidity ^0.8.28;
 
 import "forge-std/Test.sol";
-import {MorphoLens} from "../contracts/external-protocols/misc/MorphoLens.sol";
+import {MorphoLens} from "../../contracts/external-protocols/misc/MorphoLens.sol";
 
 contract MorphoLensTest is Test {
     MorphoLens public morphoLens;
