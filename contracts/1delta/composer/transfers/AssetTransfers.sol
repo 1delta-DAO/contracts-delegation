@@ -348,13 +348,10 @@ contract AssetTransfers is BaseUtils {
             let providedAmount := calldataload(add(currentOffset, 25))
             // load config
             let config := and(UINT8_MASK, shr(128, providedAmount))
-            // mask amount
-            providedAmount := and(UINT128_MASK, providedAmount)
 
             let transferAmount
 
-            // mask away the top bitmap
-            providedAmount := and(UINT120_MASK, providedAmount)
+            providedAmount := and(UINT112_MASK, providedAmount)
             // validate if config is zero, otherwise skip
             switch config
             case 0 {

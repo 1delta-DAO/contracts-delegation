@@ -51,8 +51,8 @@ contract SanityChecks is Test {
         assertEq(address(composer).balance, composerInitialBalance - ethAmount, "ETH not transferred to EOA");
     }
 
-    function test_sanity_compose_multiple_transfer_operations(uint16 numOperations) public {
-        numOperations = uint8(bound(numOperations, 1, 1000));
+    function test_sanity_compose_multiple_transfer_operations(uint8 numOperations) public {
+        numOperations = uint8(bound(numOperations, 1, 256));
 
         address user = address(0x1De17A);
         vm.deal(user, 100 ether);
