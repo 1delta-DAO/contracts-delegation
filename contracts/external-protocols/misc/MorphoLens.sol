@@ -52,7 +52,13 @@ library SharesMathLib {
 }
 
 interface IMorpho {
-    function position(bytes32 id, address user) external view returns (uint256 supplyShares, uint128 borrowShares, uint128 collateral);
+    function position(
+        bytes32 id,
+        address user
+    )
+        external
+        view
+        returns (uint256 supplyShares, uint128 borrowShares, uint128 collateral);
 
     function market(bytes32 id)
         external
@@ -70,6 +76,10 @@ interface IMorpho {
         external
         view
         returns (address loanToken, address collateralToken, address oracle, address irm, uint256 lltv);
+}
+
+interface Decimals {
+    function decimals() external view returns (uint8);
 }
 
 interface IAdaptiveCurveIrm {
@@ -90,12 +100,31 @@ interface IMoolahOracle {
     function peek(address asset) external view returns (uint256);
 }
 
+interface IMoolah {
+    /// @notice Returns `true` if `account` is whitelisted of market `id`.
+    function isWhiteList(bytes32 id, address account) external view returns (bool);
+    /// @notice get the provider for the market.
+    function providers(bytes32 id, address token) external view returns (address);
+    /// @notice get the broker for the market (authorized borrower)
+    function brokers(bytes32 id) external view returns (address);
+    /// @notice get global minimum loan (in USD)
+    function minLoanValue() external view returns (uint256);
+}
+
 contract MorphoLens {
     /**
-     * Get the user data if exists as packed bytes (len, data[]), data = (id,sShares,bShares,sAssets,bAssets,collateral)
+     * @notice Get the user data if exists as packed bytes (len, data[]), data = (id,sShares,bShares,sAssets,bAssets,collateral)
      * `id` maps the data to the market in the original array
      */
-    function getUserDataCompact(bytes32[] calldata marketsIds, address user, address morpho) external view returns (bytes memory data) {
+    function getUserDataCompact(
+        bytes32[] calldata marketsIds,
+        address user,
+        address morpho
+    )
+        external
+        view
+        returns (bytes memory data)
+    {
         uint256 totalCount;
         for (uint256 i; i < marketsIds.length; i++) {
             bytes32 id = marketsIds[i];
@@ -109,7 +138,8 @@ contract MorphoLens {
                 uint128 totalSupplyAssets,
                 uint128 totalSupplyShares, //
                 uint128 totalBorrowAssets,
-                uint128 totalBorrowShares,,
+                uint128 totalBorrowShares,
+                ,
             ) = IMorpho(morpho).market(id);
             // progressively pack the data
             data = abi.encodePacked(
@@ -124,6 +154,57 @@ contract MorphoLens {
         }
 
         return abi.encodePacked(uint16(totalCount), data);
+    }
+
+    /// @notice same as getUserDataCompact, except that whitelist flags are added to the beginning.
+    /// These are marketsIds.length 1-byte flags
+    function getListaUserDataCompact(
+        bytes32[] calldata marketsIds,
+        address user,
+        address morpho
+    )
+        external
+        view
+        returns (bytes memory data)
+    {
+        bytes memory whitelistFlags;
+        uint256 totalCount;
+        for (uint256 i; i < marketsIds.length; i++) {
+            bytes32 id = marketsIds[i];
+
+            // attach whitelist flag (for all markets)
+            whitelistFlags = abi.encodePacked(whitelistFlags, uint8(IMoolah(morpho).isWhiteList(id, user) ? 1 : 0));
+
+            (uint256 supplyShares, uint128 borrowShares, uint128 collateral) = IMorpho(morpho).position(id, user);
+            // no balances found - continue
+            if (supplyShares == 0 && borrowShares == 0 && collateral == 0) continue;
+            // balance detected allocate user balances in return data
+            // increment
+            totalCount++;
+            // reduce scope for stack too deep issues
+            {
+                (
+                    uint128 totalSupplyAssets,
+                    uint128 totalSupplyShares, //
+                    uint128 totalBorrowAssets,
+                    uint128 totalBorrowShares,
+                    ,
+                ) = IMorpho(morpho).market(id);
+
+                // progressively pack the data
+                data = abi.encodePacked(
+                    data,
+                    uint16(i),
+                    supplyShares,
+                    borrowShares,
+                    SharesMathLib.toAssetsDown(supplyShares, totalSupplyAssets, totalSupplyShares),
+                    SharesMathLib.toAssetsUp(borrowShares, totalBorrowAssets, totalBorrowShares),
+                    collateral
+                );
+            }
+        }
+
+        return abi.encodePacked(whitelistFlags, uint16(totalCount), data);
     }
 
     /**
@@ -181,8 +262,15 @@ contract MorphoLens {
         return data;
     }
 
-    /// @notice use to get the market data for Moolah protocol
-    function getMoolahMarketDataCompact(address morpho, bytes32[] calldata marketsIds) external view returns (bytes memory data) {
+    /// @notice use to get the market data for Moolah protocol - note that this one misses crucial data such as whitelists
+    function getMoolahMarketDataCompact(
+        address morpho,
+        bytes32[] calldata marketsIds
+    )
+        external
+        view
+        returns (bytes memory data)
+    {
         // each entry makes 4*20 (addresses) + 16 (lltv) + 32 (loanPrice) + 32 (collateralPrice) + 32 (rateAtTarget)
         // + 96 bytes (market) (=288) in size. The return data is therfore implicitly indexed
         for (uint256 i; i < marketsIds.length; i++) {
@@ -227,6 +315,117 @@ contract MorphoLens {
         return data;
     }
 
+    /// @notice use to get the market data for Lista protocol
+    /// get markets data as compressed bytes array of full morpho markets, the layout for a market is:
+    ///  loanToken:              20b
+    ///  collateralToken:        20b
+    ///  oracle:                 20b
+    ///  irm:                    20b
+    ///  lltv:                   16b
+    ///  priceLoanToken:         32b
+    ///  priceCollateralToken:   32b *added
+    ///  minLoan:                16b *added
+    ///  rateAtTarget:           32b
+    ///  totalSupplyAssets:      16b
+    ///  totalSupplyShares:      16b
+    ///  totalBorrowAssets:      16b
+    ///  totalBorrowShares:      16b
+    ///  hasWhitelist:           1b  *added
+    ///  loanProvider:           20b *added
+    ///  collateralProvider:     20b *added
+    ///  broker:                 20b *added
+    ///  lastUpdate:             16b
+    ///  fee:                    16b
+    /// As this is a determinisitic element size, the array is implicitly indexed
+    function getListaMarketDataCompact(address morpho, bytes32[] calldata marketsIds) external view returns (bytes memory data) {
+        // each entry makes 4*20 (addresses) + 16 (lltv) + 32 (loanPrice) + 32 (collateralPrice) + 32 (rateAtTarget)
+        // + 96 bytes (market) + 16 bytes (minLoan) + 1 byte (hasWhitelist) + 3*20 bytes whitelisteds (hasProvider)(=256+109=365)
+        // in size. The return data is therfore implicitly indexed
+
+        // this is the same value for all markets
+        uint256 minLoanUSD = IMoolah(morpho).minLoanValue();
+        for (uint256 i; i < marketsIds.length; i++) {
+            bytes32 id = marketsIds[i];
+            // pack market supply statuses
+            bytes memory market = getPackedMarket(morpho, id);
+            // get metadata
+            (
+                address loanToken,
+                address collateralToken, //
+                address oracle,
+                address irm,
+                uint256 lltv
+            ) = IMorpho(morpho).idToMarketParams(id);
+
+            // get prices from moolah oracle for both loan and collateral tokens
+            bytes memory temp;
+            // we require the oracle to be defined, otherwise, we skip the entry
+
+            uint256 loanPrice;
+            if (oracle != address(0)) {
+                try IMoolahOracle(oracle).peek(loanToken) returns (uint256 _loanPrice) {
+                    loanPrice = _loanPrice;
+                    temp = abi.encodePacked(loanPrice);
+                } catch {
+                    temp = abi.encodePacked(uint256(0));
+                }
+                try IMoolahOracle(oracle).peek(collateralToken) returns (uint256 _collateralPrice) {
+                    temp = abi.encodePacked(temp, _collateralPrice);
+                } catch {
+                    temp = abi.encodePacked(temp, uint256(0));
+                }
+            } else {
+                temp = abi.encodePacked(uint256(0), uint256(0));
+            }
+            // add minLoan
+            temp = abi.encodePacked(temp, minLoan(loanToken, loanPrice, minLoanUSD));
+
+            // encode rate and market
+            if (irm != address(0)) {
+                try IAdaptiveCurveIrm(irm).rateAtTarget(id) returns (int256 _rateAtTarget) {
+                    temp = abi.encodePacked(temp, uint256(_rateAtTarget), market);
+                } catch {
+                    temp = abi.encodePacked(temp, uint256(0), market);
+                }
+            } else {
+                temp = abi.encodePacked(temp, uint256(0), market);
+            }
+            // encode hasWhitelist - we check if address(0) is whitelisted to see whether there
+            // is a whitelist - if so, it should return false
+            try IMoolah(morpho).isWhiteList(id, address(0)) returns (bool _isWhitelisted) {
+                temp = abi.encodePacked(temp, uint8(_isWhitelisted ? 0 : 1));
+            } catch {
+                temp = abi.encodePacked(temp, bytes1(0));
+            }
+
+            // encode provider for collateral - zero address if none
+            try IMoolah(morpho).providers(id, loanToken) returns (address provider) {
+                temp = abi.encodePacked(temp, provider);
+            } catch {
+                temp = abi.encodePacked(temp, address(0));
+            }
+
+            // encode provider for loan token- zero address if none
+            try IMoolah(morpho).providers(id, collateralToken) returns (address provider) {
+                temp = abi.encodePacked(temp, provider);
+            } catch {
+                temp = abi.encodePacked(temp, address(0));
+            }
+
+            // encode broker- zero address if none
+            try IMoolah(morpho).brokers(id) returns (address broker) {
+                temp = abi.encodePacked(temp, broker);
+            } catch {
+                temp = abi.encodePacked(temp, address(0));
+            }
+
+            // progressively pack the data
+            data = abi.encodePacked(data, loanToken, collateralToken, oracle, irm, uint128(lltv), temp);
+        }
+
+        return data;
+    }
+
     /**
      * Get market as 96 bytes array
      */
@@ -241,5 +440,10 @@ contract MorphoLens {
         ) = IMorpho(morpho).market(id);
         // tightly pack the data
         data = abi.encodePacked(totalSupplyAssets, totalSupplyShares, totalBorrowAssets, totalBorrowShares, lastUpdate, fee);
+    }
+
+    /// @notice an optimized getter with only one additional call
+    function minLoan(address loanToken, uint256 loanPrice, uint256 minLoanUSD) internal view returns (uint128) {
+        return uint128(loanPrice == 0 ? 0 : MathLib.mulDivDown(minLoanUSD, 10 ** Decimals(loanToken).decimals(), loanPrice));
     }
 }
