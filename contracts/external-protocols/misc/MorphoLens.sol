@@ -113,7 +113,7 @@ interface IMoolah {
 
 contract MorphoLens {
     /**
-     * Get the user data if exists as packed bytes (len, data[]), data = (id,sShares,bShares,sAssets,bAssets,collateral)
+     * @notice Get the user data if exists as packed bytes (len, data[]), data = (id,sShares,bShares,sAssets,bAssets,collateral)
      * `id` maps the data to the market in the original array
      */
     function getUserDataCompact(
@@ -154,6 +154,57 @@ contract MorphoLens {
         }
 
         return abi.encodePacked(uint16(totalCount), data);
+    }
+
+    /// @notice same as getUserDataCompact, except that whitelist flags are added to the beginning.
+    /// These are marketsIds.length 1-byte flags
+    function getListaUserDataCompact(
+        bytes32[] calldata marketsIds,
+        address user,
+        address morpho
+    )
+        external
+        view
+        returns (bytes memory data)
+    {
+        bytes memory whitelistFlags;
+        uint256 totalCount;
+        for (uint256 i; i < marketsIds.length; i++) {
+            bytes32 id = marketsIds[i];
+
+            // attach whitelist flag (for all markets)
+            whitelistFlags = abi.encodePacked(whitelistFlags, uint8(IMoolah(morpho).isWhiteList(id, user) ? 1 : 0));
+
+            (uint256 supplyShares, uint128 borrowShares, uint128 collateral) = IMorpho(morpho).position(id, user);
+            // no balances found - continue
+            if (supplyShares == 0 && borrowShares == 0 && collateral == 0) continue;
+            // balance detected allocate user balances in return data
+            // increment
+            totalCount++;
+            // reduce scope for stack too deep issues
+            {
+                (
+                    uint128 totalSupplyAssets,
+                    uint128 totalSupplyShares, //
+                    uint128 totalBorrowAssets,
+                    uint128 totalBorrowShares,
+                    ,
+                ) = IMorpho(morpho).market(id);
+
+                // progressively pack the data
+                data = abi.encodePacked(
+                    data,
+                    uint16(i),
+                    supplyShares,
+                    borrowShares,
+                    SharesMathLib.toAssetsDown(supplyShares, totalSupplyAssets, totalSupplyShares),
+                    SharesMathLib.toAssetsUp(borrowShares, totalBorrowAssets, totalBorrowShares),
+                    collateral
+                );
+            }
+        }
+
+        return abi.encodePacked(whitelistFlags, uint16(totalCount), data);
     }
 
     /**
@@ -311,16 +362,20 @@ contract MorphoLens {
             // we require the oracle to be defined, otherwise, we skip the entry
 
             uint256 loanPrice;
-            try IMoolahOracle(oracle).peek(loanToken) returns (uint256 _loanPrice) {
-                loanPrice = _loanPrice;
-                temp = abi.encodePacked(loanPrice);
-            } catch {
-                temp = abi.encodePacked(uint256(0));
-            }
-            try IMoolahOracle(oracle).peek(collateralToken) returns (uint256 _collateralPrice) {
-                temp = abi.encodePacked(temp, _collateralPrice);
-            } catch {
-                temp = abi.encodePacked(temp, uint256(0));
+            if (oracle != address(0)) {
+                try IMoolahOracle(oracle).peek(loanToken) returns (uint256 _loanPrice) {
+                    loanPrice = _loanPrice;
+                    temp = abi.encodePacked(loanPrice);
+                } catch {
+                    temp = abi.encodePacked(uint256(0));
+                }
+                try IMoolahOracle(oracle).peek(collateralToken) returns (uint256 _collateralPrice) {
+                    temp = abi.encodePacked(temp, _collateralPrice);
+                } catch {
+                    temp = abi.encodePacked(temp, uint256(0));
+                }
+            } else {
+                temp = abi.encodePacked(uint256(0), uint256(0));
             }
             // add minLoan
             temp = abi.encodePacked(temp, minLoan(loanToken, loanPrice, minLoanUSD));
@@ -332,10 +387,13 @@ contract MorphoLens {
                 } catch {
                     temp = abi.encodePacked(temp, uint256(0), market);
                 }
+            } else {
+                temp = abi.encodePacked(temp, uint256(0), market);
             }
-            // encode hasWhitelist
+            // encode hasWhitelist - we check if address(0) is whitelisted to see whether there
+            // is a whitelist - if so, it should return false
             try IMoolah(morpho).isWhiteList(id, address(0)) returns (bool _isWhitelisted) {
-                temp = abi.encodePacked(temp, !_isWhitelisted);
+                temp = abi.encodePacked(temp, uint8(_isWhitelisted ? 0 : 1));
             } catch {
                 temp = abi.encodePacked(temp, bytes1(0));
             }
