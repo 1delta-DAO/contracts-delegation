@@ -345,7 +345,7 @@ const config: HardhatUserConfig = {
             live: true,
         },
         sei: {
-            url: "https://sei.drpc.org",
+            url: "https://sei-public.nodies.app",
             accounts,
             chainId: 1329,
             live: true,
@@ -1042,6 +1042,28 @@ const config: HardhatUserConfig = {
             "contracts/external-protocols/misc/CometLens.sol": {
                 version: "0.8.28",
                 settings: {
+                    optimizer: {
+                        enabled: true,
+                        runs: 1_000_000,
+                    },
+                    evmVersion: "paris",
+                },
+            },
+            "contracts/external-protocols/misc/SumerLens.sol": {
+                version: "0.8.28",
+                settings: {
+                    viaIR: true,
+                    optimizer: {
+                        enabled: true,
+                        runs: 1_000_000,
+                    },
+                    evmVersion: "paris",
+                },
+            },
+            "contracts/external-protocols/misc/TakaraLens.sol": {
+                version: "0.8.28",
+                settings: {
+                    viaIR: true,
                     optimizer: {
                         enabled: true,
                         runs: 1_000_000,

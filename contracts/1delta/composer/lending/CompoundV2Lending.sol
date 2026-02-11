@@ -182,17 +182,7 @@ abstract contract CompoundV2Lending is ERC20Selectors, Masks {
 
                 let success := call(gas(), cToken, 0, ptr, 0x64, ptr, 32)
                 let rdsize := returndatasize()
-                success :=
-                    and(
-                        success,
-                        or(
-                            iszero(rdsize),
-                            and(
-                                gt(rdsize, 31),
-                                eq(mload(ptr), 1)
-                            )
-                        )
-                    )
+                success := and(success, or(iszero(rdsize), and(gt(rdsize, 31), eq(mload(ptr), 1))))
                 if iszero(success) {
                     returndatacopy(0, 0, rdsize)
                     revert(0, rdsize)
