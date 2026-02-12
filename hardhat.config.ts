@@ -658,7 +658,7 @@ const config: HardhatUserConfig = {
                 },
             },
             // slim composer
-            "contracts/1delta/composer/SlimComposer.sol": {
+            "contracts/1delta/composer/ComposerLite.sol": {
                 version: "0.8.28",
                 settings: {
                     optimizer: {

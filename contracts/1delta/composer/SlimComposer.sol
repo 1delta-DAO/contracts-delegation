@@ -15,7 +15,7 @@ import {DeadLogger} from "../shared/logs/DeadLogger.sol";
  *        Ideal for basic lending aggregation.
  * @author 1delta Labs AG
  */
-contract SlimComposer is
+contract ComposerLite is
     DeadLogger,
     UniversalLending,
     ERC4626Operations,
