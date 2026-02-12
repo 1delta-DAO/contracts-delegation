@@ -324,6 +324,68 @@ contract AssetTransfers is BaseUtils {
     }
 
     /**
+     * @notice Wraps native tokens to the wrapped native address
+     * @param currentOffset Current position in the calldata
+     * @return Updated calldata offset after processing
+     * @custom:calldata-offset-table
+     * | Offset | Length (bytes) | Description             |
+     * |--------|----------------|------------------------ |
+     * | 0      | 20             | wrapped native address  |
+     * | 20     | 20             | receiver                |
+     * | 40     | 16             | amount                  |
+     */
+    function _wrap(uint256 currentOffset) internal virtual returns (uint256) {
+        assembly {
+            let weth := shr(96, calldataload(currentOffset))
+            let receiver := shr(96, calldataload(add(currentOffset, 20)))
+            let providedAmount := calldataload(add(currentOffset, 40))
+            let transferAmount
+
+            providedAmount := and(UINT112_MASK, providedAmount) // remove the upper 16 bytes (flags space)
+            switch providedAmount
+            case 0 {
+                transferAmount := selfbalance()
+            }
+            default { transferAmount := providedAmount }
+
+            if gt(transferAmount, 0) {
+                mstore(0x0, 0xd0e30db000000000000000000000000000000000000000000000000000000000)
+                if iszero(call(gas(), weth, transferAmount, 0x0, 0x4, 0x0, 0x0)) {
+                    mstore(0, WRAP)
+                    revert(0, 0x4)
+                }
+
+                if xor(receiver, address()) {
+                    let ptr := mload(0x40)
+                    mstore(ptr, ERC20_TRANSFER)
+                    mstore(add(ptr, 0x04), receiver)
+                    mstore(add(ptr, 0x24), transferAmount)
+                    let success := call(gas(), weth, 0, ptr, 0x44, ptr, 32)
+                    let rdsize := returndatasize()
+                    if iszero(
+                        and(
+                            success, // call itself succeeded
+                            or(
+                                iszero(rdsize), // no return data, or
+                                and(
+                                    gt(rdsize, 31), // at least 32 bytes
+                                    eq(mload(ptr), 1) // starts with uint256(1)
+                                )
+                            )
+                        )
+                    ) {
+                        returndatacopy(0, 0, rdsize)
+                        revert(0, rdsize)
+                    }
+                }
+            }
+
+            currentOffset := add(currentOffset, 56)
+        }
+        return currentOffset;
+    }
+
+    /**
      * @notice Unwraps wrapped native tokens and transfers to receiver
      * @dev Reverts if minAmount is less than the contract balance.
      * Config: 0 = sweep balance and validate against amount (fetches balance and checks balance >= amount),

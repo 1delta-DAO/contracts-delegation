@@ -243,6 +243,25 @@ contract TransfersTest is BaseTest, DeltaErrors {
         assertEq(IERC20All(WETH).balanceOf(address(oneD)), 0);
     }
 
+    function test_unit_transfer_wrap_with_receiver() external {
+        uint256 initialAmount = 1 ether;
+        vm.deal(address(oneD), initialAmount);
+
+        WethNoReceive weth = new WethNoReceive();
+
+        bytes memory sweepData = CalldataLib.encodeSweep(address(0), address(weth), initialAmount, SweepType.AMOUNT);
+        vm.prank(user);
+        vm.expectRevert(NATIVE_TRANSFER);
+        oneD.deltaCompose(sweepData);
+
+        bytes memory wrapData = CalldataLib.encodeWrapWithReceiver(initialAmount, address(weth), address(oneD));
+        vm.prank(user);
+        oneD.deltaCompose(wrapData);
+
+        assertEq(address(oneD).balance, 0);
+        assertEq(weth.balanceOf(address(oneD)), initialAmount);
+    }
+
     // ------------------------------------------------------------------------
     // approval tests
     // ------------------------------------------------------------------------
@@ -352,5 +371,22 @@ contract TransfersTest is BaseTest, DeltaErrors {
         vm.prank(user);
         vm.expectRevert(NATIVE_TRANSFER);
         oneD.deltaCompose(unwrapData);
+    }
+}
+
+contract WethNoReceive {
+    mapping(address => uint256) public balanceOf;
+
+    function deposit() external payable {
+        balanceOf[msg.sender] += msg.value;
+    }
+
+    function transfer(address to, uint256 amount) external returns (bool) {
+        require(balanceOf[msg.sender] >= amount, "insufficient");
+        unchecked {
+            balanceOf[msg.sender] -= amount;
+            balanceOf[to] += amount;
+        }
+        return true;
     }
 }
