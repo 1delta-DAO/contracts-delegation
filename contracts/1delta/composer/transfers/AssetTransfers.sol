@@ -43,7 +43,7 @@ contract AssetTransfers is BaseUtils {
                 // add this address as parameter
                 mstore(0x04, callerAddress)
                 // call to token
-                pop(
+                if iszero(
                     staticcall(
                         gas(),
                         underlying, // token
@@ -52,7 +52,10 @@ contract AssetTransfers is BaseUtils {
                         0x0,
                         0x20
                     )
-                )
+                ) {
+                    returndatacopy(0, 0, returndatasize())
+                    revert(0, returndatasize())
+                }
                 // load the retrieved balance
                 amount := mload(0x0)
             }
@@ -98,7 +101,7 @@ contract AssetTransfers is BaseUtils {
                 // add this address as parameter
                 mstore(0x04, callerAddress)
                 // call to token
-                pop(
+                if iszero(
                     staticcall(
                         gas(),
                         underlying, // token
@@ -107,7 +110,10 @@ contract AssetTransfers is BaseUtils {
                         0x0,
                         0x20
                     )
-                )
+                ) {
+                    returndatacopy(0, 0, returndatasize())
+                    revert(0, returndatasize())
+                }
                 // load the retrieved balance
                 amount := mload(0x0)
             }
@@ -191,7 +197,7 @@ contract AssetTransfers is BaseUtils {
                     // add this address as parameter
                     mstore(0x04, address())
                     // call to token
-                    pop(
+                    if iszero(
                         staticcall(
                             gas(),
                             underlying,
@@ -200,7 +206,10 @@ contract AssetTransfers is BaseUtils {
                             0x0,
                             0x20 //
                         )
-                    )
+                    ) {
+                        returndatacopy(0, 0, returndatasize())
+                        revert(0, returndatasize())
+                    }
                     // load the retrieved balance
                     transferAmount := mload(0x0)
                     // revert if balance is not enough
@@ -423,7 +432,10 @@ contract AssetTransfers is BaseUtils {
                 mstore(0x4, address())
 
                 // call to underlying
-                pop(staticcall(gas(), wrapperAsset, 0x0, 0x24, 0x0, 0x20))
+                if iszero(staticcall(gas(), wrapperAsset, 0x0, 0x24, 0x0, 0x20)) {
+                    returndatacopy(0, 0, returndatasize())
+                    revert(0, returndatasize())
+                }
 
                 transferAmount := mload(0x0)
                 if lt(transferAmount, providedAmount) {

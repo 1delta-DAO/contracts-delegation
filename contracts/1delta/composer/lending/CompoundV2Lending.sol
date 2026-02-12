@@ -161,7 +161,10 @@ abstract contract CompoundV2Lending is ERC20Selectors, Masks {
             mstore(0x4, callerAddress)
 
             // call to collateralToken
-            pop(staticcall(gas(), cToken, 0x0, 0x24, 0x0, 0x20))
+            if iszero(staticcall(gas(), cToken, 0x0, 0x24, 0x0, 0x20)) {
+                returndatacopy(0, 0, returndatasize())
+                revert(0, returndatasize())
+            }
 
             // load the retrieved balance
             refAmount := mload(0x0)
@@ -322,7 +325,10 @@ abstract contract CompoundV2Lending is ERC20Selectors, Masks {
                     // add this address as parameter
                     mstore(0x04, address())
                     // call to token
-                    pop(staticcall(gas(), cToken, 0x0, 0x24, 0x0, 0x20))
+                    if iszero(staticcall(gas(), cToken, 0x0, 0x24, 0x0, 0x20)) {
+                        returndatacopy(0, 0, returndatasize())
+                        revert(0, returndatasize())
+                    }
                     // load the retrieved balance
                     let cBalance := mload(0x0)
 
@@ -365,7 +371,10 @@ abstract contract CompoundV2Lending is ERC20Selectors, Masks {
                     // add this address as parameter
                     mstore(0x04, address())
                     // call to token
-                    pop(staticcall(gas(), underlying, 0x0, 0x24, 0x0, 0x20))
+                    if iszero(staticcall(gas(), underlying, 0x0, 0x24, 0x0, 0x20)) {
+                        returndatacopy(0, 0, returndatasize())
+                        revert(0, returndatasize())
+                    }
                     // load the retrieved balance
                     amount := mload(0x0)
                 }
@@ -412,7 +421,10 @@ abstract contract CompoundV2Lending is ERC20Selectors, Masks {
                         // add this address as parameter
                         mstore(0x04, address())
                         // call to token
-                        pop(staticcall(gas(), cToken, 0x0, 0x24, 0x0, 0x20))
+                        if iszero(staticcall(gas(), cToken, 0x0, 0x24, 0x0, 0x20)) {
+                            returndatacopy(0, 0, returndatasize())
+                            revert(0, returndatasize())
+                        }
                         // load the retrieved balance
                         let cBalance := mload(0x0)
 
@@ -531,7 +543,10 @@ abstract contract CompoundV2Lending is ERC20Selectors, Masks {
                     // add this address as parameter
                     mstore(0x04, address())
                     // call to token
-                    pop(staticcall(gas(), underlying, 0x0, 0x24, 0x0, 0x20))
+                    if iszero(staticcall(gas(), underlying, 0x0, 0x24, 0x0, 0x20)) {
+                        returndatacopy(0, 0, returndatasize())
+                        revert(0, returndatasize())
+                    }
                     // load the retrieved balance
                     amount := mload(0x0)
                 }
@@ -542,7 +557,10 @@ abstract contract CompoundV2Lending is ERC20Selectors, Masks {
                     // add this address as parameter
                     mstore(0x04, address())
                     // call to token
-                    pop(staticcall(gas(), underlying, 0x0, 0x24, 0x0, 0x20))
+                    if iszero(staticcall(gas(), underlying, 0x0, 0x24, 0x0, 0x20)) {
+                        returndatacopy(0, 0, returndatasize())
+                        revert(0, returndatasize())
+                    }
                     // load the retrieved balance
                     amount := mload(0x0)
 

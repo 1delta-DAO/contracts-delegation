@@ -59,7 +59,10 @@ abstract contract SiloV2Lending is ERC20Selectors, Masks {
                 // add caller address as parameter
                 mstore(0x04, callerAddress)
                 // call to collateral token
-                pop(staticcall(gas(), silo, 0x0, 0x24, 0x0, 0x20))
+                if iszero(staticcall(gas(), silo, 0x0, 0x24, 0x0, 0x20)) {
+                    returndatacopy(0, 0, returndatasize())
+                    revert(0, returndatasize())
+                }
                 // load the retrieved balance
                 amount := mload(0x0)
 
@@ -215,7 +218,10 @@ abstract contract SiloV2Lending is ERC20Selectors, Masks {
                 // add this address as parameter
                 mstore(0x04, address())
                 // call to token
-                pop(staticcall(gas(), underlying, 0x0, 0x24, 0x0, 0x20))
+                if iszero(staticcall(gas(), underlying, 0x0, 0x24, 0x0, 0x20)) {
+                    returndatacopy(0, 0, returndatasize())
+                    revert(0, returndatasize())
+                }
                 // load the retrieved balance
                 amount := mload(0x0)
             }
@@ -281,7 +287,10 @@ abstract contract SiloV2Lending is ERC20Selectors, Masks {
                 // add this address as parameter (u)
                 mstore(0x04, u)
                 // call to token
-                pop(staticcall(gas(), t, 0x0, 0x24, 0x0, 0x20))
+                if iszero(staticcall(gas(), t, 0x0, 0x24, 0x0, 0x20)) {
+                    returndatacopy(0, 0, returndatasize())
+                    revert(0, returndatasize())
+                }
                 // load the balance and return it
                 b := mload(0x0)
             }
@@ -308,7 +317,10 @@ abstract contract SiloV2Lending is ERC20Selectors, Masks {
                 // add caller address as parameter
                 mstore(0x04, receiver)
                 // call to debt token
-                pop(staticcall(gas(), silo, 0x0, 0x24, 0x0, 0x20))
+                if iszero(staticcall(gas(), silo, 0x0, 0x24, 0x0, 0x20)) {
+                    returndatacopy(0, 0, returndatasize())
+                    revert(0, returndatasize())
+                }
                 // load the retrieved balance
                 let borrowBalance := mload(0x0)
                 // if borrow balance is less than the amount, select borrow balance

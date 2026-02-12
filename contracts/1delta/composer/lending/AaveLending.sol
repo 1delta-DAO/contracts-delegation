@@ -50,7 +50,10 @@ abstract contract AaveLending is ERC20Selectors, Masks {
                 // add caller address as parameter
                 mstore(0x04, callerAddress)
                 // call to collateral token
-                pop(staticcall(gas(), collateralToken, 0x0, 0x24, 0x0, 0x20))
+                if iszero(staticcall(gas(), collateralToken, 0x0, 0x24, 0x0, 0x20)) {
+                    returndatacopy(0, 0, returndatasize())
+                    revert(0, returndatasize())
+                }
                 // load the retrieved balance
                 amount := mload(0x0)
             }
@@ -235,7 +238,10 @@ abstract contract AaveLending is ERC20Selectors, Masks {
                 // add this address as parameter
                 mstore(0x04, address())
                 // call to token
-                pop(staticcall(gas(), underlying, 0x0, 0x24, 0x0, 0x20))
+                if iszero(staticcall(gas(), underlying, 0x0, 0x24, 0x0, 0x20)) {
+                    returndatacopy(0, 0, returndatasize())
+                    revert(0, returndatasize())
+                }
                 // load the retrieved balance
                 amount := mload(0x0)
             }
@@ -290,7 +296,7 @@ abstract contract AaveLending is ERC20Selectors, Masks {
                 // add this address as parameter
                 mstore(0x04, address())
                 // call to token
-                pop(
+                if iszero(
                     staticcall(
                         gas(),
                         underlying, // token
@@ -299,7 +305,10 @@ abstract contract AaveLending is ERC20Selectors, Masks {
                         0x0,
                         0x20
                     )
-                )
+                ) {
+                    returndatacopy(0, 0, returndatasize())
+                    revert(0, returndatasize())
+                }
                 // load the retrieved balance
                 amount := mload(0x0)
             }
@@ -354,7 +363,10 @@ abstract contract AaveLending is ERC20Selectors, Masks {
                 // add this address as parameter
                 mstore(0x04, address())
                 // call to token
-                pop(staticcall(gas(), underlying, 0x0, 0x24, 0x0, 0x20))
+                if iszero(staticcall(gas(), underlying, 0x0, 0x24, 0x0, 0x20)) {
+                    returndatacopy(0, 0, returndatasize())
+                    revert(0, returndatasize())
+                }
                 // load the retrieved balance
                 amount := mload(0x0)
             }
@@ -366,14 +378,20 @@ abstract contract AaveLending is ERC20Selectors, Masks {
                 // add this address as parameter
                 mstore(0x04, address())
                 // call to token
-                pop(staticcall(gas(), underlying, 0x0, 0x24, 0x4, 0x20))
+                if iszero(staticcall(gas(), underlying, 0x0, 0x24, 0x4, 0x20)) {
+                    returndatacopy(0, 0, returndatasize())
+                    revert(0, returndatasize())
+                }
                 // load the retrieved balance
                 amount := mload(0x4)
 
                 // add caller address as parameter
                 mstore(0x04, receiver)
                 // call to debt token
-                pop(staticcall(gas(), shr(96, calldataload(add(currentOffset, 57))), 0x0, 0x24, 0x0, 0x20))
+                if iszero(staticcall(gas(), shr(96, calldataload(add(currentOffset, 57))), 0x0, 0x24, 0x0, 0x20)) {
+                    returndatacopy(0, 0, returndatasize())
+                    revert(0, returndatasize())
+                }
                 // load the retrieved balance
                 let borrowBalance := mload(0x0)
                 // if borrow balance is less than the amount, select borrow balance

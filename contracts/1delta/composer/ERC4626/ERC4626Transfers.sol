@@ -71,7 +71,10 @@ abstract contract ERC4626Transfers is ERC20Selectors, Masks, DeltaErrors {
                     // add this address as parameter
                     mstore(0x04, address())
                     // call to asset
-                    pop(staticcall(gas(), asset, 0x0, 0x24, 0x0, 0x20))
+                    if iszero(staticcall(gas(), asset, 0x0, 0x24, 0x0, 0x20)) {
+                        returndatacopy(0, 0, returndatasize())
+                        revert(0, returndatasize())
+                    }
                     // load the retrieved balance
                     amountToDeposit := mload(0x0)
                 }
