@@ -2,6 +2,7 @@
 
 pragma solidity 0.8.28;
 
+import {ReentrancyGuard} from "./reentrancy-guard/ReentrancyGuard.sol";
 import {ComposerCommands} from "./enums/DeltaEnums.sol";
 import {ExternalCall} from "./generic/ExternalCall.sol";
 import {Transfers} from "./transfers/Transfers.sol";
@@ -16,6 +17,7 @@ import {DeadLogger} from "../shared/logs/DeadLogger.sol";
  * @author 1delta Labs AG
  */
 contract ComposerLite is
+    ReentrancyGuard,
     DeadLogger,
     UniversalLending,
     ERC4626Operations,
@@ -31,7 +33,7 @@ contract ComposerLite is
      * Batch-executes a series of operations
      * The calldata is loaded in assembly and therefore not referred to here
      */
-    function deltaCompose(bytes calldata) external payable {
+    function deltaCompose(bytes calldata) external payable nonReentrant {
         uint256 length;
         assembly {
             // the length of the calldata is stored per abi encoding standards
