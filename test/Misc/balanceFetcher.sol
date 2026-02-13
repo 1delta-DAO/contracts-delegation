@@ -9,6 +9,13 @@ interface IBal {
     function bal(bytes calldata data) external view returns (bytes memory);
 }
 
+// Token that always reverts on balanceOf
+contract RevertingToken {
+    function balanceOf(address) external pure returns (uint256) {
+        revert("broken");
+    }
+}
+
 contract BalanceFetcherTest is Test {
     IBal public fetcher;
 
@@ -32,7 +39,7 @@ contract BalanceFetcherTest is Test {
         fetcher = IBal(address(new BalanceFetcher()));
     }
 
-    function testBalanceFetching_multiple_users() public {
+    function test_balance_fetcher_multiple_users() public {
         bytes memory input = abi.encodePacked(
             uint16(4), // numTokens
             uint16(4), // numAddresses
@@ -100,12 +107,12 @@ contract BalanceFetcherTest is Test {
         }
     }
 
-    function test_revertOnValue() public {
+    function test_balance_fetcher_revert_on_value() public {
         vm.expectRevert(BalanceFetcher.NoValue.selector);
         (bool s, bytes memory data) = address(fetcher).call(abi.encodeWithSelector(fetcher.bal.selector, new bytes(0)));
     }
 
-    function testBalanceFetching_single_user() public {
+    function test_balance_fetcher_single_user() public {
         bytes memory input = abi.encodePacked(
             uint16(4), // numTokens
             uint16(1), // numAddresses
@@ -172,7 +179,7 @@ contract BalanceFetcherTest is Test {
         }
     }
 
-    function testNativeBalanceFetching() public {
+    function test_balance_fetcher_native_balance() public {
         uint256 ethAmount = 5 ether;
         vm.deal(users[0], ethAmount);
 
@@ -229,7 +236,7 @@ contract BalanceFetcherTest is Test {
         assertEq(tokenBalance, ethAmount, "Native balance mismatch");
     }
 
-    function testBlockNumberReturned() public {
+    function test_balance_fetcher_block_number_returned() public view {
         bytes memory input = abi.encodePacked(
             uint16(1), // numTokens
             uint16(1), // numAddresses
@@ -251,7 +258,54 @@ contract BalanceFetcherTest is Test {
         console.log("Block number test passed");
     }
 
-    function testRevertZeroTokens() public {
+    function test_balance_fetcher_reverting_token_skipped() public {
+        address revertingToken = address(new RevertingToken());
+
+        // Mix a reverting token with a valid one (USDT) and native ETH
+        vm.deal(users[0], 1 ether);
+
+        bytes memory input = abi.encodePacked(
+            uint16(3), // numTokens
+            uint16(1), // numAddresses
+            abi.encodePacked(users[0]),
+            abi.encodePacked(
+                revertingToken, // should be skipped (reverts)
+                tokens[0], // USDT - valid
+                address(0) // native ETH - valid
+            )
+        );
+
+        bytes memory data = fetcher.bal(input);
+
+        uint256 offset = 8; // skip block number
+        uint16 userIndex;
+        uint16 count;
+        assembly {
+            let userData := mload(add(data, add(32, offset)))
+            userIndex := shr(240, userData)
+            count := and(shr(224, userData), 0xffff)
+        }
+
+        assertEq(userIndex, 0, "User index should be 0");
+        // Reverting token must be excluded, only USDT and native ETH should appear
+        offset += 4;
+        for (uint256 i = 0; i < count; i++) {
+            uint16 tokenIndex;
+            uint112 tokenBalance;
+            assembly {
+                let balanceData := mload(add(data, add(32, offset)))
+                tokenIndex := shr(240, balanceData)
+                tokenBalance := and(shr(128, balanceData), 0xffffffffffffffffffffffffffff)
+            }
+            // Token index 0 (reverting) must never appear
+            assertTrue(tokenIndex >= 1, "Reverting token should not appear in results");
+            assertTrue(tokenBalance > 0, "Returned balance should be non-zero");
+            console.log("Token index:", tokenIndex, "Balance:", tokenBalance);
+            offset += 16;
+        }
+    }
+
+    function test_balance_fetcher_revert_zero_tokens() public {
         bytes memory input = abi.encodePacked(
             uint16(0), // numTokens
             uint16(4), // numAddresses
@@ -263,7 +317,7 @@ contract BalanceFetcherTest is Test {
         fetcher.bal(input);
     }
 
-    function testRevertZeroAddresses() public {
+    function test_balance_fetcher_revert_zero_addresses() public {
         bytes memory input = abi.encodePacked(
             uint16(4), // numTokens
             uint16(0), // numAddresses
@@ -275,7 +329,7 @@ contract BalanceFetcherTest is Test {
         fetcher.bal(input);
     }
 
-    function testRevertIncorrectInputLength() public {
+    function test_balance_fetcher_revert_incorrect_input_length() public {
         // Missing one token address
         bytes memory input = abi.encodePacked(
             uint16(4), // numTokens
@@ -288,7 +342,7 @@ contract BalanceFetcherTest is Test {
         fetcher.bal(input);
     }
 
-    function testRevertIncorrectInputLength2() public {
+    function test_balance_fetcher_revert_incorrect_input_length_2() public {
         bytes memory input = abi.encodePacked(
             uint16(4), // numTokens
             uint16(4), // numAddresses
@@ -300,13 +354,13 @@ contract BalanceFetcherTest is Test {
         fetcher.bal(input);
     }
 
-    function testRevertEmptyInput() public {
+    function test_balance_fetcher_revert_empty_input() public {
         bytes memory input = "";
         vm.expectRevert(BalanceFetcher.InvalidInputLength.selector);
         fetcher.bal(input);
     }
 
-    function testRevertTooShortInput() public {
+    function test_balance_fetcher_revert_too_short_input() public {
         // Only sending the first 2 bytes (numTokens)
         bytes memory input = abi.encodePacked(uint16(4));
         vm.expectRevert(BalanceFetcher.InvalidInputLength.selector);
