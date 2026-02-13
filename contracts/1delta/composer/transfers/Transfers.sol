@@ -38,6 +38,8 @@ contract Transfers is AssetTransfers {
             return _permit2TransferFrom(currentOffset, callerAddress);
         } else if (transferOperation == TransferIds.APPROVE) {
             return _approve(currentOffset);
+        } else if (transferOperation == TransferIds.WRAP) {
+            return _wrap(currentOffset);
         } else {
             _invalidOperation();
         }

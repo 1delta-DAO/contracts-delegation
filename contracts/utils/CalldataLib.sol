@@ -1050,6 +1050,10 @@ library CalldataLib {
         ); // 14 bytes
     }
 
+    function encodeWrapWithReceiver(uint256 amount, address weth, address receiver) internal pure returns (bytes memory) {
+        return abi.encodePacked(uint8(ComposerCommands.TRANSFERS), uint8(TransferIds.WRAP), weth, receiver, uint128(amount));
+    }
+
     function encodeApprove(address asset, address target) internal pure returns (bytes memory) {
         return abi.encodePacked(
             uint8(ComposerCommands.TRANSFERS),

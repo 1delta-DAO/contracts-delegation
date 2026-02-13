@@ -657,6 +657,17 @@ const config: HardhatUserConfig = {
                     evmVersion: "paris",
                 },
             },
+            // slim composer
+            "contracts/1delta/composer/ComposerLite.sol": {
+                version: "0.8.28",
+                settings: {
+                    optimizer: {
+                        enabled: true,
+                        runs: 10_000_000,
+                    },
+                    evmVersion: "paris",
+                },
+            },
             "contracts/external-protocols/misc/FeeOnTransferDetector.sol": {
                 version: "0.8.28",
                 settings: {

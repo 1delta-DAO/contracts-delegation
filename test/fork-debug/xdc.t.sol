@@ -54,7 +54,7 @@ contract ForkTestXdc is BaseTest {
 
     function test_fork_raw_xdc() external {
         vm.prank(mockSender);
-        address(proxy).call{value: 0.000e18}(getData());
+        address(proxy).call{value: 0.0e18}(getData());
     }
 
     function test_fork_params_xdc() external {

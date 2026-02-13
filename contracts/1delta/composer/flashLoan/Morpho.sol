@@ -32,7 +32,7 @@ contract MorphoFlashLoans is Masks {
             let pool := shr(96, calldataload(add(currentOffset, 20)))
             // second calldata slice including amount and params length
             let slice := calldataload(add(currentOffset, 40))
-            let amount := and(UINT112_MASK, shr(128, slice)) 
+            let amount := and(UINT112_MASK, shr(128, slice))
             // length of params
             let calldataLength := and(UINT16_MASK, shr(112, slice))
             // skip uint128 and uint16

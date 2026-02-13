@@ -56,7 +56,10 @@ abstract contract CompoundV3Lending is ERC20Selectors, Masks {
                     // add underlying address
                     mstore(add(ptr, 0x24), underlying)
                     // call to comet
-                    pop(staticcall(gas(), cometPool, ptr, 0x44, ptr, 0x20))
+                    if iszero(staticcall(gas(), cometPool, ptr, 0x44, ptr, 0x20)) {
+                        returndatacopy(0, 0, returndatasize())
+                        revert(0, returndatasize())
+                    }
                     // load the retrieved balance (lower 128 bits)
                     amount := and(UINT128_MASK, mload(ptr))
                 }
@@ -67,7 +70,10 @@ abstract contract CompoundV3Lending is ERC20Selectors, Masks {
                     // add caller address as parameter
                     mstore(0x04, callerAddress)
                     // call to comet
-                    pop(staticcall(gas(), cometPool, 0x0, 0x24, 0x0, 0x20))
+                    if iszero(staticcall(gas(), cometPool, 0x0, 0x24, 0x0, 0x20)) {
+                        returndatacopy(0, 0, returndatasize())
+                        revert(0, returndatasize())
+                    }
                     // load the retrieved balance
                     amount := mload(0x0)
                 }
@@ -164,7 +170,10 @@ abstract contract CompoundV3Lending is ERC20Selectors, Masks {
                 // add this address as parameter
                 mstore(0x04, address())
                 // call to token
-                pop(staticcall(gas(), underlying, 0x0, 0x24, 0x0, 0x20))
+                if iszero(staticcall(gas(), underlying, 0x0, 0x24, 0x0, 0x20)) {
+                    returndatacopy(0, 0, returndatasize())
+                    revert(0, returndatasize())
+                }
                 // load the retrieved balance
                 amount := mload(0x0)
             }
@@ -217,7 +226,10 @@ abstract contract CompoundV3Lending is ERC20Selectors, Masks {
                 // add this address as parameter
                 mstore(0x04, address())
                 // call to token
-                pop(staticcall(gas(), underlying, 0x0, 0x24, 0x0, 0x20))
+                if iszero(staticcall(gas(), underlying, 0x0, 0x24, 0x0, 0x20)) {
+                    returndatacopy(0, 0, returndatasize())
+                    revert(0, returndatasize())
+                }
                 // load the retrieved balance
                 amount := mload(0x0)
             }
@@ -231,7 +243,10 @@ abstract contract CompoundV3Lending is ERC20Selectors, Masks {
                 // add this address as parameter
                 mstore(0x04, address())
                 // call to token
-                pop(staticcall(gas(), underlying, 0x0, 0x24, 0x0, 0x20))
+                if iszero(staticcall(gas(), underlying, 0x0, 0x24, 0x0, 0x20)) {
+                    returndatacopy(0, 0, returndatasize())
+                    revert(0, returndatasize())
+                }
                 // load the retrieved balance
                 amount := mload(0x0)
 
@@ -240,7 +255,10 @@ abstract contract CompoundV3Lending is ERC20Selectors, Masks {
                 // add receiver as parameter
                 mstore(0x04, receiver)
                 // call to comet
-                pop(staticcall(gas(), comet, 0x0, 0x24, 0x0, 0x20))
+                if iszero(staticcall(gas(), comet, 0x0, 0x24, 0x0, 0x20)) {
+                    returndatacopy(0, 0, returndatasize())
+                    revert(0, returndatasize())
+                }
                 let userBorrowBalance := mload(0x0)
 
                 // amount greater than borrow balance -> use borrow balance

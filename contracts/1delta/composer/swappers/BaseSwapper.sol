@@ -196,16 +196,17 @@ abstract contract BaseSwapper is
                     }
                     default {
                         // splits are uint16s as share of uint16.max
-                        split := div(
-                            mul(
-                                and(
-                                    UINT16_MASK,
-                                    shr(sub(112, mul(i, 16)), splits) // read the uin16 in the splits sequence
+                        split :=
+                            div(
+                                mul(
+                                    and(
+                                        UINT16_MASK,
+                                        shr(sub(112, mul(i, 16)), splits) // read the uin16 in the splits sequence
+                                    ),
+                                    amountIn //
                                 ),
-                                amountIn //
-                            ),
-                            UINT16_MASK //
-                        )
+                                UINT16_MASK //
+                            )
                     }
                     i := add(i, 1)
                 }

@@ -10,6 +10,7 @@ import {DeltaErrors} from "../../../../../shared/errors/Errors.sol";
  */
 contract AaveV3FlashLoanCallback is Masks, DeltaErrors {
     // Aave V3 style lender pool addresses
+    address private constant AAVE_V3 = 0x458F293454fE0d67EC0655f3672301301DD51422;
     address private constant KINZA = 0x5757b15f60331eF3eDb11b16ab0ae72aE678Ed51;
     address private constant LENDLE_CMETH = 0xd9a41322336133f2b026a65F2426647BD0Bf690C;
     address private constant LENDLE_PT_CMETH = 0x5d7b73f9271c40ff737f98B8F818e7477761041f;
@@ -66,6 +67,7 @@ contract AaveV3FlashLoanCallback is Masks, DeltaErrors {
             switch lt(poolId, 105)
             case 1 {
                 switch poolId
+                case 0 { pool := AAVE_V3 }
                 case 82 { pool := KINZA }
                 case 102 { pool := LENDLE_CMETH }
                 case 103 { pool := LENDLE_PT_CMETH }

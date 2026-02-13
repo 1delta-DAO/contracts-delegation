@@ -12,6 +12,8 @@ library TransferIds {
     uint256 internal constant UNWRAP_WNATIVE = 3;
     uint256 internal constant PERMIT2_TRANSFER_FROM = 4;
     uint256 internal constant APPROVE = 5;
+    // we add this for cases where the receive function does not forward 'wrap'
+    uint256 internal constant WRAP = 6;
 }
 
 /**
