@@ -352,9 +352,7 @@ contract AssetTransfers is BaseUtils {
 
             providedAmount := and(UINT112_MASK, providedAmount) // remove the upper 16 bytes (flags space)
             switch providedAmount
-            case 0 {
-                transferAmount := selfbalance()
-            }
+            case 0 { transferAmount := selfbalance() }
             default { transferAmount := providedAmount }
 
             if gt(transferAmount, 0) {

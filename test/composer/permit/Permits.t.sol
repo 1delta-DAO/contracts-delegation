@@ -111,8 +111,8 @@ contract PermitsTest is Test, DeltaErrors {
         assertEq(token.allowance(user, address(oneD)), type(uint256).max);
     }
     /**
-    * since we allow fall through for permit calls (if they revert, we will continue the composition), 
-    * the following test is not applicable anymore
+     * since we allow fall through for permit calls (if they revert, we will continue the composition),
+     * the following test is not applicable anymore
      */
     // function test_unit_permit_token_permit_expired_deadline() external {
     //     MockERC20Permit token = new MockERC20Permit(1000e18);
