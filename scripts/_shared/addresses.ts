@@ -4,7 +4,9 @@ export const DEPLOY_FACTORY = "0x16c4Dc0f662E2bEceC91fC5E7aeeC6a25684698A";
 
 // forwarder: also deployed on all those chains
 export const FORWARDER = "0xfCa11b85ac641f1ba215259566d579A45519e506";
-// npx hardhat run /home/axtar/contracts-delegation/scripts/_shared/composers/moonbeam.ts --network moonbeam
+
+export const COMPOSER_LITE = "0xC0000019c7936cF689b5D2aEBbfB864601fe2720";
+
 export const COMPOSER_LOGICS = {
     [Chain.ARBITRUM_ONE]: "0x82Fe9a74a04eEd6189E493231D8511c3E2fe4cb3",
     [Chain.ETHEREUM_MAINNET]: "0x97648606fcc22Bd96F87345Ac83Bd6cFCdF0ACBa",

@@ -448,7 +448,7 @@ const config: HardhatUserConfig = {
             live: true,
         },
         arbitrum: {
-            url: "https://arb1.arbitrum.io/rpc",
+            url: "https://arbitrum.drpc.org",
             chainId: 42161,
             live: true,
             blockGasLimit: 700000,

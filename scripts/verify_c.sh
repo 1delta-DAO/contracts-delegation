@@ -63,3 +63,5 @@ npx hardhat verify --network moonbeam 0x8a5b01FD188785D0eb4578899f1aECD74b4C3071
 npx hardhat verify --network sei 0x816EBC5cb8A5651C902Cb06659907A93E574Db0B --contract contracts/1delta/composer/chains/sei/Composer.sol:OneDeltaComposerSei
 
 npx hardhat verify --network monad 0x816EBC5cb8A5651C902Cb06659907A93E574Db0B --contract contracts/1delta/composer/chains/monad/Composer.sol:OneDeltaComposerMonad
+
+npx hardhat verify 0xC0000019c7936cF689b5D2aEBbfB864601fe2720 --contract contracts/1delta/composer/ComposerLite.sol:ComposerLite  --network monad 
