@@ -9,8 +9,7 @@ import {Masks} from "../../shared/masks/Masks.sol";
  * @notice Lending base contract that wraps Morpho Blue
  */
 abstract contract MorphoLending is ERC20Selectors, Masks {
-    /// @dev Constant MorphoB address
-    // address internal constant MORPHO_BLUE = 0xBBBBBbbBBb9cC5e90e3b3Af64bdAF62C37EEFFCb;
+    error ListaProviderCallbackNotAllowed();
 
     /// @dev  position(...)
     bytes32 private constant MORPHO_POSITION = 0x93c5206200000000000000000000000000000000000000000000000000000000;
@@ -318,18 +317,8 @@ abstract contract MorphoLending is ERC20Selectors, Masks {
                 // native case via lista provider (lista only)
                 mstore(add(ptr, 164), receiver)
                 mstore(add(ptr, 196), 0xE0)
-                if xor(0, calldataLength) {
-                    mstore(add(ptr, 228), inputCalldataLength)
-                    calldatacopy(add(ptr, 260), dataOffset, inputCalldataLength)
-                    let dataPadded := add(31, inputCalldataLength)
-                    dataPadded := and(not(31), dataPadded)
-                    if iszero(call(gas(), target, amountToDeposit, ptr, add(260, dataPadded), 0x0, 0x0)) {
-                        let rdlen := returndatasize()
-                        returndatacopy(0, 0, rdlen)
-                        revert(0x0, rdlen)
-                    }
-                }
-                if iszero(calldataLength) {
+                switch calldataLength
+                case 0 {
                     mstore(add(ptr, 228), 0)
                     if iszero(call(gas(), target, amountToDeposit, ptr, 260, 0x0, 0x0)) {
                         let rdlen := returndatasize()
@@ -337,7 +326,13 @@ abstract contract MorphoLending is ERC20Selectors, Masks {
                         revert(0x0, rdlen)
                     }
                 }
+                default {
+                    // ListaProviderCallbackNotAllowed()
+                    mstore(0x0, 0x88036ba500000000000000000000000000000000000000000000000000000000)
+                    revert(0x0, 0x04)
+                }
             }
+
             currentOffset := add(dataOffset, inputCalldataLength)
         }
         return currentOffset;
