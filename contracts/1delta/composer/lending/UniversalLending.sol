@@ -139,9 +139,6 @@ abstract contract UniversalLending is
          */
         else if (lendingOperation == LenderOps.WITHDRAW_LENDING_TOKEN) {
             return _encodeMorphoWithdraw(currentOffset, callerAddress);
-        }
-        else if (lendingOperation == LenderOps.DEPOSIT_LENDING_TOKEN_PROVIDER) {
-            return _encodeListaSupplyCollateralViaProvider(currentOffset, callerAddress);
         } else {
             _invalidOperation();
         }

@@ -44,14 +44,7 @@ contract ListaLendingTest is BaseTest {
         uint256 amount = 0.1 ether;
         vm.deal(address(oneD), amount);
         bytes memory market = encodeMarket(LOAN_TOKEN, COLLATERAL_TOKEN, ORACLE, IRM, LLTV);
-        bytes memory depositCall = CalldataLib.encodeListaSupplyCollateralViaProvider(
-            market,
-            amount,
-            user,
-            LISTA_PROVIDER,
-            "",
-            0
-        );
+        bytes memory depositCall = CalldataLib.encodeListaSupplyCollateralViaProvider(market, amount, user, "", LISTA_PROVIDER, 0);
         uint256 composerBalanceBefore = address(oneD).balance;
         vm.prank(user);
         oneD.deltaCompose(depositCall);
@@ -62,21 +55,13 @@ contract ListaLendingTest is BaseTest {
         uint256 amount = 0.1 ether;
         vm.deal(address(oneD), amount);
         bytes memory market = encodeMarket(LOAN_TOKEN, COLLATERAL_TOKEN, ORACLE, IRM, LLTV);
-        bytes memory depositCall = CalldataLib.encodeListaSupplyCollateralViaProvider(
-            market,
-            amount,
-            user,
-            LISTA_PROVIDER,
-            "",
-            0
-        );
+        bytes memory depositCall = CalldataLib.encodeListaSupplyCollateralViaProvider(market, amount, user, "", LISTA_PROVIDER, 0);
         vm.prank(user);
         oneD.deltaCompose(depositCall);
         vm.prank(user);
         IMorphoEverything(MOOLAH).setAuthorization(address(oneD), true);
         uint256 withdrawAmount = 0.05 ether;
-        bytes memory withdrawCall =
-            CalldataLib.encodeMorphoWithdrawCollateral(market, withdrawAmount, user, LISTA_PROVIDER);
+        bytes memory withdrawCall = CalldataLib.encodeMorphoWithdrawCollateral(market, withdrawAmount, user, LISTA_PROVIDER);
         uint256 userBalanceBefore = user.balance;
         vm.prank(user);
         oneD.deltaCompose(withdrawCall);

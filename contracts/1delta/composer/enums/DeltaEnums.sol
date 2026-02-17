@@ -47,7 +47,6 @@ library LenderOps {
     uint256 internal constant WITHDRAW = 3;
     uint256 internal constant DEPOSIT_LENDING_TOKEN = 4;
     uint256 internal constant WITHDRAW_LENDING_TOKEN = 5;
-    uint256 internal constant DEPOSIT_LENDING_TOKEN_PROVIDER = 6;
 }
 
 /**
