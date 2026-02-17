@@ -403,7 +403,10 @@ abstract contract V2TypeGeneric is ERC20Selectors, Masks {
                 mstore(0x0, ERC20_BALANCE_OF)
                 mstore(0x4, pair)
                 // we store the result
-                pop(staticcall(gas(), tokenIn, 0x0, 0x24, 0x0, 0x20))
+                if iszero(staticcall(gas(), tokenIn, 0x0, 0x24, 0x0, 0x20)) {
+                    returndatacopy(0, 0, returndatasize())
+                    revert(0, returndatasize())
+                }
                 amountIn := sub(mload(0x0), sellReserve)
 
                 // adjustment via denominator
