@@ -21,6 +21,9 @@ contract CompoundV2ComposerLightTest is BaseTest {
 
     uint256 internal constant forkBlock = 290934482;
 
+    address internal constant BASE_USDC = 0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913;
+    address internal constant BASE_DFORCE_IUSDC = 0xBb81632e9e1Fb675dB5e5a5ff66f16E822c9a2FD;
+
     function setUp() public virtual {
         // initialize the chain
         string memory chainName = Chains.ARBITRUM_ONE;
@@ -111,6 +114,119 @@ contract CompoundV2ComposerLightTest is BaseTest {
         assertApproxEqAbs(collateralAfter - collateralBefore, amount, 1);
         // Assert underlying balance decreased by amount
         assertApproxEqAbs(underlyingBefore - underlyingAfter, amount, 1);
+    }
+
+    function test_integ_lending_compoundV2_unitus_deposit() external {
+        IChain base = chainFactory.getChain(Chains.BASE);
+        vm.createSelectFork(base.getRpcUrl());
+
+        address token = BASE_USDC;
+        address cToken = BASE_DFORCE_IUSDC;
+        uint256 amount = 100.0e6;
+        deal(token, user, amount);
+
+        IComposerLike oneDBase = ComposerPlugin.getComposer(Chains.BASE);
+
+        vm.prank(user);
+        IERC20All(token).approve(address(oneDBase), type(uint256).max);
+
+        uint256 collateralBefore = ILendingTools(cToken).balanceOfUnderlying(user);
+        uint256 underlyingBefore = IERC20All(token).balanceOf(user);
+
+        bytes memory transferTo = CalldataLib.encodeTransferIn(token, address(oneDBase), amount);
+        bytes memory d = CalldataLib.encodeCompoundV2Deposit(token, amount, user, cToken, uint8(CompoundV2Selector.MINT_UNITUS));
+
+        vm.prank(user);
+        oneDBase.deltaCompose(abi.encodePacked(transferTo, d));
+
+        uint256 collateralAfter = ILendingTools(cToken).balanceOfUnderlying(user);
+        uint256 underlyingAfter = IERC20All(token).balanceOf(user);
+
+        assertApproxEqAbs(collateralAfter - collateralBefore, amount, 1);
+        assertApproxEqAbs(underlyingBefore - underlyingAfter, amount, 1);
+    }
+
+    function test_integ_lending_compoundV2_unitus_withdraw_redeem() external {
+        vm.assume(user != address(0));
+
+        IChain base = chainFactory.getChain(Chains.BASE);
+        vm.createSelectFork(base.getRpcUrl());
+
+        address token = BASE_USDC;
+        address cToken = BASE_DFORCE_IUSDC;
+        uint256 amount = 100.0e6;
+        deal(token, user, amount);
+
+        IComposerLike oneDBase = ComposerPlugin.getComposer(Chains.BASE);
+
+        vm.prank(user);
+        IERC20All(token).approve(address(oneDBase), type(uint256).max);
+
+        bytes memory transferTo = CalldataLib.encodeTransferIn(token, address(oneDBase), amount);
+        bytes memory depositCalldata =
+            CalldataLib.encodeCompoundV2Deposit(token, amount, user, cToken, uint8(CompoundV2Selector.MINT_UNITUS));
+        vm.prank(user);
+        oneDBase.deltaCompose(abi.encodePacked(transferTo, depositCalldata));
+
+        vm.prank(user);
+        IERC20All(cToken).approve(address(oneDBase), type(uint256).max);
+
+        uint256 amountToWithdraw = 10.0e6;
+        uint256 collateralBefore = ILendingTools(cToken).balanceOfUnderlying(user);
+        uint256 underlyingBefore = IERC20All(token).balanceOf(user);
+
+        bytes memory withdrawCalldata =
+            CalldataLib.encodeCompoundV2Withdraw(token, amountToWithdraw, user, cToken, uint8(CompoundV2Selector.REDEEM_UNITUS));
+        vm.prank(user);
+        oneDBase.deltaCompose(withdrawCalldata);
+
+        uint256 collateralAfter = ILendingTools(cToken).balanceOfUnderlying(user);
+        uint256 underlyingAfter = IERC20All(token).balanceOf(user);
+
+        assertApproxEqAbs(collateralBefore - collateralAfter, amountToWithdraw, 1);
+        assertApproxEqAbs(underlyingAfter - underlyingBefore, amountToWithdraw, 1);
+    }
+
+    function test_integ_lending_compoundV2_unitus_withdraw_redeemUnderlying() external {
+        vm.assume(user != address(0));
+
+        IChain base = chainFactory.getChain(Chains.BASE);
+        vm.createSelectFork(base.getRpcUrl());
+
+        address token = BASE_USDC;
+        address cToken = BASE_DFORCE_IUSDC;
+        uint256 amount = 100.0e6;
+        deal(token, user, amount);
+
+        IComposerLike oneDBase = ComposerPlugin.getComposer(Chains.BASE);
+
+        vm.prank(user);
+        IERC20All(token).approve(address(oneDBase), type(uint256).max);
+
+        bytes memory transferTo = CalldataLib.encodeTransferIn(token, address(oneDBase), amount);
+        bytes memory depositCalldata =
+            CalldataLib.encodeCompoundV2Deposit(token, amount, user, cToken, uint8(CompoundV2Selector.MINT_UNITUS));
+        vm.prank(user);
+        oneDBase.deltaCompose(abi.encodePacked(transferTo, depositCalldata));
+
+        vm.prank(user);
+        IERC20All(cToken).approve(address(oneDBase), type(uint256).max);
+
+        uint256 amountToWithdraw = 10.0e6;
+        uint256 collateralBefore = ILendingTools(cToken).balanceOfUnderlying(user);
+        uint256 underlyingBefore = IERC20All(token).balanceOf(user);
+
+        bytes memory withdrawCalldata = CalldataLib.encodeCompoundV2Withdraw(
+            token, amountToWithdraw, user, cToken, uint8(CompoundV2Selector.REDEEM_UNDERLYING_UNITUS)
+        );
+        vm.prank(user);
+        oneDBase.deltaCompose(withdrawCalldata);
+
+        uint256 collateralAfter = ILendingTools(cToken).balanceOfUnderlying(user);
+        uint256 underlyingAfter = IERC20All(token).balanceOf(user);
+
+        assertApproxEqAbs(collateralBefore - collateralAfter, amountToWithdraw, 1);
+        assertApproxEqAbs(underlyingAfter - underlyingBefore, amountToWithdraw, 1);
     }
 
     function test_integ_lending_compoundV2_borrow() external {

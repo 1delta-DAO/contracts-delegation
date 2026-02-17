@@ -72,17 +72,16 @@ abstract contract CompoundV2Lending is ERC20Selectors, Masks {
                 // Check for ERC20 success. ERC20 tokens should return a boolean,
                 // but some don't. We accept 0-length return data as success, or at
                 // least 32 bytes that starts with a 32-byte boolean true.
-                success :=
-                    and(
-                        success, // call itself succeeded
-                        or(
-                            iszero(rdsize), // no return data, or
-                            and(
-                                gt(rdsize, 31), // at least 32 bytes
-                                eq(mload(ptr), 1) // starts with uint256(1)
-                            )
+                success := and(
+                    success, // call itself succeeded
+                    or(
+                        iszero(rdsize), // no return data, or
+                        and(
+                            gt(rdsize, 31), // at least 32 bytes
+                            eq(mload(ptr), 1) // starts with uint256(1)
                         )
                     )
+                )
 
                 if iszero(success) {
                     returndatacopy(0, 0, rdsize)
@@ -223,6 +222,28 @@ abstract contract CompoundV2Lending is ERC20Selectors, Masks {
                     revert(0, rdsize)
                 }
             }
+            case 2 {
+                // unitus redeem :: redeem(address, uint256)
+                mstore(ptr, 0x1e9a695000000000000000000000000000000000000000000000000000000000)
+                mstore(add(ptr, 0x4), callerAddress)
+                mstore(add(ptr, 0x24), cTokenTransferAmount)
+
+                if iszero(call(gas(), cToken, 0x0, ptr, 0x44, 0x0, 0x20)) {
+                    returndatacopy(0, 0, returndatasize())
+                    revert(0, returndatasize())
+                }
+            }
+            case 3 {
+                // unitus redeemUnderlying :: redeemUnderlying(address, uint256)
+                mstore(ptr, 0x9629417800000000000000000000000000000000000000000000000000000000)
+                mstore(add(ptr, 0x4), callerAddress)
+                mstore(add(ptr, 0x24), amount)
+
+                if iszero(call(gas(), cToken, 0x0, ptr, 0x44, 0x0, 0x20)) {
+                    returndatacopy(0, 0, returndatasize())
+                    revert(0, returndatasize())
+                }
+            }
             default { revert(0, 0) }
 
             // transfer tokens only if the receiver is not this address
@@ -251,17 +272,16 @@ abstract contract CompoundV2Lending is ERC20Selectors, Masks {
                     // Check for ERC20 success. ERC20 tokens should return a boolean,
                     // but some don't. We accept 0-length return data as success, or at
                     // least 32 bytes that starts with a 32-byte boolean true.
-                    success :=
-                        and(
-                            success, // call itself succeeded
-                            or(
-                                iszero(rdsize), // no return data, or
-                                and(
-                                    gt(rdsize, 31), // at least 32 bytes
-                                    eq(mload(ptr), 1) // starts with uint256(1)
-                                )
+                    success := and(
+                        success, // call itself succeeded
+                        or(
+                            iszero(rdsize), // no return data, or
+                            and(
+                                gt(rdsize, 31), // at least 32 bytes
+                                eq(mload(ptr), 1) // starts with uint256(1)
                             )
                         )
+                    )
 
                     if iszero(success) {
                         returndatacopy(0, 0, rdsize)
@@ -453,6 +473,17 @@ abstract contract CompoundV2Lending is ERC20Selectors, Masks {
                             returndatacopy(0, 0, rdsize)
                             revert(0, rdsize)
                         }
+                    }
+                }
+                case 2 {
+                    // unitus mint :: mint(address, uint256)
+                    mstore(ptr, 0x40c10f1900000000000000000000000000000000000000000000000000000000)
+                    mstore(add(ptr, 0x04), receiver)
+                    mstore(add(ptr, 0x24), amount)
+
+                    if iszero(call(gas(), cToken, 0x0, ptr, 0x44, 0x0, 0x20)) {
+                        returndatacopy(0, 0, returndatasize())
+                        revert(0, returndatasize())
                     }
                 }
                 default { revert(0, 0) }
