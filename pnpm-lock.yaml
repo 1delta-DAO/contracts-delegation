@@ -18,8 +18,8 @@ importers:
         specifier: ^0.0.98
         version: 0.0.98
       '@1delta/lender-registry':
-        specifier: ^0.0.13
-        version: 0.0.13
+        specifier: ^0.0.16
+        version: 0.0.16
       '@1delta/margin-fetcher':
         specifier: ^0.0.137
         version: 0.0.137
@@ -228,6 +228,10 @@ packages:
 
   '@1delta/lender-registry@0.0.13':
     resolution: {integrity: sha512-7eont2pJAHQ7RLu7CXx0AM1PLYJmTXaaaeF3SC1zp4OKH9OA9c5ybNEjZpGXNk7JPkMrjGmmdbH+U/kQ8tYbzw==}
+    engines: {node: '>=20'}
+
+  '@1delta/lender-registry@0.0.16':
+    resolution: {integrity: sha512-cyCx8LmZYOZRZraaaKnJIi8+n4AdagwkOMU/jrRUQ4gAb3+pdV5NyG95IYrsiCrpnBWZ6sNAIkhkk2zbx95y8Q==}
     engines: {node: '>=20'}
 
   '@1delta/margin-fetcher@0.0.137':
@@ -7027,6 +7031,8 @@ snapshots:
   '@1delta/lender-registry@0.0.12': {}
 
   '@1delta/lender-registry@0.0.13': {}
+
+  '@1delta/lender-registry@0.0.16': {}
 
   '@1delta/margin-fetcher@0.0.137':
     dependencies:

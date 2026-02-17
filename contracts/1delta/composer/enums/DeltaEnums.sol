@@ -106,9 +106,11 @@ library BridgeIds {
 library CompoundV2Selector {
     uint256 internal constant MINT_BEHALF = 0;
     uint256 internal constant MINT = 1;
+    uint256 internal constant MINT_ITOKEN = 2;
 
     uint256 internal constant REDEEM = 0;
     uint256 internal constant REDEEM_BEHALF = 1;
+    uint256 internal constant REDEEM_ITOKEN = 2;
 }
 
 library SiloV2CollateralType {
