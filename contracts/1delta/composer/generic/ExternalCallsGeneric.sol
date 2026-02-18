@@ -250,7 +250,10 @@ abstract contract ExternalCallsGeneric is BaseUtils {
                 // erc20 balance of this
                 mstore(0x0, ERC20_BALANCE_OF)
                 mstore(0x04, address())
-                pop(staticcall(gas(), token, 0x0, 0x24, 0x0, 0x20))
+                if iszero(staticcall(gas(), token, 0x0, 0x24, 0x0, 0x20)) {
+                    returndatacopy(0, 0, returndatasize())
+                    revert(0, returndatasize())
+                }
 
                 // offset to replace amount (mload(0)) in calldata (4 bytes for function selector)
                 mstore(add(add(ptr, 4), replaceOffset), mload(0x0))
@@ -338,7 +341,10 @@ abstract contract ExternalCallsGeneric is BaseUtils {
                 // erc20 balance of this
                 mstore(0x0, ERC20_BALANCE_OF)
                 mstore(0x04, address())
-                pop(staticcall(gas(), token, 0x0, 0x24, 0x0, 0x20))
+                if iszero(staticcall(gas(), token, 0x0, 0x24, 0x0, 0x20)) {
+                    returndatacopy(0, 0, returndatasize())
+                    revert(0, returndatasize())
+                }
 
                 // offset to replace amount (mload(0)) in calldata (4 bytes for function selector)
                 mstore(add(add(ptr, 4), replaceOffset), mload(0x0))

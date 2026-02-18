@@ -50,7 +50,7 @@ abstract contract CompoundV2Lending is ERC20Selectors, Masks {
                 revert(0, returndatasize())
             }
             let rdsize := returndatasize()
-            if or(iszero(rdsize), xor(mload(0x0), 0)) {
+            if and(eq(rdsize, 1), xor(mload(0x0), 0)) {
                 returndatacopy(0, 0, rdsize)
                 revert(0, rdsize)
             }
@@ -72,17 +72,16 @@ abstract contract CompoundV2Lending is ERC20Selectors, Masks {
                 // Check for ERC20 success. ERC20 tokens should return a boolean,
                 // but some don't. We accept 0-length return data as success, or at
                 // least 32 bytes that starts with a 32-byte boolean true.
-                success :=
-                    and(
-                        success, // call itself succeeded
-                        or(
-                            iszero(rdsize), // no return data, or
-                            and(
-                                gt(rdsize, 31), // at least 32 bytes
-                                eq(mload(ptr), 1) // starts with uint256(1)
-                            )
+                success := and(
+                    success, // call itself succeeded
+                    or(
+                        iszero(rdsize), // no return data, or
+                        and(
+                            gt(rdsize, 31), // at least 32 bytes
+                            eq(mload(ptr), 1) // starts with uint256(1)
                         )
                     )
+                )
 
                 if iszero(success) {
                     returndatacopy(0, 0, rdsize)
@@ -201,7 +200,7 @@ abstract contract CompoundV2Lending is ERC20Selectors, Masks {
                     revert(0, returndatasize())
                 }
                 rdsize := returndatasize()
-                if or(iszero(rdsize), xor(mload(0x0), 0)) {
+                if and(eq(rdsize, 1), xor(mload(0x0), 0)) {
                     returndatacopy(0, 0, rdsize)
                     revert(0, rdsize)
                 }
@@ -218,9 +217,21 @@ abstract contract CompoundV2Lending is ERC20Selectors, Masks {
                     revert(0, returndatasize())
                 }
                 let rdsize := returndatasize()
-                if or(iszero(rdsize), xor(mload(0), 0)) {
+                if and(eq(rdsize, 1), xor(mload(0), 0)) {
                     returndatacopy(0, 0, rdsize)
                     revert(0, rdsize)
+                }
+            }
+            case 2 {
+                // 2/3) REDEEM (iToken style) - redeem(address,uint256)
+                // selector for redeem(address,uint256)
+                mstore(ptr, 0x1e9a695000000000000000000000000000000000000000000000000000000000)
+                mstore(add(ptr, 0x4), callerAddress)
+                mstore(add(ptr, 0x24), cTokenTransferAmount)
+
+                if iszero(call(gas(), cToken, 0x0, ptr, 0x44, 0x0, 0x0)) {
+                    returndatacopy(0, 0, returndatasize())
+                    revert(0, returndatasize())
                 }
             }
             default { revert(0, 0) }
@@ -251,17 +262,16 @@ abstract contract CompoundV2Lending is ERC20Selectors, Masks {
                     // Check for ERC20 success. ERC20 tokens should return a boolean,
                     // but some don't. We accept 0-length return data as success, or at
                     // least 32 bytes that starts with a 32-byte boolean true.
-                    success :=
-                        and(
-                            success, // call itself succeeded
-                            or(
-                                iszero(rdsize), // no return data, or
-                                and(
-                                    gt(rdsize, 31), // at least 32 bytes
-                                    eq(mload(ptr), 1) // starts with uint256(1)
-                                )
+                    success := and(
+                        success, // call itself succeeded
+                        or(
+                            iszero(rdsize), // no return data, or
+                            and(
+                                gt(rdsize, 31), // at least 32 bytes
+                                eq(mload(ptr), 1) // starts with uint256(1)
                             )
                         )
+                    )
 
                     if iszero(success) {
                         returndatacopy(0, 0, rdsize)
@@ -309,54 +319,69 @@ abstract contract CompoundV2Lending is ERC20Selectors, Masks {
                 // zero is this balance
                 if iszero(amount) { amount := selfbalance() }
 
-                // selector for mint()
-                mstore(0, 0x1249c58b00000000000000000000000000000000000000000000000000000000)
+                // switch-case over selectorId
+                switch and(UINT8_MASK, shr(120, amountData))
+                // iToken-style mint(address) — mints directly to receiver
+                case 2 {
+                    // selector for mint(address)
+                    mstore(0, 0x6a62784200000000000000000000000000000000000000000000000000000000)
+                    mstore(0x04, receiver)
 
-                if iszero(call(gas(), cToken, amount, 0x0, 0x4, 0x0, 0x20)) {
-                    returndatacopy(0x0, 0, returndatasize())
-                    revert(0x0, returndatasize())
-                }
-                let rdsize := returndatasize()
-
-                // need to transfer collateral to receiver
-                if xor(receiver, address()) {
-                    // selector for balanceOf(address)
-                    mstore(0, ERC20_BALANCE_OF)
-                    // add this address as parameter
-                    mstore(0x04, address())
-                    // call to token
-                    if iszero(staticcall(gas(), cToken, 0x0, 0x24, 0x0, 0x20)) {
-                        returndatacopy(0, 0, returndatasize())
-                        revert(0, returndatasize())
+                    if iszero(call(gas(), cToken, amount, 0x0, 0x24, 0x0, 0x0)) {
+                        returndatacopy(0x0, 0, returndatasize())
+                        revert(0x0, returndatasize())
                     }
-                    // load the retrieved balance
-                    let cBalance := mload(0x0)
+                }
+                // compound-style mint() — mints to msg.sender, then transfer
+                default {
+                    // selector for mint()
+                    mstore(0, 0x1249c58b00000000000000000000000000000000000000000000000000000000)
 
-                    let ptr := mload(0x40)
-                    // TRANSFER COLLATERAL
-                    // selector for transfer(address,uint256)
-                    mstore(ptr, ERC20_TRANSFER)
-                    mstore(add(ptr, 0x04), receiver)
-                    mstore(add(ptr, 0x24), cBalance)
+                    if iszero(call(gas(), cToken, amount, 0x0, 0x4, 0x0, 0x20)) {
+                        returndatacopy(0x0, 0, returndatasize())
+                        revert(0x0, returndatasize())
+                    }
 
-                    let success := call(gas(), cToken, 0, ptr, 0x44, ptr, 32)
+                    // need to transfer collateral to receiver
+                    if xor(receiver, address()) {
+                        // selector for balanceOf(address)
+                        mstore(0, ERC20_BALANCE_OF)
+                        // add this address as parameter
+                        mstore(0x04, address())
+                        // call to token
+                        if iszero(staticcall(gas(), cToken, 0x0, 0x24, 0x0, 0x20)) {
+                            returndatacopy(0, 0, returndatasize())
+                            revert(0, returndatasize())
+                        }
+                        // load the retrieved balance
+                        let cBalance := mload(0x0)
 
-                    rdsize := returndatasize()
+                        let ptr := mload(0x40)
+                        // TRANSFER COLLATERAL
+                        // selector for transfer(address,uint256)
+                        mstore(ptr, ERC20_TRANSFER)
+                        mstore(add(ptr, 0x04), receiver)
+                        mstore(add(ptr, 0x24), cBalance)
 
-                    if iszero(
-                        and(
-                            success, // call itself succeeded
-                            or(
-                                iszero(rdsize), // no return data, or
-                                and(
-                                    gt(rdsize, 31), // at least 32 bytes
-                                    eq(mload(ptr), 1) // starts with uint256(1)
+                        let success := call(gas(), cToken, 0, ptr, 0x44, ptr, 32)
+
+                        let rdsize := returndatasize()
+
+                        if iszero(
+                            and(
+                                success, // call itself succeeded
+                                or(
+                                    iszero(rdsize), // no return data, or
+                                    and(
+                                        gt(rdsize, 31), // at least 32 bytes
+                                        eq(mload(ptr), 1) // starts with uint256(1)
+                                    )
                                 )
                             )
-                        )
-                    ) {
-                        returndatacopy(0, 0, rdsize)
-                        revert(0, rdsize)
+                        ) {
+                            returndatacopy(0, 0, rdsize)
+                            revert(0, rdsize)
+                        }
                     }
                 }
             }
@@ -394,7 +419,7 @@ abstract contract CompoundV2Lending is ERC20Selectors, Masks {
                         revert(0, returndatasize())
                     }
                     let rdsize := returndatasize()
-                    if or(iszero(rdsize), xor(mload(0), 0)) {
+                    if and(eq(rdsize, 1), xor(mload(0), 0)) {
                         returndatacopy(0, 0, rdsize)
                         revert(0, rdsize)
                     }
@@ -409,7 +434,7 @@ abstract contract CompoundV2Lending is ERC20Selectors, Masks {
                         revert(0, returndatasize())
                     }
                     let rdsize := returndatasize()
-                    if or(iszero(rdsize), xor(mload(0), 0)) {
+                    if and(eq(rdsize, 1), xor(mload(0), 0)) {
                         returndatacopy(0, 0, rdsize)
                         revert(0, rdsize)
                     }
@@ -453,6 +478,17 @@ abstract contract CompoundV2Lending is ERC20Selectors, Masks {
                             returndatacopy(0, 0, rdsize)
                             revert(0, rdsize)
                         }
+                    }
+                }
+                case 2 {
+                    // selector for mint(address,uint256) - iToken style
+                    mstore(ptr, 0x40c10f1900000000000000000000000000000000000000000000000000000000)
+                    mstore(add(ptr, 0x04), receiver)
+                    mstore(add(ptr, 0x24), amount)
+
+                    if iszero(call(gas(), cToken, 0x0, ptr, 0x44, 0x0, 0x0)) {
+                        returndatacopy(0, 0, returndatasize())
+                        revert(0, returndatasize())
                     }
                 }
                 default { revert(0, 0) }
@@ -596,7 +632,7 @@ abstract contract CompoundV2Lending is ERC20Selectors, Masks {
                     revert(0x0, returndatasize())
                 }
                 let rdsize := returndatasize()
-                if or(iszero(rdsize), xor(mload(ptr), 0)) {
+                if and(eq(rdsize, 1), xor(mload(ptr), 0)) {
                     returndatacopy(0, 0, rdsize)
                     revert(0, rdsize)
                 }

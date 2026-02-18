@@ -79,7 +79,10 @@ contract SquidRouter is BaseUtils {
                 case 0 {
                     mstore(0x00, ERC20_BALANCE_OF)
                     mstore(0x04, address())
-                    pop(staticcall(gas(), asset, 0x00, 0x24, 0x00, 0x20))
+                    if iszero(staticcall(gas(), asset, 0x00, 0x24, 0x00, 0x20)) {
+                        returndatacopy(0, 0, returndatasize())
+                        revert(0, returndatasize())
+                    }
                     mstore(add(ptr, 128), mload(0x00))
                 }
                 // provided amount

@@ -51,7 +51,10 @@ abstract contract Swaps is BaseSwapper {
                 // add this address as parameter
                 mstore(0x04, address())
                 // call to token
-                pop(staticcall(gas(), tokenIn, 0x0, 0x24, 0x0, 0x20))
+                if iszero(staticcall(gas(), tokenIn, 0x0, 0x24, 0x0, 0x20)) {
+                    returndatacopy(0, 0, returndatasize())
+                    revert(0, returndatasize())
+                }
                 // load the retrieved balance
                 amountIn := mload(0x0)
             }

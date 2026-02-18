@@ -36,7 +36,10 @@ contract StargateV2 is BaseUtils {
             function getBalance(token) -> b {
                 mstore(0, ERC20_BALANCE_OF)
                 mstore(0x04, address())
-                pop(staticcall(gas(), token, 0x0, 0x24, 0x0, 0x20))
+                if iszero(staticcall(gas(), token, 0x0, 0x24, 0x0, 0x20)) {
+                    returndatacopy(0, 0, returndatasize())
+                    revert(0, returndatasize())
+                }
                 b := mload(0x0)
             }
 

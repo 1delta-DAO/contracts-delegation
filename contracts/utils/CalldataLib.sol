@@ -1171,6 +1171,31 @@ library CalldataLib {
         );
     }
 
+    function encodeListaSupplyCollateralViaProvider(
+        bytes memory market,
+        uint256 assets,
+        address receiver,
+        bytes memory data,
+        address provider,
+        uint256 pId
+    )
+        internal
+        pure
+        returns (bytes memory)
+    {
+        return abi.encodePacked(
+            uint8(ComposerCommands.LENDING),
+            uint8(LenderOps.DEPOSIT),
+            uint16(LenderIds.UP_TO_MORPHO - 1),
+            market,
+            generateAmountBitmap(uint128(assets), false, true),
+            receiver,
+            provider,
+            uint16(data.length > 0 ? data.length + 1 : 0),
+            data.length == 0 ? new bytes(0) : encodeUint8AndBytes(uint8(pId), data)
+        );
+    }
+
     function encodeMorphoDeposit(
         bytes memory market,
         bool isShares, //

@@ -29,7 +29,7 @@ ignore = [
 ]
 
 # RPC Overrides
-RPC_ETHEREUM_MAINNET = "https://ethereum-mainnet.gateway.tatum.io"
+RPC_ETHEREUM_MAINNET = "https://eth.drpc.org"
 RPC_BNB_SMART_CHAIN_MAINNET = "https://binance.llamarpc.com"
 RPC_BASE = "https://base.llamarpc.com"
 RPC_PLASMA_MAINNET = "https://rpc.plasma.to"
