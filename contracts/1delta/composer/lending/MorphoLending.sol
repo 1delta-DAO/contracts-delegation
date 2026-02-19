@@ -699,6 +699,7 @@ abstract contract MorphoLending is ERC20Selectors, Masks {
             if isNative {
                 // block callbacks for lista provider case
                 if calldataLength {
+                    // ListaProviderCallbackNotAllowed()
                     mstore(0x0, 0x88036ba500000000000000000000000000000000000000000000000000000000) // ListaProviderCallbackNotAllowed()
                     revert(0x0, 0x04)
                 }
