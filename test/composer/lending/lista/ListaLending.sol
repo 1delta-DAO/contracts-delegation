@@ -292,4 +292,20 @@ contract ListaLendingTest is BaseTest {
         vm.expectRevert(abi.encodeWithSelector(0x88036ba5));
         oneD.deltaCompose(deposit);
     }
+
+    function test_lista_provider_repay_with_callback() external {
+        depositAndBorrow();
+
+        uint256 repayAmount = 0.5 ether;
+        vm.deal(address(oneD), repayAmount);
+
+        bytes memory market = encodeMarket(WBNB, USDT, ORACLE, IRM, LLTV_2);
+
+        bytes memory repayCall =
+            CalldataLib.encodeListaRepayViaProvider(market, false, repayAmount, user, hex"1de17a", LISTA_PROVIDER, LISTA_PID);
+
+        vm.prank(user);
+        vm.expectRevert(abi.encodeWithSelector(0x88036ba5));
+        oneD.deltaCompose(repayCall);
+    }
 }
