@@ -591,19 +591,28 @@ abstract contract MorphoLending is ERC20Selectors, Masks {
                 }
                 default { repayAm := selfbalance() }
 
+                // for lista native case, we need to read the moolah address from the provider
+                // for morpho case it is the morpho
+                let morphoRead := morpho
+                if isNative {
+                    mstore(0x0, 0x195be17a00000000000000000000000000000000000000000000000000000000) // MOOLAH()
+                    if iszero(staticcall(gas(), morpho, 0x0, 0x04, 0x0, 0x20)) { revert(0x0, 0x0) }
+                    morphoRead := mload(0x0)
+                }
+
                 // by assets safe - will not revert if too much is repaid
                 // we need to fetch everything and accrue interest
                 // https://docs.morpho.org/morpho/tutorials/manage-positions/#repayAll
 
                 // accrue interest (0x151c1ade)
                 mstore(sub(ptr, 28), 0x151c1ade)
-                if iszero(call(gas(), morpho, 0x0, ptr, 0xA4, 0x0, 0x0)) { revert(0x0, 0x0) }
+                if iszero(call(gas(), morphoRead, 0x0, ptr, 0xA4, 0x0, 0x0)) { revert(0x0, 0x0) }
 
                 // get market params for conversion
                 let marketId := keccak256(add(ptr, 4), 160)
                 mstore(0x0, MORPHO_MARKET)
                 mstore(0x4, marketId)
-                if iszero(staticcall(gas(), morpho, 0x0, 0x24, ptrBase, 0x80)) { revert(0x0, 0x0) }
+                if iszero(staticcall(gas(), morphoRead, 0x0, 0x24, ptrBase, 0x80)) { revert(0x0, 0x0) }
                 let totalBorrowAssets := mload(add(ptrBase, 0x40))
                 let totalBorrowShares := mload(add(ptrBase, 0x60))
 
@@ -611,7 +620,7 @@ abstract contract MorphoLending is ERC20Selectors, Masks {
                 mstore(ptrBase, MORPHO_POSITION)
                 mstore(add(ptrBase, 0x4), marketId)
                 mstore(add(ptrBase, 0x24), receiver)
-                if iszero(staticcall(gas(), morpho, ptrBase, 0x44, ptrBase, 0x40)) { revert(0x0, 0x0) }
+                if iszero(staticcall(gas(), morphoRead, ptrBase, 0x44, ptrBase, 0x40)) { revert(0x0, 0x0) }
                 let userBorrowShares := mload(add(ptrBase, 0x20))
 
                 // mulDivUp(shares, totalAssets + VIRTUAL_ASSETS, totalShares + VIRTUAL_SHARES);
