@@ -157,6 +157,28 @@ contract ListaLendingTest is BaseTest {
         assertGt(borrowSharesAfter, 0);
     }
 
+    function test_lista_provider_repay_balance_via_provider() external {
+        bytes32 id = keccak256(abi.encode(WBNB, USDT, ORACLE, IRM, LLTV_2)); // loan,collateral,oracle,irm,lltv
+        depositAndBorrow();
+
+        (, uint128 borrowSharesBefore,) = IMorphoEverything(MOOLAH).position(id, user);
+
+        uint256 nativeAmount = 0.5 ether;
+        // deal 0.5 ether to the composer; amount=0 triggers the selfbalance() repay path
+        vm.deal(user, nativeAmount);
+
+        bytes memory market = encodeMarket(WBNB, USDT, ORACLE, IRM, LLTV_2);
+        bytes memory repayCall = CalldataLib.encodeListaRepayViaProvider(market, false, 0, user, hex"", LISTA_PROVIDER, LISTA_PID);
+
+        vm.prank(user);
+        oneD.deltaCompose{value: nativeAmount}(repayCall);
+
+        (, uint128 borrowSharesAfter,) = IMorphoEverything(MOOLAH).position(id, user);
+        assertGt(borrowSharesBefore, borrowSharesAfter);
+        assertGt(borrowSharesAfter, 0);
+        assertEq(address(oneD).balance, 0);
+    }
+
     function test_lista_provider_repay_max_via_provider() external {
         bytes32 id = keccak256(abi.encode(WBNB, USDT, ORACLE, IRM, LLTV_2)); // loan,collateral,oracle,irm,lltv
         depositAndBorrow();
