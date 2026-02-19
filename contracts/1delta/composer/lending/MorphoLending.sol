@@ -696,6 +696,14 @@ abstract contract MorphoLending is ERC20Selectors, Masks {
             let calldataLength := inputCalldataLength
             currentOffset := add(currentOffset, 154)
 
+            if isNative {
+                // block callbacks for lista provider case
+                if calldataLength {
+                    mstore(0x0, 0x88036ba500000000000000000000000000000000000000000000000000000000) // ListaProviderCallbackNotAllowed()
+                    revert(0x0, 0x04)
+                }
+            }
+
             // add calldata if needed
             if xor(0, calldataLength) {
                 calldataLength := add(calldataLength, 20)
