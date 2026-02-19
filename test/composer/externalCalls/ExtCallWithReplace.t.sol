@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.28;
+pragma solidity ^0.8.28;
 
 import {BaseTest} from "test/shared/BaseTest.sol";
 import {console} from "forge-std/console.sol";
@@ -51,8 +51,9 @@ contract ExtTryCatchWithReplace is BaseTest {
 
         bytes memory catchCalldata = CalldataLib.encodeSweep(XCDOT, user, 0, SweepType.VALIDATE);
 
-        bytes memory tryCallCalldata =
-            CalldataLib.encodeTryExternalCallWithReplace(STELLA_STDOT, 0, false, XCDOT, 0, DEPOSIT_CALLDATA, false, catchCalldata);
+        bytes memory tryCallCalldata = CalldataLib.encodeTryExternalCallWithReplace(
+            STELLA_STDOT, 0, false, XCDOT, 0, DEPOSIT_CALLDATA, false, catchCalldata
+        );
 
         bytes memory composerCalldata = abi.encodePacked(
             transferInCalldata,
