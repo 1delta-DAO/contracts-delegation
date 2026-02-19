@@ -382,19 +382,29 @@ abstract contract MorphoLending is ERC20Selectors, Masks {
 
             let morpho := shr(96, calldataload(add(currentOffset, 132)))
 
+            let isNative := and(NATIVE_FLAG, lltvAndAmount)
+
             // get amount, ignore flags
             lltvAndAmount := and(UINT112_MASK, lltvAndAmount)
 
-            // technically not needed, hwoever, we keep it consistent
-            // to withdraw all like this - maxUnit112 means read collateral balance
+            // maxUnit112 means read collateral balance
             if eq(lltvAndAmount, 0xffffffffffffffffffffffffffff) {
+                // for lista native case, read the moolah address from the provider
+                // for morpho case it is the morpho itself
+                let morphoRead := morpho
+                if isNative {
+                    mstore(0x0, 0x195be17a00000000000000000000000000000000000000000000000000000000) // MOOLAH()
+                    if iszero(staticcall(gas(), morpho, 0x0, 0x04, 0x0, 0x20)) { revert(0x0, 0x0) }
+                    morphoRead := mload(0x0)
+                }
+
                 let ptrBase := add(ptr, 280)
                 let marketId := keccak256(add(ptr, 4), 160)
                 // position datas (1st slot of return data is the user shares)
                 mstore(ptrBase, MORPHO_POSITION)
                 mstore(add(ptrBase, 0x4), marketId)
                 mstore(add(ptrBase, 0x24), callerAddress)
-                if iszero(staticcall(gas(), morpho, ptrBase, 0x44, ptrBase, 0x60)) { revert(0x0, 0x0) }
+                if iszero(staticcall(gas(), morphoRead, ptrBase, 0x44, ptrBase, 0x60)) { revert(0x0, 0x0) }
                 lltvAndAmount := mload(add(ptrBase, 0x40))
             }
 
@@ -572,6 +582,8 @@ abstract contract MorphoLending is ERC20Selectors, Masks {
 
             let morpho := shr(96, calldataload(add(currentOffset, 132)))
 
+            let isNative := and(NATIVE_FLAG, tempData)
+
             /**
              *  if repayAmount is Max -> repay safe maximum (to prevent too low contract balance to revert)
              *  else if repayAmount is 0 -> repay contract balance as assets
@@ -579,27 +591,38 @@ abstract contract MorphoLending is ERC20Selectors, Masks {
              */
             switch repayAm
             case 0xffffffffffffffffffffffffffff {
-                // get the contract balance
-                mstore(0x0, ERC20_BALANCE_OF)
-                mstore(0x04, address())
-                if iszero(staticcall(gas(), token, 0x0, 0x24, 0x0, 0x20)) { revert(0x0, 0x0) }
-                // this is the maximum we can repay
-                repayAm := mload(0x0)
+                // max flag: resolve available balance (ERC20 or native)
+                switch isNative
+                case 0 {
+                    mstore(0x0, ERC20_BALANCE_OF)
+                    mstore(0x04, address())
+                    if iszero(staticcall(gas(), token, 0x0, 0x24, 0x0, 0x20)) { revert(0x0, 0x0) }
+                    repayAm := mload(0x0)
+                }
+                default { repayAm := selfbalance() }
+
+                // for lista native case, we need to read the moolah address from the provider
+                // for morpho case it is the morpho
+                let morphoRead := morpho
+                if isNative {
+                    mstore(0x0, 0x195be17a00000000000000000000000000000000000000000000000000000000) // MOOLAH()
+                    if iszero(staticcall(gas(), morpho, 0x0, 0x04, 0x0, 0x20)) { revert(0x0, 0x0) }
+                    morphoRead := mload(0x0)
+                }
 
                 // by assets safe - will not revert if too much is repaid
-                // we need to fetch everything and acrure interest
+                // we need to fetch everything and accrue interest
                 // https://docs.morpho.org/morpho/tutorials/manage-positions/#repayAll
 
-                // accrue interest
-                // add accrueInterest (0x151c1ade)
+                // accrue interest (0x151c1ade)
                 mstore(sub(ptr, 28), 0x151c1ade)
-                if iszero(call(gas(), morpho, 0x0, ptr, 0xA4, 0x0, 0x0)) { revert(0x0, 0x0) }
+                if iszero(call(gas(), morphoRead, 0x0, ptr, 0xA4, 0x0, 0x0)) { revert(0x0, 0x0) }
 
                 // get market params for conversion
                 let marketId := keccak256(add(ptr, 4), 160)
                 mstore(0x0, MORPHO_MARKET)
                 mstore(0x4, marketId)
-                if iszero(staticcall(gas(), morpho, 0x0, 0x24, ptrBase, 0x80)) { revert(0x0, 0x0) }
+                if iszero(staticcall(gas(), morphoRead, 0x0, 0x24, ptrBase, 0x80)) { revert(0x0, 0x0) }
                 let totalBorrowAssets := mload(add(ptrBase, 0x40))
                 let totalBorrowShares := mload(add(ptrBase, 0x60))
 
@@ -607,7 +630,7 @@ abstract contract MorphoLending is ERC20Selectors, Masks {
                 mstore(ptrBase, MORPHO_POSITION)
                 mstore(add(ptrBase, 0x4), marketId)
                 mstore(add(ptrBase, 0x24), receiver)
-                if iszero(staticcall(gas(), morpho, ptrBase, 0x44, ptrBase, 0x40)) { revert(0x0, 0x0) }
+                if iszero(staticcall(gas(), morphoRead, ptrBase, 0x44, ptrBase, 0x40)) { revert(0x0, 0x0) }
                 let userBorrowShares := mload(add(ptrBase, 0x20))
 
                 // mulDivUp(shares, totalAssets + VIRTUAL_ASSETS, totalShares + VIRTUAL_SHARES);
@@ -631,33 +654,39 @@ abstract contract MorphoLending is ERC20Selectors, Masks {
                 default {
                     mstore(add(ptr, 164), 0) // assets
                     mstore(add(ptr, 196), userBorrowShares) // shares
+                    repayAm := maxAssets
                 }
             }
             // by balance (using assets)
             case 0 {
-                // get balance
-                mstore(0x0, ERC20_BALANCE_OF)
-                mstore(0x04, address())
-                if iszero(staticcall(gas(), token, 0x0, 0x24, 0x0, 0x20)) { revert(0x0, 0x0) }
+                // resolve available balance (ERC20 or native)
+                switch isNative
+                case 0 {
+                    mstore(0x0, ERC20_BALANCE_OF)
+                    mstore(0x04, address())
+                    if iszero(staticcall(gas(), token, 0x0, 0x24, 0x0, 0x20)) { revert(0x0, 0x0) }
+                    repayAm := mload(0x0)
+                }
+                default { repayAm := selfbalance() }
 
-                // use balance by assets
-                mstore(add(ptr, 164), mload(0x0)) // assets
+                mstore(add(ptr, 164), repayAm) // assets
                 mstore(add(ptr, 196), 0) // shares
             }
             // plain amount (assets or shares)
             default {
                 switch and(USE_SHARES_FLAG, tempData)
                 case 0 {
-                    // by assets
                     mstore(add(ptr, 164), repayAm) // assets
                     mstore(add(ptr, 196), 0) // shares
                 }
                 default {
-                    // by shares
                     mstore(add(ptr, 164), 0) // assets
                     mstore(add(ptr, 196), repayAm) // shares
                 }
             }
+
+            // native: send repayAm as callValue; non-native: callValue = 0
+            let callValue := mul(repayAm, iszero(iszero(isNative)))
 
             mstore(add(ptr, 228), receiver) // onBehalfOf is the receiver here
             mstore(add(ptr, 260), 0x120) // offset
@@ -679,17 +708,7 @@ abstract contract MorphoLending is ERC20Selectors, Masks {
             // we have to do it like this to override the selector only in this memory position
             mstore(sub(ptr, 28), 0x20b76e81)
             mstore(add(ptr, 292), calldataLength) // calldatalength
-            if iszero(
-                call(
-                    gas(),
-                    morpho,
-                    0x0,
-                    ptr,
-                    add(calldataLength, 324), // = 10 * 32 + 4
-                    0x0,
-                    0x0 //
-                )
-            ) {
+            if iszero(call(gas(), morpho, callValue, ptr, add(calldataLength, 324), 0x0, 0x0)) {
                 let rdlen := returndatasize()
                 returndatacopy(0, 0, rdlen)
                 revert(0x0, rdlen)
