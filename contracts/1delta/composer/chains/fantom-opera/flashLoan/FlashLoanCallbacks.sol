@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: BUSL-1.1
 
-pragma solidity 0.8.28;
+pragma solidity 0.8.34;
 
 import {AaveV2FlashLoanCallback} from "./callbacks/AaveV2Callback.sol";
 import {BalancerV2FlashLoanCallback} from "./callbacks/BalancerV2Callback.sol";

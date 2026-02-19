@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: BUSL-1.1
 
-pragma solidity ^0.8.28;
+pragma solidity 0.8.34;
 
 import {DeltaErrors} from "../../shared/errors/Errors.sol";
 import {DexTypeMappings} from "./dex/DexTypeMappings.sol";
@@ -196,17 +196,16 @@ abstract contract BaseSwapper is
                     }
                     default {
                         // splits are uint16s as share of uint16.max
-                        split :=
-                            div(
-                                mul(
-                                    and(
-                                        UINT16_MASK,
-                                        shr(sub(112, mul(i, 16)), splits) // read the uin16 in the splits sequence
-                                    ),
-                                    amountIn //
+                        split := div(
+                            mul(
+                                and(
+                                    UINT16_MASK,
+                                    shr(sub(112, mul(i, 16)), splits) // read the uin16 in the splits sequence
                                 ),
-                                UINT16_MASK //
-                            )
+                                amountIn //
+                            ),
+                            UINT16_MASK //
+                        )
                     }
                     i := add(i, 1)
                 }

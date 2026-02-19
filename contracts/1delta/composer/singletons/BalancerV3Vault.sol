@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: BUSL-1.1
 
-pragma solidity ^0.8.28;
+pragma solidity 0.8.34;
 
 import {Masks} from "../../shared/masks/Masks.sol";
 import {DeltaErrors} from "../../shared/errors/Errors.sol";

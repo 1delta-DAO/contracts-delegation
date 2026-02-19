@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-pragma solidity ^0.8.28;
+pragma solidity 0.8.34;
 
 /// @notice logs a dead log without any content
 abstract contract DeadLogger {

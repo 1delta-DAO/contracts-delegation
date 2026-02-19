@@ -1,8 +1,7 @@
-
 export const templateBalancerV2Trigger = (addressContants: string, switchCaseContent: string, cancun = false) => `
 // SPDX-License-Identifier: BUSL-1.1
 
-pragma solidity 0.8.28;
+pragma solidity 0.8.34;
 
 import {Slots} from "../../../slots/Slots.sol";
 import {Masks} from "../../../../shared/masks/Masks.sol";
@@ -82,4 +81,4 @@ abstract contract BalancerV2FlashLoans is Slots, Masks {
     }
 }
 
-`
+`;

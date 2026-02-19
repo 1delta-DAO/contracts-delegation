@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: BUSL-1.1
 
-pragma solidity 0.8.28;
+pragma solidity 0.8.34;
 
 // solhint-disable max-line-length
 
@@ -115,11 +115,10 @@ abstract contract V2TypeGeneric is ERC20Selectors, Masks {
 
                 // compute out amount
                 poolFeeDenom := mul(amountIn, poolFeeDenom)
-                buyAmount :=
-                    div(
-                        mul(poolFeeDenom, buyAmount),
-                        add(poolFeeDenom, mul(reserveIn, 10000)) //
-                    )
+                buyAmount := div(
+                    mul(poolFeeDenom, buyAmount),
+                    add(poolFeeDenom, mul(reserveIn, 10000)) //
+                )
             }
             // all solidly-based protocols
             default {

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
-pragma solidity ^0.8.28;
+pragma solidity 0.8.34;
 
 import {Masks} from "../../shared/masks/Masks.sol";
 import {DexTypeMappings} from "../swappers/dex/DexTypeMappings.sol";
@@ -280,17 +280,16 @@ contract QuoterLight is
                     }
                     default {
                         // splits are uint16s as share of uint16.max
-                        split :=
-                            div(
-                                mul(
-                                    and(
-                                        UINT16_MASK,
-                                        shr(sub(112, mul(i, 16)), splits) // read the uin16 in the splits sequence
-                                    ),
-                                    amountIn //
+                        split := div(
+                            mul(
+                                and(
+                                    UINT16_MASK,
+                                    shr(sub(112, mul(i, 16)), splits) // read the uin16 in the splits sequence
                                 ),
-                                UINT16_MASK //
-                            )
+                                amountIn //
+                            ),
+                            UINT16_MASK //
+                        )
                     }
                     i := add(i, 1)
                 }

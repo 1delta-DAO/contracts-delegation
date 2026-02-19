@@ -1,13 +1,7 @@
-
-export const templateUniV2 = (
-    ffFactoryAddressContants: string,
-    switchCaseContent: string,
-    hasOverride: boolean,
-    overrideData?: string
-) => `
+export const templateUniV2 = (ffFactoryAddressContants: string, switchCaseContent: string, hasOverride: boolean, overrideData?: string) => `
 // SPDX-License-Identifier: BUSL-1.1
 
-pragma solidity 0.8.28;
+pragma solidity 0.8.34;
 
 /******************************************************************************\
 * Author: Achthar | 1delta 
@@ -94,7 +88,7 @@ abstract contract UniV2Callbacks is Masks, DeltaErrors {
      */
     function _deltaComposeInternal(address callerAddress, uint256 offset, uint256 length) internal virtual {}
 }
-`
+`;
 
 function overrideContent(data: string) {
     return `
@@ -148,7 +142,7 @@ function overrideContent(data: string) {
             revert(0x0, 0x4)
         }
     
-    `
+    `;
 }
 function defaultContent() {
     return `
@@ -190,5 +184,5 @@ function defaultContent() {
                     mstore(0x0, BAD_POOL)
                     revert(0x0, 0x4)
                 }
-    `
+    `;
 }

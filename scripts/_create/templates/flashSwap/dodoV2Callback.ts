@@ -1,12 +1,7 @@
-
-export const templateDodoV2 = (
-    dvmFactory: string,
-    dspFactory: string,
-    dppFactory: string,
-) => `
+export const templateDodoV2 = (dvmFactory: string, dspFactory: string, dppFactory: string) => `
 // SPDX-License-Identifier: BUSL-1.1
 
-pragma solidity 0.8.28;
+pragma solidity 0.8.34;
 
 /******************************************************************************\
 * Author: Achthar | 1delta 
@@ -132,4 +127,4 @@ abstract contract DodoV2Callbacks is Masks, DeltaErrors {
 
     function _deltaComposeInternal(address callerAddress, uint256 offset, uint256 length) internal virtual {}
 }
-`
+`;

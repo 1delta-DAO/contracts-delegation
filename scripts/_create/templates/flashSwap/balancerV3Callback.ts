@@ -1,12 +1,7 @@
-
-export const templateBalancerV3 = (
-    constants: string,
-    switchCaseContent: string,
-    multi = false
-) => `
+export const templateBalancerV3 = (constants: string, switchCaseContent: string, multi = false) => `
 // SPDX-License-Identifier: BUSL-1.1
 
-pragma solidity 0.8.28;
+pragma solidity 0.8.34;
 
 /******************************************************************************\
 * Author: Achthar | 1delta 
@@ -68,7 +63,7 @@ abstract contract BalancerV3Callbacks is Masks, DeltaErrors {
      */
     function _deltaComposeInternal(address callerAddress, uint256 offset, uint256 length) internal virtual {}
 }
-`
+`;
 
 // this covers multiple pools to validate
 function multiContent() {
@@ -77,7 +72,7 @@ function multiContent() {
             // callerAddress populates the first 20 bytes
             callerAddress := shr(96, poolId)
             poolId := and(UINT8_MASK, shr(88, poolId))
-    `
+    `;
 }
 
 // abbreviated single pool version
@@ -85,5 +80,5 @@ function singleContent() {
     return `
             // callerAddress populates the first 20 bytes
             callerAddress := shr(96, calldataload(68))
-    `
+    `;
 }

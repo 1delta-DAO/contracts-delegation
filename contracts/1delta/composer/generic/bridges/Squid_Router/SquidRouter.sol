@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.28;
+pragma solidity 0.8.34;
 
 import {BaseUtils} from "contracts/1delta/composer/generic/BaseUtils.sol";
 

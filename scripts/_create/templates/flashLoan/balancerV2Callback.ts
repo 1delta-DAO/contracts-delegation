@@ -1,8 +1,7 @@
-
 export const templateBalancerV2 = (addressContants: string, switchCaseContent: string, cancun = false) => `
 // SPDX-License-Identifier: BUSL-1.1
 
-pragma solidity 0.8.28;
+pragma solidity 0.8.34;
 
 import {Slots} from "../../../../slots/Slots.sol";
 import {Masks} from "../../../../../shared/masks/Masks.sol";
@@ -77,4 +76,4 @@ contract BalancerV2FlashLoanCallback is Slots, Masks, DeltaErrors {
      */
     function _deltaComposeInternal(address callerAddress, uint256 offset, uint256 length) internal virtual {}
 }
-`
+`;

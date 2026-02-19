@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: BUSL-1.1
 
-pragma solidity 0.8.28;
+pragma solidity 0.8.34;
 
 import {BaseComposerValidator} from "./BaseComposerValidator.sol";
 import {AddressWhitelistManager} from "./AddressWhitelistManager.sol";
@@ -220,7 +220,11 @@ contract ComposerValidator is BaseComposerValidator, Masks {
         return (true, "", newOffset);
     }
 
-    function _validateBridging(uint256 currentOffset) internal view returns (bool isValid, string memory errorMessage, uint256 newOffset) {
+    function _validateBridging(uint256 currentOffset)
+        internal
+        view
+        returns (bool isValid, string memory errorMessage, uint256 newOffset)
+    {
         uint256 bridgeOperation;
         assembly {
             bridgeOperation := shr(248, calldataload(currentOffset))
@@ -236,7 +240,11 @@ contract ComposerValidator is BaseComposerValidator, Masks {
         }
     }
 
-    function _validateStargateV2(uint256 currentOffset) internal view returns (bool isValid, string memory errorMessage, uint256 newOffset) {
+    function _validateStargateV2(uint256 currentOffset)
+        internal
+        view
+        returns (bool isValid, string memory errorMessage, uint256 newOffset)
+    {
         address tokenAddress;
         address stargatePool;
         uint256 dstEid;
@@ -302,7 +310,11 @@ contract ComposerValidator is BaseComposerValidator, Masks {
         return (true, "", newOffset);
     }
 
-    function _validateAcross(uint256 currentOffset) internal view returns (bool isValid, string memory errorMessage, uint256 newOffset) {
+    function _validateAcross(uint256 currentOffset)
+        internal
+        view
+        returns (bool isValid, string memory errorMessage, uint256 newOffset)
+    {
         address spokePool;
         address depositor;
         address inputTokenAddress;
@@ -472,7 +484,14 @@ contract ComposerValidator is BaseComposerValidator, Masks {
         return _validateAaveDeposit(currentOffset, AaveVersion.AAVE_V2);
     }
 
-    function _validateAaveDeposit(uint256 currentOffset, AaveVersion aaveVersion) internal view returns (bool, string memory, uint256) {
+    function _validateAaveDeposit(
+        uint256 currentOffset,
+        AaveVersion aaveVersion
+    )
+        internal
+        view
+        returns (bool, string memory, uint256)
+    {
         address underlying;
         address receiver;
         address pool;
@@ -793,7 +812,12 @@ contract ComposerValidator is BaseComposerValidator, Masks {
         return (true, "", currentOffset);
     }
 
-    function _validateTransfers(uint256 currentOffset) internal view override returns (bool isValid, string memory errorMessage, uint256 newOffset) {
+    function _validateTransfers(uint256 currentOffset)
+        internal
+        view
+        override
+        returns (bool isValid, string memory errorMessage, uint256 newOffset)
+    {
         uint256 transferOperation;
         assembly {
             transferOperation := shr(248, calldataload(currentOffset))
@@ -815,7 +839,12 @@ contract ComposerValidator is BaseComposerValidator, Masks {
         }
     }
 
-    function _validatePermit(uint256 currentOffset) internal view override returns (bool isValid, string memory errorMessage, uint256 newOffset) {
+    function _validatePermit(uint256 currentOffset)
+        internal
+        view
+        override
+        returns (bool isValid, string memory errorMessage, uint256 newOffset)
+    {
         uint256 permitOperation;
         address permitTarget;
         uint256 permitLength;
@@ -838,7 +867,12 @@ contract ComposerValidator is BaseComposerValidator, Masks {
         return (true, "", newOffset);
     }
 
-    function _validateFlashLoan(uint256 currentOffset) internal view override returns (bool isValid, string memory errorMessage, uint256 newOffset) {
+    function _validateFlashLoan(uint256 currentOffset)
+        internal
+        view
+        override
+        returns (bool isValid, string memory errorMessage, uint256 newOffset)
+    {
         uint256 flashLoanType;
         assembly {
             flashLoanType := shr(248, calldataload(currentOffset))

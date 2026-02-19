@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity ^0.8.28;
+pragma solidity 0.8.34;
 
 import {Masks} from "../../../shared/masks/Masks.sol";
 import {DexTypeMappings} from "../../swappers/dex/DexTypeMappings.sol";
@@ -94,15 +94,17 @@ abstract contract V4TypeQuoter is QuoterUtils, Masks {
             calldataForCallback.length := add(49, clLength)
         }
 
-        try IUniswapV4Poolmanager(manager).unlock(
-            abi.encodePacked(
-                // add quoter-relevant data
-                uint128(fromAmount),
-                tokenIn, //
-                tokenOut,
-                calldataForCallback
-            )
-        ) {} catch (bytes memory reason) {
+        try IUniswapV4Poolmanager(manager)
+            .unlock(
+                abi.encodePacked(
+                    // add quoter-relevant data
+                    uint128(fromAmount),
+                    tokenIn, //
+                    tokenOut,
+                    calldataForCallback
+                )
+            ) {}
+        catch (bytes memory reason) {
             return (parseRevertReason(reason), currentOffset);
         }
         revert("Did not revert in V4 CB");
@@ -186,11 +188,10 @@ abstract contract V4TypeQuoter is QuoterUtils, Masks {
             // Store tickSpacing
             mstore(add(ptr, 100), and(UINT24_MASK, shr(48, pool)))
 
-            pool :=
-                shr(
-                    96,
-                    pool // starts as first param
-                )
+            pool := shr(
+                96,
+                pool // starts as first param
+            )
 
             // Store data offset
             mstore(add(ptr, 260), 0x120)

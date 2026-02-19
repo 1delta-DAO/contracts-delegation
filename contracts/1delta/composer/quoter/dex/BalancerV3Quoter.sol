@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity ^0.8.28;
+pragma solidity 0.8.34;
 
 import {Masks} from "../../../shared/masks/Masks.sol";
 import {DexTypeMappings} from "../../swappers/dex/DexTypeMappings.sol";
@@ -87,19 +87,21 @@ abstract contract BalancerV3Quoter is QuoterUtils, Masks {
             calldataForCallback.offset := currentOffset
             calldataForCallback.length := add(43, clLength)
         }
-        try IBalancerV3VaultSelectors(manager).unlock(
-            abi.encodeCall(
-                this.balancerQueryCallback,
-                abi.encodePacked(
-                    // add quoite-relevant data
-                    uint128(fromAmount),
-                    tokenIn, //
-                    tokenOut,
-                    // ,
-                    calldataForCallback
+        try IBalancerV3VaultSelectors(manager)
+            .unlock(
+                abi.encodeCall(
+                    this.balancerQueryCallback,
+                    abi.encodePacked(
+                        // add quoite-relevant data
+                        uint128(fromAmount),
+                        tokenIn, //
+                        tokenOut,
+                        // ,
+                        calldataForCallback
+                    )
                 )
-            )
-        ) {} catch (bytes memory result) {
+            ) {}
+        catch (bytes memory result) {
             receivedAmount = abi.decode(result, (uint256));
             assembly {
                 currentOffset := add(add(currentOffset, 43), clLength)

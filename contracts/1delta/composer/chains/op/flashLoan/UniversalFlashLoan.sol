@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: BUSL-1.1
 
-pragma solidity 0.8.28;
+pragma solidity 0.8.34;
 
 import {MorphoFlashLoans} from "../../../flashLoan/Morpho.sol";
 import {AaveV3FlashLoans} from "../../../flashLoan/AaveV3.sol";

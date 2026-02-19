@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.28;
+pragma solidity 0.8.34;
 
 import {BaseUtils} from "contracts/1delta/composer/generic/BaseUtils.sol";
 
@@ -116,14 +116,18 @@ contract Across is BaseUtils {
             // calculate percentage fee with decimal adjustment
             switch lt(toTokenDecimals, fromTokenDecimals)
             case 1 {
-                outputAmount :=
-                    div(mul(amount, shr(224, calldataload(add(currentOffset, 124)))), mul(FEE_DENOMINATOR, decimalAdjustment))
+                outputAmount := div(
+                    mul(amount, shr(224, calldataload(add(currentOffset, 124)))),
+                    mul(FEE_DENOMINATOR, decimalAdjustment)
+                )
                 ff := div(ff, decimalAdjustment) // apply decimal adjustment on amount with fixed fee
             }
             // none or output has more decimals
             default {
-                outputAmount :=
-                    div(mul(decimalAdjustment, mul(amount, shr(224, calldataload(add(currentOffset, 124))))), FEE_DENOMINATOR)
+                outputAmount := div(
+                    mul(decimalAdjustment, mul(amount, shr(224, calldataload(add(currentOffset, 124))))),
+                    FEE_DENOMINATOR
+                )
                 ff := mul(ff, decimalAdjustment) // apply decimal adjustment on amount with fixed fee
             } // also handles the case where decimals are the same
 

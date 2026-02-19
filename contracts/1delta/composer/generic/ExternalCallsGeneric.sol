@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: BUSL-1.1
 
-pragma solidity ^0.8.28;
+pragma solidity 0.8.34;
 
 import {BaseUtils} from "contracts/1delta/composer/generic/BaseUtils.sol";
 
@@ -139,17 +139,16 @@ abstract contract ExternalCallsGeneric is BaseUtils {
 
             // copy calldata
             calldatacopy(ptr, currentOffset, dataLength)
-            success :=
-                call(
-                    gas(),
-                    target,
-                    callValue,
-                    ptr, //
-                    dataLength,
-                    // the length must be correct or the call will fail
-                    0x0, // output = empty
-                    0x0 // output size = zero
-                )
+            success := call(
+                gas(),
+                target,
+                callValue,
+                ptr, //
+                dataLength,
+                // the length must be correct or the call will fail
+                0x0, // output = empty
+                0x0 // output size = zero
+            )
 
             // increment offset by data length
             currentOffset := add(currentOffset, dataLength)

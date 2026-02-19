@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.28;
+pragma solidity 0.8.34;
 
 abstract contract ERC721Receiver {
     function onERC721Received(address, address, uint256, bytes memory) public virtual returns (bytes4) {

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.28;
+pragma solidity 0.8.34;
 
 import {BaseUtils} from "contracts/1delta/composer/generic/BaseUtils.sol";
 
@@ -104,17 +104,16 @@ contract StargateV2 is BaseUtils {
             }
 
             // amount adjusted for slippage
-            minAmountLD :=
-                div(
-                    mul(
-                        amount,
-                        sub(
-                            FEE_DENOMINATOR,
-                            shr(224, calldataload(add(currentOffset, 112))) // slippage (assured to not overflow)
-                        )
-                    ),
-                    FEE_DENOMINATOR
-                )
+            minAmountLD := div(
+                mul(
+                    amount,
+                    sub(
+                        FEE_DENOMINATOR,
+                        shr(224, calldataload(add(currentOffset, 112))) // slippage (assured to not overflow)
+                    )
+                ),
+                FEE_DENOMINATOR
+            )
 
             // Set up function call memory
             let ptr := mload(0x40)
@@ -185,7 +184,9 @@ contract StargateV2 is BaseUtils {
             // composeMsg
             let composeMsgPtr := add(composeMsgOffset, add(ptr, 0x84))
             mstore(composeMsgPtr, composeMsgLength)
-            if gt(composeMsgLength, 0) { calldatacopy(add(composeMsgPtr, 0x20), add(currentOffset, 137), composeMsgLength) }
+            if gt(composeMsgLength, 0) {
+                calldatacopy(add(composeMsgPtr, 0x20), add(currentOffset, 137), composeMsgLength)
+            }
 
             let callSize // callsize for calling stargate
 
