@@ -12,17 +12,17 @@ contract ListaLendingTest is BaseTest {
     IComposerLike oneD;
 
     uint256 internal constant forkBlock = 0;
-    address internal constant WBNB = 0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c;
     address internal constant LISTA_PROVIDER = 0x367384C54756a25340c63057D87eA22d47Fd5701;
     address internal constant MOOLAH = 0x8F73b65B4caAf64FBA2aF91cC5D4a2A1318E5D8C;
 
     address internal constant ETH = 0x2416092f143378750bb29b79eD961ab195CcEea5;
 
-    address internal constant LOAN_TOKEN = 0x55d398326f99059fF775485246999027B3197955;
-    address internal constant COLLATERAL_TOKEN = 0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c;
+    address internal constant USDT = 0x55d398326f99059fF775485246999027B3197955;
+    address internal constant WBNB = 0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c;
     address internal constant ORACLE = 0xf3afD82A4071f272F403dC176916141f44E6c750;
     address internal constant IRM = 0xFe7dAe87Ebb11a7BEB9F534BB23267992d9cDe7c;
     uint256 internal constant LLTV = 800000000000000000;
+    uint256 internal constant LLTV_2 = 850000000000000000;
     uint256 internal constant LISTA_PID = 0;
 
     function setUp() public virtual {
@@ -45,13 +45,13 @@ contract ListaLendingTest is BaseTest {
     }
 
     function marketId() internal pure returns (bytes32 id) {
-        id = keccak256(abi.encode(LOAN_TOKEN, COLLATERAL_TOKEN, ORACLE, IRM, LLTV));
+        id = keccak256(abi.encode(USDT, WBNB, ORACLE, IRM, LLTV));
     }
 
     function test_lista_provider_supply_collateral() external {
         uint256 amount = 0.1 ether;
         vm.deal(address(oneD), amount);
-        bytes memory market = encodeMarket(LOAN_TOKEN, COLLATERAL_TOKEN, ORACLE, IRM, LLTV);
+        bytes memory market = encodeMarket(USDT, WBNB, ORACLE, IRM, LLTV);
         bytes memory depositCall =
             CalldataLib.encodeListaSupplyCollateralViaProvider(market, amount, user, "", LISTA_PROVIDER, LISTA_PID);
         uint256 composerBalanceBefore = address(oneD).balance;
@@ -65,7 +65,7 @@ contract ListaLendingTest is BaseTest {
     function test_lista_provider_supply_collateral_selfbalance() external {
         uint256 amount = 0.1 ether;
         vm.deal(address(oneD), amount);
-        bytes memory market = encodeMarket(LOAN_TOKEN, COLLATERAL_TOKEN, ORACLE, IRM, LLTV);
+        bytes memory market = encodeMarket(USDT, WBNB, ORACLE, IRM, LLTV);
         // amount=0 triggers selfbalance() path
         bytes memory depositCall =
             CalldataLib.encodeListaSupplyCollateralViaProvider(market, 0, user, "", LISTA_PROVIDER, LISTA_PID);
@@ -79,7 +79,7 @@ contract ListaLendingTest is BaseTest {
     function test_lista_provider_withdraw_collateral() external {
         uint256 amount = 0.1 ether;
         vm.deal(address(oneD), amount);
-        bytes memory market = encodeMarket(LOAN_TOKEN, COLLATERAL_TOKEN, ORACLE, IRM, LLTV);
+        bytes memory market = encodeMarket(USDT, WBNB, ORACLE, IRM, LLTV);
         bytes memory depositCall =
             CalldataLib.encodeListaSupplyCollateralViaProvider(market, amount, user, "", LISTA_PROVIDER, LISTA_PID);
         vm.prank(user);
@@ -101,10 +101,79 @@ contract ListaLendingTest is BaseTest {
         assertEq(collateralAfterWithdraw, amount - withdrawAmount);
     }
 
+    function depositAndBorrow() internal {
+        // collateral: usdt, loan: wbnb
+        uint256 collateralAmount = 1e24;
+        bytes32 id = keccak256(abi.encode(WBNB, USDT, ORACLE, IRM, LLTV_2)); // loan,collateral,oracle,irm,lltv
+
+        deal(USDT, address(oneD), collateralAmount);
+        bytes memory market = encodeMarket(WBNB, USDT, ORACLE, IRM, LLTV_2);
+        bytes memory depositCall =
+            CalldataLib.encodeMorphoDepositCollateral(market, collateralAmount, user, hex"", MOOLAH, LISTA_PID);
+        vm.prank(user);
+        oneD.deltaCompose(depositCall);
+
+        vm.prank(user);
+        IMorphoEverything(MOOLAH).setAuthorization(address(oneD), true);
+
+        deal(WBNB, address(oneD), 1e24);
+        depositCall = abi.encodePacked(
+            CalldataLib.encodeApprove(WBNB, address(MOOLAH)),
+            CalldataLib.encodeMorphoDeposit(market, false, 1e24, address(this), "", MOOLAH, LISTA_PID)
+        );
+        oneD.deltaCompose(depositCall); // deposit some loan token to the market
+
+        uint256 borrowAmount = 1 ether;
+        bytes memory borrowCall = CalldataLib.encodeMorphoBorrow(market, false, borrowAmount, user, MOOLAH);
+        vm.prank(user);
+        oneD.deltaCompose(borrowCall);
+
+        (, uint128 borrowSharesBefore,) = IMorphoEverything(MOOLAH).position(id, user);
+        assertGt(borrowSharesBefore, 0);
+    }
+
+    function test_lista_provider_repay_partial_via_provider() external {
+        bytes32 id = keccak256(abi.encode(WBNB, USDT, ORACLE, IRM, LLTV_2)); // loan,collateral,oracle,irm,lltv
+        depositAndBorrow();
+
+        (, uint128 borrowSharesBefore,) = IMorphoEverything(MOOLAH).position(id, user);
+
+        uint256 repayAmount = 0.5 ether;
+        vm.deal(address(oneD), repayAmount);
+
+        bytes memory market = encodeMarket(WBNB, USDT, ORACLE, IRM, LLTV_2);
+        bytes memory repayCall =
+            CalldataLib.encodeListaRepayViaProvider(market, false, repayAmount, user, hex"", LISTA_PROVIDER, LISTA_PID);
+
+        vm.prank(user);
+        oneD.deltaCompose(repayCall);
+
+        (, uint128 borrowSharesAfter,) = IMorphoEverything(MOOLAH).position(id, user);
+        assertGt(borrowSharesBefore, borrowSharesAfter);
+        assertGt(borrowSharesAfter, 0);
+    }
+
+    function test_lista_provider_repay_max_via_provider() external {
+        bytes32 id = keccak256(abi.encode(WBNB, USDT, ORACLE, IRM, LLTV_2)); // loan,collateral,oracle,irm,lltv
+        depositAndBorrow();
+
+        vm.deal(address(oneD), 2 ether);
+
+        bytes memory market = encodeMarket(WBNB, USDT, ORACLE, IRM, LLTV_2);
+        bytes memory repayCall =
+            CalldataLib.encodeListaRepayViaProvider(market, false, type(uint112).max, user, hex"", LISTA_PROVIDER, LISTA_PID);
+
+        vm.prank(user);
+        oneD.deltaCompose(repayCall);
+
+        (, uint128 borrowSharesAfter,) = IMorphoEverything(MOOLAH).position(id, user);
+        assertEq(borrowSharesAfter, 0);
+    }
+
     function test_lista_provider_deposit_collateral_with_callback() external {
         uint256 amount = 0.1 ether;
         vm.deal(address(oneD), amount);
-        bytes memory market = encodeMarket(LOAN_TOKEN, COLLATERAL_TOKEN, ORACLE, IRM, LLTV);
+        bytes memory market = encodeMarket(USDT, WBNB, ORACLE, IRM, LLTV);
 
         uint256 recoverETH = 1.0e18;
         deal(ETH, address(oneD), recoverETH);
