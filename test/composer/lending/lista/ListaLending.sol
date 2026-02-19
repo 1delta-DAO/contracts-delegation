@@ -124,7 +124,7 @@ contract ListaLendingTest is BaseTest {
         oneD.deltaCompose(depositCall); // deposit some loan token to the market
 
         uint256 borrowAmount = 1 ether;
-        bytes memory borrowCall = CalldataLib.encodeMorphoBorrow(market, false, borrowAmount, user, MOOLAH);
+        bytes memory borrowCall = CalldataLib.encodeMorphoBorrow(market, false, borrowAmount, user, LISTA_PROVIDER);
         vm.prank(user);
         oneD.deltaCompose(borrowCall);
 
