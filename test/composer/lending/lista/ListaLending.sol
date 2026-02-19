@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: UNLICENSED
+// SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
 import {ComposerPlugin, IComposerLike} from "plugins/ComposerPlugin.sol";
@@ -6,9 +6,13 @@ import {BaseTest} from "test/shared/BaseTest.sol";
 import {Chains} from "test/data/LenderRegistry.sol";
 import "contracts/utils/CalldataLib.sol";
 import {IMorphoEverything} from "../utils/Morpho.sol";
+import {MorphoMathLib} from "../utils/MathLib.sol";
 import {IERC20All} from "test/shared/interfaces/IERC20All.sol";
 
 contract ListaLendingTest is BaseTest {
+    using MorphoMathLib for uint256;
+    using MorphoMathLib for uint128;
+
     IComposerLike oneD;
 
     uint256 internal constant forkBlock = 0;
@@ -168,6 +172,73 @@ contract ListaLendingTest is BaseTest {
 
         (, uint128 borrowSharesAfter,) = IMorphoEverything(MOOLAH).position(id, user);
         assertEq(borrowSharesAfter, 0);
+    }
+
+    function test_lista_provider_borrow_via_provider() external {
+        bytes32 id = keccak256(abi.encode(WBNB, USDT, ORACLE, IRM, LLTV_2));
+
+        uint256 collateralAmount = 1e24;
+        deal(USDT, address(oneD), collateralAmount);
+        bytes memory market = encodeMarket(WBNB, USDT, ORACLE, IRM, LLTV_2);
+        bytes memory depositCall =
+            CalldataLib.encodeMorphoDepositCollateral(market, collateralAmount, user, hex"", MOOLAH, LISTA_PID);
+        vm.prank(user);
+        oneD.deltaCompose(depositCall);
+
+        vm.prank(user);
+        IMorphoEverything(MOOLAH).setAuthorization(address(oneD), true);
+
+        deal(WBNB, address(oneD), 1e24);
+        bytes memory supplyCall = abi.encodePacked(
+            CalldataLib.encodeApprove(WBNB, address(MOOLAH)),
+            CalldataLib.encodeMorphoDeposit(market, false, 1e24, address(this), "", MOOLAH, LISTA_PID)
+        );
+        oneD.deltaCompose(supplyCall);
+
+        uint256 borrowAmount = 1 ether;
+        uint256 userNativeBalanceBefore = user.balance;
+        uint256 userWbnbBalanceBefore = IERC20All(WBNB).balanceOf(user);
+
+        bytes memory borrowCall = CalldataLib.encodeMorphoBorrow(market, false, borrowAmount, user, LISTA_PROVIDER);
+        vm.prank(user);
+        oneD.deltaCompose(borrowCall);
+
+        (, uint128 borrowShares,) = IMorphoEverything(MOOLAH).position(id, user);
+        assertGt(borrowShares, 0);
+
+        (,, uint128 totalBorrowAssets, uint128 totalBorrowShares,,) = IMorphoEverything(MOOLAH).market(id);
+        uint256 borrowBalance = borrowShares.toAssetsDown(totalBorrowAssets, totalBorrowShares);
+        assertEq(borrowBalance, borrowAmount);
+
+        assertEq(user.balance, userNativeBalanceBefore + borrowAmount);
+        assertEq(IERC20All(WBNB).balanceOf(user), userWbnbBalanceBefore);
+    }
+
+    function test_lista_provider_withdraw_collateral_max() external {
+        uint256 amount = 0.1 ether;
+        vm.deal(address(oneD), amount);
+        bytes memory market = encodeMarket(USDT, WBNB, ORACLE, IRM, LLTV);
+        bytes memory depositCall =
+            CalldataLib.encodeListaSupplyCollateralViaProvider(market, amount, user, "", LISTA_PROVIDER, LISTA_PID);
+        vm.prank(user);
+        oneD.deltaCompose(depositCall);
+
+        (,, uint128 collateralAfterDeposit) = IMorphoEverything(MOOLAH).position(marketId(), user);
+        assertEq(collateralAfterDeposit, amount);
+
+        vm.prank(user);
+        IMorphoEverything(MOOLAH).setAuthorization(address(oneD), true);
+
+        uint256 userBalanceBefore = user.balance;
+        bytes memory withdrawCall =
+            CalldataLib.encodeListaWithdrawCollateralViaProvider(market, type(uint112).max, user, LISTA_PROVIDER);
+        vm.prank(user);
+        oneD.deltaCompose(withdrawCall);
+
+        (,, uint128 collateralAfterWithdraw) = IMorphoEverything(MOOLAH).position(marketId(), user);
+        assertEq(collateralAfterWithdraw, 0);
+
+        assertEq(user.balance, userBalanceBefore + amount);
     }
 
     function test_lista_provider_deposit_collateral_with_callback() external {

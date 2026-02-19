@@ -1307,6 +1307,27 @@ library CalldataLib {
         );
     }
 
+    function encodeListaWithdrawCollateralViaProvider(
+        bytes memory market, //
+        uint256 assets,
+        address receiver,
+        address provider
+    )
+        internal
+        pure
+        returns (bytes memory)
+    {
+        return abi.encodePacked(
+            uint8(ComposerCommands.LENDING), // 1
+            uint8(LenderOps.WITHDRAW), // 1
+            uint16(LenderIds.UP_TO_MORPHO - 1), // 2
+            market, // 4 * 20 + 16
+            generateAmountBitmap(uint128(assets), false, true), // native flag set
+            receiver, // 20
+            provider
+        );
+    }
+
     function encodeMorphoBorrow(
         bytes memory market,
         bool isShares, //

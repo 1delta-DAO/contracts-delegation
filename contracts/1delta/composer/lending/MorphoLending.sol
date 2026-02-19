@@ -382,19 +382,29 @@ abstract contract MorphoLending is ERC20Selectors, Masks {
 
             let morpho := shr(96, calldataload(add(currentOffset, 132)))
 
+            let isNative := and(NATIVE_FLAG, lltvAndAmount)
+
             // get amount, ignore flags
             lltvAndAmount := and(UINT112_MASK, lltvAndAmount)
 
-            // technically not needed, hwoever, we keep it consistent
-            // to withdraw all like this - maxUnit112 means read collateral balance
+            // maxUnit112 means read collateral balance
             if eq(lltvAndAmount, 0xffffffffffffffffffffffffffff) {
+                // for lista native case, read the moolah address from the provider
+                // for morpho case it is the morpho itself
+                let morphoRead := morpho
+                if isNative {
+                    mstore(0x0, 0x195be17a00000000000000000000000000000000000000000000000000000000) // MOOLAH()
+                    if iszero(staticcall(gas(), morpho, 0x0, 0x04, 0x0, 0x20)) { revert(0x0, 0x0) }
+                    morphoRead := mload(0x0)
+                }
+
                 let ptrBase := add(ptr, 280)
                 let marketId := keccak256(add(ptr, 4), 160)
                 // position datas (1st slot of return data is the user shares)
                 mstore(ptrBase, MORPHO_POSITION)
                 mstore(add(ptrBase, 0x4), marketId)
                 mstore(add(ptrBase, 0x24), callerAddress)
-                if iszero(staticcall(gas(), morpho, ptrBase, 0x44, ptrBase, 0x60)) { revert(0x0, 0x0) }
+                if iszero(staticcall(gas(), morphoRead, ptrBase, 0x44, ptrBase, 0x60)) { revert(0x0, 0x0) }
                 lltvAndAmount := mload(add(ptrBase, 0x40))
             }
 
