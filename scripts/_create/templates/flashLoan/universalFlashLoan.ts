@@ -35,7 +35,7 @@ export const templateUniversalFlashLoan = (hasMorpho: boolean, hasAaveV2: boolea
 
     // SPDX-License-Identifier: BUSL-1.1
 
-pragma solidity 0.8.28;
+pragma solidity 0.8.34;
 
 import {FlashLoanCallbacks} from "./FlashLoanCallbacks.sol";
 
@@ -60,7 +60,7 @@ contract UniversalFlashLoan is FlashLoanCallbacks {
 
 // SPDX-License-Identifier: BUSL-1.1
 
-pragma solidity 0.8.28;
+pragma solidity 0.8.34;
 
 ${imports}
 import {FlashLoanCallbacks} from "./FlashLoanCallbacks.sol";

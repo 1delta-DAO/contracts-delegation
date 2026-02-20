@@ -21,7 +21,7 @@ const contractHeader = () => `
 // SPDX-License-Identifier: BUSL-1.1
 // solhint-disable max-line-length
 
-pragma solidity ^0.8.28;
+pragma solidity 0.8.34;
 
 struct LenderTokens {
     address collateral;

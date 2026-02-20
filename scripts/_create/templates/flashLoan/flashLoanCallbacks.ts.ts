@@ -41,7 +41,7 @@ export const templateFlashLoan = (hasAaveV2: boolean, hasAaveV3: boolean, hasMor
     return `
 // SPDX-License-Identifier: BUSL-1.1
 
-pragma solidity 0.8.28;
+pragma solidity 0.8.34;
 
 ${cbs.map((a) => a.imports + `\n`).join("")}
 

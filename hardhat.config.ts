@@ -378,7 +378,7 @@ const config: HardhatUserConfig = {
             live: true,
         },
         mantle: {
-            url: "https://1rpc.io/mantle",
+            url: "https://rpc.mantle.xyz",
             accounts,
             chainId: 5000,
         },
@@ -466,7 +466,7 @@ const config: HardhatUserConfig = {
             live: true,
         },
         cronos: {
-            url: "https://1rpc.io/cro",
+            url: "https://rpc.sentio.xyz/cronos",
             accounts,
             chainId: 25,
             live: true,
@@ -484,7 +484,7 @@ const config: HardhatUserConfig = {
             live: true,
         },
         telos: {
-            url: "https://1rpc.io/telos/evm",
+            url: "https://rpc.telos.net",
             accounts,
             chainId: 40,
             live: true,
@@ -551,7 +551,7 @@ const config: HardhatUserConfig = {
         compilers: [
             // 1delta
             {
-                version: "0.8.28",
+                version: "0.8.34",
                 settings: {
                     optimizer: {
                         enabled: true,
@@ -637,7 +637,7 @@ const config: HardhatUserConfig = {
         overrides: {
             // deploy factory
             "contracts/1delta/contracts/1delta/shared/DeployFactory.sol": {
-                version: "0.8.28",
+                version: "0.8.34",
                 settings: {
                     optimizer: {
                         enabled: true,
@@ -648,7 +648,7 @@ const config: HardhatUserConfig = {
             },
             // forwarder
             "contracts/1delta/composer/generic/CallForwarder.sol": {
-                version: "0.8.28",
+                version: "0.8.34",
                 settings: {
                     optimizer: {
                         enabled: true,
@@ -659,7 +659,7 @@ const config: HardhatUserConfig = {
             },
             // slim composer
             "contracts/1delta/composer/ComposerLite.sol": {
-                version: "0.8.28",
+                version: "0.8.34",
                 settings: {
                     optimizer: {
                         enabled: true,
@@ -669,7 +669,7 @@ const config: HardhatUserConfig = {
                 },
             },
             "contracts/external-protocols/misc/FeeOnTransferDetector.sol": {
-                version: "0.8.28",
+                version: "0.8.34",
                 settings: {
                     optimizer: {
                         enabled: true,
@@ -680,7 +680,7 @@ const config: HardhatUserConfig = {
             },
             // proxy
             "contracts/external-protocols/openzeppelin/proxy/transparent/TransparentUpgradeableProxy.sol": {
-                version: "0.8.28",
+                version: "0.8.34",
                 settings: {
                     optimizer: {
                         enabled: true,
@@ -690,7 +690,7 @@ const config: HardhatUserConfig = {
                 },
             },
             "contracts/external-protocols/openzeppelin/proxy/transparent/ProxyAdmin.sol": {
-                version: "0.8.28",
+                version: "0.8.34",
                 settings: {
                     optimizer: {
                         enabled: true,
@@ -701,7 +701,7 @@ const config: HardhatUserConfig = {
             },
             // composers
             "contracts/1delta/composer/chains/arbitrum-one/Composer.sol": {
-                version: "0.8.28",
+                version: "0.8.34",
                 settings: {
                     optimizer: {
                         enabled: true,
@@ -711,7 +711,17 @@ const config: HardhatUserConfig = {
                 },
             },
             "contracts/1delta/composer/chains/plasma/Composer.sol": {
-                version: "0.8.28",
+                version: "0.8.34",
+                settings: {
+                    optimizer: {
+                        enabled: true,
+                        runs: 10_000,
+                    },
+                    evmVersion: "cancun",
+                },
+            },
+            "contracts/1delta/composer/chains/cronos/Composer.sol": {
+                version: "0.8.34",
                 settings: {
                     optimizer: {
                         enabled: true,
@@ -721,77 +731,77 @@ const config: HardhatUserConfig = {
                 },
             },
             "contracts/1delta/composer/chains/xdc/Composer.sol": {
-                version: "0.8.28",
+                version: "0.8.34",
                 settings: {
                     optimizer: {
                         enabled: true,
-                        runs: 10_000,
+                        runs: 1_000,
                     },
                     evmVersion: "cancun",
                 },
             },
             "contracts/1delta/composer/chains/moonbeam/Composer.sol": {
-                version: "0.8.28",
+                version: "0.8.34",
                 settings: {
                     optimizer: {
                         enabled: true,
-                        runs: 10_000,
+                        runs: 1_000,
                     },
                     evmVersion: "cancun",
                 },
             },
             "contracts/1delta/composer/chains/berachain/Composer.sol": {
-                version: "0.8.28",
+                version: "0.8.34",
                 settings: {
                     optimizer: {
                         enabled: true,
-                        runs: 10_000,
+                        runs: 1_000,
                     },
                     evmVersion: "cancun",
                 },
             },
             "contracts/1delta/composer/chains/unichain/Composer.sol": {
-                version: "0.8.28",
+                version: "0.8.34",
                 settings: {
                     optimizer: {
                         enabled: true,
-                        runs: 10_000,
+                        runs: 1_000,
                     },
                     evmVersion: "cancun",
                 },
             },
             "contracts/1delta/composer/chains/manta-pacific/Composer.sol": {
-                version: "0.8.28",
+                version: "0.8.34",
                 settings: {
                     optimizer: {
                         enabled: true,
-                        runs: 10_000,
+                        runs: 1_000,
                     },
                     evmVersion: "cancun",
                 },
             },
             "contracts/1delta/composer/chains/pulsechain/Composer.sol": {
-                version: "0.8.28",
+                version: "0.8.34",
                 settings: {
                     optimizer: {
                         enabled: true,
-                        runs: 10_000,
+                        runs: 1_000,
                     },
                     evmVersion: "cancun",
                 },
             },
             "contracts/1delta/composer/chains/sei/Composer.sol": {
-                version: "0.8.28",
+                version: "0.8.34",
                 settings: {
                     optimizer: {
                         enabled: true,
-                        runs: 10_000,
+                        runs: 1_000,
                     },
                     evmVersion: "cancun",
                 },
             },
             "contracts/1delta/composer/chains/ethereum/Composer.sol": {
-                version: "0.8.28",
+                version: "0.8.34",
                 settings: {
                     optimizer: {
                         enabled: true,
@@ -801,37 +811,7 @@ const config: HardhatUserConfig = {
                 },
             },
             "contracts/1delta/composer/chains/hemi/Composer.sol": {
-                version: "0.8.28",
-                settings: {
-                    optimizer: {
-                        enabled: true,
-                        runs: 2_500,
-                    },
-                    evmVersion: "cancun",
-                },
-            },
-            "contracts/1delta/composer/chains/katana/Composer.sol": {
-                version: "0.8.28",
-                settings: {
-                    optimizer: {
-                        enabled: true,
-                        runs: 10_000,
-                    },
-                    evmVersion: "shanghai",
-                },
-            },
-            "contracts/1delta/composer/chains/blast/Composer.sol": {
-                version: "0.8.28",
-                settings: {
-                    optimizer: {
-                        enabled: true,
-                        runs: 2_500,
-                    },
-                    evmVersion: "cancun",
-                },
-            },
-            "contracts/1delta/composer/chains/sonic/Composer.sol": {
-                version: "0.8.28",
+                version: "0.8.34",
                 settings: {
                     optimizer: {
                         enabled: true,
@@ -840,8 +820,38 @@ const config: HardhatUserConfig = {
                     evmVersion: "cancun",
                 },
             },
+            "contracts/1delta/composer/chains/katana/Composer.sol": {
+                version: "0.8.34",
+                settings: {
+                    optimizer: {
+                        enabled: true,
+                        runs: 1_000,
+                    },
+                    evmVersion: "shanghai",
+                },
+            },
+            "contracts/1delta/composer/chains/blast/Composer.sol": {
+                version: "0.8.34",
+                settings: {
+                    optimizer: {
+                        enabled: true,
+                        runs: 500,
+                    },
+                    evmVersion: "cancun",
+                },
+            },
+            "contracts/1delta/composer/chains/sonic/Composer.sol": {
+                version: "0.8.34",
+                settings: {
+                    optimizer: {
+                        enabled: true,
+                        runs: 500,
+                    },
+                    evmVersion: "cancun",
+                },
+            },
             "contracts/1delta/composer/chains/polygon/Composer.sol": {
-                version: "0.8.28",
+                version: "0.8.34",
                 settings: {
                     optimizer: {
                         enabled: true,
@@ -851,47 +861,7 @@ const config: HardhatUserConfig = {
                 },
             },
             "contracts/1delta/composer/chains/telos-evm/Composer.sol": {
-                version: "0.8.28",
-                settings: {
-                    optimizer: {
-                        enabled: true,
-                        runs: 5_000,
-                    },
-                    evmVersion: "cancun",
-                },
-            },
-            "contracts/1delta/composer/chains/morph/Composer.sol": {
-                version: "0.8.28",
-                settings: {
-                    optimizer: {
-                        enabled: true,
-                        runs: 50_000,
-                    },
-                    evmVersion: "cancun",
-                },
-            },
-            "contracts/1delta/composer/chains/metis-andromeda/Composer.sol": {
-                version: "0.8.28",
-                settings: {
-                    optimizer: {
-                        enabled: true,
-                        runs: 2_000,
-                    },
-                    evmVersion: "cancun",
-                },
-            },
-            "contracts/1delta/composer/chains/gnosis/Composer.sol": {
-                version: "0.8.28",
-                settings: {
-                    optimizer: {
-                        enabled: true,
-                        runs: 2_000,
-                    },
-                    evmVersion: "cancun",
-                },
-            },
-            "contracts/1delta/composer/chains/scroll/Composer.sol": {
-                version: "0.8.28",
+                version: "0.8.34",
                 settings: {
                     optimizer: {
                         enabled: true,
@@ -900,8 +870,48 @@ const config: HardhatUserConfig = {
                     evmVersion: "cancun",
                 },
             },
+            "contracts/1delta/composer/chains/morph/Composer.sol": {
+                version: "0.8.34",
+                settings: {
+                    optimizer: {
+                        enabled: true,
+                        runs: 10_000,
+                    },
+                    evmVersion: "cancun",
+                },
+            },
+            "contracts/1delta/composer/chains/metis-andromeda/Composer.sol": {
+                version: "0.8.34",
+                settings: {
+                    optimizer: {
+                        enabled: true,
+                        runs: 1_000,
+                    },
+                    evmVersion: "cancun",
+                },
+            },
+            "contracts/1delta/composer/chains/gnosis/Composer.sol": {
+                version: "0.8.34",
+                settings: {
+                    optimizer: {
+                        enabled: true,
+                        runs: 1_000,
+                    },
+                    evmVersion: "cancun",
+                },
+            },
+            "contracts/1delta/composer/chains/scroll/Composer.sol": {
+                version: "0.8.34",
+                settings: {
+                    optimizer: {
+                        enabled: true,
+                        runs: 500,
+                    },
+                    evmVersion: "cancun",
+                },
+            },
             "contracts/1delta/composer/chains/linea/Composer.sol": {
-                version: "0.8.28",
+                version: "0.8.34",
                 settings: {
                     optimizer: {
                         enabled: true,
@@ -911,67 +921,17 @@ const config: HardhatUserConfig = {
                 },
             },
             "contracts/1delta/composer/chains/fantom-opera/Composer.sol": {
-                version: "0.8.28",
+                version: "0.8.34",
                 settings: {
                     optimizer: {
                         enabled: true,
-                        runs: 1_000,
+                        runs: 500,
                     },
                     evmVersion: "london",
                 },
             },
             "contracts/1delta/composer/chains/avalanche/Composer.sol": {
-                version: "0.8.28",
-                settings: {
-                    optimizer: {
-                        enabled: true,
-                        runs: 1_000,
-                    },
-                    evmVersion: "cancun",
-                },
-            },
-            "contracts/1delta/composer/chains/hyperevm/Composer.sol": {
-                version: "0.8.28",
-                settings: {
-                    optimizer: {
-                        enabled: true,
-                        runs: 4_000,
-                    },
-                    evmVersion: "cancun",
-                },
-            },
-            "contracts/1delta/composer/chains/kaia/Composer.sol": {
-                version: "0.8.28",
-                settings: {
-                    optimizer: {
-                        enabled: true,
-                        runs: 10_000,
-                    },
-                    evmVersion: "shanghai",
-                },
-            },
-            "contracts/1delta/composer/chains/soneium/Composer.sol": {
-                version: "0.8.28",
-                settings: {
-                    optimizer: {
-                        enabled: true,
-                        runs: 5_000,
-                    },
-                    evmVersion: "cancun",
-                },
-            },
-            "contracts/1delta/composer/chains/celo/Composer.sol": {
-                version: "0.8.28",
-                settings: {
-                    optimizer: {
-                        enabled: true,
-                        runs: 2_000,
-                    },
-                    evmVersion: "cancun",
-                },
-            },
-            "contracts/1delta/composer/chains/bnb/Composer.sol": {
-                version: "0.8.28",
+                version: "0.8.34",
                 settings: {
                     optimizer: {
                         enabled: true,
@@ -980,8 +940,58 @@ const config: HardhatUserConfig = {
                     evmVersion: "cancun",
                 },
             },
+            "contracts/1delta/composer/chains/hyperevm/Composer.sol": {
+                version: "0.8.34",
+                settings: {
+                    optimizer: {
+                        enabled: true,
+                        runs: 1_000,
+                    },
+                    evmVersion: "cancun",
+                },
+            },
+            "contracts/1delta/composer/chains/kaia/Composer.sol": {
+                version: "0.8.34",
+                settings: {
+                    optimizer: {
+                        enabled: true,
+                        runs: 1_000,
+                    },
+                    evmVersion: "shanghai",
+                },
+            },
+            "contracts/1delta/composer/chains/soneium/Composer.sol": {
+                version: "0.8.34",
+                settings: {
+                    optimizer: {
+                        enabled: true,
+                        runs: 1_000,
+                    },
+                    evmVersion: "cancun",
+                },
+            },
+            "contracts/1delta/composer/chains/celo/Composer.sol": {
+                version: "0.8.34",
+                settings: {
+                    optimizer: {
+                        enabled: true,
+                        runs: 1_000,
+                    },
+                    evmVersion: "cancun",
+                },
+            },
+            "contracts/1delta/composer/chains/bnb/Composer.sol": {
+                version: "0.8.34",
+                settings: {
+                    optimizer: {
+                        enabled: true,
+                        runs: 250,
+                    },
+                    evmVersion: "cancun",
+                },
+            },
             "contracts/1delta/composer/chains/mantle/Composer.sol": {
-                version: "0.8.28",
+                version: "0.8.34",
                 settings: {
                     optimizer: {
                         enabled: true,
@@ -991,17 +1001,17 @@ const config: HardhatUserConfig = {
                 },
             },
             "contracts/1delta/composer/chains/core/Composer.sol": {
-                version: "0.8.28",
+                version: "0.8.34",
                 settings: {
                     optimizer: {
                         enabled: true,
-                        runs: 5_000,
+                        runs: 1_000,
                     },
                     evmVersion: "shanghai",
                 },
             },
             "contracts/1delta/composer/chains/mode/Composer.sol": {
-                version: "0.8.28",
+                version: "0.8.34",
                 settings: {
                     optimizer: {
                         enabled: true,
@@ -1011,7 +1021,7 @@ const config: HardhatUserConfig = {
                 },
             },
             "contracts/1delta/composer/chains/base/Composer.sol": {
-                version: "0.8.28",
+                version: "0.8.34",
                 settings: {
                     optimizer: {
                         enabled: true,
@@ -1021,37 +1031,37 @@ const config: HardhatUserConfig = {
                 },
             },
             "contracts/1delta/composer/chains/monad/Composer.sol": {
-                version: "0.8.28",
-                settings: {
-                    optimizer: {
-                        enabled: true,
-                        runs: 10_000,
-                    },
-                    evmVersion: "cancun",
-                },
-            },
-            "contracts/1delta/composer/chains/op/Composer.sol": {
-                version: "0.8.28",
-                settings: {
-                    optimizer: {
-                        enabled: true,
-                        runs: 1_500,
-                    },
-                    evmVersion: "cancun",
-                },
-            },
-            "contracts/1delta/composer/chains/taiko/Composer.sol": {
-                version: "0.8.28",
+                version: "0.8.34",
                 settings: {
                     optimizer: {
                         enabled: true,
                         runs: 1_000,
                     },
+                    evmVersion: "cancun",
+                },
+            },
+            "contracts/1delta/composer/chains/op/Composer.sol": {
+                version: "0.8.34",
+                settings: {
+                    optimizer: {
+                        enabled: true,
+                        runs: 500,
+                    },
+                    evmVersion: "cancun",
+                },
+            },
+            "contracts/1delta/composer/chains/taiko/Composer.sol": {
+                version: "0.8.34",
+                settings: {
+                    optimizer: {
+                        enabled: true,
+                        runs: 500,
+                    },
                     evmVersion: "shanghai",
                 },
             },
             "contracts/external-protocols/misc/CometLens.sol": {
-                version: "0.8.28",
+                version: "0.8.34",
                 settings: {
                     optimizer: {
                         enabled: true,
@@ -1061,7 +1071,7 @@ const config: HardhatUserConfig = {
                 },
             },
             "contracts/external-protocols/misc/SumerLens.sol": {
-                version: "0.8.28",
+                version: "0.8.34",
                 settings: {
                     viaIR: true,
                     optimizer: {
@@ -1072,7 +1082,7 @@ const config: HardhatUserConfig = {
                 },
             },
             "contracts/external-protocols/misc/TakaraLens.sol": {
-                version: "0.8.28",
+                version: "0.8.34",
                 settings: {
                     viaIR: true,
                     optimizer: {

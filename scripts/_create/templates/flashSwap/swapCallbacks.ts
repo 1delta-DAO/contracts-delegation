@@ -45,7 +45,7 @@ export const templateSwapCallbacks = (hasV4: boolean, hasV3: boolean, hasV2: boo
         return `
     // SPDX-License-Identifier: BUSL-1.1
 
-    pragma solidity 0.8.28;
+    pragma solidity 0.8.34;
 
     /**
      * @title Swap Callback executor
@@ -69,7 +69,7 @@ export const templateSwapCallbacks = (hasV4: boolean, hasV3: boolean, hasV2: boo
     return `
 // SPDX-License-Identifier: BUSL-1.1
 
-pragma solidity 0.8.28;
+pragma solidity 0.8.34;
 
 ${cbs.map((a) => a.imports + `\n`).join("")}
 /**

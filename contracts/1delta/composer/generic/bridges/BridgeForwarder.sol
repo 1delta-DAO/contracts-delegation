@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.28;
+pragma solidity 0.8.34;
 
 import {StargateV2} from "./StargateV2/StargateV2.sol";
 import {Across} from "./Across/Across.sol";

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity ^0.8.28;
+pragma solidity 0.8.34;
 
 import {Masks} from "../../../shared/masks/Masks.sol";
 import {DexTypeMappings} from "../../swappers/dex/DexTypeMappings.sol";
@@ -51,13 +51,15 @@ abstract contract V3TypeQuoter is QuoterUtils, Masks {
             zeroForOne := lt(tokenIn, tokenOut)
         }
 
-        try ICLPool(pool).swap(
-            address(this), // quoter
-            zeroForOne,
-            int256(amountIn),
-            zeroForOne ? MIN_SQRT_RATIO : MAX_SQRT_RATIO, // price limit
-            hex"" // callback data
-        ) {} catch (bytes memory reason) {
+        try ICLPool(pool)
+            .swap(
+                address(this), // quoter
+                zeroForOne,
+                int256(amountIn),
+                zeroForOne ? MIN_SQRT_RATIO : MAX_SQRT_RATIO, // price limit
+                hex"" // callback data
+            ) {}
+        catch (bytes memory reason) {
             return (parseRevertReason(reason), currentOffset);
         }
 
@@ -111,22 +113,26 @@ abstract contract V3TypeQuoter is QuoterUtils, Masks {
 
         if (tokenIn < tokenOut) {
             int24 boundaryPoint = -799999;
-            try ICLPool(pool).swapX2Y(
-                address(this), // address(0) might cause issues with some tokens
-                uint128(amountIn),
-                boundaryPoint,
-                hex""
-            ) {} catch (bytes memory reason) {
+            try ICLPool(pool)
+                .swapX2Y(
+                    address(this), // address(0) might cause issues with some tokens
+                    uint128(amountIn),
+                    boundaryPoint,
+                    hex""
+                ) {}
+            catch (bytes memory reason) {
                 return (parseRevertReason(reason), currentOffset);
             }
         } else {
             int24 boundaryPoint = 799999;
-            try ICLPool(pool).swapY2X(
-                address(this), // address(0) might cause issues with some tokens
-                uint128(amountIn),
-                boundaryPoint,
-                hex""
-            ) {} catch (bytes memory reason) {
+            try ICLPool(pool)
+                .swapY2X(
+                    address(this), // address(0) might cause issues with some tokens
+                    uint128(amountIn),
+                    boundaryPoint,
+                    hex""
+                ) {}
+            catch (bytes memory reason) {
                 return (parseRevertReason(reason), currentOffset);
             }
         }

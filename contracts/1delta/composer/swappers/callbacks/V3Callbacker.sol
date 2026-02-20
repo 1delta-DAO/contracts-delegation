@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: BUSL-1.1
 
-pragma solidity 0.8.28;
+pragma solidity 0.8.34;
 
 /**
  * Author: Achthar | 1delta
@@ -42,16 +42,15 @@ abstract contract V3Callbacker is ERC20Selectors {
                     mstore(ptr, ERC20_TRANSFER)
                     mstore(add(ptr, 0x04), caller())
                     mstore(add(ptr, 0x24), amountToPay)
-                    success :=
-                        call(
-                            gas(),
-                            tokenIn, // tokenIn, pool + 5x uint8 (i,j,s,a)
-                            0,
-                            ptr,
-                            0x44,
-                            ptr,
-                            32
-                        )
+                    success := call(
+                        gas(),
+                        tokenIn, // tokenIn, pool + 5x uint8 (i,j,s,a)
+                        0,
+                        ptr,
+                        0x44,
+                        ptr,
+                        32
+                    )
                 }
 
                 let rdsize := returndatasize()

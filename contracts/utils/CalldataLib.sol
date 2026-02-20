@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity ^0.8.19;
+pragma solidity 0.8.34;
 
 import "contracts/1delta/composer/enums/DeltaEnums.sol";
 import "contracts/1delta/composer/swappers/dex/DexTypeMappings.sol";

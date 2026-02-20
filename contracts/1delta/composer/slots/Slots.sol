@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: BUSL-1.1
 
-pragma solidity ^0.8.28;
+pragma solidity 0.8.34;
 
 /**
  * Contract holding the storatge slot for approval management and flash loan gateways

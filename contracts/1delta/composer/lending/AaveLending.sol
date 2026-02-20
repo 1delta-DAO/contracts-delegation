@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: BUSL-1.1
 
-pragma solidity ^0.8.28;
+pragma solidity 0.8.34;
 
 import {ERC20Selectors} from "../../shared/selectors/ERC20Selectors.sol";
 import {Masks} from "../../shared/masks/Masks.sol";
@@ -72,17 +72,16 @@ abstract contract AaveLending is ERC20Selectors, Masks {
 
             let rdsize := returndatasize()
 
-            success :=
-                and(
-                    success, // call itself succeeded
-                    or(
-                        iszero(rdsize), // no return data, or
-                        and(
-                            gt(rdsize, 31), // at least 32 bytes
-                            eq(mload(0x0), 1) // starts with uint256(1)
-                        )
+            success := and(
+                success, // call itself succeeded
+                or(
+                    iszero(rdsize), // no return data, or
+                    and(
+                        gt(rdsize, 31), // at least 32 bytes
+                        eq(mload(0x0), 1) // starts with uint256(1)
                     )
                 )
+            )
 
             if iszero(success) {
                 returndatacopy(0x0, 0x0, rdsize)
@@ -184,17 +183,16 @@ abstract contract AaveLending is ERC20Selectors, Masks {
                 // Check for ERC20 success. ERC20 tokens should return a boolean,
                 // but some don't. We accept 0-length return data as success, or at
                 // least 32 bytes that starts with a 32-byte boolean true.
-                success :=
-                    and(
-                        success, // call itself succeeded
-                        or(
-                            iszero(rdsize), // no return data, or
-                            and(
-                                gt(rdsize, 31), // at least 32 bytes
-                                eq(mload(ptr), 1) // starts with uint256(1)
-                            )
+                success := and(
+                    success, // call itself succeeded
+                    or(
+                        iszero(rdsize), // no return data, or
+                        and(
+                            gt(rdsize, 31), // at least 32 bytes
+                            eq(mload(ptr), 1) // starts with uint256(1)
                         )
                     )
+                )
 
                 if iszero(success) {
                     returndatacopy(0, 0, rdsize)

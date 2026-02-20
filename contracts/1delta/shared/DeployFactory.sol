@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 // OpenZeppelin Contracts (last updated v4.9.0) (utils/Create2.sol)
 
-pragma solidity ^0.8.28;
+pragma solidity 0.8.34;
 
 /**
  * @dev Minimalistic deploy factory, based on Openzeppelin's library

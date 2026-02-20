@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: BUSL-1.1
 
-pragma solidity ^0.8.28;
+pragma solidity 0.8.34;
 
 interface IComet {
     struct AssetInfo {
@@ -101,8 +101,7 @@ interface IComet {
 
     function borrowBalanceOf(address account) external view returns (uint256);
 
-    function pause(bool supplyPaused, bool transferPaused, bool withdrawPaused, bool absorbPaused, bool buyPaused)
-        external;
+    function pause(bool supplyPaused, bool transferPaused, bool withdrawPaused, bool absorbPaused, bool buyPaused) external;
 
     function isSupplyPaused() external view returns (bool);
 
@@ -209,7 +208,8 @@ interface IComet {
         uint8 v,
         bytes32 r,
         bytes32 s
-    ) external;
+    )
+        external;
 
     function allow(address manager, bool isAllowed) external;
 }
@@ -293,11 +293,7 @@ contract CometLens {
         uint128 balance;
     }
 
-    function getUserData(address user, address asset, address comet, address delta)
-        external
-        view
-        returns (UserData memory data)
-    {
+    function getUserData(address user, address asset, address comet, address delta) external view returns (UserData memory data) {
         address base = IComet(comet).baseToken();
         bool isBase = asset == base;
         data.isAllowed = IComet(comet).isAllowed(user, delta);
@@ -314,11 +310,7 @@ contract CometLens {
         }
     }
 
-    function getCometInterest(address comet)
-        external
-        view
-        returns (uint256 borrowRate, uint256 supplyRate, uint256 utilization)
-    {
+    function getCometInterest(address comet) external view returns (uint256 borrowRate, uint256 supplyRate, uint256 utilization) {
         utilization = IComet(comet).getUtilization();
         supplyRate = IComet(comet).getSupplyRate(utilization);
         borrowRate = IComet(comet).getBorrowRate(utilization);

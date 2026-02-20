@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: BUSL-1.1
 
-pragma solidity 0.8.28;
+pragma solidity 0.8.34;
 
 import {Masks} from "../../../shared/masks/Masks.sol";
 
@@ -50,11 +50,10 @@ abstract contract V3TypeGeneric is Masks {
             // skip pool
             currentOffset := add(currentOffset, 20)
             let clLength := and(UINT16_MASK, shr(56, pool))
-            pool :=
-                shr(
-                    96,
-                    pool // starts as first param
-                )
+            pool := shr(
+                96,
+                pool // starts as first param
+            )
             let zeroForOne :=
                 lt(
                     tokenIn,
@@ -154,11 +153,10 @@ abstract contract V3TypeGeneric is Masks {
             // skip pool
             currentOffset := add(currentOffset, 20)
             let clLength := and(UINT16_MASK, shr(56, pool))
-            pool :=
-                shr(
-                    96,
-                    pool // starts as first param
-                )
+            pool := shr(
+                96,
+                pool // starts as first param
+            )
             switch lt(
                 tokenIn,
                 tokenOut //

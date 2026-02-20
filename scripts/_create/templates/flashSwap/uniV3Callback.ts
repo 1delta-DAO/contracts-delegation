@@ -1,4 +1,3 @@
-
 export const templateUniV3 = (
     ffFactoryAddressContants: string,
     switchCaseContent: string,
@@ -9,7 +8,7 @@ export const templateUniV3 = (
 ) => `
 // SPDX-License-Identifier: BUSL-1.1
 
-pragma solidity 0.8.28;
+pragma solidity 0.8.34;
 
 /******************************************************************************\
 * Author: Achthar | 1delta 
@@ -44,7 +43,9 @@ abstract contract UniV3Callbacks is V3Callbacker, Masks, DeltaErrors {
         assembly {
             switch selector
             ${switchCaseContent}
-            ${switchCaseContentIzumi ? `
+            ${
+                switchCaseContentIzumi
+                    ? `
             // SELECTOR_IZI_XY
             case 0x1878068400000000000000000000000000000000000000000000000000000000 {
                 ${switchCaseContentIzumi}
@@ -55,7 +56,9 @@ abstract contract UniV3Callbacks is V3Callbacker, Masks, DeltaErrors {
                 ${switchCaseContentIzumi}
                 amountToPay := calldataload(36)
             }
-        }`: "}"}
+        }`
+                    : "}"
+            }
 
         if (ValidatorLib._hasData(ffFactoryAddress)) {
             uint256 calldataLength;
@@ -75,7 +78,7 @@ abstract contract UniV3Callbacks is V3Callbacker, Masks, DeltaErrors {
     }
 }
 
-`
+`;
 
 function overrideContent(data: string) {
     return `
@@ -133,7 +136,7 @@ function overrideContent(data: string) {
             revert(0x0, 0x4)
         }
     
-    `
+    `;
 }
 
 function defaultContent() {
@@ -177,5 +180,5 @@ function defaultContent() {
                 }
 
                 calldataLength := and(UINT16_MASK, shr(56, tokenOutAndFee))
-    `
+    `;
 }

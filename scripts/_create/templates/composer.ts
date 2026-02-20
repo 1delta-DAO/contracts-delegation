@@ -1,9 +1,7 @@
-
-
 export const templateComposer = (name: string) => `
 // SPDX-License-Identifier: BUSL-1.1
 
-pragma solidity 0.8.28;
+pragma solidity 0.8.34;
 
 import {BaseComposer} from "../../BaseComposer.sol";
 import {SwapCallbacks} from "./flashSwap/SwapCallbacks.sol";
@@ -57,4 +55,4 @@ contract OneDeltaComposer${name} is BaseComposer, UniversalFlashLoan, SwapCallba
     }
 }
 
-`
+`;

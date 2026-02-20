@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
-pragma solidity ^0.8.28;
+pragma solidity 0.8.34;
 
 /**
  * Chain-independent KTX quoter
@@ -129,14 +129,13 @@ abstract contract KTXQuoter {
             ////////////////////////////////////////////////////
             // Step 5: get net return amount and validate vs. vault balance
             ////////////////////////////////////////////////////
-            amountOut :=
-                div(
-                    mul(
-                        amountOut, //  * decsOut / decsIn
-                        sub(10000, mload(ptr))
-                    ),
-                    10000
-                )
+            amountOut := div(
+                mul(
+                    amountOut, //  * decsOut / decsIn
+                    sub(10000, mload(ptr))
+                ),
+                10000
+            )
 
             // selector for balanceOf(address)
             mstore(0x0, 0x70a0823100000000000000000000000000000000000000000000000000000000)

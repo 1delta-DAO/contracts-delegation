@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: BUSL-1.1
 
-pragma solidity 0.8.28;
+pragma solidity 0.8.34;
 
 import {ComposerCommands} from "contracts/1delta/composer/enums/DeltaEnums.sol";
 import {DeltaErrors} from "contracts/1delta/shared/errors/Errors.sol";
@@ -8,7 +8,11 @@ import {DeltaErrors} from "contracts/1delta/shared/errors/Errors.sol";
 // solhint-disable max-line-length
 
 abstract contract BaseComposerValidator is DeltaErrors {
-    function validateComposerCalldata(bytes calldata) external view returns (bool isValid, string memory errorMessage, uint256 failedAtOffset) {
+    function validateComposerCalldata(bytes calldata)
+        external
+        view
+        returns (bool isValid, string memory errorMessage, uint256 failedAtOffset)
+    {
         uint256 length;
         assembly {
             length := calldataload(0x24)
