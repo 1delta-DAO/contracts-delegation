@@ -378,7 +378,7 @@ const config: HardhatUserConfig = {
             live: true,
         },
         mantle: {
-            url: "https://1rpc.io/mantle",
+            url: "https://rpc.mantle.xyz",
             accounts,
             chainId: 5000,
         },
@@ -466,7 +466,7 @@ const config: HardhatUserConfig = {
             live: true,
         },
         cronos: {
-            url: "https://1rpc.io/cro",
+            url: "https://rpc.sentio.xyz/cronos",
             accounts,
             chainId: 25,
             live: true,
@@ -484,7 +484,7 @@ const config: HardhatUserConfig = {
             live: true,
         },
         telos: {
-            url: "https://1rpc.io/telos/evm",
+            url: "https://rpc.telos.net",
             accounts,
             chainId: 40,
             live: true,
