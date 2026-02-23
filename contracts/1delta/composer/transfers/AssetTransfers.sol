@@ -3,6 +3,7 @@
 pragma solidity 0.8.34;
 
 import {BaseUtils} from "contracts/1delta/composer/generic/BaseUtils.sol";
+import {console} from "forge-std/console.sol";
 
 /**
  * @title Token transfer contract - should work across all EVMs - use Uniswap style Permit2
@@ -347,7 +348,7 @@ contract AssetTransfers is BaseUtils {
         assembly {
             let weth := shr(96, calldataload(currentOffset))
             let receiver := shr(96, calldataload(add(currentOffset, 20)))
-            let providedAmount := calldataload(add(currentOffset, 40))
+            let providedAmount := calldataload(add(currentOffset, 24))
             let transferAmount
 
             providedAmount := and(UINT112_MASK, providedAmount) // remove the upper 16 bytes (flags space)
