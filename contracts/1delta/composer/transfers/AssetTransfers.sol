@@ -3,7 +3,6 @@
 pragma solidity 0.8.34;
 
 import {BaseUtils} from "contracts/1delta/composer/generic/BaseUtils.sol";
-import {console} from "forge-std/console.sol";
 
 /**
  * @title Token transfer contract - should work across all EVMs - use Uniswap style Permit2
