@@ -249,17 +249,44 @@ contract TransfersTest is BaseTest, DeltaErrors {
 
         WethNoReceive weth = new WethNoReceive();
 
+        // native sweep to non-receivable contract should revert
         bytes memory sweepData = CalldataLib.encodeSweep(address(0), address(weth), initialAmount, SweepType.AMOUNT);
         vm.prank(user);
         vm.expectRevert(NATIVE_TRANSFER);
         oneD.deltaCompose(sweepData);
 
+        // wrap full balance to self
         bytes memory wrapData = CalldataLib.encodeWrapWithReceiver(initialAmount, address(weth), address(oneD));
         vm.prank(user);
         oneD.deltaCompose(wrapData);
 
         assertEq(address(oneD).balance, 0);
         assertEq(weth.balanceOf(address(oneD)), initialAmount);
+
+        // wrap via msg.value to external receiver
+        vm.deal(user, initialAmount);
+        wrapData = CalldataLib.encodeWrapWithReceiver(initialAmount, address(weth), address(user));
+        vm.prank(user);
+        oneD.deltaCompose{value: initialAmount}(wrapData);
+
+        assertEq(weth.balanceOf(address(user)), initialAmount);
+
+        // wrap a PARTIAL amount — contract holds more native than the wrap amount
+        // this catches the bug where amount was read from wrong calldata bytes
+        uint256 excessBalance = 2 ether;
+        uint256 wrapAmount = 0.75 ether;
+        vm.deal(address(oneD), excessBalance);
+
+        wrapData = CalldataLib.encodeWrapWithReceiver(wrapAmount, address(weth), address(oneD));
+        vm.prank(user);
+        oneD.deltaCompose(wrapData);
+
+        assertEq(address(oneD).balance, excessBalance - wrapAmount, "remaining native balance");
+        assertEq(
+            weth.balanceOf(address(oneD)),
+            initialAmount + wrapAmount, // prior balance from first wrap + partial wrap
+            "wrapped token balance"
+        );
     }
 
     // ------------------------------------------------------------------------
