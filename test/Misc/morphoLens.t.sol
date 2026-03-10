@@ -94,7 +94,7 @@ contract MorphoLensTest is Test {
         morphoLens.getUserDataCompact(marketIds, user, moolah);
 
         bytes memory data = morphoLens.getListaMarketDataCompact(moolah, marketIds);
-        vm.assertEq(data.length, 365 * marketIds.length);
+        vm.assertEq(data.length, 397 * marketIds.length);
     }
 
     function test_getUserDataCompact_exotic() public {
@@ -104,6 +104,40 @@ contract MorphoLensTest is Test {
         morphoLens.getUserDataCompact(marketIds, user, moolah);
 
         bytes memory data = morphoLens.getListaMarketDataCompact(moolah, marketIds);
-        vm.assertEq(data.length, 365 * marketIds.length);
+        vm.assertEq(data.length, 397 * marketIds.length);
+    }
+
+    function test_rateCap_and_rateFloor() public view {
+        // market 0x3cd3c9...5f2 has known rateCap and rateFloor set via IRM 0xfe7dae...7c
+        bytes32 marketId = 0x3cd3c9f4c51934fba7c8607c0c6a17aaecc1bb13091d372b533aa2089d79e5f2;
+        address irm = 0xFe7dAe87Ebb11a7BEB9F534BB23267992d9cDe7c;
+
+        bytes32[] memory marketIds = new bytes32[](1);
+        marketIds[0] = marketId;
+
+        bytes memory data = morphoLens.getListaMarketDataCompact(moolah, marketIds);
+        vm.assertEq(data.length, 397);
+
+        // rateCap is uint128 at offset 304, rateFloor is uint128 at offset 320
+        uint128 rateCap;
+        uint128 rateFloor;
+        assembly {
+            rateCap := shr(128, mload(add(add(data, 32), 304)))
+            rateFloor := shr(128, mload(add(add(data, 32), 320)))
+        }
+
+        // compare against direct IRM calls
+        (bool s1, bytes memory r1) = irm.staticcall(abi.encodeWithSignature("rateCap(bytes32)", marketId));
+        (bool s2, bytes memory r2) = irm.staticcall(abi.encodeWithSignature("rateFloor(bytes32)", marketId));
+        require(s1 && s2, "IRM calls failed");
+
+        uint256 expectedCap = abi.decode(r1, (uint256));
+        uint256 expectedFloor = abi.decode(r2, (uint256));
+
+        vm.assertEq(uint256(rateCap), expectedCap);
+        vm.assertEq(uint256(rateFloor), expectedFloor);
+        // sanity: both should be non-zero for this market
+        vm.assertGt(uint256(rateCap), 0);
+        vm.assertGt(uint256(rateFloor), 0);
     }
 }
