@@ -86,6 +86,10 @@ interface IAdaptiveCurveIrm {
     /// @notice Rate at target utilization.
     /// @dev Tells the height of the curve.
     function rateAtTarget(bytes32 id) external view returns (int256);
+
+    function rateCap(bytes32 id) external view returns (uint256);
+
+    function rateFloor(bytes32 id) external view returns (uint256);
 }
 
 interface IOracle {
@@ -138,8 +142,7 @@ contract MorphoLens {
                 uint128 totalSupplyAssets,
                 uint128 totalSupplyShares, //
                 uint128 totalBorrowAssets,
-                uint128 totalBorrowShares,
-                ,
+                uint128 totalBorrowShares,,
             ) = IMorpho(morpho).market(id);
             // progressively pack the data
             data = abi.encodePacked(
@@ -187,8 +190,7 @@ contract MorphoLens {
                     uint128 totalSupplyAssets,
                     uint128 totalSupplyShares, //
                     uint128 totalBorrowAssets,
-                    uint128 totalBorrowShares,
-                    ,
+                    uint128 totalBorrowShares,,
                 ) = IMorpho(morpho).market(id);
 
                 // progressively pack the data
@@ -263,14 +265,7 @@ contract MorphoLens {
     }
 
     /// @notice use to get the market data for Moolah protocol - note that this one misses crucial data such as whitelists
-    function getMoolahMarketDataCompact(
-        address morpho,
-        bytes32[] calldata marketsIds
-    )
-        external
-        view
-        returns (bytes memory data)
-    {
+    function getMoolahMarketDataCompact(address morpho, bytes32[] calldata marketsIds) external view returns (bytes memory data) {
         // each entry makes 4*20 (addresses) + 16 (lltv) + 32 (loanPrice) + 32 (collateralPrice) + 32 (rateAtTarget)
         // + 96 bytes (market) (=288) in size. The return data is therfore implicitly indexed
         for (uint256 i; i < marketsIds.length; i++) {
@@ -330,6 +325,8 @@ contract MorphoLens {
     ///  totalSupplyShares:      16b
     ///  totalBorrowAssets:      16b
     ///  totalBorrowShares:      16b
+    ///  rateCap:                16b *added
+    ///  rateFloor:              16b *added
     ///  hasWhitelist:           1b  *added
     ///  loanProvider:           20b *added
     ///  collateralProvider:     20b *added
@@ -339,7 +336,7 @@ contract MorphoLens {
     /// As this is a determinisitic element size, the array is implicitly indexed
     function getListaMarketDataCompact(address morpho, bytes32[] calldata marketsIds) external view returns (bytes memory data) {
         // each entry makes 4*20 (addresses) + 16 (lltv) + 32 (loanPrice) + 32 (collateralPrice) + 32 (rateAtTarget)
-        // + 96 bytes (market) + 16 bytes (minLoan) + 1 byte (hasWhitelist) + 3*20 bytes whitelisteds (hasProvider)(=256+109=365)
+        // + 96 bytes (market) + 16 (rateCap) + 16 (rateFloor) + 16 bytes (minLoan) + 1 byte (hasWhitelist) + 3*20 bytes whitelisteds (hasProvider)(=256+141=397)
         // in size. The return data is therfore implicitly indexed
 
         // this is the same value for all markets
@@ -380,15 +377,25 @@ contract MorphoLens {
             // add minLoan
             temp = abi.encodePacked(temp, minLoan(loanToken, loanPrice, minLoanUSD));
 
-            // encode rate and market
+            // encode rate, caps and market
             if (irm != address(0)) {
                 try IAdaptiveCurveIrm(irm).rateAtTarget(id) returns (int256 _rateAtTarget) {
                     temp = abi.encodePacked(temp, uint256(_rateAtTarget), market);
                 } catch {
                     temp = abi.encodePacked(temp, uint256(0), market);
                 }
+                // pack rateCap and rateFloor into a single uint256 (uint128 each)
+                uint128 _rateCap;
+                uint128 _rateFloor;
+                try IAdaptiveCurveIrm(irm).rateCap(id) returns (uint256 cap) {
+                    _rateCap = uint128(cap);
+                } catch {}
+                try IAdaptiveCurveIrm(irm).rateFloor(id) returns (uint256 floor) {
+                    _rateFloor = uint128(floor);
+                } catch {}
+                temp = abi.encodePacked(temp, _rateCap, _rateFloor);
             } else {
-                temp = abi.encodePacked(temp, uint256(0), market);
+                temp = abi.encodePacked(temp, uint256(0), market, uint256(0));
             }
             // encode hasWhitelist - we check if address(0) is whitelisted to see whether there
             // is a whitelist - if so, it should return false
