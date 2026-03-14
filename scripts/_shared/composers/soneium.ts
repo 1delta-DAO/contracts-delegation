@@ -8,7 +8,11 @@ async function main() {
     const chainId = await operator.getChainId();
     if (String(chainId) !== Chain.SONEIUM) throw new Error("IC");
     console.log("operator", operator.address, "on", chainId);
-    const composer = await new OneDeltaComposerSoneium__factory(operator).deploy();
+
+    const gp = await operator.getGasPrice();
+
+    console.log("gasPrice", gp.toNumber() / 1e9);
+    const composer = await new OneDeltaComposerSoneium__factory(operator).deploy({gasPrice: gp.mul(110).div(100)});
     await composer.deployed();
 
     console.log("deployed expected to", composer.address);

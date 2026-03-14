@@ -327,7 +327,7 @@ const config: HardhatUserConfig = {
             live: true,
         },
         soneium: {
-            url: "https://rpc.soneium.org",
+            url: "https://soneium.drpc.org",
             accounts,
             chainId: 1868,
             live: true,
@@ -345,7 +345,7 @@ const config: HardhatUserConfig = {
             live: true,
         },
         sei: {
-            url: "https://sei-public.nodies.app",
+            url: "https://evm-rpc.sei-apis.com",
             accounts,
             chainId: 1329,
             live: true,
@@ -363,7 +363,7 @@ const config: HardhatUserConfig = {
             live: true,
         },
         polygon: {
-            url: "https://api.zan.top/polygon-mainnet",
+            url: "https://poly.api.pocket.network",
             accounts,
             chainId: 137,
         },
