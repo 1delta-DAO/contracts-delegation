@@ -32,7 +32,7 @@ contract BaseTest is Test {
         _setRpcOverride(Chains.CELO_MAINNET, "RPC_CELO_MAINNET");
         _setRpcOverride(Chains.CORE_BLOCKCHAIN_MAINNET, "RPC_CORE_BLOCKCHAIN_MAINNET");
         _setRpcOverride(Chains.CRONOS_MAINNET, "RPC_CRONOS_MAINNET");
-        _setRpcOverride(Chains.ETHEREUM_MAINNET, "RPC_ETHEREUM_MAINNET");
+        // _setRpcOverride(Chains.ETHEREUM_MAINNET, "RPC_ETHEREUM_MAINNET");
         _setRpcOverride(Chains.FANTOM_OPERA, "RPC_FANTOM_OPERA");
         _setRpcOverride(Chains.HEMI_NETWORK, "RPC_HEMI_NETWORK");
         _setRpcOverride(Chains.HYPEREVM, "RPC_HYPEREVM");

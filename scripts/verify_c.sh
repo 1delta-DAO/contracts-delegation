@@ -38,7 +38,7 @@ npx hardhat verify --network blast 0xB7ea94340e65CC68d1274aE483dfBE593fD6f21e --
 
 npx hardhat verify --network kaia 0x80416C1e314662D6417ba9fA4F983fE4507785ff --contract contracts/1delta/composer/chains/kaia/Composer.sol:OneDeltaComposerKaia
 
-npx hardhat verify --network soneium 0xb8F4283733588E8036273F06fB375dF59ee5e258 --contract contracts/1delta/composer/chains/soneium/Composer.sol:OneDeltaComposerSoneium
+npx hardhat verify --network soneium 0x3375B2EF9C4D2c6434d39BBE5234c5101218500d --contract contracts/1delta/composer/chains/soneium/Composer.sol:OneDeltaComposerSoneium
 
 npx hardhat verify --network hyperevm 0xB7ea94340e65CC68d1274aE483dfBE593fD6f21e --contract contracts/1delta/composer/chains/hyperevm/Composer.sol:OneDeltaComposerHyperevm
 
@@ -65,3 +65,7 @@ npx hardhat verify --network moonbeam 0xB7ea94340e65CC68d1274aE483dfBE593fD6f21e
 npx hardhat verify --network sei 0x97648606fcc22Bd96F87345Ac83Bd6cFCdF0ACBa --contract contracts/1delta/composer/chains/sei/Composer.sol:OneDeltaComposerSei
 
 npx hardhat verify --network monad 0x6Bc6aCB905c1216B0119C87Bf9E178ce298310FA --contract contracts/1delta/composer/chains/monad/Composer.sol:OneDeltaComposerMonad
+
+npx hardhat verify --network bnb 0x79f4061BF049c5c6CAC6bfe2415c2460815F4ac7 --contract contracts/external-protocols/misc/MorphoLens.sol:MorphoLens
+
+npx hardhat verify --network bnb 0xC000001998943Be579D7F931C04d457F39226e00 --contract contracts/1delta/composer/ComposerLite.sol:ComposerLite

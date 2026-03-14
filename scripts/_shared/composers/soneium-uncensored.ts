@@ -1,62 +1,81 @@
-import {ethers} from "ethers";
+import {ethers} from "hardhat";
 import {OneDeltaComposerSoneium__factory} from "../../../types";
+import {formatEther} from "ethers/lib/utils";
 
-const L1_RPC = process.env.L1_RPC!;
-const PRIVATE_KEY = process.env.PRIVATE_KEY!;
-
-// Soneium Mainnet OptimismPortal
+// Soneium Mainnet OptimismPortal (on L1)
 const PORTAL = "0x88e529a6ccd302c948689cd5156c83d4614fae92";
 
-const ADDRESS_ALIAS_OFFSET = "0x1111000000000000000000000000000000001111";
-
-function applyL1ToL2Alias(l1Address: string): string {
-    return ethers.utils.getAddress(ethers.BigNumber.from(l1Address).add(ADDRESS_ALIAS_OFFSET).toHexString());
-}
-
 async function main() {
-    // L1 signer
-    const l1Provider = new ethers.providers.JsonRpcProvider(L1_RPC);
-    const l1Signer = new ethers.Wallet(PRIVATE_KEY, l1Provider);
+    // L1 signer via hardhat (run with --network mainnet)
+    const [_, l1Signer] = await ethers.getSigners();
+    const l1Provider = ethers.provider;
 
-    console.log("L1 sender:", l1Signer.address);
+    // L2 provider for nonce + gas estimation
+    const l2Provider = new ethers.providers.JsonRpcProvider("https://rpc.soneium.org");
 
-    // Build deployment initcode (no send)
+    console.log("L1 sender:     ", l1Signer.address);
+    console.log("L1 chain ID:   ", (await l1Provider.getNetwork()).chainId); // should be 1
+    console.log("L1 balance:    ", formatEther(await l1Signer.getBalance()), "ETH");
+
+    const gasPrice = await l1Provider.getGasPrice();
+    console.log("L1 gas price:  ", gasPrice.toNumber() / 1e9, "gwei");
+
+    // Build deployment initcode
     const factory = new OneDeltaComposerSoneium__factory(l1Signer);
     const deployTx = factory.getDeployTransaction();
-
     if (!deployTx.data) throw new Error("No initcode");
 
-    // Predict L2 contract address
-    const l2Deployer = applyL1ToL2Alias(l1Signer.address);
-    const l2Nonce = await l1Provider.getTransactionCount(l1Signer.address);
+    // EOA → no alias applied on L2
+    console.log("\nL1 sender is EOA — msg.sender on L2 will be:", l1Signer.address);
+
+    const l2Nonce = await l2Provider.getTransactionCount(l1Signer.address);
+    console.log("L2 nonce:      ", l2Nonce);
 
     const predictedAddress = ethers.utils.getContractAddress({
-        from: l2Deployer,
+        from: l1Signer.address,
         nonce: l2Nonce,
     });
+    console.log("Predicted L2 address:", predictedAddress);
 
-    console.log("Predicted L2 contract address:", predictedAddress);
+    // Check if already deployed
+    const existingCode = await l2Provider.getCode(predictedAddress);
+    if (existingCode !== "0x") {
+        console.log("Contract already deployed at", predictedAddress, "— nothing to do.");
+        return;
+    }
 
-    // Portal contract
+    // Estimate L2 gas
+    let l2GasLimit: number;
+    try {
+        const l2Estimate = await l2Provider.estimateGas({
+            from: l1Signer.address,
+            data: deployTx.data,
+        });
+        l2GasLimit = Math.ceil(l2Estimate.toNumber() * 1.25);
+        console.log("L2 gas estimate:", l2Estimate.toString(), "→ using", l2GasLimit);
+    } catch (e) {
+        console.warn("L2 gas estimation failed, falling back to 5_000_000:", e);
+        l2GasLimit = 5_000_000;
+    }
+
     const portal = new ethers.Contract(PORTAL, ["function depositTransaction(address,uint256,uint64,bool,bytes) payable"], l1Signer);
 
-    console.log("Sending forced deployment via L1...");
+    const boostedGasPrice = gasPrice.mul(150).div(100);
 
-    const tx = await portal.depositTransaction(
-        ethers.constants.AddressZero, // contract creation
-        0, // value
-        15_000_000, // L2 gas limit
-        true, // isCreation
-        deployTx.data, // initcode
-        {value: 0}
-    );
+    const l1GasEstimate = await portal.estimateGas.depositTransaction(ethers.constants.AddressZero, 0, l2GasLimit, true, deployTx.data, {value: 0});
+    console.log("L1 gas estimate:", l1GasEstimate.toString());
+    console.log("Estimated L1 cost:", formatEther(l1GasEstimate.mul(boostedGasPrice)), "ETH");
+
+    console.log("\nSending forced deployment via L1 portal...");
+
+    const tx = await portal.depositTransaction(ethers.constants.AddressZero, 0, l2GasLimit, true, deployTx.data, {gasPrice: boostedGasPrice});
 
     console.log("L1 tx hash:", tx.hash);
-    await tx.wait();
+    const receipt = await tx.wait();
+    console.log("L1 tx confirmed in block:", receipt.blockNumber);
 
-    console.log("Force deployment submitted.");
-    console.log("Contract will appear on Soneium at:");
-    console.log(predictedAddress);
+    console.log("\nForce deployment submitted.");
+    console.log("Contract will appear on Soneium at:", predictedAddress);
 }
 
 main().catch(console.error);

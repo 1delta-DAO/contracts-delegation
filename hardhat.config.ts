@@ -327,7 +327,7 @@ const config: HardhatUserConfig = {
             live: true,
         },
         soneium: {
-            url: "https://rpc.sentio.xyz/soneium-mainnet",
+            url: "https://soneium.drpc.org",
             accounts,
             chainId: 1868,
             live: true,
