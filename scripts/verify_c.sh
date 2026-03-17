@@ -69,3 +69,5 @@ npx hardhat verify --network monad 0x6Bc6aCB905c1216B0119C87Bf9E178ce298310FA --
 npx hardhat verify --network bnb 0x79f4061BF049c5c6CAC6bfe2415c2460815F4ac7 --contract contracts/external-protocols/misc/MorphoLens.sol:MorphoLens
 
 npx hardhat verify --network bnb 0xC000001998943Be579D7F931C04d457F39226e00 --contract contracts/1delta/composer/ComposerLite.sol:ComposerLite
+
+npx hardhat verify --network celo 0xf9438f2b1c63D8dAC24311256F5483D7f7575863 --contract contracts/1delta/composer/chains/celo/Composer.sol:OneDeltaComposerCelo

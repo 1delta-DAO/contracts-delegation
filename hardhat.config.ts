@@ -246,6 +246,14 @@ const config: HardhatUserConfig = {
                     browserURL: "https://katanascan.com/",
                 },
             },
+            {
+                network: "celo",
+                chainId: 42220,
+                urls: {
+                    apiURL: "https://api.etherscan.io/v2/api?chainid=42220",
+                    browserURL: "https://katanascan.com/",
+                },
+            },
         ],
         apiKey: process.env.ETHERSCAN_API_KEY ?? "",
         // apiKey: {
@@ -315,7 +323,7 @@ const config: HardhatUserConfig = {
             chainId: 1284,
         },
         fantom: {
-            url: "https://rpcapi.fantom.network",
+            url: "https://fantom.drpc.org",
             accounts,
             chainId: 250,
             live: true,
@@ -345,7 +353,7 @@ const config: HardhatUserConfig = {
             live: true,
         },
         sei: {
-            url: "https://evm-rpc.sei-apis.com",
+            url: "https://sei-public.nodies.app",
             accounts,
             chainId: 1329,
             live: true,
@@ -669,6 +677,16 @@ const config: HardhatUserConfig = {
                 },
             },
             "contracts/external-protocols/misc/FeeOnTransferDetector.sol": {
+                version: "0.8.34",
+                settings: {
+                    optimizer: {
+                        enabled: true,
+                        runs: 1_000_000,
+                    },
+                    evmVersion: "paris",
+                },
+            },
+            "contracts/external-protocols/misc/BalanceFetcher.sol": {
                 version: "0.8.34",
                 settings: {
                     optimizer: {

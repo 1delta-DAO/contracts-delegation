@@ -19,4 +19,5 @@ export const CANCUN_OR_HIGHER = [
     Chain.MORPH,
     Chain.PLASMA_MAINNET,
     Chain.MONAD_MAINNET,
+    Chain.CELO_MAINNET,
 ];
