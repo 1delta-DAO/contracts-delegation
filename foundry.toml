@@ -5,6 +5,10 @@ optimizer_runs = 5_000
 src = "contracts/1delta"
 out = "out"
 libs = ["lib"]
+skip = [
+    "contracts/external-protocols/misc/SumerLens.sol",
+    "contracts/external-protocols/misc/TakaraLens.sol",
+]
 
 [fmt]
 line_length = 130
@@ -22,11 +26,6 @@ exclude_lints = [
 
 [fuzz]
 runs = 10000
-
-ignore = [
-    "contracts/external-protocols/misc/SumerLens.sol",
-    "contracts/external-protocols/misc/TakaraLens.sol",
-]
 
 # RPC Overrides
 RPC_ETHEREUM_MAINNET = "https://eth.drpc.org"
