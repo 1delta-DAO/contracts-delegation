@@ -35,6 +35,7 @@ library LenderIds {
     uint256 internal constant UP_TO_COMPOUND_V2 = 4000;
     uint256 internal constant UP_TO_MORPHO = 5000;
     uint256 internal constant UP_TO_SILO_V2 = 6000;
+    uint256 internal constant UP_TO_AAVE_V4 = 7000;
 }
 
 /**

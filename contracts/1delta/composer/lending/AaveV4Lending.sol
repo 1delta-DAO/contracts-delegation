@@ -79,10 +79,11 @@ abstract contract AaveV4Lending is ERC20Selectors, Masks {
 
     /**
      * @notice Withdraws from Aave V4 via TakerPositionManager.withdrawOnBehalfOf
-     * @dev Caller (this contract) receives the withdrawn tokens, then forwards to receiver.
-     *      Max amount (0xffffffffffffffffffffffffffff) queries the user's full supply from the spoke.
-     *      Requires prior approveWithdraw allowance from onBehalfOf on the positionManager.
+     * @dev TakerPM has no receiver parameter, so tokens land in this contract and are
+     *      forwarded to receiver via transfer. Max amount queries the caller's full supply.
+     *      onBehalfOf is always callerAddress to prevent unauthorized withdrawals.
      * @param currentOffset Current position in the calldata
+     * @param callerAddress Address of the caller
      * @return Updated calldata offset after processing
      * @custom:calldata-offset-table
      * | Offset | Length (bytes) | Description                     |
@@ -90,56 +91,51 @@ abstract contract AaveV4Lending is ERC20Selectors, Masks {
      * | 0      | 20             | underlying                      |
      * | 20     | 16             | amount                          |
      * | 36     | 20             | receiver                        |
-     * | 56     | 20             | onBehalfOf                      |
-     * | 76     | 32             | reserveId                       |
-     * | 108    | 20             | spoke                           |
-     * | 128    | 20             | positionManager                 |
+     * | 56     | 32             | reserveId                       |
+     * | 88     | 20             | spoke                           |
+     * | 108    | 20             | positionManager                 |
      */
-    function _withdrawFromAaveV4(uint256 currentOffset) internal returns (uint256) {
+    function _withdrawFromAaveV4(uint256 currentOffset, address callerAddress) internal returns (uint256) {
         assembly {
             let underlying := shr(96, calldataload(currentOffset))
             let amountData := shr(128, calldataload(add(currentOffset, 20)))
             let receiver := shr(96, calldataload(add(currentOffset, 36)))
-            let onBehalfOf := shr(96, calldataload(add(currentOffset, 56)))
-            let reserveId := calldataload(add(currentOffset, 76))
-            let spoke := shr(96, calldataload(add(currentOffset, 108)))
-            let positionManager := shr(96, calldataload(add(currentOffset, 128)))
-            currentOffset := add(currentOffset, 148)
+            let reserveId := calldataload(add(currentOffset, 56))
+            let spoke := shr(96, calldataload(add(currentOffset, 88)))
+            let positionManager := shr(96, calldataload(add(currentOffset, 108)))
+            currentOffset := add(currentOffset, 128)
 
             let amount := and(UINT112_MASK, amountData)
+            let ptr := mload(0x40)
 
-            // max amount: query user's full supplied assets from the spoke
+            // max amount: query caller's full supplied assets from the spoke
             if eq(amount, UINT112_MASK) {
                 // selector for getUserSuppliedAssets(uint256,address)
-                mstore(0, SPOKE_GET_USER_SUPPLIED_ASSETS)
-                mstore(0x04, reserveId)
-                mstore(0x24, onBehalfOf)
-                if iszero(staticcall(gas(), spoke, 0x0, 0x44, 0x0, 0x20)) {
+                mstore(ptr, SPOKE_GET_USER_SUPPLIED_ASSETS)
+                mstore(add(ptr, 0x04), reserveId)
+                mstore(add(ptr, 0x24), callerAddress)
+                if iszero(staticcall(gas(), spoke, ptr, 0x44, ptr, 0x20)) {
                     returndatacopy(0, 0, returndatasize())
                     revert(0, returndatasize())
                 }
-                amount := mload(0x0)
+                amount := mload(ptr)
             }
-
-            let ptr := mload(0x40)
             // selector withdrawOnBehalfOf(address,uint256,uint256,address)
             mstore(ptr, 0x0a250c6d00000000000000000000000000000000000000000000000000000000)
             mstore(add(ptr, 0x04), spoke)
             mstore(add(ptr, 0x24), reserveId)
             mstore(add(ptr, 0x44), amount)
-            mstore(add(ptr, 0x64), onBehalfOf)
+            mstore(add(ptr, 0x64), callerAddress)
             // call returns (withdrawnShares, withdrawnAmount) - we read withdrawnAmount
             if iszero(call(gas(), positionManager, 0x0, ptr, 0x84, 0x0, 0x40)) {
                 returndatacopy(0x0, 0x0, returndatasize())
                 revert(0x0, returndatasize())
             }
 
-            // transfer withdrawn tokens to receiver if not this contract
+            // PM has no receiver param — tokens land in this contract, forward to receiver
             if xor(receiver, address()) {
-                // read actual withdrawn amount from return data (second return value)
                 let withdrawnAmount := mload(0x20)
 
-                // selector for transfer(address,uint256)
                 mstore(ptr, ERC20_TRANSFER)
                 mstore(add(ptr, 0x04), receiver)
                 mstore(add(ptr, 0x24), withdrawnAmount)
@@ -164,9 +160,12 @@ abstract contract AaveV4Lending is ERC20Selectors, Masks {
 
     /**
      * @notice Borrows from Aave V4 via TakerPositionManager.borrowOnBehalfOf
-     * @dev Caller (this contract) receives the borrowed tokens, then forwards to receiver.
-     *      Requires prior approveBorrow allowance from onBehalfOf on the positionManager.
+     * @dev TakerPM has no receiver parameter, so tokens land in this contract and are
+     *      forwarded to receiver via transfer.
+     *      Requires prior approveBorrow allowance from callerAddress on the positionManager.
+     *      onBehalfOf is always callerAddress to prevent unauthorized borrows.
      * @param currentOffset Current position in the calldata
+     * @param callerAddress Address of the caller
      * @return Updated calldata offset after processing
      * @custom:calldata-offset-table
      * | Offset | Length (bytes) | Description                     |
@@ -174,21 +173,19 @@ abstract contract AaveV4Lending is ERC20Selectors, Masks {
      * | 0      | 20             | underlying                      |
      * | 20     | 16             | amount                          |
      * | 36     | 20             | receiver                        |
-     * | 56     | 20             | onBehalfOf                      |
-     * | 76     | 32             | reserveId                       |
-     * | 108    | 20             | spoke                           |
-     * | 128    | 20             | positionManager                 |
+     * | 56     | 32             | reserveId                       |
+     * | 88     | 20             | spoke                           |
+     * | 108    | 20             | positionManager                 |
      */
-    function _borrowFromAaveV4(uint256 currentOffset) internal returns (uint256) {
+    function _borrowFromAaveV4(uint256 currentOffset, address callerAddress) internal returns (uint256) {
         assembly {
             let underlying := shr(96, calldataload(currentOffset))
             let amountData := shr(128, calldataload(add(currentOffset, 20)))
             let receiver := shr(96, calldataload(add(currentOffset, 36)))
-            let onBehalfOf := shr(96, calldataload(add(currentOffset, 56)))
-            let reserveId := calldataload(add(currentOffset, 76))
-            let spoke := shr(96, calldataload(add(currentOffset, 108)))
-            let positionManager := shr(96, calldataload(add(currentOffset, 128)))
-            currentOffset := add(currentOffset, 148)
+            let reserveId := calldataload(add(currentOffset, 56))
+            let spoke := shr(96, calldataload(add(currentOffset, 88)))
+            let positionManager := shr(96, calldataload(add(currentOffset, 108)))
+            currentOffset := add(currentOffset, 128)
 
             let amount := and(UINT112_MASK, amountData)
 
@@ -198,19 +195,17 @@ abstract contract AaveV4Lending is ERC20Selectors, Masks {
             mstore(add(ptr, 0x04), spoke)
             mstore(add(ptr, 0x24), reserveId)
             mstore(add(ptr, 0x44), amount)
-            mstore(add(ptr, 0x64), onBehalfOf)
+            mstore(add(ptr, 0x64), callerAddress)
             // call returns (drawnShares, drawnAmount) - we read drawnAmount
             if iszero(call(gas(), positionManager, 0x0, ptr, 0x84, 0x0, 0x40)) {
                 returndatacopy(0x0, 0x0, returndatasize())
                 revert(0x0, returndatasize())
             }
 
-            // transfer borrowed tokens to receiver if not this contract
+            // PM has no receiver param — tokens land in this contract, forward to receiver
             if xor(receiver, address()) {
-                // read actual borrowed amount from return data (second return value)
                 let borrowedAmount := mload(0x20)
 
-                // selector for transfer(address,uint256)
                 mstore(ptr, ERC20_TRANSFER)
                 mstore(add(ptr, 0x04), receiver)
                 mstore(add(ptr, 0x24), borrowedAmount)
@@ -265,6 +260,7 @@ abstract contract AaveV4Lending is ERC20Selectors, Masks {
             currentOffset := add(currentOffset, 128)
 
             let amount := and(UINT112_MASK, amountData)
+            let ptr := mload(0x40)
 
             switch amount
             // zero: use full contract balance
@@ -282,28 +278,25 @@ abstract contract AaveV4Lending is ERC20Selectors, Masks {
                 // fetch contract balance of underlying
                 mstore(0, ERC20_BALANCE_OF)
                 mstore(0x04, address())
-                if iszero(staticcall(gas(), underlying, 0x0, 0x24, 0x4, 0x20)) {
+                if iszero(staticcall(gas(), underlying, 0x0, 0x24, 0x0, 0x20)) {
                     returndatacopy(0, 0, returndatasize())
                     revert(0, returndatasize())
                 }
-                amount := mload(0x4)
+                amount := mload(0x0)
 
-                // fetch user total debt from spoke
-                // selector for getUserTotalDebt(uint256,address)
-                mstore(0, SPOKE_GET_USER_TOTAL_DEBT)
-                mstore(0x04, reserveId)
-                mstore(0x24, onBehalfOf)
-                if iszero(staticcall(gas(), spoke, 0x0, 0x44, 0x0, 0x20)) {
+                // fetch user total debt from spoke (use ptr to avoid clobbering free memory pointer)
+                mstore(ptr, SPOKE_GET_USER_TOTAL_DEBT)
+                mstore(add(ptr, 0x04), reserveId)
+                mstore(add(ptr, 0x24), onBehalfOf)
+                if iszero(staticcall(gas(), spoke, ptr, 0x44, ptr, 0x20)) {
                     returndatacopy(0, 0, returndatasize())
                     revert(0, returndatasize())
                 }
-                let debtBalance := mload(0x0)
+                let debtBalance := mload(ptr)
 
                 // clamp to min(contract balance, user debt)
                 if lt(debtBalance, amount) { amount := debtBalance }
             }
-
-            let ptr := mload(0x40)
             // selector repayOnBehalfOf(address,uint256,uint256,address)
             mstore(ptr, 0x115f67a900000000000000000000000000000000000000000000000000000000)
             mstore(add(ptr, 0x04), spoke)
