@@ -1893,4 +1893,218 @@ library CalldataLib {
     function encodeSiloV2CollateralMode(uint128 amount, uint8 mode) internal pure returns (uint128 am) {
         am = amount | (uint128(mode) << UPPER_128BITS);
     }
+
+    // ══════════════════════════════════════════════════════
+    // Aave V4 encoding functions
+    // ══════════════════════════════════════════════════════
+
+    function encodeAaveV4Deposit(
+        address underlying,
+        uint256 amount,
+        address receiver,
+        uint256 reserveId,
+        address spoke,
+        address positionManager
+    )
+        internal
+        pure
+        returns (bytes memory)
+    {
+        return abi.encodePacked(
+            encodeApprove(underlying, positionManager),
+            uint8(ComposerCommands.LENDING),
+            uint8(LenderOps.DEPOSIT),
+            uint16(LenderIds.UP_TO_AAVE_V4 - 1),
+            underlying,
+            uint128(amount),
+            receiver,
+            reserveId,
+            spoke,
+            positionManager //
+        );
+    }
+
+    function encodeAaveV4Borrow(
+        address underlying,
+        uint256 amount,
+        address receiver,
+        uint256 reserveId,
+        address spoke,
+        address positionManager
+    )
+        internal
+        pure
+        returns (bytes memory)
+    {
+        return abi.encodePacked(
+            uint8(ComposerCommands.LENDING),
+            uint8(LenderOps.BORROW),
+            uint16(LenderIds.UP_TO_AAVE_V4 - 1),
+            underlying,
+            uint128(amount),
+            receiver,
+            reserveId,
+            spoke,
+            positionManager //
+        );
+    }
+
+    function encodeAaveV4Repay(
+        address underlying,
+        uint256 amount,
+        address receiver,
+        uint256 reserveId,
+        address spoke,
+        address positionManager
+    )
+        internal
+        pure
+        returns (bytes memory)
+    {
+        return abi.encodePacked(
+            encodeApprove(underlying, positionManager),
+            uint8(ComposerCommands.LENDING),
+            uint8(LenderOps.REPAY),
+            uint16(LenderIds.UP_TO_AAVE_V4 - 1),
+            underlying,
+            uint128(amount),
+            receiver,
+            reserveId,
+            spoke,
+            positionManager //
+        );
+    }
+
+    function encodeAaveV4Withdraw(
+        address underlying,
+        uint256 amount,
+        address receiver,
+        uint256 reserveId,
+        address spoke,
+        address positionManager
+    )
+        internal
+        pure
+        returns (bytes memory)
+    {
+        return abi.encodePacked(
+            uint8(ComposerCommands.LENDING),
+            uint8(LenderOps.WITHDRAW),
+            uint16(LenderIds.UP_TO_AAVE_V4 - 1),
+            underlying,
+            uint128(amount),
+            receiver,
+            reserveId,
+            spoke,
+            positionManager //
+        );
+    }
+
+    function encodeAaveV4SetCollateral(
+        uint256 reserveId,
+        bool enable,
+        address spoke,
+        address configPositionManager
+    )
+        internal
+        pure
+        returns (bytes memory)
+    {
+        return abi.encodePacked(
+            uint8(ComposerCommands.LENDING),
+            uint8(LenderOps.SET_COLLATERAL),
+            uint16(LenderIds.UP_TO_AAVE_V4 - 1),
+            reserveId,
+            uint8(enable ? 1 : 0),
+            spoke,
+            configPositionManager
+        );
+    }
+
+    function encodeAaveV4PmSetupPermit(
+        address positionManager,
+        address spoke,
+        bool approve,
+        uint256 nonce,
+        uint32 deadlinePlusOne,
+        bytes32 r,
+        bytes32 vs
+    )
+        internal
+        pure
+        returns (bytes memory)
+    {
+        bytes memory data = abi.encodePacked(spoke, uint8(approve ? 1 : 0), nonce, deadlinePlusOne, r, vs);
+        return encodePermit(PermitIds.AAVE_V4_PM_SETUP_PERMIT, positionManager, data);
+    }
+
+    function encodeAaveV4BorrowPermit(
+        address takerPM,
+        address spoke,
+        uint256 reserveId,
+        uint256 amount,
+        uint256 nonce,
+        uint32 deadlinePlusOne,
+        bytes32 r,
+        bytes32 vs
+    )
+        internal
+        pure
+        returns (bytes memory)
+    {
+        bytes memory data = abi.encodePacked(spoke, reserveId, amount, nonce, deadlinePlusOne, r, vs);
+        return encodePermit(PermitIds.AAVE_V4_BORROW_PERMIT, takerPM, data);
+    }
+
+    function encodeAaveV4WithdrawPermit(
+        address takerPM,
+        address spoke,
+        uint256 reserveId,
+        uint256 amount,
+        uint256 nonce,
+        uint32 deadlinePlusOne,
+        bytes32 r,
+        bytes32 vs
+    )
+        internal
+        pure
+        returns (bytes memory)
+    {
+        bytes memory data = abi.encodePacked(spoke, reserveId, amount, nonce, deadlinePlusOne, r, vs);
+        return encodePermit(PermitIds.AAVE_V4_WITHDRAW_PERMIT, takerPM, data);
+    }
+
+    function encodeAaveV4ConfigPermit(
+        address configPM,
+        address spoke,
+        bool status,
+        uint256 nonce,
+        uint32 deadlinePlusOne,
+        bytes32 r,
+        bytes32 vs
+    )
+        internal
+        pure
+        returns (bytes memory)
+    {
+        bytes memory data = abi.encodePacked(spoke, uint8(status ? 1 : 0), nonce, deadlinePlusOne, r, vs);
+        return encodePermit(PermitIds.AAVE_V4_CONFIG_PERMIT, configPM, data);
+    }
+
+    function encodeAaveV4UnderlyingPermit(
+        address positionManager,
+        address spoke,
+        uint256 reserveId,
+        uint256 value,
+        uint32 deadlinePlusOne,
+        bytes32 r,
+        bytes32 vs
+    )
+        internal
+        pure
+        returns (bytes memory)
+    {
+        bytes memory data = abi.encodePacked(spoke, reserveId, value, deadlinePlusOne, r, vs);
+        return encodePermit(PermitIds.AAVE_V4_UNDERLYING_PERMIT, positionManager, data);
+    }
 }

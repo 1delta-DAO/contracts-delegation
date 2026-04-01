@@ -3,6 +3,7 @@
 pragma solidity 0.8.34;
 
 import {AaveLending} from "./AaveLending.sol";
+import {AaveV4Lending} from "./AaveV4Lending.sol";
 import {CompoundV3Lending} from "./CompoundV3Lending.sol";
 import {CompoundV2Lending} from "./CompoundV2Lending.sol";
 import {MorphoLending} from "./MorphoLending.sol";
@@ -20,6 +21,7 @@ import {DeltaErrors} from "contracts/1delta/shared/errors/Errors.sol";
  */
 abstract contract UniversalLending is
     AaveLending,
+    AaveV4Lending,
     CompoundV3Lending,
     CompoundV2Lending,
     MorphoLending,
@@ -70,6 +72,8 @@ abstract contract UniversalLending is
                 return _encodeMorphoDepositCollateral(currentOffset, callerAddress);
             } else if (lender < LenderIds.UP_TO_SILO_V2) {
                 return _depositToSiloV2(currentOffset);
+            } else if (lender < LenderIds.UP_TO_AAVE_V4) {
+                return _depositToAaveV4(currentOffset);
             } else {
                 _invalidOperation();
             }
@@ -88,6 +92,8 @@ abstract contract UniversalLending is
                 return _morphoBorrow(currentOffset, callerAddress);
             } else if (lender < LenderIds.UP_TO_SILO_V2) {
                 return _borrowFromSiloV2(currentOffset, callerAddress);
+            } else if (lender < LenderIds.UP_TO_AAVE_V4) {
+                return _borrowFromAaveV4(currentOffset, callerAddress);
             } else {
                 _invalidOperation();
             }
@@ -106,6 +112,8 @@ abstract contract UniversalLending is
                 return _morphoRepay(currentOffset, callerAddress);
             } else if (lender < LenderIds.UP_TO_SILO_V2) {
                 return _repayToSiloV2(currentOffset);
+            } else if (lender < LenderIds.UP_TO_AAVE_V4) {
+                return _repayToAaveV4(currentOffset);
             } else {
                 _invalidOperation();
             }
@@ -124,6 +132,8 @@ abstract contract UniversalLending is
                 return _encodeMorphoWithdrawCollateral(currentOffset, callerAddress);
             } else if (lender < LenderIds.UP_TO_SILO_V2) {
                 return _withdrawFromSiloV2(currentOffset, callerAddress);
+            } else if (lender < LenderIds.UP_TO_AAVE_V4) {
+                return _withdrawFromAaveV4(currentOffset, callerAddress);
             } else {
                 _invalidOperation();
             }
@@ -139,6 +149,16 @@ abstract contract UniversalLending is
          */
         else if (lendingOperation == LenderOps.WITHDRAW_LENDING_TOKEN) {
             return _encodeMorphoWithdraw(currentOffset, callerAddress);
+        }
+        /**
+         * Set collateral status (Aave V4 only)
+         */
+        else if (lendingOperation == LenderOps.SET_COLLATERAL) {
+            if (lender < LenderIds.UP_TO_AAVE_V4) {
+                return _setCollateralAaveV4(currentOffset, callerAddress);
+            } else {
+                _invalidOperation();
+            }
         } else {
             _invalidOperation();
         }

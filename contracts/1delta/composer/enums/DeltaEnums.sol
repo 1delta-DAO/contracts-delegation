@@ -23,6 +23,11 @@ library PermitIds {
     uint256 internal constant TOKEN_PERMIT = 0;
     uint256 internal constant AAVE_V3_CREDIT_PERMIT = 1;
     uint256 internal constant ALLOW_CREDIT_PERMIT = 2;
+    uint256 internal constant AAVE_V4_PM_SETUP_PERMIT = 3;
+    uint256 internal constant AAVE_V4_BORROW_PERMIT = 4;
+    uint256 internal constant AAVE_V4_WITHDRAW_PERMIT = 5;
+    uint256 internal constant AAVE_V4_CONFIG_PERMIT = 6;
+    uint256 internal constant AAVE_V4_UNDERLYING_PERMIT = 7;
 }
 
 /**
@@ -35,6 +40,7 @@ library LenderIds {
     uint256 internal constant UP_TO_COMPOUND_V2 = 4000;
     uint256 internal constant UP_TO_MORPHO = 5000;
     uint256 internal constant UP_TO_SILO_V2 = 6000;
+    uint256 internal constant UP_TO_AAVE_V4 = 7000;
 }
 
 /**
@@ -47,6 +53,7 @@ library LenderOps {
     uint256 internal constant WITHDRAW = 3;
     uint256 internal constant DEPOSIT_LENDING_TOKEN = 4;
     uint256 internal constant WITHDRAW_LENDING_TOKEN = 5;
+    uint256 internal constant SET_COLLATERAL = 6;
 }
 
 /**
