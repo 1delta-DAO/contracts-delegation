@@ -149,6 +149,16 @@ abstract contract UniversalLending is
          */
         else if (lendingOperation == LenderOps.WITHDRAW_LENDING_TOKEN) {
             return _encodeMorphoWithdraw(currentOffset, callerAddress);
+        }
+        /**
+         * Set collateral status (Aave V4 only)
+         */
+        else if (lendingOperation == LenderOps.SET_COLLATERAL) {
+            if (lender < LenderIds.UP_TO_AAVE_V4) {
+                return _setCollateralAaveV4(currentOffset, callerAddress);
+            } else {
+                _invalidOperation();
+            }
         } else {
             _invalidOperation();
         }

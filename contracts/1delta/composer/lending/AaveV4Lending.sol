@@ -142,13 +142,7 @@ abstract contract AaveV4Lending is ERC20Selectors, Masks {
 
                 let success := call(gas(), underlying, 0, ptr, 0x44, ptr, 32)
                 let rdsize := returndatasize()
-                success := and(
-                    success,
-                    or(
-                        iszero(rdsize),
-                        and(gt(rdsize, 31), eq(mload(ptr), 1))
-                    )
-                )
+                success := and(success, or(iszero(rdsize), and(gt(rdsize, 31), eq(mload(ptr), 1))))
                 if iszero(success) {
                     returndatacopy(0, 0, rdsize)
                     revert(0, rdsize)
@@ -212,17 +206,53 @@ abstract contract AaveV4Lending is ERC20Selectors, Masks {
 
                 let success := call(gas(), underlying, 0, ptr, 0x44, ptr, 32)
                 let rdsize := returndatasize()
-                success := and(
-                    success,
-                    or(
-                        iszero(rdsize),
-                        and(gt(rdsize, 31), eq(mload(ptr), 1))
-                    )
-                )
+                success := and(success, or(iszero(rdsize), and(gt(rdsize, 31), eq(mload(ptr), 1))))
                 if iszero(success) {
                     returndatacopy(0, 0, rdsize)
                     revert(0, rdsize)
                 }
+            }
+        }
+        return currentOffset;
+    }
+
+    bytes32 internal constant CONFIG_PM_SET_USING_AS_COLLATERAL =
+        0xf0e302b100000000000000000000000000000000000000000000000000000000;
+
+    /**
+     * @notice Toggles collateral status on Aave V4 via ConfigPositionManager.setUsingAsCollateralOnBehalfOf.
+     * @dev Requires: ConfigPM is user's approved position manager on the spoke,
+     *      and the composer has canSetUsingAsCollateral permission from the user on ConfigPM.
+     * @param currentOffset Current position in the calldata
+     * @param callerAddress Address of the caller (position owner)
+     * @return Updated calldata offset after processing
+     * @custom:calldata-offset-table
+     * | Offset | Length (bytes) | Description                     |
+     * |--------|----------------|---------------------------------|
+     * | 0      | 32             | reserveId                       |
+     * | 32     | 1              | flag (0 = disable, 1 = enable)  |
+     * | 33     | 20             | spoke                           |
+     * | 53     | 20             | configPositionManager           |
+     */
+    function _setCollateralAaveV4(uint256 currentOffset, address callerAddress) internal returns (uint256) {
+        assembly {
+            let reserveId := calldataload(currentOffset)
+            let flagAndAddresses := calldataload(add(currentOffset, 0x20))
+            let flag := shr(248, flagAndAddresses)
+            let spoke := and(ADDRESS_MASK, shr(88, flagAndAddresses))
+            let configPM := shr(96, calldataload(add(currentOffset, 0x35)))
+            currentOffset := add(currentOffset, 73)
+
+            let ptr := mload(0x40)
+            // setUsingAsCollateralOnBehalfOf(address,uint256,bool,address)
+            mstore(ptr, CONFIG_PM_SET_USING_AS_COLLATERAL)
+            mstore(add(ptr, 0x04), spoke)
+            mstore(add(ptr, 0x24), reserveId)
+            mstore(add(ptr, 0x44), flag)
+            mstore(add(ptr, 0x64), callerAddress)
+            if iszero(call(gas(), configPM, 0x0, ptr, 0x84, 0x0, 0x0)) {
+                returndatacopy(0x0, 0x0, returndatasize())
+                revert(0x0, returndatasize())
             }
         }
         return currentOffset;
