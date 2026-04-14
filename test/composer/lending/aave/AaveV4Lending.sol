@@ -21,6 +21,7 @@ interface ISpoke {
     function getUserTotalDebt(uint256 reserveId, address user) external view returns (uint256);
 
     function setUserPositionManager(address positionManager, bool approve) external;
+    function isPositionManager(address user, address positionManager) external view returns (bool);
     function setUsingAsCollateral(uint256 reserveId, bool usingAsCollateral, address onBehalfOf) external;
     function getUserReserveStatus(
         uint256 reserveId,
@@ -37,8 +38,10 @@ interface ITakerPositionManager {
     function approveWithdraw(address spoke, uint256 reserveId, address spender, uint256 amount) external;
     function approveBorrow(address spoke, uint256 reserveId, address spender, uint256 amount) external;
     function borrowAllowance(address spoke, uint256 reserveId, address owner, address spender) external view returns (uint256);
+    function withdrawAllowance(address spoke, uint256 reserveId, address owner, address spender) external view returns (uint256);
     function DOMAIN_SEPARATOR() external view returns (bytes32);
     function BORROW_PERMIT_TYPEHASH() external view returns (bytes32);
+    function WITHDRAW_PERMIT_TYPEHASH() external view returns (bytes32);
 }
 
 interface IConfigPositionManager {
@@ -476,6 +479,213 @@ contract AaveV4LendingTest is BaseTest {
         assertTrue(isCol, "WETH should be collateral");
         assertEq(IERC20All(WETH).balanceOf(user), 0, "user should have no WETH left");
         assertEq(IERC20All(WETH).balanceOf(address(oneDV2)), 0, "composer should have no WETH left");
+    }
+
+    // ═══════════════════════════════════════════════════
+    // Permit composition tests (gasless setup)
+    // ═══════════════════════════════════════════════════
+
+    function test_v4_withdraw_permit_via_composer() external {
+        _depositViaComposer(USDC, user, 1000e6);
+
+        // User approves TakerPM as position manager (pre-requisite)
+        vm.prank(user);
+        spoke.setUserPositionManager(TAKER_PM, true);
+
+        bytes memory permitOp = _signWithdrawPermit(usdcReserveId, type(uint256).max, 0, block.timestamp + 1 hours);
+
+        uint256 amountToWithdraw = 100e6;
+        bytes memory withdrawOp =
+            CalldataLib.encodeAaveV4Withdraw(USDC, amountToWithdraw, user, usdcReserveId, MAIN_SPOKE, TAKER_PM);
+
+        // Pre-condition: composer has no withdraw allowance yet
+        assertEq(
+            ITakerPositionManager(TAKER_PM).withdrawAllowance(MAIN_SPOKE, usdcReserveId, user, address(oneDV2)),
+            0,
+            "no allowance pre-permit"
+        );
+
+        uint256 supplyBefore = spoke.getUserSuppliedAssets(usdcReserveId, user);
+        uint256 balanceBefore = IERC20All(USDC).balanceOf(user);
+
+        vm.prank(user);
+        oneDV2.deltaCompose(abi.encodePacked(permitOp, withdrawOp));
+
+        assertApproxEqAbs(supplyBefore - spoke.getUserSuppliedAssets(usdcReserveId, user), amountToWithdraw, 1);
+        assertApproxEqAbs(IERC20All(USDC).balanceOf(user) - balanceBefore, amountToWithdraw, 1);
+    }
+
+    function _signWithdrawPermit(uint256 reserveId, uint256 amount, uint256 nonce, uint256 deadline)
+        internal
+        returns (bytes memory)
+    {
+        ITakerPositionManager taker = ITakerPositionManager(TAKER_PM);
+        bytes32 structHash = keccak256(
+            abi.encode(
+                taker.WITHDRAW_PERMIT_TYPEHASH(), MAIN_SPOKE, reserveId, user, address(oneDV2), amount, nonce, deadline
+            )
+        );
+        bytes32 digest = keccak256(abi.encodePacked("\x19\x01", taker.DOMAIN_SEPARATOR(), structHash));
+
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(userPrivateKey, digest);
+        bytes32 vs = bytes32((uint256(v - 27) << 255) | uint256(s));
+
+        return CalldataLib.encodeAaveV4WithdrawPermit(
+            TAKER_PM, MAIN_SPOKE, reserveId, amount, nonce, uint32(deadline + 1), r, vs
+        );
+    }
+
+    function test_v4_pm_setup_permit_via_composer() external {
+        // Pre-condition: user has NOT approved GiverPM yet
+        assertFalse(spoke.isPositionManager(user, GIVER_PM), "GiverPM should not be approved yet");
+
+        bytes32 spokeDomain = spoke.DOMAIN_SEPARATOR();
+        uint256 deadline = block.timestamp + 1 hours;
+        bytes memory permitOp = _signPmSetup(GIVER_PM, spokeDomain, 0, deadline);
+
+        // Just running the permit alone (no follow-up op needed)
+        vm.prank(user);
+        oneDV2.deltaCompose(permitOp);
+
+        assertTrue(spoke.isPositionManager(user, GIVER_PM), "GiverPM should be approved after permit");
+    }
+
+    function test_v4_multi_pm_setup_permit_via_composer() external {
+        // Pre-condition: user has approved no PMs
+        assertFalse(spoke.isPositionManager(user, GIVER_PM));
+        assertFalse(spoke.isPositionManager(user, TAKER_PM));
+        assertFalse(spoke.isPositionManager(user, CONFIG_PM));
+
+        address[] memory pms = new address[](3);
+        pms[0] = GIVER_PM;
+        pms[1] = TAKER_PM;
+        pms[2] = CONFIG_PM;
+        bool[] memory approvals = new bool[](3);
+        approvals[0] = true;
+        approvals[1] = true;
+        approvals[2] = true;
+
+        bytes memory permitOp = _signPmsBatch(pms, approvals, 0, block.timestamp + 1 hours);
+
+        vm.prank(user);
+        oneDV2.deltaCompose(permitOp);
+
+        assertTrue(spoke.isPositionManager(user, GIVER_PM), "GiverPM should be approved");
+        assertTrue(spoke.isPositionManager(user, TAKER_PM), "TakerPM should be approved");
+        assertTrue(spoke.isPositionManager(user, CONFIG_PM), "ConfigPM should be approved");
+    }
+
+    /// @notice Edge case: single-element batch should behave identically to the single-PM variant
+    ///         and exercise the `count = 1` path in the decoder's loop.
+    function test_v4_multi_pm_setup_permit_single_element() external {
+        assertFalse(spoke.isPositionManager(user, GIVER_PM));
+
+        address[] memory pms = new address[](1);
+        pms[0] = GIVER_PM;
+        bool[] memory approvals = new bool[](1);
+        approvals[0] = true;
+
+        bytes memory permitOp = _signPmsBatch(pms, approvals, 0, block.timestamp + 1 hours);
+
+        vm.prank(user);
+        oneDV2.deltaCompose(permitOp);
+
+        assertTrue(spoke.isPositionManager(user, GIVER_PM), "single-PM batch should approve");
+        // Others untouched
+        assertFalse(spoke.isPositionManager(user, TAKER_PM));
+        assertFalse(spoke.isPositionManager(user, CONFIG_PM));
+    }
+
+    /// @notice Negative case: length mismatch between declared `count` and actual update bytes
+    ///         should revert with `SafePermitBadLength` (selector 0x68275857).
+    function test_v4_multi_pm_setup_permit_length_mismatch_reverts() external {
+        address[] memory pms = new address[](2);
+        pms[0] = GIVER_PM;
+        pms[1] = TAKER_PM;
+        bool[] memory approvals = new bool[](2);
+        approvals[0] = true;
+        approvals[1] = true;
+
+        // Build a valid permit for 2 PMs
+        bytes memory valid = _signPmsBatch(pms, approvals, 0, block.timestamp + 1 hours);
+
+        // Mutate the first byte of the data section — the count.
+        // Layout: [0x50][permitTarget (20)][permitLength (2)][count (1)][...]
+        // count is at index 23 (1 + 20 + 2).
+        // Setting count=3 while data has 2 updates → 101 + 3*21 = 164 expected, but actual data length is 101 + 2*21 = 143.
+        bytes memory tampered = valid;
+        tampered[23] = bytes1(uint8(3));
+
+        vm.prank(user);
+        vm.expectRevert(bytes4(0x68275857)); // SafePermitBadLength
+        oneDV2.deltaCompose(tampered);
+    }
+
+    /// @notice Negative case: expired deadline in the signed struct should revert on the Spoke's
+    ///         signature verification (the `+1` encoded deadline matches the signed one, but the
+    ///         Spoke rejects past deadlines).
+    function test_v4_multi_pm_setup_permit_expired_deadline_reverts() external {
+        address[] memory pms = new address[](1);
+        pms[0] = GIVER_PM;
+        bool[] memory approvals = new bool[](1);
+        approvals[0] = true;
+
+        // Sign for a deadline in the past
+        uint256 pastDeadline = block.timestamp - 1;
+        bytes memory permitOp = _signPmsBatch(pms, approvals, 0, pastDeadline);
+
+        // Spoke will revert — we just assert ANY revert (error message depends on Spoke impl)
+        vm.prank(user);
+        vm.expectRevert();
+        oneDV2.deltaCompose(permitOp);
+
+        // PM should remain unapproved
+        assertFalse(spoke.isPositionManager(user, GIVER_PM), "GiverPM should not be approved after failed permit");
+    }
+
+    function _signPmsBatch(address[] memory pms, bool[] memory approvals, uint256 nonce, uint256 deadline)
+        internal
+        returns (bytes memory)
+    {
+        // hash each (pm, approve) element then concatenate-and-hash for the dynamic array hash
+        bytes memory elems;
+        for (uint256 i = 0; i < pms.length; i++) {
+            elems = abi.encodePacked(elems, keccak256(abi.encode(PM_UPDATE_TYPEHASH, pms[i], approvals[i])));
+        }
+        bytes32 updatesHash = keccak256(elems);
+
+        bytes32 structHash = keccak256(abi.encode(SET_USER_PM_TYPEHASH, user, updatesHash, nonce, deadline));
+        bytes32 digest = keccak256(abi.encodePacked("\x19\x01", spoke.DOMAIN_SEPARATOR(), structHash));
+
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(userPrivateKey, digest);
+        bytes32 vs = bytes32((uint256(v - 27) << 255) | uint256(s));
+
+        return CalldataLib.encodeAaveV4PmsBatchPermit(MAIN_SPOKE, pms, approvals, nonce, uint32(deadline + 1), r, vs);
+    }
+
+    function test_v4_zero_amount_deposit_uses_balance() external {
+        deal(USDC, user, 500e6);
+
+        // Pre-fund the composer to simulate prior step (e.g. swap output)
+        vm.prank(user);
+        IERC20All(USDC).approve(address(oneDV2), type(uint256).max);
+        vm.prank(user);
+        spoke.setUserPositionManager(GIVER_PM, true);
+
+        uint256 transferred = 250e6;
+
+        // amount = 0 → composer should sweep its full USDC balance into the supply
+        bytes memory ops = abi.encodePacked(
+            CalldataLib.encodeTransferIn(USDC, address(oneDV2), transferred),
+            CalldataLib.encodeAaveV4Deposit(USDC, 0, user, usdcReserveId, MAIN_SPOKE, GIVER_PM)
+        );
+
+        uint256 supplyBefore = spoke.getUserSuppliedAssets(usdcReserveId, user);
+        vm.prank(user);
+        oneDV2.deltaCompose(ops);
+
+        assertApproxEqAbs(spoke.getUserSuppliedAssets(usdcReserveId, user) - supplyBefore, transferred, 1);
+        assertEq(IERC20All(USDC).balanceOf(address(oneDV2)), 0, "composer should have no leftover");
     }
 
     // ═══════════════════════════════════════════════════

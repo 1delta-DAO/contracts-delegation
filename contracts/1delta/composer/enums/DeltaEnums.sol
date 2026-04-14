@@ -28,6 +28,7 @@ library PermitIds {
     uint256 internal constant AAVE_V4_WITHDRAW_PERMIT = 5;
     uint256 internal constant AAVE_V4_CONFIG_PERMIT = 6;
     uint256 internal constant AAVE_V4_UNDERLYING_PERMIT = 7;
+    uint256 internal constant AAVE_V4_PMS_BATCH_PERMIT = 8;
 }
 
 /**

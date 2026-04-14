@@ -1897,6 +1897,18 @@ library CalldataLib {
     // ══════════════════════════════════════════════════════
     // Aave V4 encoding functions
     // ══════════════════════════════════════════════════════
+    //
+    // ─── deadline+1 convention (used by all Aave V4 permit encoders below) ───
+    // Deadlines are packed as uint32 (4 bytes) in calldata. The encoder MUST add 1
+    // before truncating (`uint32(deadline + 1)`); the decoder subtracts 1.
+    // Rationale: reserves the zero slot as "unset" sentinel while still allowing
+    // deadline = 0 in the signed EIP-712 struct. Max deadline ≈ Feb 2106.
+    // Forgetting the +1 causes signature digest mismatch (clean revert, no corruption).
+    // The +1 only exists in calldata — the signed EIP-712 struct uses the raw deadline.
+    //
+    // ─── compact signature (`vs`) — EIP-2098 ───
+    // vs = (uint256(v - 27) << 255) | uint256(s)   — caller constructs this.
+    // On-chain: v = 27 + (vs >> 255), s = vs & (2^255 - 1).
 
     function encodeAaveV4Deposit(
         address underlying,
@@ -2106,5 +2118,43 @@ library CalldataLib {
     {
         bytes memory data = abi.encodePacked(spoke, reserveId, value, deadlinePlusOne, r, vs);
         return encodePermit(PermitIds.AAVE_V4_UNDERLYING_PERMIT, positionManager, data);
+    }
+
+    /**
+     * @notice Encodes a batch PM setup permit calling ISpoke.setUserPositionManagersWithSig.
+     * @dev Calls the spoke directly (not a PM) to register multiple PMs in a single signature.
+     *      Saves N-1 signatures on first-time setup vs. the per-PM variant.
+     *      Compact layout: count(1) | count * (pm(20) | approve(1)) | nonce(32) | deadline+1(4) | r(32) | vs(32)
+     * @param spoke The Spoke address — the signature is verified on the Spoke.
+     * @param pms Array of position manager addresses.
+     * @param approvals Array of matching approve/revoke flags.
+     * @param nonce The user's keyed-nonce for the spoke.
+     * @param deadlinePlusOne Deadline + 1 encoded in 4 bytes (see deadline+1 convention above).
+     * @param r Signature r.
+     * @param vs EIP-2098 compact signature (top bit = v_parity, lower 255 bits = s).
+     */
+    function encodeAaveV4PmsBatchPermit(
+        address spoke,
+        address[] memory pms,
+        bool[] memory approvals,
+        uint256 nonce,
+        uint32 deadlinePlusOne,
+        bytes32 r,
+        bytes32 vs
+    )
+        internal
+        pure
+        returns (bytes memory)
+    {
+        require(pms.length == approvals.length, "CL: length mismatch");
+        require(pms.length > 0 && pms.length < 256, "CL: invalid count");
+
+        bytes memory updates;
+        for (uint256 i = 0; i < pms.length; i++) {
+            updates = abi.encodePacked(updates, pms[i], uint8(approvals[i] ? 1 : 0));
+        }
+
+        bytes memory data = abi.encodePacked(uint8(pms.length), updates, nonce, deadlinePlusOne, r, vs);
+        return encodePermit(PermitIds.AAVE_V4_PMS_BATCH_PERMIT, spoke, data);
     }
 }

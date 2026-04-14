@@ -67,6 +67,9 @@ abstract contract Permits is Masks, PermitUtils, DeltaErrors {
             } else if (permitOperation == PermitIds.AAVE_V4_UNDERLYING_PERMIT) {
                 _tryAaveV4UnderlyingPermit(permitTarget, permitOffset, permitLength, callerAddress);
                 return currentOffset;
+            } else if (permitOperation == PermitIds.AAVE_V4_PMS_BATCH_PERMIT) {
+                _tryAaveV4PmsBatch(permitTarget, permitOffset, permitLength, callerAddress);
+                return currentOffset;
             } else {
                 _invalidOperation();
             }
