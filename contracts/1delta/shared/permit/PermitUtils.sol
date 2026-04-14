@@ -358,11 +358,22 @@ abstract contract PermitUtils is PermitConstants {
     }
 
     /**
-     * @notice Calls TakerPM.approveBorrowWithSig with a compact permit.
-     * @dev Compact calldata: spoke(20) | reserveId(32) | amount(32) | nonce(32) | deadline+1(4) | r(32) | vs(32) = 184 bytes
-     * @param target The TakerPositionManager address
+     * @notice Calls TakerPM.approveBorrowWithSig or TakerPM.approveWithdrawWithSig with a compact permit.
+     * @dev Both approvals share an identical EIP-712 struct layout, so a single handler parameterized
+     *      on the selector produces one bytecode block instead of two.
+     *      Compact calldata: spoke(20) | reserveId(32) | amount(32) | nonce(32) | deadline+1(4) | r(32) | vs(32) = 184 bytes
+     * @param selector AAVE_V4_APPROVE_BORROW_WITH_SIG (0x65c143f2) or AAVE_V4_APPROVE_WITHDRAW_WITH_SIG (0xa6484847).
+     * @param target The TakerPositionManager address.
      */
-    function _tryAaveV4BorrowPermit(address target, uint256 permitOffset, uint256 permitLength, address callerAddress) internal {
+    function _tryAaveV4TakerPermit(
+        bytes32 selector,
+        address target,
+        uint256 permitOffset,
+        uint256 permitLength,
+        address callerAddress
+    )
+        internal
+    {
         assembly {
             let ptr := mload(0x40)
             switch permitLength
@@ -375,52 +386,8 @@ abstract contract PermitUtils is PermitConstants {
                 let r := calldataload(add(permitOffset, 0x78))
                 let vs := calldataload(add(permitOffset, 0x98))
 
-                // approveBorrowWithSig((address,uint256,address,address,uint256,uint256,uint256),bytes)
-                mstore(ptr, AAVE_V4_APPROVE_BORROW_WITH_SIG)
-                mstore(add(ptr, 0x04), spoke)
-                mstore(add(ptr, 0x24), reserveId)
-                mstore(add(ptr, 0x44), callerAddress) // owner
-                mstore(add(ptr, 0x64), address()) // spender = composer
-                mstore(add(ptr, 0x84), amount)
-                mstore(add(ptr, 0xa4), nonce)
-                mstore(add(ptr, 0xc4), deadline)
-                mstore(add(ptr, 0xe4), 0x100) // offset to signature bytes
-                mstore(add(ptr, 0x104), 65) // signature length (r + s + v)
-                mstore(add(ptr, 0x124), r)
-                mstore(add(ptr, 0x144), shr(1, shl(1, vs))) // s = vs without MSB
-                mstore(add(ptr, 0x164), shl(248, add(27, shr(255, vs)))) // v byte left-aligned
-                if iszero(call(gas(), target, 0, ptr, 0x184, 0, 0)) {
-                    returndatacopy(0, 0, returndatasize())
-                    revert(0, returndatasize())
-                }
-            }
-            default {
-                mstore(ptr, _PERMIT_LENGTH_ERROR)
-                revert(ptr, 4)
-            }
-        }
-    }
-
-    /**
-     * @notice Calls TakerPM.approveWithdrawWithSig with a compact permit.
-     * @dev Compact calldata: spoke(20) | reserveId(32) | amount(32) | nonce(32) | deadline+1(4) | r(32) | vs(32) = 184 bytes
-     * @param target The TakerPositionManager address
-     */
-    function _tryAaveV4WithdrawPermit(address target, uint256 permitOffset, uint256 permitLength, address callerAddress) internal {
-        assembly {
-            let ptr := mload(0x40)
-            switch permitLength
-            case 184 {
-                let spoke := shr(96, calldataload(permitOffset))
-                let reserveId := calldataload(add(permitOffset, 0x14))
-                let amount := calldataload(add(permitOffset, 0x34))
-                let nonce := calldataload(add(permitOffset, 0x54))
-                let deadline := sub(shr(224, calldataload(add(permitOffset, 0x74))), 1)
-                let r := calldataload(add(permitOffset, 0x78))
-                let vs := calldataload(add(permitOffset, 0x98))
-
-                // approveWithdrawWithSig((address,uint256,address,address,uint256,uint256,uint256),bytes)
-                mstore(ptr, AAVE_V4_APPROVE_WITHDRAW_WITH_SIG)
+                // approve{Borrow|Withdraw}WithSig((address,uint256,address,address,uint256,uint256,uint256),bytes)
+                mstore(ptr, selector)
                 mstore(add(ptr, 0x04), spoke)
                 mstore(add(ptr, 0x24), reserveId)
                 mstore(add(ptr, 0x44), callerAddress) // owner

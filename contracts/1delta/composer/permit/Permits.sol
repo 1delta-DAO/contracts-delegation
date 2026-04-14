@@ -56,10 +56,10 @@ abstract contract Permits is Masks, PermitUtils, DeltaErrors {
             }
         } else {
             if (permitOperation == PermitIds.AAVE_V4_BORROW_PERMIT) {
-                _tryAaveV4BorrowPermit(permitTarget, permitOffset, permitLength, callerAddress);
+                _tryAaveV4TakerPermit(AAVE_V4_APPROVE_BORROW_WITH_SIG, permitTarget, permitOffset, permitLength, callerAddress);
                 return currentOffset;
             } else if (permitOperation == PermitIds.AAVE_V4_WITHDRAW_PERMIT) {
-                _tryAaveV4WithdrawPermit(permitTarget, permitOffset, permitLength, callerAddress);
+                _tryAaveV4TakerPermit(AAVE_V4_APPROVE_WITHDRAW_WITH_SIG, permitTarget, permitOffset, permitLength, callerAddress);
                 return currentOffset;
             } else if (permitOperation == PermitIds.AAVE_V4_CONFIG_PERMIT) {
                 _tryAaveV4ConfigPermit(permitTarget, permitOffset, permitLength, callerAddress);
