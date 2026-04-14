@@ -54,6 +54,7 @@ contract AaveV3FlashLoanCallback is Masks, DeltaErrors {
             case 63 { pool := HYPERYIELD }
             case 81 { pool := HYPERLEND }
             case 83 { pool := HYPURRFI }
+
             // We revert on any other id
             default {
                 mstore(0, INVALID_FLASH_LOAN)
@@ -100,3 +101,4 @@ contract AaveV3FlashLoanCallback is Masks, DeltaErrors {
      */
     function _deltaComposeInternal(address callerAddress, uint256 offset, uint256 length) internal virtual {}
 }
+

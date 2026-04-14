@@ -25,8 +25,8 @@ contract FlashLoanCallbacks is
     )
         internal
         virtual
-        override(
-            AaveV3FlashLoanCallback //
+        override(AaveV3FlashLoanCallback //
         )
     {}
 }
+

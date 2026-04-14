@@ -53,6 +53,7 @@ contract AaveV2FlashLoanCallback is Masks, DeltaErrors {
             switch and(UINT8_MASK, shr(88, firstWord))
             case 9 { pool := IRONCLAD }
             case 10 { pool := MOLEND }
+
             // We revert on any other id
             default {
                 mstore(0, INVALID_FLASH_LOAN)

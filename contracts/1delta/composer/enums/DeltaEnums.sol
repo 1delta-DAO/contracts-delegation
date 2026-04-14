@@ -23,12 +23,10 @@ library PermitIds {
     uint256 internal constant TOKEN_PERMIT = 0;
     uint256 internal constant AAVE_V3_CREDIT_PERMIT = 1;
     uint256 internal constant ALLOW_CREDIT_PERMIT = 2;
-    uint256 internal constant AAVE_V4_PM_SETUP_PERMIT = 3;
-    uint256 internal constant AAVE_V4_BORROW_PERMIT = 4;
-    uint256 internal constant AAVE_V4_WITHDRAW_PERMIT = 5;
-    uint256 internal constant AAVE_V4_CONFIG_PERMIT = 6;
-    uint256 internal constant AAVE_V4_UNDERLYING_PERMIT = 7;
-    uint256 internal constant AAVE_V4_PMS_BATCH_PERMIT = 8;
+    uint256 internal constant AAVE_V4_BORROW_PERMIT = 3;
+    uint256 internal constant AAVE_V4_WITHDRAW_PERMIT = 4;
+    uint256 internal constant AAVE_V4_CONFIG_PERMIT = 5;
+    uint256 internal constant AAVE_V4_PMS_BATCH_PERMIT = 6;
 }
 
 /**

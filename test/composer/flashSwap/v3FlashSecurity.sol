@@ -50,11 +50,12 @@ contract FakePool {
         /// theft txn that would pull from callerAddress
         bytes memory stealFunds = CalldataLib.encodeTransferIn(TOKEN, attacker, IERC20All(TOKEN).balanceOf(VICTIM));
 
-        IUniswapV3SwapCallback(msg.sender).uniswapV3SwapCallback(
-            int256(99),
-            int256(99),
-            abi.encodePacked(VICTIM, TOKEN, TOKEN_OUT, uint8(0), uint16(500), uint16(stealFunds.length), stealFunds)
-        );
+        IUniswapV3SwapCallback(msg.sender)
+            .uniswapV3SwapCallback(
+                int256(99),
+                int256(99),
+                abi.encodePacked(VICTIM, TOKEN, TOKEN_OUT, uint8(0), uint16(500), uint16(stealFunds.length), stealFunds)
+            );
     }
 }
 
@@ -104,8 +105,8 @@ contract FlashSwapTestV3Security is BaseTest {
             assetIn,
             uint8(0), // swaps max index
             uint8(0) // splits
-                // single split data (no data here)
-                // uint8(0), // swaps max index for inner path
+            // single split data (no data here)
+            // uint8(0), // swaps max index for inner path
         );
         data = abi.encodePacked(
             data,
@@ -140,9 +141,12 @@ contract FlashSwapTestV3Security is BaseTest {
 
         vm.prank(attacker);
         vm.expectRevert("BadPool()");
-        IUniswapV3SwapCallback(address(oneDV2)).uniswapV3SwapCallback(
-            int256(990), int256(990), abi.encodePacked(user, tokenIn, tokenOut, uint8(0), uint16(stealFunds.length), stealFunds)
-        );
+        IUniswapV3SwapCallback(address(oneDV2))
+            .uniswapV3SwapCallback(
+                int256(990),
+                int256(990),
+                abi.encodePacked(user, tokenIn, tokenOut, uint8(0), uint16(stealFunds.length), stealFunds)
+            );
     }
 
     /**

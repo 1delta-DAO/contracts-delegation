@@ -54,3 +54,4 @@ contract OneDeltaComposerAvalanche is BaseComposer, UniversalFlashLoan, SwapCall
         );
     }
 }
+

@@ -41,9 +41,8 @@ contract SquidRouterTest is Test {
 
         vm.deal(address(composer), 1e10);
 
-        MockSquidRouter(gateway).setExpectedSquidCall(
-            symbol, BRIDGE_AMOUNT, destChain, destAddress, payload, refundRecipient, enableExpress, 1e10
-        );
+        MockSquidRouter(gateway)
+            .setExpectedSquidCall(symbol, BRIDGE_AMOUNT, destChain, destAddress, payload, refundRecipient, enableExpress, 1e10);
 
         return CalldataLib.encodeExternalCall(
             address(callForwarder),

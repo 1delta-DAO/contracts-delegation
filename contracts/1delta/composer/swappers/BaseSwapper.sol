@@ -271,43 +271,16 @@ abstract contract BaseSwapper is
             swapMaxIndex := shr(248, datas)
             splitsMaxIndex := and(UINT8_MASK, shr(240, datas))
             currentOffset := add(currentOffset, 2)
-        }
-        if (splitsMaxIndex > 8) revert InvalidCalldata();
-        // swapMaxIndex = 0 is simple single swap
-        // that is where each single step MUST end
-        if (swapMaxIndex == 0) {
-            // splitsMaxIndex zero is single swap
-            if (splitsMaxIndex == 0) {
-                // if the swapMaxIndex is single-swap,
-                // the next two addresses are nextToken and receiver
-                address receiver;
-                assembly {
-                    nextToken := shr(96, calldataload(currentOffset))
-                    currentOffset := add(currentOffset, 20)
-                    receiver := shr(96, calldataload(currentOffset))
-                    currentOffset := add(currentOffset, 20)
-                }
-                (received, currentOffset) = _swapExactInSimple(
-                    amountIn,
-                    tokenIn,
-                    nextToken,
-                    callerAddress,
-                    receiver, //
-                    currentOffset
-                );
-            } else {
-                // nonzero is a split swap
-                (received, currentOffset, nextToken) = _singleSwapOrSplit(
-                    amountIn,
-                    splitsMaxIndex,
-                    tokenIn,
-                    callerAddress,
-                    currentOffset //
-                );
+            // Reject calldata with more than 8 splits via an asm revert (cheaper than `revert InvalidCalldata()`).
+            if gt(splitsMaxIndex, 8) {
+                mstore(0, 0x8129bbcd) // InvalidCalldata() selector
+                revert(0x1c, 0x04)
             }
-        } else {
-            // otherwise, execute universal swap (path & splits)
-            (received, currentOffset, nextToken) = _multihopSplitSwap(
+        }
+
+        // Multihop path (outer loop over swap rows)
+        if (swapMaxIndex != 0) {
+            return _multihopSplitSwap(
                 amountIn, //
                 swapMaxIndex,
                 tokenIn,
@@ -315,6 +288,34 @@ abstract contract BaseSwapper is
                 currentOffset
             );
         }
+
+        // Split path (inner parallel swaps summing to amountIn)
+        if (splitsMaxIndex != 0) {
+            return _singleSwapOrSplit(
+                amountIn,
+                splitsMaxIndex,
+                tokenIn,
+                callerAddress,
+                currentOffset //
+            );
+        }
+
+        // Single simple swap — read nextToken + receiver from calldata, then execute
+        address receiver;
+        assembly {
+            nextToken := shr(96, calldataload(currentOffset))
+            currentOffset := add(currentOffset, 20)
+            receiver := shr(96, calldataload(currentOffset))
+            currentOffset := add(currentOffset, 20)
+        }
+        (received, currentOffset) = _swapExactInSimple(
+            amountIn,
+            tokenIn,
+            nextToken,
+            callerAddress,
+            receiver, //
+            currentOffset
+        );
         return (received, currentOffset, nextToken);
     }
 

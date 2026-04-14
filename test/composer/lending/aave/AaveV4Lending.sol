@@ -515,24 +515,25 @@ contract AaveV4LendingTest is BaseTest {
         assertApproxEqAbs(IERC20All(USDC).balanceOf(user) - balanceBefore, amountToWithdraw, 1);
     }
 
-    function _signWithdrawPermit(uint256 reserveId, uint256 amount, uint256 nonce, uint256 deadline)
+    function _signWithdrawPermit(
+        uint256 reserveId,
+        uint256 amount,
+        uint256 nonce,
+        uint256 deadline
+    )
         internal
         returns (bytes memory)
     {
         ITakerPositionManager taker = ITakerPositionManager(TAKER_PM);
         bytes32 structHash = keccak256(
-            abi.encode(
-                taker.WITHDRAW_PERMIT_TYPEHASH(), MAIN_SPOKE, reserveId, user, address(oneDV2), amount, nonce, deadline
-            )
+            abi.encode(taker.WITHDRAW_PERMIT_TYPEHASH(), MAIN_SPOKE, reserveId, user, address(oneDV2), amount, nonce, deadline)
         );
         bytes32 digest = keccak256(abi.encodePacked("\x19\x01", taker.DOMAIN_SEPARATOR(), structHash));
 
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(userPrivateKey, digest);
         bytes32 vs = bytes32((uint256(v - 27) << 255) | uint256(s));
 
-        return CalldataLib.encodeAaveV4WithdrawPermit(
-            TAKER_PM, MAIN_SPOKE, reserveId, amount, nonce, uint32(deadline + 1), r, vs
-        );
+        return CalldataLib.encodeAaveV4WithdrawPermit(TAKER_PM, MAIN_SPOKE, reserveId, amount, nonce, uint32(deadline + 1), r, vs);
     }
 
     function test_v4_pm_setup_permit_via_composer() external {
@@ -643,7 +644,12 @@ contract AaveV4LendingTest is BaseTest {
         assertFalse(spoke.isPositionManager(user, GIVER_PM), "GiverPM should not be approved after failed permit");
     }
 
-    function _signPmsBatch(address[] memory pms, bool[] memory approvals, uint256 nonce, uint256 deadline)
+    function _signPmsBatch(
+        address[] memory pms,
+        bool[] memory approvals,
+        uint256 nonce,
+        uint256 deadline
+    )
         internal
         returns (bytes memory)
     {
@@ -747,17 +753,23 @@ contract AaveV4LendingTest is BaseTest {
             );
     }
 
-    function _signPmSetup(address pm, bytes32 spokeDomain, uint256 nonce, uint256 deadline) internal returns (bytes memory) {
-        bytes32 elemHash = keccak256(abi.encode(PM_UPDATE_TYPEHASH, pm, true));
-        bytes32 updatesHash = keccak256(abi.encodePacked(elemHash));
-
-        bytes32 structHash = keccak256(abi.encode(SET_USER_PM_TYPEHASH, user, updatesHash, nonce, deadline));
-        bytes32 digest = keccak256(abi.encodePacked("\x19\x01", spokeDomain, structHash));
-
-        (uint8 v, bytes32 r, bytes32 s) = vm.sign(userPrivateKey, digest);
-        bytes32 vs = bytes32((uint256(v - 27) << 255) | uint256(s));
-
-        return CalldataLib.encodeAaveV4PmSetupPermit(pm, MAIN_SPOKE, true, nonce, uint32(deadline + 1), r, vs);
+    /// @notice Thin wrapper around the batch permit for a single PM — the batch handler natively
+    ///         supports count = 1, so the dedicated single-PM permit variant is unnecessary.
+    function _signPmSetup(
+        address pm,
+        bytes32,
+        /*unused*/
+        uint256 nonce,
+        uint256 deadline
+    )
+        internal
+        returns (bytes memory)
+    {
+        address[] memory pms = new address[](1);
+        pms[0] = pm;
+        bool[] memory approvals = new bool[](1);
+        approvals[0] = true;
+        return _signPmsBatch(pms, approvals, nonce, deadline);
     }
 
     function _depositViaComposer(address token, address userAddr, uint256 amount) internal {

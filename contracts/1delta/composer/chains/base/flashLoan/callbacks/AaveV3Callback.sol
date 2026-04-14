@@ -14,7 +14,6 @@ contract AaveV3FlashLoanCallback is Masks, DeltaErrors {
     address private constant ZEROLEND = 0x766f21277087E18967c1b10bF602d8Fe56d0c671;
     address private constant AVALON = 0x6374a1F384737bcCCcD8fAE13064C18F7C8392e5;
     address private constant XLEND = 0x09b11746DFD1b5a8325e30943F8B3D5000922E03;
-    address private constant YLDR = 0x5425afD90Bd1AAD68d5bADCB80390101a2750bc5;
 
     /**
      * @notice Handles Aave V3 flash loan callback
@@ -57,7 +56,7 @@ contract AaveV3FlashLoanCallback is Masks, DeltaErrors {
             case 20 { pool := ZEROLEND }
             case 50 { pool := AVALON }
             case 85 { pool := XLEND }
-            case 100 { pool := YLDR }
+
             // We revert on any other id
             default {
                 mstore(0, INVALID_FLASH_LOAN)
@@ -104,3 +103,4 @@ contract AaveV3FlashLoanCallback is Masks, DeltaErrors {
      */
     function _deltaComposeInternal(address callerAddress, uint256 offset, uint256 length) internal virtual {}
 }
+

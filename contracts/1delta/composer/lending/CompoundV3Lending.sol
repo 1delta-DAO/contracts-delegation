@@ -11,12 +11,15 @@ import {Masks} from "../../shared/masks/Masks.sol";
  * @notice Lending base contract that wraps Cmpound V3 markets
  */
 abstract contract CompoundV3Lending is ERC20Selectors, Masks {
+    /// @dev comet.withdrawFrom(address,address,address,uint256) selector — used by both borrow and withdraw
+    bytes32 internal constant COMET_WITHDRAW_FROM = 0x2644131800000000000000000000000000000000000000000000000000000000;
+
+    /// @dev comet.supplyTo(address,address,uint256) selector — used by both deposit and repay
+    bytes32 internal constant COMET_SUPPLY_TO = 0x4232cd6300000000000000000000000000000000000000000000000000000000;
+
     /**
      * @notice Withdraws from Compound V3 lending pool
-     * @dev Supports both base and collateral token withdrawals
-     * @param currentOffset Current position in the calldata
-     * @param callerAddress Address of the caller
-     * @return Updated calldata offset after processing
+     * @dev Supports both base and collateral token withdrawals; UINT112_MASK = max withdraw.
      * @custom:calldata-offset-table
      * | Offset | Length (bytes) | Description                     |
      * |--------|----------------|---------------------------------|
@@ -29,63 +32,45 @@ abstract contract CompoundV3Lending is ERC20Selectors, Masks {
     function _withdrawFromCompoundV3(uint256 currentOffset, address callerAddress) internal returns (uint256) {
         assembly {
             let ptr := mload(0x40)
-            // Compound V3 types need to transfer collateral tokens
-
             let underlying := shr(96, calldataload(currentOffset))
-            // offset for amount at lower bytes
             let amountData := shr(128, calldataload(add(currentOffset, 20)))
-
             let isBase := calldataload(add(currentOffset, 36))
-            // receiver
             let receiver := shr(96, isBase)
-
-            // adjust isBase flag
-
             let cometPool := shr(96, calldataload(add(currentOffset, 57)))
-
             currentOffset := add(currentOffset, 77)
 
             let amount := and(UINT112_MASK, amountData)
             if eq(amount, 0xffffffffffffffffffffffffffff) {
                 switch and(UINT8_MASK, shr(88, isBase))
                 case 0 {
-                    // selector for userCollateral(address,address)
+                    // userCollateral(address,address) — returns (balance uint128, reserved uint128)
                     mstore(ptr, 0x2b92a07d00000000000000000000000000000000000000000000000000000000)
-                    // add caller address as parameter
                     mstore(add(ptr, 0x04), callerAddress)
-                    // add underlying address
                     mstore(add(ptr, 0x24), underlying)
-                    // call to comet
                     if iszero(staticcall(gas(), cometPool, ptr, 0x44, ptr, 0x20)) {
                         returndatacopy(0, 0, returndatasize())
                         revert(0, returndatasize())
                     }
-                    // load the retrieved balance (lower 128 bits)
                     amount := and(UINT128_MASK, mload(ptr))
                 }
-                // comet.balanceOf(...) is lending token balance
                 default {
-                    // selector for balanceOf(address)
+                    // comet.balanceOf(...) — lending token balance
                     mstore(0, ERC20_BALANCE_OF)
-                    // add caller address as parameter
                     mstore(0x04, callerAddress)
-                    // call to comet
                     if iszero(staticcall(gas(), cometPool, 0x0, 0x24, 0x0, 0x20)) {
                         returndatacopy(0, 0, returndatasize())
                         revert(0, returndatasize())
                     }
-                    // load the retrieved balance
                     amount := mload(0x0)
                 }
             }
 
-            // selector withdrawFrom(address,address,address,uint256)
-            mstore(ptr, 0x2644131800000000000000000000000000000000000000000000000000000000)
+            // comet.withdrawFrom(from=caller, to=receiver, underlying, amount) — identical call to borrow
+            mstore(ptr, COMET_WITHDRAW_FROM)
             mstore(add(ptr, 0x04), callerAddress)
             mstore(add(ptr, 0x24), receiver)
             mstore(add(ptr, 0x44), underlying)
             mstore(add(ptr, 0x64), amount)
-            // call pool
             if iszero(call(gas(), cometPool, 0x0, ptr, 0x84, 0x0, 0x0)) {
                 returndatacopy(0x0, 0x0, returndatasize())
                 revert(0x0, returndatasize())
@@ -96,9 +81,6 @@ abstract contract CompoundV3Lending is ERC20Selectors, Masks {
 
     /**
      * @notice Borrows from Compound V3 lending pool
-     * @param currentOffset Current position in the calldata
-     * @param callerAddress Address of the caller
-     * @return Updated calldata offset after processing
      * @custom:calldata-offset-table
      * | Offset | Length (bytes) | Description                     |
      * |--------|----------------|---------------------------------|
@@ -110,26 +92,20 @@ abstract contract CompoundV3Lending is ERC20Selectors, Masks {
     function _borrowFromCompoundV3(uint256 currentOffset, address callerAddress) internal returns (uint256) {
         assembly {
             let ptr := mload(0x40)
-            // Compound V3 types need to transfer collateral tokens
             let underlying := shr(96, calldataload(currentOffset))
-            // offset for amount at lower bytes
             let amountData := shr(128, calldataload(add(currentOffset, 20)))
-            // receiver
             let receiver := shr(96, calldataload(add(currentOffset, 36)))
-
             let cometPool := shr(96, calldataload(add(currentOffset, 56)))
-
             currentOffset := add(currentOffset, 76)
 
             let amount := and(UINT112_MASK, amountData)
 
-            // selector withdrawFrom(address,address,address,uint256)
-            mstore(ptr, 0x2644131800000000000000000000000000000000000000000000000000000000)
+            // comet.withdrawFrom(from=caller, to=receiver, underlying, amount) — identical call to withdraw
+            mstore(ptr, COMET_WITHDRAW_FROM)
             mstore(add(ptr, 0x04), callerAddress)
             mstore(add(ptr, 0x24), receiver)
             mstore(add(ptr, 0x44), underlying)
             mstore(add(ptr, 0x64), amount)
-            // call pool
             if iszero(call(gas(), cometPool, 0x0, ptr, 0x84, 0x0, 0x0)) {
                 returndatacopy(0x0, 0x0, returndatasize())
                 revert(0x0, returndatasize())
@@ -152,53 +128,12 @@ abstract contract CompoundV3Lending is ERC20Selectors, Masks {
      * | 56     | 20             | comet                           |
      */
     function _depositToCompoundV3(uint256 currentOffset) internal returns (uint256) {
-        assembly {
-            let underlying := shr(96, calldataload(currentOffset))
-            // offset for amount at lower bytes
-            let amountData := shr(128, calldataload(add(currentOffset, 20)))
-            // receiver
-            let receiver := shr(96, calldataload(add(currentOffset, 36)))
-            // get comet
-            let comet := shr(96, calldataload(add(currentOffset, 56)))
-            currentOffset := add(currentOffset, 76)
-
-            let amount := and(UINT112_MASK, amountData)
-            // zero is this balance
-            if iszero(amount) {
-                // selector for balanceOf(address)
-                mstore(0, ERC20_BALANCE_OF)
-                // add this address as parameter
-                mstore(0x04, address())
-                // call to token
-                if iszero(staticcall(gas(), underlying, 0x0, 0x24, 0x0, 0x20)) {
-                    returndatacopy(0, 0, returndatasize())
-                    revert(0, returndatasize())
-                }
-                // load the retrieved balance
-                amount := mload(0x0)
-            }
-
-            let ptr := mload(0x40)
-
-            // selector supplyTo(address,address,uint256)
-            mstore(ptr, 0x4232cd6300000000000000000000000000000000000000000000000000000000)
-            mstore(add(ptr, 0x04), receiver)
-            mstore(add(ptr, 0x24), underlying)
-            mstore(add(ptr, 0x44), amount)
-            // call pool
-            if iszero(call(gas(), comet, 0x0, ptr, 0x64, 0x0, 0x0)) {
-                returndatacopy(0x0, 0x0, returndatasize())
-                revert(0x0, returndatasize())
-            }
-        }
-        return currentOffset;
+        return _callCometSupplyTo(currentOffset, false);
     }
 
     /**
      * @notice Repays debt to Compound V3 lending pool
-     * @dev Zero amount uses contract balance. Max amount (0xffffffffffffffffffffffffffff) repays minimum of contract balance and user debt.
-     * @param currentOffset Current position in the calldata
-     * @return Updated calldata offset after processing
+     * @dev Zero amount uses contract balance. Max amount (UINT112_MASK) repays min(balance, debt).
      * @custom:calldata-offset-table
      * | Offset | Length (bytes) | Description                     |
      * |--------|----------------|---------------------------------|
@@ -208,77 +143,62 @@ abstract contract CompoundV3Lending is ERC20Selectors, Masks {
      * | 56     | 20             | comet                           |
      */
     function _repayToCompoundV3(uint256 currentOffset) internal returns (uint256) {
+        return _callCometSupplyTo(currentOffset, true);
+    }
+
+    /**
+     * @notice Shared handler: Compound V3 `supplyTo` is used for BOTH deposit (to own account)
+     *         and repay (to a borrower's account — same call, repays their debt first).
+     *         Amount handling:
+     *         - amount = 0: full contract balance
+     *         - isRepay && amount = UINT112_MASK: min(balance, user borrow balance)
+     *         - else: as-is
+     */
+    function _callCometSupplyTo(uint256 currentOffset, bool isRepay) internal returns (uint256) {
         assembly {
             let underlying := shr(96, calldataload(currentOffset))
-            // offset for amount at lower bytes
             let amountData := shr(128, calldataload(add(currentOffset, 20)))
-            // receiver
             let receiver := shr(96, calldataload(add(currentOffset, 36)))
-            // get comet
             let comet := shr(96, calldataload(add(currentOffset, 56)))
             currentOffset := add(currentOffset, 76)
 
             let amount := and(UINT112_MASK, amountData)
-            switch amount
-            case 0 {
-                // selector for balanceOf(address)
+            let useBalance := iszero(amount)
+            let isMaxRepay := and(isRepay, eq(amount, UINT112_MASK))
+
+            if or(useBalance, isMaxRepay) {
+                // contract balance of underlying
                 mstore(0, ERC20_BALANCE_OF)
-                // add this address as parameter
                 mstore(0x04, address())
-                // call to token
                 if iszero(staticcall(gas(), underlying, 0x0, 0x24, 0x0, 0x20)) {
                     returndatacopy(0, 0, returndatasize())
                     revert(0, returndatasize())
                 }
-                // load the retrieved balance
-                amount := mload(0x0)
-            }
-            // repay maximum safely
-            // comet will fail when using blind maxima if the contract has not
-            // enough balance
-            // to prevent this, we read the contract balance and user borrow balance and take the minimum
-            case 0xffffffffffffffffffffffffffff {
-                // selector for balanceOf(address)
-                mstore(0, ERC20_BALANCE_OF)
-                // add this address as parameter
-                mstore(0x04, address())
-                // call to token
-                if iszero(staticcall(gas(), underlying, 0x0, 0x24, 0x0, 0x20)) {
-                    returndatacopy(0, 0, returndatasize())
-                    revert(0, returndatasize())
-                }
-                // load the retrieved balance
                 amount := mload(0x0)
 
-                // selector for borrowBalanceOf(address)
-                mstore(0, 0x374c49b400000000000000000000000000000000000000000000000000000000)
-                // add receiver as parameter
-                mstore(0x04, receiver)
-                // call to comet
-                if iszero(staticcall(gas(), comet, 0x0, 0x24, 0x0, 0x20)) {
-                    returndatacopy(0, 0, returndatasize())
-                    revert(0, returndatasize())
+                if isMaxRepay {
+                    // comet.borrowBalanceOf(receiver)
+                    mstore(0, 0x374c49b400000000000000000000000000000000000000000000000000000000)
+                    mstore(0x04, receiver)
+                    if iszero(staticcall(gas(), comet, 0x0, 0x24, 0x0, 0x20)) {
+                        returndatacopy(0, 0, returndatasize())
+                        revert(0, returndatasize())
+                    }
+                    let userBorrowBalance := mload(0x0)
+                    if gt(amount, userBorrowBalance) { amount := userBorrowBalance }
                 }
-                let userBorrowBalance := mload(0x0)
-
-                // amount greater than borrow balance -> use borrow balance
-                // otherwise repay less than the borrow balance safely
-                if gt(amount, userBorrowBalance) { amount := userBorrowBalance }
             }
 
             let ptr := mload(0x40)
-            // selector supplyTo(address,address,uint256)
-            mstore(ptr, 0x4232cd6300000000000000000000000000000000000000000000000000000000)
+            mstore(ptr, COMET_SUPPLY_TO)
             mstore(add(ptr, 0x04), receiver)
             mstore(add(ptr, 0x24), underlying)
             mstore(add(ptr, 0x44), amount)
-            // call pool
             if iszero(call(gas(), comet, 0x0, ptr, 0x64, 0x0, 0x0)) {
                 returndatacopy(0x0, 0x0, returndatasize())
                 revert(0x0, returndatasize())
             }
         }
-
         return currentOffset;
     }
 }

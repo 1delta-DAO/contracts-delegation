@@ -63,7 +63,9 @@ contract AaveV3FlashLoanCallback is Masks, DeltaErrors {
             case 1 {
                 switch poolId
                 case 0 { pool := AAVE_V3 }
+
                 case 51 { pool := AVALON_SOLVBTC }
+
                 case 53 { pool := AVALON_PUMPBTC }
             }
             default {
@@ -71,15 +73,21 @@ contract AaveV3FlashLoanCallback is Masks, DeltaErrors {
                 case 1 {
                     switch poolId
                     case 64 { pool := AVALON_STBTC }
+
                     case 65 { pool := AVALON_WBTC }
+
                     case 66 { pool := AVALON_LBTC }
                 }
                 default {
                     switch poolId
                     case 67 { pool := AVALON_XAUM }
+
                     case 68 { pool := AVALON_LISTA }
+
                     case 69 { pool := AVALON_USDX }
+
                     case 70 { pool := AVALON_UNIBTC }
+
                     case 82 { pool := KINZA }
                 }
             }
@@ -130,3 +138,4 @@ contract AaveV3FlashLoanCallback is Masks, DeltaErrors {
      */
     function _deltaComposeInternal(address callerAddress, uint256 offset, uint256 length) internal virtual {}
 }
+

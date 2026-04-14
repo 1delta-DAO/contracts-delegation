@@ -111,11 +111,7 @@ contract V3QuoterTest is BaseTest {
         console.log("Actual amount:", actualAmountOut);
     }
 
-    function multiPath(
-        address[] memory assets,
-        uint16[] memory fees,
-        address receiver
-    )
+    function multiPath(address[] memory assets, uint16[] memory fees, address receiver)
         internal
         view
         returns (bytes memory data)

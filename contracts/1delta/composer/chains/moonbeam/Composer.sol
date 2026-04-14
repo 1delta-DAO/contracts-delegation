@@ -54,3 +54,4 @@ contract OneDeltaComposerMoonbeam is BaseComposer, UniversalFlashLoan, SwapCallb
         );
     }
 }
+

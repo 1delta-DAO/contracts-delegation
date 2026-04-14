@@ -219,9 +219,7 @@ abstract contract PermitUtils is PermitConstants {
     }
 
     /**
-     * @notice Calls PositionManagerBase.setSelfAsUserPositionManagerWithSig on a single PM.
-     * @dev Compact calldata: spoke(20) | approve(1) | nonce(32) | deadline+1(4) | r(32) | vs(32) = 121 bytes
-     * @param target The PM address (GiverPM, TakerPM, or ConfigPM)
+     * @notice Calls ISpoke.setUserPositionManagersWithSig to approve multiple PMs in one signed intent.
      *
      * ─── deadline+1 convention ───────────────────────────────────────────────────────────────
      * All Aave V4 compact permits encode `deadline` as uint32 (4 bytes) to save calldata.
@@ -230,50 +228,11 @@ abstract contract PermitUtils is PermitConstants {
      *   - Reserves the numeric 0 slot for "not encoded" while still allowing deadline = 0.
      *   - Max representable deadline: 2^32 - 2 ≈ Feb 7, 2106. Deadlines beyond wrap mod 2^32.
      *   - If the caller forgets the +1, decoded deadline is off by 1; the signed digest won't
-     *     match, so the PM reverts cleanly on `ECDSA: invalid signature` (no silent corruption).
+     *     match, so the spoke reverts cleanly on `ECDSA: invalid signature` (no silent corruption).
      *   - The +1 only exists in calldata — the signed EIP-712 struct uses the raw deadline.
      *
      * Compact signature (`vs`) is the EIP-2098 format: top bit = v_parity (v - 27), lower 255
      * bits = s. Decoder recovers `v = 27 + (vs >> 255)` and `s = vs & 2^255 - 1`.
-     */
-    function _tryAaveV4PmSetup(address target, uint256 permitOffset, uint256 permitLength, address callerAddress) internal {
-        assembly {
-            let ptr := mload(0x40)
-            switch permitLength
-            case 121 {
-                let spoke := shr(96, calldataload(permitOffset))
-                let approve := shr(248, calldataload(add(permitOffset, 0x14)))
-                let nonce := calldataload(add(permitOffset, 0x15))
-                let deadline := sub(shr(224, calldataload(add(permitOffset, 0x35))), 1)
-                let r := calldataload(add(permitOffset, 0x39))
-                let vs := calldataload(add(permitOffset, 0x59))
-
-                // setSelfAsUserPositionManagerWithSig(address,address,bool,uint256,uint256,bytes)
-                mstore(ptr, AAVE_V4_SET_SELF_AS_PM_WITH_SIG)
-                mstore(add(ptr, 0x04), spoke)
-                mstore(add(ptr, 0x24), callerAddress)
-                mstore(add(ptr, 0x44), approve)
-                mstore(add(ptr, 0x64), nonce)
-                mstore(add(ptr, 0x84), deadline)
-                mstore(add(ptr, 0xa4), 0xc0) // offset to signature bytes
-                mstore(add(ptr, 0xc4), 65) // signature length (r + s + v)
-                mstore(add(ptr, 0xe4), r)
-                mstore(add(ptr, 0x104), shr(1, shl(1, vs))) // s = vs without MSB
-                mstore(add(ptr, 0x124), shl(248, add(27, shr(255, vs)))) // v byte left-aligned
-                if iszero(call(gas(), target, 0, ptr, 0x144, 0, 0)) {
-                    returndatacopy(0, 0, returndatasize())
-                    revert(0, returndatasize())
-                }
-            }
-            default {
-                mstore(ptr, _PERMIT_LENGTH_ERROR)
-                revert(ptr, 4)
-            }
-        }
-    }
-
-    /**
-     * @notice Calls ISpoke.setUserPositionManagersWithSig to approve multiple PMs in one signed intent.
      * @dev Compact calldata: count(1) | count * (pm(20) | approve(1)) | nonce(32) | deadline+1(4) | r(32) | vs(32)
      *      Minimum length: 1 + 21 + 32 + 4 + 32 + 32 = 122 bytes (one update, equivalent to single-PM variant)
      *      General length: 101 + count * 21
@@ -446,43 +405,6 @@ abstract contract PermitUtils is PermitConstants {
                     returndatacopy(0, 0, returndatasize())
                     revert(0, returndatasize())
                 }
-            }
-            default {
-                mstore(ptr, _PERMIT_LENGTH_ERROR)
-                revert(ptr, 4)
-            }
-        }
-    }
-
-    /**
-     * @notice Calls PositionManagerBase.permitReserveUnderlying (ERC20 permit routed through the PM).
-     * @dev Compact calldata: spoke(20) | reserveId(32) | value(32) | deadline+1(4) | r(32) | vs(32) = 152 bytes
-     * @param target The PM address (typically GiverPM)
-     */
-    function _tryAaveV4UnderlyingPermit(address target, uint256 permitOffset, uint256 permitLength, address callerAddress) internal {
-        assembly {
-            let ptr := mload(0x40)
-            switch permitLength
-            case 152 {
-                let spoke := shr(96, calldataload(permitOffset))
-                let reserveId := calldataload(add(permitOffset, 0x14))
-                let value := calldataload(add(permitOffset, 0x34))
-                let deadline := sub(shr(224, calldataload(add(permitOffset, 0x54))), 1)
-                let r := calldataload(add(permitOffset, 0x58))
-                let vs := calldataload(add(permitOffset, 0x78))
-
-                // permitReserveUnderlying(address,uint256,address,uint256,uint256,uint8,bytes32,bytes32)
-                mstore(ptr, AAVE_V4_PERMIT_RESERVE_UNDERLYING)
-                mstore(add(ptr, 0x04), spoke)
-                mstore(add(ptr, 0x24), reserveId)
-                mstore(add(ptr, 0x44), callerAddress) // onBehalfOf
-                mstore(add(ptr, 0x64), value)
-                mstore(add(ptr, 0x84), deadline)
-                mstore(add(ptr, 0xa4), add(27, shr(255, vs))) // v
-                mstore(add(ptr, 0xc4), r)
-                mstore(add(ptr, 0xe4), shr(1, shl(1, vs))) // s = vs without MSB
-                // PM internally does try/catch on the ERC20 permit — frontrun tolerant
-                pop(call(gas(), target, 0, ptr, 0x104, 0, 0))
             }
             default {
                 mstore(ptr, _PERMIT_LENGTH_ERROR)

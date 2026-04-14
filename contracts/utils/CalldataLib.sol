@@ -2033,23 +2033,6 @@ library CalldataLib {
         );
     }
 
-    function encodeAaveV4PmSetupPermit(
-        address positionManager,
-        address spoke,
-        bool approve,
-        uint256 nonce,
-        uint32 deadlinePlusOne,
-        bytes32 r,
-        bytes32 vs
-    )
-        internal
-        pure
-        returns (bytes memory)
-    {
-        bytes memory data = abi.encodePacked(spoke, uint8(approve ? 1 : 0), nonce, deadlinePlusOne, r, vs);
-        return encodePermit(PermitIds.AAVE_V4_PM_SETUP_PERMIT, positionManager, data);
-    }
-
     function encodeAaveV4BorrowPermit(
         address takerPM,
         address spoke,
@@ -2101,23 +2084,6 @@ library CalldataLib {
     {
         bytes memory data = abi.encodePacked(spoke, uint8(status ? 1 : 0), nonce, deadlinePlusOne, r, vs);
         return encodePermit(PermitIds.AAVE_V4_CONFIG_PERMIT, configPM, data);
-    }
-
-    function encodeAaveV4UnderlyingPermit(
-        address positionManager,
-        address spoke,
-        uint256 reserveId,
-        uint256 value,
-        uint32 deadlinePlusOne,
-        bytes32 r,
-        bytes32 vs
-    )
-        internal
-        pure
-        returns (bytes memory)
-    {
-        bytes memory data = abi.encodePacked(spoke, reserveId, value, deadlinePlusOne, r, vs);
-        return encodePermit(PermitIds.AAVE_V4_UNDERLYING_PERMIT, positionManager, data);
     }
 
     /**

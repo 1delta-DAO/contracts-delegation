@@ -2,10 +2,9 @@
 
 pragma solidity 0.8.34;
 
-/**
- * Author: Achthar | 1delta
- * /*****************************************************************************
- */
+/******************************************************************************* Author: Achthar | 1delta
+/******************************************************************************/
+
 import {ValidatorLib} from "../../../../swappers/callbacks/ValidatorLib.sol";
 import {Masks} from "../../../../../shared/masks/Masks.sol";
 import {DeltaErrors} from "../../../../../shared/errors/Errors.sol";
@@ -61,6 +60,7 @@ abstract contract UniV3Callbacks is V3Callbacker, Masks, DeltaErrors {
             switch selector
             case 0xfa461e3300000000000000000000000000000000000000000000000000000000 {
                 switch and(UINT8_MASK, shr(88, calldataload(172)))
+
                 case 0 {
                     ffFactoryAddress := UNISWAP_V3_FF_FACTORY
                     codeHash := UNISWAP_V3_CODE_HASH
@@ -80,8 +80,12 @@ abstract contract UniV3Callbacks is V3Callbacker, Masks, DeltaErrors {
                 default { revert(0, 0) }
                 let _amount1 := calldataload(36)
                 switch sgt(_amount1, 0)
-                case 1 { amountToPay := _amount1 }
-                default { amountToPay := calldataload(4) }
+                case 1 {
+                    amountToPay := _amount1
+                }
+                default {
+                    amountToPay := calldataload(4)
+                }
             }
             case 0x0102795e00000000000000000000000000000000000000000000000000000000 {
                 ffFactoryAddress := AXION_V3_FF_FACTORY
@@ -89,11 +93,16 @@ abstract contract UniV3Callbacks is V3Callbacker, Masks, DeltaErrors {
 
                 let _amount1 := calldataload(36)
                 switch sgt(_amount1, 0)
-                case 1 { amountToPay := _amount1 }
-                default { amountToPay := calldataload(4) }
+                case 1 {
+                    amountToPay := _amount1
+                }
+                default {
+                    amountToPay := calldataload(4)
+                }
             }
             case 0x2c8958f600000000000000000000000000000000000000000000000000000000 {
                 switch and(UINT8_MASK, shr(88, calldataload(172)))
+
                 case 1 {
                     ffFactoryAddress := SWAPSICLE_FF_FACTORY
                     codeHash := SWAPSICLE_CODE_HASH
@@ -105,8 +114,12 @@ abstract contract UniV3Callbacks is V3Callbacker, Masks, DeltaErrors {
                 default { revert(0, 0) }
                 let _amount1 := calldataload(36)
                 switch sgt(_amount1, 0)
-                case 1 { amountToPay := _amount1 }
-                default { amountToPay := calldataload(4) }
+                case 1 {
+                    amountToPay := _amount1
+                }
+                default {
+                    amountToPay := calldataload(4)
+                }
             }
             case 0x23a69e7500000000000000000000000000000000000000000000000000000000 {
                 ffFactoryAddress := PANKO_FF_FACTORY
@@ -114,9 +127,14 @@ abstract contract UniV3Callbacks is V3Callbacker, Masks, DeltaErrors {
 
                 let _amount1 := calldataload(36)
                 switch sgt(_amount1, 0)
-                case 1 { amountToPay := _amount1 }
-                default { amountToPay := calldataload(4) }
+                case 1 {
+                    amountToPay := _amount1
+                }
+                default {
+                    amountToPay := calldataload(4)
+                }
             }
+
             // SELECTOR_IZI_XY
             case 0x1878068400000000000000000000000000000000000000000000000000000000 {
                 ffFactoryAddress := IZUMI_FF_FACTORY
@@ -189,3 +207,4 @@ abstract contract UniV3Callbacks is V3Callbacker, Masks, DeltaErrors {
         }
     }
 }
+

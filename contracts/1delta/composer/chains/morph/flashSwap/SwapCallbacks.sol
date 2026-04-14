@@ -25,8 +25,7 @@ contract SwapCallbacks is
     )
         internal
         virtual
-        override(
-            V3Callbacker //
+        override(V3Callbacker //
         )
     {}
 
@@ -53,3 +52,4 @@ contract SwapCallbacks is
         }
     }
 }
+

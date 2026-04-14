@@ -38,55 +38,21 @@ abstract contract SyncSwapper is ERC20Selectors, Masks {
         internal
         returns (uint256 buyAmount, uint256 payFlag)
     {
+        address pool;
         assembly {
             let syncSwapData := calldataload(currentOffset)
-
-            let ptr := mload(0x40)
-
-            // facilitate payment if needed
+            pool := shr(96, syncSwapData)
             payFlag := and(UINT8_MASK, shr(88, syncSwapData))
-            let pool := shr(96, syncSwapData)
-            if lt(payFlag, 2) {
-                let success
-                switch payFlag
-                case 0 {
-                    // selector for transferFrom(address,address,uint256)
-                    mstore(ptr, ERC20_TRANSFER_FROM)
-                    mstore(add(ptr, 0x04), callerAddress)
-                    mstore(add(ptr, 0x24), pool)
-                    mstore(add(ptr, 0x44), fromAmount)
+        }
+        // Pre-fund the pool (payMode 0/1). payMode ≥ 2 means pre-funded by a prior op — skip.
+        if (payFlag == 0) {
+            _safeTransferFrom(tokenIn, callerAddress, pool, fromAmount);
+        } else if (payFlag == 1) {
+            _safeTransfer(tokenIn, pool, fromAmount);
+        }
 
-                    success := call(gas(), tokenIn, 0, ptr, 0x64, 0, 32)
-                }
-                // transfer plain
-                case 1 {
-                    // selector for transfer(address,uint256)
-                    mstore(ptr, ERC20_TRANSFER)
-                    mstore(add(ptr, 0x04), pool)
-                    mstore(add(ptr, 0x24), fromAmount)
-                    success := call(gas(), tokenIn, 0, ptr, 0x44, 0, 32)
-                }
-                let rdsize := returndatasize()
-                // Check for ERC20 success. ERC20 tokens should return a boolean,
-                // but some don't. We accept 0-length return data as success, or at
-                // least 32 bytes that starts with a 32-byte boolean true.
-                if iszero(
-                    and(
-                        success, // call itself succeeded
-                        or(
-                            iszero(rdsize), // no return data, or
-                            and(
-                                gt(rdsize, 31), // at least 32 bytes
-                                eq(mload(0), 1) // starts with uint256(1)
-                            )
-                        )
-                    )
-                ) {
-                    returndatacopy(0, 0, rdsize)
-                    revert(0, rdsize)
-                }
-            }
-
+        assembly {
+            let ptr := mload(0x40)
             // selector for swap(...)
             mstore(ptr, SYNCSWAP_SELECTOR)
             mstore(add(ptr, 4), 0x80) // first param set offset

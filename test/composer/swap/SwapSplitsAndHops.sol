@@ -252,8 +252,9 @@ contract SwapsSplitsAndHopsLightTest is BaseTest {
     }
 
     function v3poolpSwapSingle_head(address receiver, uint256 amount) internal view returns (bytes memory data) {
-        data =
-            abi.encodePacked(uint8(ComposerCommands.SWAPS), uint128(amount), uint128(1), USDC, uint8(0), uint8(0), WETH, receiver);
+        data = abi.encodePacked(
+            uint8(ComposerCommands.SWAPS), uint128(amount), uint128(1), USDC, uint8(0), uint8(0), WETH, receiver
+        );
     }
 
     function v3poolpSwapSingle(uint16 fee, address receiver, uint256 amount) internal view returns (bytes memory data) {

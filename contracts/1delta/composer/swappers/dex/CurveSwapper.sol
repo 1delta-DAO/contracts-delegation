@@ -89,6 +89,7 @@ abstract contract CurveSwapper is ERC20Selectors, Masks {
         private
         returns (address pool)
     {
+        bool needsFunding;
         assembly {
             let ptr := mload(0x40)
             pool := shr(96, data)
@@ -104,46 +105,14 @@ abstract contract CurveSwapper is ERC20Selectors, Masks {
                 mstore(ptr, ERC20_APPROVE)
                 mstore(add(ptr, 0x04), pool)
                 mstore(add(ptr, 0x24), MAX_UINT256)
-                pop(
-                    call(
-                        gas(),
-                        tokenIn, //
-                        0,
-                        ptr,
-                        0x44,
-                        ptr,
-                        32
-                    )
-                )
+                pop(call(gas(), tokenIn, 0, ptr, 0x44, ptr, 32))
                 sstore(key, 1)
             }
-            if iszero(and(UINT16_MASK, shr(56, data))) {
-                // selector for transferFrom(address,address,uint256)
-                mstore(ptr, ERC20_TRANSFER_FROM)
-                mstore(add(ptr, 0x04), callerAddress)
-                mstore(add(ptr, 0x24), address())
-                mstore(add(ptr, 0x44), amount)
-
-                let success := call(gas(), tokenIn, 0, ptr, 0x64, 0, 32)
-
-                let rdsize := returndatasize()
-
-                if iszero(
-                    and(
-                        success, // call itself succeeded
-                        or(
-                            iszero(rdsize), // no return data, or
-                            and(
-                                gt(rdsize, 31), // at least 32 bytes
-                                eq(mload(0), 1) // starts with uint256(1)
-                            )
-                        )
-                    )
-                ) {
-                    returndatacopy(0, 0, rdsize)
-                    revert(0, rdsize)
-                }
-            }
+            needsFunding := iszero(and(UINT16_MASK, shr(56, data)))
+        }
+        // payMode 0 (caller pays): pull tokens from callerAddress into this contract
+        if (needsFunding) {
+            _safeTransferFrom(tokenIn, callerAddress, address(this), amount);
         }
     }
 
@@ -186,6 +155,7 @@ abstract contract CurveSwapper is ERC20Selectors, Masks {
         )
     {
         address pool;
+        bool needsTransfer;
         assembly {
             curveData := calldataload(currentOffset)
         }
@@ -200,130 +170,89 @@ abstract contract CurveSwapper is ERC20Selectors, Masks {
             let ptr := mload(0x40)
 
             // consistent params not overlapping with 32 bytes from selector
-            mstore(add(ptr, 0x24), and(shr(80, curveData), UINT8_MASK))
+            mstore(add(ptr, 0x04), and(shr(88, curveData), UINT8_MASK)) // i (indexIn)
+            mstore(add(ptr, 0x24), and(shr(80, curveData), UINT8_MASK)) // j (indexOut)
             mstore(add(ptr, 0x44), amountIn)
             mstore(add(ptr, 0x64), 0) // min out
 
-            let success
             ////////////////////////////////////////////////////
             // Execute swap function
+            //
+            // Nine selectorId variants fall into two families:
+            //   - "with-receiver" (even cases 0,2,4,6 and fork case 200):
+            //       an extra slot at 0x84 (receiver address, or MAX_UINT256 deadline for the fork).
+            //       Call length = 0xA4. After the call, curveData := 0 so we skip the manual
+            //       post-transfer step (pool delivered output to `receiver`).
+            //   - "no-receiver" (odd cases 1,3,5,7):
+            //       Call length = 0x84. curveData := MAX_UINT256 triggers the manual post-transfer
+            //       to `receiver` at the bottom of this function (pool delivered output to this contract).
+            //
+            // We first pick the selector (table lookup) and the extra-slot value, then issue the
+            // call once. This removes the 9-case code duplication while preserving exact behavior.
             ////////////////////////////////////////////////////
-            switch and(shr(72, curveData), UINT8_MASK)
-            // selectorId
-            case 0 {
-                // selector for exchange(int128,int128,uint256,uint256,address)
-                mstore(ptr, EXCHANGE_INT_WITH_RECEIVER)
-                mstore(add(ptr, 0x4), and(shr(88, curveData), UINT8_MASK))
-                mstore(add(ptr, 0x84), receiver) // receiver, set curveData accordingly
-                success := call(gas(), pool, 0x0, ptr, 0xA4, ptr, 0x20)
-                curveData := 0
-            }
-            case 1 {
-                // selector for exchange(int128,int128,uint256,uint256)
-                mstore(ptr, EXCHANGE_INT)
-                mstore(add(ptr, 0x4), and(shr(88, curveData), UINT8_MASK))
-                success := call(gas(), pool, 0x0, ptr, 0x84, ptr, 0x20)
-                curveData := MAX_UINT256
-            }
-            case 2 {
-                // selector for exchange(uint256,uint256,uint256,uint256,address)
-                mstore(ptr, EXCHANGE_WITH_RECEIVER)
-                mstore(add(ptr, 0x4), and(shr(88, curveData), UINT8_MASK))
-                mstore(add(ptr, 0x84), receiver) // receiver, set curveData accordingly
-                success := call(gas(), pool, 0x0, ptr, 0xA4, ptr, 0x20)
-                curveData := 0
-            }
-            case 3 {
-                // selector for exchange(uint256,uint256,uint256,uint256)
-                mstore(ptr, EXCHANGE)
-                mstore(add(ptr, 0x4), and(shr(88, curveData), UINT8_MASK))
+            let selectorId := and(shr(72, curveData), UINT8_MASK)
+            let selector
+            let extraSlotValue
+            let hasReceiver := 0
 
-                success := call(gas(), pool, 0x0, ptr, 0x84, ptr, 0x20)
-                curveData := MAX_UINT256
+            switch selectorId
+            case 0 {
+                selector := EXCHANGE_INT_WITH_RECEIVER
+                hasReceiver := 1
+                extraSlotValue := receiver
             }
+            case 1 { selector := EXCHANGE_INT }
+            case 2 {
+                selector := EXCHANGE_WITH_RECEIVER
+                hasReceiver := 1
+                extraSlotValue := receiver
+            }
+            case 3 { selector := EXCHANGE }
             case 4 {
-                // selector for exchange_underlying(int128,int128,uint256,uint256,address)
-                mstore(ptr, EXCHANGE_UNDERLYING_INT_WITH_RECEIVER)
-                mstore(add(ptr, 0x4), and(shr(88, curveData), UINT8_MASK))
-                mstore(add(ptr, 0x84), receiver)
-                success := call(gas(), pool, 0x0, ptr, 0xA4, ptr, 0x20)
-                curveData := 0
+                selector := EXCHANGE_UNDERLYING_INT_WITH_RECEIVER
+                hasReceiver := 1
+                extraSlotValue := receiver
             }
-            case 5 {
-                // selector for exchange_underlying(int128,int128,uint256,uint256)
-                mstore(ptr, EXCHANGE_UNDERLYING_INT)
-                mstore(add(ptr, 0x4), and(shr(88, curveData), UINT8_MASK))
-                success := call(gas(), pool, 0x0, ptr, 0x84, ptr, 0x20)
-                curveData := MAX_UINT256
-            }
+            case 5 { selector := EXCHANGE_UNDERLYING_INT }
             case 6 {
-                // selector for exchange_underlying(uint256,uint256,uint256,uint256,address)
-                mstore(ptr, EXCHANGE_UNDERLYING_WITH_RECEIVER)
-                mstore(add(ptr, 0x4), and(shr(88, curveData), UINT8_MASK))
-                mstore(add(ptr, 0x84), receiver)
-                success := call(gas(), pool, 0x0, ptr, 0xA4, ptr, 0x20)
-                curveData := 0
+                selector := EXCHANGE_UNDERLYING_WITH_RECEIVER
+                hasReceiver := 1
+                extraSlotValue := receiver
             }
-            case 7 {
-                // selector for exchange_underlying(uint256,uint256,uint256,uint256)
-                mstore(ptr, EXCHANGE_UNDERLYING)
-                mstore(add(ptr, 0x4), and(shr(88, curveData), UINT8_MASK))
-                success := call(gas(), pool, 0x0, ptr, 0x84, ptr, 0x20)
-                curveData := MAX_UINT256
-            }
+            case 7 { selector := EXCHANGE_UNDERLYING }
+            // Fork (Solidity implementation) variant — has a trailing deadline slot
             case 200 {
-                // selector for swap(uint8,uint8,uint256,uint256,uint256)
-                mstore(ptr, SWAP)
-                mstore(add(ptr, 0x4), and(shr(88, curveData), UINT8_MASK))
-                mstore(add(ptr, 0x84), MAX_UINT256) // deadline
-                success := call(gas(), pool, 0x0, ptr, 0xA4, ptr, 0x20)
-                curveData := MAX_UINT256
+                selector := SWAP
+                hasReceiver := 1
+                extraSlotValue := MAX_UINT256
             }
             default { revert(0, 0) }
 
+            mstore(ptr, selector)
+
+            let callLen := 0x84
+            if hasReceiver {
+                mstore(add(ptr, 0x84), extraSlotValue)
+                callLen := 0xA4
+            }
+
+            let success := call(gas(), pool, 0x0, ptr, callLen, ptr, 0x20)
             if iszero(success) {
                 returndatacopy(0, 0, returndatasize())
                 revert(0, returndatasize())
             }
 
             amountOut := mload(ptr)
-
-            ////////////////////////////////////////////////////
-            // Send funds to receiver if needed
-            // curveData is now the flag for manually
-            // transferring to the receiver
-            ////////////////////////////////////////////////////
-            if and(curveData, xor(receiver, address())) {
-                // selector for transfer(address,uint256)
-                mstore(ptr, ERC20_TRANSFER)
-                mstore(add(ptr, 0x04), receiver)
-                mstore(add(ptr, 0x24), amountOut)
-                success := call(gas(), tokenOut, 0, ptr, 0x44, 0, 32)
-
-                let rdsize := returndatasize()
-
-                // Check for ERC20 success. ERC20 tokens should return a boolean,
-                // but some don't. We accept 0-length return data as success, or at
-                // least 32 bytes that starts with a 32-byte boolean true.
-                success := and(
-                    success, // call itself succeeded
-                    or(
-                        iszero(rdsize), // no return data, or
-                        and(
-                            gt(rdsize, 31), // at least 32 bytes
-                            eq(mload(0), 1) // starts with uint256(1)
-                        )
-                    )
-                )
-
-                if iszero(success) {
-                    returndatacopy(0, 0, rdsize)
-                    revert(0, rdsize)
-                }
-            }
+            // needsTransfer = 1 when the pool did NOT deliver to `receiver` directly
+            // (no-receiver selectors — cases 1,3,5,7 — and the fork case also delivers to self).
+            needsTransfer := iszero(hasReceiver)
             curveData := add(currentOffset, 25)
         }
-        return (amountOut, curveData);
+        // Forward the output to receiver when the pool delivered to this contract.
+        // Helper is a no-op when receiver == address(this), so no outer self-check needed.
+        if (needsTransfer) {
+            _safeTransfer(tokenOut, receiver, amountOut);
+        }
     }
 
     /**
@@ -434,48 +363,10 @@ abstract contract CurveSwapper is ERC20Selectors, Masks {
             // load the retrieved balance
             amountOut := sub(mload(0x0), amountOut)
 
-            ////////////////////////////////////////////////////
-            // Send funds to receiver if needed
-            ////////////////////////////////////////////////////
-            if xor(receiver, address()) {
-                // selector for transfer(address,uint256)
-                mstore(ptr, ERC20_TRANSFER)
-                mstore(add(ptr, 0x04), receiver)
-                mstore(add(ptr, 0x24), amountOut)
-                let success :=
-                    call(
-                        gas(),
-                        tokenOut, // tokenIn, pool + 5x uint8 (i,j,s,a)
-                        0,
-                        ptr,
-                        0x44,
-                        ptr,
-                        32
-                    )
-
-                let rdsize := returndatasize()
-
-                // Check for ERC20 success. ERC20 tokens should return a boolean,
-                // but some don't. We accept 0-length return data as success, or at
-                // least 32 bytes that starts with a 32-byte boolean true.
-                success := and(
-                    success, // call itself succeeded
-                    or(
-                        iszero(rdsize), // no return data, or
-                        and(
-                            gt(rdsize, 31), // at least 32 bytes
-                            eq(mload(ptr), 1) // starts with uint256(1)
-                        )
-                    )
-                )
-
-                if iszero(success) {
-                    returndatacopy(0, 0, rdsize)
-                    revert(0, rdsize)
-                }
-            }
             curveData := add(currentOffset, 25)
         }
+        // Fork pools don't have a receiver param — helper forwards to receiver (no-op if self).
+        _safeTransfer(tokenOut, receiver, amountOut);
         return (amountOut, curveData);
     }
 
@@ -514,52 +405,23 @@ abstract contract CurveSwapper is ERC20Selectors, Masks {
             uint256 curveData
         )
     {
+        address pool;
+        assembly {
+            curveData := calldataload(currentOffset)
+            pool := shr(96, curveData)
+            payFlagAmountOut := and(UINT16_MASK, shr(56, curveData))
+        }
+
+        // Pre-fund the pool (payModes 0=caller pays, 1=composer pays). payMode ≥ 2 means the
+        // pool has already been funded by an earlier op, so we skip.
+        if (payFlagAmountOut == 0) {
+            _safeTransferFrom(tokenIn, callerAddress, pool, amountIn);
+        } else if (payFlagAmountOut == 1) {
+            _safeTransfer(tokenIn, pool, amountIn);
+        }
+
         assembly {
             let ptr := mload(0x40)
-            curveData := calldataload(currentOffset)
-
-            let pool := shr(96, curveData)
-
-            payFlagAmountOut := and(UINT16_MASK, shr(56, curveData))
-            if lt(payFlagAmountOut, 2) {
-                let success
-                switch payFlagAmountOut
-                case 0 {
-                    // selector for transferFrom(address,address,uint256)
-                    mstore(ptr, ERC20_TRANSFER_FROM)
-                    mstore(add(ptr, 0x04), callerAddress)
-                    mstore(add(ptr, 0x24), pool)
-                    mstore(add(ptr, 0x44), amountIn)
-
-                    success := call(gas(), tokenIn, 0, ptr, 0x64, 0, 32)
-                }
-                // transfer plain
-                case 1 {
-                    // selector for transfer(address,uint256)
-                    mstore(ptr, ERC20_TRANSFER)
-                    mstore(add(ptr, 0x04), pool)
-                    mstore(add(ptr, 0x24), amountIn)
-                    success := call(gas(), tokenIn, 0, ptr, 0x44, 0, 32)
-                }
-
-                let rdsize := returndatasize()
-
-                if iszero(
-                    and(
-                        success, // call itself succeeded
-                        or(
-                            iszero(rdsize), // no return data, or
-                            and(
-                                gt(rdsize, 31), // at least 32 bytes
-                                eq(mload(0), 1) // starts with uint256(1)
-                            )
-                        )
-                    )
-                ) {
-                    returndatacopy(0, 0, rdsize)
-                    revert(0, rdsize)
-                }
-            }
             ////////////////////////////////////////////////////
             // Execute swap function
             ////////////////////////////////////////////////////

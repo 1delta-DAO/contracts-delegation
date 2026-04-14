@@ -408,9 +408,7 @@ contract MorphoBlueTest is BaseTest {
         (
             uint128 totalSupplyAssets,
             uint128 totalSupplyShares, //
-            ,
-            ,
-            ,
+            ,,,
         ) = IMorphoEverything(MORPHO).market(marketId(LBTC_USDC_MARKET));
 
         uint256 assetsSupplied = supplyShares.toAssetsDown(totalSupplyAssets, totalSupplyShares);
@@ -459,9 +457,7 @@ contract MorphoBlueTest is BaseTest {
         (
             uint128 totalSupplyAssets,
             uint128 totalSupplyShares, //
-            ,
-            ,
-            ,
+            ,,,
         ) = IMorphoEverything(MORPHO).market(marketId(LBTC_USDC_MARKET));
 
         uint256 assetsSupplied = supplyShares.toAssetsDown(totalSupplyAssets, totalSupplyShares);
@@ -502,9 +498,7 @@ contract MorphoBlueTest is BaseTest {
         (
             uint128 totalSupplyAssets,
             uint128 totalSupplyShares, //
-            ,
-            ,
-            ,
+            ,,,
         ) = IMorphoEverything(MORPHO).market(marketId(LBTC_USDC_MARKET));
 
         uint256 assetsSupplied = supplyShares.toAssetsDown(totalSupplyAssets, totalSupplyShares);
@@ -545,9 +539,7 @@ contract MorphoBlueTest is BaseTest {
         (
             uint128 totalSupplyAssets,
             uint128 totalSupplyShares, //
-            ,
-            ,
-            ,
+            ,,,
         ) = IMorphoEverything(MORPHO).market(marketId(LBTC_USDC_MARKET));
 
         uint256 assetsSupplied = supplyShares.toAssetsDown(totalSupplyAssets, totalSupplyShares);
