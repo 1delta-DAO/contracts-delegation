@@ -39,32 +39,37 @@ abstract contract Permits is Masks, PermitUtils, DeltaErrors {
             // increment offset
             currentOffset := add(permitOffset, permitLength)
         }
-        if (permitOperation == PermitIds.TOKEN_PERMIT) {
-            _tryPermit(permitTarget, permitOffset, permitLength, callerAddress);
-            return currentOffset;
-        } else if (permitOperation == PermitIds.AAVE_V3_CREDIT_PERMIT) {
-            _tryCreditPermit(permitTarget, permitOffset, permitLength, callerAddress);
-            return currentOffset;
-        } else if (permitOperation == PermitIds.ALLOW_CREDIT_PERMIT) {
-            _tryFlagBasedLendingPermit(permitTarget, permitOffset, permitLength, callerAddress);
-            return currentOffset;
-        } else if (permitOperation == PermitIds.AAVE_V4_PM_SETUP_PERMIT) {
-            _tryAaveV4PmSetup(permitTarget, permitOffset, permitLength, callerAddress);
-            return currentOffset;
-        } else if (permitOperation == PermitIds.AAVE_V4_BORROW_PERMIT) {
-            _tryAaveV4BorrowPermit(permitTarget, permitOffset, permitLength, callerAddress);
-            return currentOffset;
-        } else if (permitOperation == PermitIds.AAVE_V4_WITHDRAW_PERMIT) {
-            _tryAaveV4WithdrawPermit(permitTarget, permitOffset, permitLength, callerAddress);
-            return currentOffset;
-        } else if (permitOperation == PermitIds.AAVE_V4_CONFIG_PERMIT) {
-            _tryAaveV4ConfigPermit(permitTarget, permitOffset, permitLength, callerAddress);
-            return currentOffset;
-        } else if (permitOperation == PermitIds.AAVE_V4_UNDERLYING_PERMIT) {
-            _tryAaveV4UnderlyingPermit(permitTarget, permitOffset, permitLength, callerAddress);
-            return currentOffset;
+        // Split dispatch into two ranges (0..3 and 4..7) — one upfront LT halves the worst-case branch chain.
+        if (permitOperation < PermitIds.AAVE_V4_BORROW_PERMIT) {
+            if (permitOperation == PermitIds.TOKEN_PERMIT) {
+                _tryPermit(permitTarget, permitOffset, permitLength, callerAddress);
+                return currentOffset;
+            } else if (permitOperation == PermitIds.AAVE_V3_CREDIT_PERMIT) {
+                _tryCreditPermit(permitTarget, permitOffset, permitLength, callerAddress);
+                return currentOffset;
+            } else if (permitOperation == PermitIds.ALLOW_CREDIT_PERMIT) {
+                _tryFlagBasedLendingPermit(permitTarget, permitOffset, permitLength, callerAddress);
+                return currentOffset;
+            } else {
+                _tryAaveV4PmSetup(permitTarget, permitOffset, permitLength, callerAddress);
+                return currentOffset;
+            }
         } else {
-            _invalidOperation();
+            if (permitOperation == PermitIds.AAVE_V4_BORROW_PERMIT) {
+                _tryAaveV4BorrowPermit(permitTarget, permitOffset, permitLength, callerAddress);
+                return currentOffset;
+            } else if (permitOperation == PermitIds.AAVE_V4_WITHDRAW_PERMIT) {
+                _tryAaveV4WithdrawPermit(permitTarget, permitOffset, permitLength, callerAddress);
+                return currentOffset;
+            } else if (permitOperation == PermitIds.AAVE_V4_CONFIG_PERMIT) {
+                _tryAaveV4ConfigPermit(permitTarget, permitOffset, permitLength, callerAddress);
+                return currentOffset;
+            } else if (permitOperation == PermitIds.AAVE_V4_UNDERLYING_PERMIT) {
+                _tryAaveV4UnderlyingPermit(permitTarget, permitOffset, permitLength, callerAddress);
+                return currentOffset;
+            } else {
+                _invalidOperation();
+            }
         }
     }
 }
