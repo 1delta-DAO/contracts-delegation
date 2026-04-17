@@ -13,7 +13,6 @@ contract AaveV2FlashLoanCallbackTest is BaseTest, DeltaErrors {
     AaveV2MockPool mockPool;
 
     address private GRANARY;
-    address private POLTER;
     address private RADIANT_V2;
     address private PRIME_FI;
 
@@ -47,15 +46,6 @@ contract AaveV2FlashLoanCallbackTest is BaseTest, DeltaErrors {
         replaceLendingPoolWithMock(GRANARY);
 
         bytes memory params = CalldataLib.encodeFlashLoan(USDC, 1e6, GRANARY, uint8(3), uint8(7), sweepCall());
-
-        vm.prank(user);
-        oneDV2.deltaCompose(params);
-    }
-
-    function test_unit_lending_flashloans_aaveV2_callback_polterPool() public {
-        replaceLendingPoolWithMock(POLTER);
-
-        bytes memory params = CalldataLib.encodeFlashLoan(USDC, 1e6, POLTER, uint8(3), uint8(11), sweepCall());
 
         vm.prank(user);
         oneDV2.deltaCompose(params);
@@ -126,7 +116,6 @@ contract AaveV2FlashLoanCallbackTest is BaseTest, DeltaErrors {
 
     function getAddressFromRegistry() internal {
         GRANARY = chain.getLendingController(Lenders.GRANARY);
-        POLTER = chain.getLendingController(Lenders.POLTER);
         RADIANT_V2 = chain.getLendingController(Lenders.RADIANT_V2);
         PRIME_FI = chain.getLendingController(Lenders.PRIME_FI);
 
@@ -136,7 +125,6 @@ contract AaveV2FlashLoanCallbackTest is BaseTest, DeltaErrors {
 
     function populateValidPools() internal {
         validPools.push(PoolCase({poolId: 7, poolAddr: GRANARY, asset: USDC}));
-        validPools.push(PoolCase({poolId: 11, poolAddr: POLTER, asset: USDC}));
         validPools.push(PoolCase({poolId: 20, poolAddr: RADIANT_V2, asset: USDC}));
         validPools.push(PoolCase({poolId: 21, poolAddr: PRIME_FI, asset: USDC}));
     }

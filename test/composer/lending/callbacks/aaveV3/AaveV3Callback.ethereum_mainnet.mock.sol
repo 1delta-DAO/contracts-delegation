@@ -18,18 +18,9 @@ contract AaveV3FlashLoanCallbackTest is BaseTest, DeltaErrors {
     address private AAVE_V3_ETHER_FI;
     address private AAVE_V3_HORIZON;
     address private SPARK;
-    address private ZEROLEND_STABLECOINS_RWA;
-    address private ZEROLEND_ETH_LRTS;
-    address private ZEROLEND_BTC_LRTS;
-    address private AVALON_SOLVBTC;
-    address private AVALON_SWELLBTC;
-    address private AVALON_PUMPBTC;
-    address private AVALON_EBTC_LBTC;
     address private KINZA;
-    address private YLDR;
 
     address private USDC;
-    address private LBTC;
 
     struct PoolCase {
         uint8 poolId;
@@ -105,91 +96,11 @@ contract AaveV3FlashLoanCallbackTest is BaseTest, DeltaErrors {
         oneDV2.deltaCompose(params);
     }
 
-    function test_unit_lending_flashloans_aaveV3_callback_zerolend_stablecoins_rwaPool() public {
-        // mock implementation
-        replaceLendingPoolWithMock(ZEROLEND_STABLECOINS_RWA);
-
-        bytes memory params = CalldataLib.encodeFlashLoan(USDC, 1e6, ZEROLEND_STABLECOINS_RWA, uint8(2), uint8(21), sweepCall());
-
-        vm.prank(user);
-        oneDV2.deltaCompose(params);
-    }
-
-    function test_unit_lending_flashloans_aaveV3_callback_zerolend_eth_lrtsPool() public {
-        // mock implementation
-        replaceLendingPoolWithMock(ZEROLEND_ETH_LRTS);
-
-        bytes memory params = CalldataLib.encodeFlashLoan(USDC, 1e6, ZEROLEND_ETH_LRTS, uint8(2), uint8(22), sweepCall());
-
-        vm.prank(user);
-        oneDV2.deltaCompose(params);
-    }
-
-    function test_unit_lending_flashloans_aaveV3_callback_zerolend_btc_lrtsPool() public {
-        // mock implementation
-        replaceLendingPoolWithMock(ZEROLEND_BTC_LRTS);
-
-        bytes memory params = CalldataLib.encodeFlashLoan(USDC, 1e6, ZEROLEND_BTC_LRTS, uint8(2), uint8(23), sweepCall());
-
-        vm.prank(user);
-        oneDV2.deltaCompose(params);
-    }
-
-    function test_unit_lending_flashloans_aaveV3_callback_avalon_solvbtcPool() public {
-        // mock implementation
-        replaceLendingPoolWithMock(AVALON_SOLVBTC);
-
-        bytes memory params = CalldataLib.encodeFlashLoan(USDC, 1e6, AVALON_SOLVBTC, uint8(2), uint8(51), sweepCall());
-
-        vm.prank(user);
-        oneDV2.deltaCompose(params);
-    }
-
-    function test_unit_lending_flashloans_aaveV3_callback_avalon_swellbtcPool() public {
-        // mock implementation
-        replaceLendingPoolWithMock(AVALON_SWELLBTC);
-
-        bytes memory params = CalldataLib.encodeFlashLoan(LBTC, 1e6, AVALON_SWELLBTC, uint8(2), uint8(52), sweepCall());
-
-        vm.prank(user);
-        oneDV2.deltaCompose(params);
-    }
-
-    function test_unit_lending_flashloans_aaveV3_callback_avalon_pumpbtcPool() public {
-        // mock implementation
-        replaceLendingPoolWithMock(AVALON_PUMPBTC);
-
-        bytes memory params = CalldataLib.encodeFlashLoan(USDC, 1e6, AVALON_PUMPBTC, uint8(2), uint8(53), sweepCall());
-
-        vm.prank(user);
-        oneDV2.deltaCompose(params);
-    }
-
-    function test_unit_lending_flashloans_aaveV3_callback_avalon_ebtc_lbtcPool() public {
-        // mock implementation
-        replaceLendingPoolWithMock(AVALON_EBTC_LBTC);
-
-        bytes memory params = CalldataLib.encodeFlashLoan(LBTC, 1e6, AVALON_EBTC_LBTC, uint8(2), uint8(54), sweepCall());
-
-        vm.prank(user);
-        oneDV2.deltaCompose(params);
-    }
-
     function test_unit_lending_flashloans_aaveV3_callback_kinzaPool() public {
         // mock implementation
         replaceLendingPoolWithMock(KINZA);
 
         bytes memory params = CalldataLib.encodeFlashLoan(USDC, 1e6, KINZA, uint8(2), uint8(82), sweepCall());
-
-        vm.prank(user);
-        oneDV2.deltaCompose(params);
-    }
-
-    function test_unit_lending_flashloans_aaveV3_callback_yldrPool() public {
-        // mock implementation
-        replaceLendingPoolWithMock(YLDR);
-
-        bytes memory params = CalldataLib.encodeFlashLoan(USDC, 1e6, YLDR, uint8(2), uint8(100), sweepCall());
 
         vm.prank(user);
         oneDV2.deltaCompose(params);
@@ -241,19 +152,10 @@ contract AaveV3FlashLoanCallbackTest is BaseTest, DeltaErrors {
         AAVE_V3_ETHER_FI = chain.getLendingController(Lenders.AAVE_V3_ETHER_FI);
         AAVE_V3_HORIZON = chain.getLendingController(Lenders.AAVE_V3_HORIZON);
         SPARK = chain.getLendingController(Lenders.SPARK);
-        ZEROLEND_STABLECOINS_RWA = chain.getLendingController(Lenders.ZEROLEND_STABLECOINS_RWA);
-        ZEROLEND_ETH_LRTS = chain.getLendingController(Lenders.ZEROLEND_ETH_LRTS);
-        ZEROLEND_BTC_LRTS = chain.getLendingController(Lenders.ZEROLEND_BTC_LRTS);
-        AVALON_SOLVBTC = chain.getLendingController(Lenders.AVALON_SOLVBTC);
-        AVALON_SWELLBTC = chain.getLendingController(Lenders.AVALON_SWELLBTC);
-        AVALON_PUMPBTC = chain.getLendingController(Lenders.AVALON_PUMPBTC);
-        AVALON_EBTC_LBTC = chain.getLendingController(Lenders.AVALON_EBTC_LBTC);
         KINZA = chain.getLendingController(Lenders.KINZA);
-        YLDR = chain.getLendingController(Lenders.YLDR);
 
         // Get token addresses
         USDC = chain.getTokenAddress(Tokens.USDC);
-        LBTC = chain.getTokenAddress(Tokens.LBTC);
     }
 
     function populateValidPools() internal {
@@ -262,20 +164,11 @@ contract AaveV3FlashLoanCallbackTest is BaseTest, DeltaErrors {
         validPools.push(PoolCase({poolId: 2, poolAddr: AAVE_V3_ETHER_FI, asset: USDC}));
         validPools.push(PoolCase({poolId: 3, poolAddr: AAVE_V3_HORIZON, asset: USDC}));
         validPools.push(PoolCase({poolId: 10, poolAddr: SPARK, asset: USDC}));
-        validPools.push(PoolCase({poolId: 21, poolAddr: ZEROLEND_STABLECOINS_RWA, asset: USDC}));
-        validPools.push(PoolCase({poolId: 22, poolAddr: ZEROLEND_ETH_LRTS, asset: USDC}));
-        validPools.push(PoolCase({poolId: 23, poolAddr: ZEROLEND_BTC_LRTS, asset: USDC}));
-        validPools.push(PoolCase({poolId: 51, poolAddr: AVALON_SOLVBTC, asset: USDC}));
-        validPools.push(PoolCase({poolId: 52, poolAddr: AVALON_SWELLBTC, asset: LBTC}));
-        validPools.push(PoolCase({poolId: 53, poolAddr: AVALON_PUMPBTC, asset: USDC}));
-        validPools.push(PoolCase({poolId: 54, poolAddr: AVALON_EBTC_LBTC, asset: LBTC}));
         validPools.push(PoolCase({poolId: 82, poolAddr: KINZA, asset: USDC}));
-        validPools.push(PoolCase({poolId: 100, poolAddr: YLDR, asset: USDC}));
     }
 
     function mockERC20FunctionsForAllTokens() internal {
         mockERC20Functions(USDC);
-        mockERC20Functions(LBTC);
     }
 
     function mockERC20Functions(address token) internal {

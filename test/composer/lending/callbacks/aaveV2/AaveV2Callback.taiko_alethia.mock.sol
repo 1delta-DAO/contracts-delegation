@@ -13,8 +13,6 @@ contract AaveV2FlashLoanCallbackTest is BaseTest, DeltaErrors {
     AaveV2MockPool mockPool;
 
     address private MERIDIAN;
-    address private TAKOTAKO;
-    address private TAKOTAKO_ETH;
 
     address private USDC;
 
@@ -46,24 +44,6 @@ contract AaveV2FlashLoanCallbackTest is BaseTest, DeltaErrors {
         replaceLendingPoolWithMock(MERIDIAN);
 
         bytes memory params = CalldataLib.encodeFlashLoan(USDC, 1e6, MERIDIAN, uint8(3), uint8(3), sweepCall());
-
-        vm.prank(user);
-        oneDV2.deltaCompose(params);
-    }
-
-    function test_unit_lending_flashloans_aaveV2_callback_takotakoPool() public {
-        replaceLendingPoolWithMock(TAKOTAKO);
-
-        bytes memory params = CalldataLib.encodeFlashLoan(USDC, 1e6, TAKOTAKO, uint8(3), uint8(4), sweepCall());
-
-        vm.prank(user);
-        oneDV2.deltaCompose(params);
-    }
-
-    function test_unit_lending_flashloans_aaveV2_callback_takotako_ethPool() public {
-        replaceLendingPoolWithMock(TAKOTAKO_ETH);
-
-        bytes memory params = CalldataLib.encodeFlashLoan(USDC, 1e6, TAKOTAKO_ETH, uint8(3), uint8(5), sweepCall());
 
         vm.prank(user);
         oneDV2.deltaCompose(params);
@@ -116,8 +96,6 @@ contract AaveV2FlashLoanCallbackTest is BaseTest, DeltaErrors {
 
     function getAddressFromRegistry() internal {
         MERIDIAN = chain.getLendingController(Lenders.MERIDIAN);
-        TAKOTAKO = chain.getLendingController(Lenders.TAKOTAKO);
-        TAKOTAKO_ETH = chain.getLendingController(Lenders.TAKOTAKO_ETH);
 
         // Get token addresses
         USDC = chain.getTokenAddress(Tokens.USDC);
@@ -125,8 +103,6 @@ contract AaveV2FlashLoanCallbackTest is BaseTest, DeltaErrors {
 
     function populateValidPools() internal {
         validPools.push(PoolCase({poolId: 3, poolAddr: MERIDIAN, asset: USDC}));
-        validPools.push(PoolCase({poolId: 4, poolAddr: TAKOTAKO, asset: USDC}));
-        validPools.push(PoolCase({poolId: 5, poolAddr: TAKOTAKO_ETH, asset: USDC}));
     }
 
     function mockERC20FunctionsForAllTokens() internal {

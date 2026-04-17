@@ -1,4 +1,5 @@
 import {AAVE_V2_LENDERS, AAVE_V3_LENDERS} from "@1delta/lender-registry";
+import {isLenderExcluded} from "../lenderExclusions";
 import {BALANCER_V2_FORKS, FLASH_LOAN_IDS} from "@1delta/dex-registry";
 import * as fs from "fs";
 import {CREATE_CHAIN_IDS, getChainEnum} from "../config";
@@ -40,7 +41,7 @@ async function main() {
                     // Determine default asset type for this lender
                     const assetType = determineDefaultAssetType(lender, chainId);
 
-                    if (AAVE_V2_LENDERS.includes(lender as any)) {
+                    if (AAVE_V2_LENDERS.includes(lender as any) && !isLenderExcluded(chainId, lender)) {
                         if (FLASH_LOAN_IDS[lender] !== undefined)
                             lendersAaveV2.push({
                                 entityName: lender,
@@ -50,7 +51,7 @@ async function main() {
                             });
                     }
 
-                    if (AAVE_V3_LENDERS.includes(lender as any)) {
+                    if (AAVE_V3_LENDERS.includes(lender as any) && !isLenderExcluded(chainId, lender)) {
                         if (FLASH_LOAN_IDS[lender] !== undefined)
                             lendersAaveV3.push({
                                 entityName: lender,
