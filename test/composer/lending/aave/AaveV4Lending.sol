@@ -455,10 +455,10 @@ contract AaveV4LendingTest is BaseTest {
         assertApproxEqAbs(IERC20All(USDC).balanceOf(user), borrowAmount, 1);
     }
 
-    // deposit 10 ether of WETH, flash loan 10 ether of WETH, and borrow 10 ether of USDC
+    // deposit WETH, flash loan WETH, deposit combined, borrow flash amount to repay
     function test_v4_flash_loan_weth_via_morpho_flash() external {
-        uint256 depositAmount = 10 ether;
-        uint256 flashAmount = 10 ether;
+        uint256 depositAmount = 1 ether;
+        uint256 flashAmount = 1 ether;
         uint256 deadline = block.timestamp + 1 hours;
 
         deal(WETH, user, depositAmount);
