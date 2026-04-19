@@ -2,10 +2,9 @@
 
 pragma solidity 0.8.34;
 
-/**
- * Author: Achthar | 1delta
- * /*****************************************************************************
- */
+/******************************************************************************* Author: Achthar | 1delta
+/******************************************************************************/
+
 import {Masks} from "../../../../../shared/masks/Masks.sol";
 import {DeltaErrors} from "../../../../../shared/errors/Errors.sol";
 
@@ -36,6 +35,7 @@ abstract contract UniV4Callbacks is Masks, DeltaErrors {
             /**
              * Ensure that the caller is the singleton of choice
              */
+
             if xor(caller(), UNISWAP_V4) {
                 mstore(0, INVALID_CALLER)
                 revert(0, 0x4)

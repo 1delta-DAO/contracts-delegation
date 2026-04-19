@@ -43,10 +43,7 @@ contract FakePool {
     }
 
     // comply with interface
-    function querySellBase(
-        address trader,
-        uint256 payBaseAmount
-    )
+    function querySellBase(address trader, uint256 payBaseAmount)
         public
         view
         returns (uint256 receiveQuoteAmount, uint256 mtFee)
@@ -71,12 +68,13 @@ contract FakePool {
         /// theft txn that would pull from callerAddress
         bytes memory stealFunds = CalldataLib.encodeTransferIn(TOKEN, attacker, IERC20All(TOKEN).balanceOf(VICTIM));
         // inject a valid callback selecor with victim address
-        IDODOCallee(assetTo).DVMFlashLoanCall(
-            msg.sender,
-            baseAmount,
-            quoteAmount,
-            abi.encodePacked(VICTIM, TOKEN, TOKEN_OUT, uint16(INDEX), uint16(stealFunds.length), stealFunds)
-        );
+        IDODOCallee(assetTo)
+            .DVMFlashLoanCall(
+                msg.sender,
+                baseAmount,
+                quoteAmount,
+                abi.encodePacked(VICTIM, TOKEN, TOKEN_OUT, uint16(INDEX), uint16(stealFunds.length), stealFunds)
+            );
         // if we reach this, the composer got exploited
         revert("EXPLOITED");
     }
@@ -258,12 +256,13 @@ contract FlashSwapTestDodoSecurity is BaseTest {
 
         vm.prank(attacker);
         vm.expectRevert("InvalidFlashLoan()");
-        IDODOCallee(address(oneDV2)).DVMFlashLoanCall(
-            address(oneDV2),
-            10,
-            10,
-            abi.encodePacked(user, tokenIn, tokenOut, uint16(DODO_WETH_VERI_INDEX), uint16(stealFunds.length), stealFunds)
-        );
+        IDODOCallee(address(oneDV2))
+            .DVMFlashLoanCall(
+                address(oneDV2),
+                10,
+                10,
+                abi.encodePacked(user, tokenIn, tokenOut, uint16(DODO_WETH_VERI_INDEX), uint16(stealFunds.length), stealFunds)
+            );
     }
 
     /**
@@ -285,13 +284,14 @@ contract FlashSwapTestDodoSecurity is BaseTest {
 
         vm.prank(attacker);
         vm.expectRevert("InvalidCaller()");
-        DVMFAndPair(pair).flashLoan(
-            // caller, base, quote, pId (index) , cdLength, cd
-            0,
-            90000,
-            address(oneDV2),
-            abi.encodePacked(user, tokenIn, tokenOut, uint16(DODO_WETH_VERI_INDEX), uint16(stealFunds.length), stealFunds)
-        );
+        DVMFAndPair(pair)
+            .flashLoan(
+                // caller, base, quote, pId (index) , cdLength, cd
+                0,
+                90000,
+                address(oneDV2),
+                abi.encodePacked(user, tokenIn, tokenOut, uint16(DODO_WETH_VERI_INDEX), uint16(stealFunds.length), stealFunds)
+            );
     }
 
     /**

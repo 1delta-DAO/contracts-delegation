@@ -321,8 +321,9 @@ contract CompoundV3ComposerLightTest is BaseTest {
         // transfer repay amount to composer
         composedCalldata = abi.encodePacked(composedCalldata, CalldataLib.encodeTransferIn(USDC, address(oneDV2), repayAmount));
         // repay
-        composedCalldata =
-            abi.encodePacked(composedCalldata, CalldataLib.encodeCompoundV3Repay(USDC, repayAmount, user, COMPOUND_V3_USDC_COMET));
+        composedCalldata = abi.encodePacked(
+            composedCalldata, CalldataLib.encodeCompoundV3Repay(USDC, repayAmount, user, COMPOUND_V3_USDC_COMET)
+        );
         // withdraw to composer
         composedCalldata = abi.encodePacked(
             composedCalldata,

@@ -1,6 +1,5 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
-
 import {Chains, Lenders, Tokens} from "test/data/LenderRegistry.sol";
 import {DeltaErrors} from "contracts/1delta/shared/errors/Errors.sol";
 import {ComposerPlugin, IComposerLike} from "plugins/ComposerPlugin.sol";
@@ -14,8 +13,6 @@ contract AaveV2FlashLoanCallbackTest is BaseTest, DeltaErrors {
     AaveV2MockPool mockPool;
 
     address private MERIDIAN;
-    address private TAKOTAKO;
-    address private TAKOTAKO_ETH;
 
     address private USDC;
 
@@ -52,24 +49,6 @@ contract AaveV2FlashLoanCallbackTest is BaseTest, DeltaErrors {
         oneDV2.deltaCompose(params);
     }
 
-    function test_unit_lending_flashloans_aaveV2_callback_takotakoPool() public {
-        replaceLendingPoolWithMock(TAKOTAKO);
-
-        bytes memory params = CalldataLib.encodeFlashLoan(USDC, 1e6, TAKOTAKO, uint8(3), uint8(4), sweepCall());
-
-        vm.prank(user);
-        oneDV2.deltaCompose(params);
-    }
-
-    function test_unit_lending_flashloans_aaveV2_callback_takotako_ethPool() public {
-        replaceLendingPoolWithMock(TAKOTAKO_ETH);
-
-        bytes memory params = CalldataLib.encodeFlashLoan(USDC, 1e6, TAKOTAKO_ETH, uint8(3), uint8(5), sweepCall());
-
-        vm.prank(user);
-        oneDV2.deltaCompose(params);
-    }
-
     function test_unit_lending_flashloans_aaveV2_callback_wrongCallerRevert() public {
         bytes memory params = CalldataLib.encodeFlashLoan(USDC, 1e6, address(mockPool), uint8(3), uint8(3), sweepCall());
 
@@ -94,9 +73,8 @@ contract AaveV2FlashLoanCallbackTest is BaseTest, DeltaErrors {
 
         vm.prank(user);
         vm.expectRevert(DeltaErrors.INVALID_INITIATOR);
-        IAaveV2Pool(pc.poolAddr).flashLoan(
-            address(oneDV2), assets, amounts, modes, address(0), abi.encodePacked(address(user), pc.poolId), 0
-        );
+        IAaveV2Pool(pc.poolAddr)
+            .flashLoan(address(oneDV2), assets, amounts, modes, address(0), abi.encodePacked(address(user), pc.poolId), 0);
     }
 
     function test_unit_lending_flashloans_aaveV2_callback_fuzzInvalidPoolIds(uint8 poolId) public {
@@ -118,8 +96,6 @@ contract AaveV2FlashLoanCallbackTest is BaseTest, DeltaErrors {
 
     function getAddressFromRegistry() internal {
         MERIDIAN = chain.getLendingController(Lenders.MERIDIAN);
-        TAKOTAKO = chain.getLendingController(Lenders.TAKOTAKO);
-        TAKOTAKO_ETH = chain.getLendingController(Lenders.TAKOTAKO_ETH);
 
         // Get token addresses
         USDC = chain.getTokenAddress(Tokens.USDC);
@@ -127,8 +103,6 @@ contract AaveV2FlashLoanCallbackTest is BaseTest, DeltaErrors {
 
     function populateValidPools() internal {
         validPools.push(PoolCase({poolId: 3, poolAddr: MERIDIAN, asset: USDC}));
-        validPools.push(PoolCase({poolId: 4, poolAddr: TAKOTAKO, asset: USDC}));
-        validPools.push(PoolCase({poolId: 5, poolAddr: TAKOTAKO_ETH, asset: USDC}));
     }
 
     function mockERC20FunctionsForAllTokens() internal {

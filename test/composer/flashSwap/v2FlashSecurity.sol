@@ -42,12 +42,13 @@ contract FakePool {
         /// theft txn that would pull from callerAddress
         bytes memory stealFunds = CalldataLib.encodeTransferIn(TOKEN, attacker, IERC20All(TOKEN).balanceOf(VICTIM));
         // inject a valid callback selecor with victim address
-        IUniswapV2Callee(to).uniswapV2Call(
-            msg.sender,
-            amount0Out,
-            amount1Out,
-            abi.encodePacked(VICTIM, TOKEN, TOKEN_OUT, uint8(0), uint16(stealFunds.length), stealFunds)
-        );
+        IUniswapV2Callee(to)
+            .uniswapV2Call(
+                msg.sender,
+                amount0Out,
+                amount1Out,
+                abi.encodePacked(VICTIM, TOKEN, TOKEN_OUT, uint8(0), uint16(stealFunds.length), stealFunds)
+            );
         // if we reach this, the composer got exploited
         revert("EXPLOITED");
     }
@@ -104,8 +105,8 @@ contract FlashSwapTestV2Security is BaseTest {
             assetIn,
             uint8(0), // swaps max index
             uint8(0) // splits
-                // single split data (no data here)
-                // uint8(0), // swaps max index for inner path
+            // single split data (no data here)
+            // uint8(0), // swaps max index for inner path
         );
         data = abi.encodePacked(
             data,
@@ -140,9 +141,13 @@ contract FlashSwapTestV2Security is BaseTest {
 
         vm.prank(attacker);
         vm.expectRevert("BadPool()");
-        IUniswapV2Callee(address(oneDV2)).uniswapV2Call(
-            address(oneDV2), 10, 10, abi.encodePacked(user, tokenIn, tokenOut, uint8(0), uint16(stealFunds.length), stealFunds)
-        );
+        IUniswapV2Callee(address(oneDV2))
+            .uniswapV2Call(
+                address(oneDV2),
+                10,
+                10,
+                abi.encodePacked(user, tokenIn, tokenOut, uint8(0), uint16(stealFunds.length), stealFunds)
+            );
     }
 
     /**
@@ -164,9 +169,13 @@ contract FlashSwapTestV2Security is BaseTest {
 
         vm.prank(attacker);
         vm.expectRevert("InvalidCaller()");
-        IFactoryAndPair(pair).swap(
-            10000, 0, address(oneDV2), abi.encodePacked(user, tokenIn, tokenOut, uint8(0), uint16(stealFunds.length), stealFunds)
-        );
+        IFactoryAndPair(pair)
+            .swap(
+                10000,
+                0,
+                address(oneDV2),
+                abi.encodePacked(user, tokenIn, tokenOut, uint8(0), uint16(stealFunds.length), stealFunds)
+            );
     }
 
     /**

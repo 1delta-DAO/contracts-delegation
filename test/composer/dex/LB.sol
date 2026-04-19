@@ -43,11 +43,12 @@ contract LBLightTest is BaseTest {
     }
 
     function lbPoolUSDEUSDTSwapPath(address receiver) internal view returns (bytes memory data) {
-        data = abi.encodePacked(USDE).attachBranch(
-            0,
-            0, //
-            hex""
-        );
+        data = abi.encodePacked(USDE)
+            .attachBranch(
+                0,
+                0, //
+                hex""
+            );
         data = data.encodeLbStyleSwap(
             USDT,
             receiver,

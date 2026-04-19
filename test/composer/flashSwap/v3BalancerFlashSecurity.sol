@@ -58,9 +58,8 @@ contract FlashSwapTestBalancerSecurity is BaseTest {
 
         vm.prank(attacker);
         vm.expectRevert("InvalidCaller()");
-        IBalancerV3CAllback(address(oneDV2)).balancerUnlockCallback(
-            abi.encodePacked(user, uint8(BALANCER_V3_POOL_ID), uint16(stealFunds.length), stealFunds)
-        );
+        IBalancerV3CAllback(address(oneDV2))
+            .balancerUnlockCallback(abi.encodePacked(user, uint8(BALANCER_V3_POOL_ID), uint16(stealFunds.length), stealFunds));
     }
 
     /**
@@ -79,8 +78,7 @@ contract FlashSwapTestBalancerSecurity is BaseTest {
 
         vm.prank(attacker);
         vm.expectRevert("InvalidCaller()");
-        IBalancerV3CAllback(address(oneDV2)).balancerUnlockCallback(
-            abi.encodePacked(user, uint8(2), uint16(stealFunds.length), stealFunds)
-        );
+        IBalancerV3CAllback(address(oneDV2))
+            .balancerUnlockCallback(abi.encodePacked(user, uint8(2), uint16(stealFunds.length), stealFunds));
     }
 }

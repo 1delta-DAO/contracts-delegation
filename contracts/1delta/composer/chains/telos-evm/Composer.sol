@@ -54,3 +54,4 @@ contract OneDeltaComposerTelosEvm is BaseComposer, UniversalFlashLoan, SwapCallb
         );
     }
 }
+

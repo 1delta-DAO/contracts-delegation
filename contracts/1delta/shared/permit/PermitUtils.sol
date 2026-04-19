@@ -218,6 +218,201 @@ abstract contract PermitUtils is PermitConstants {
         }
     }
 
+    /**
+     * @notice Calls ISpoke.setUserPositionManagersWithSig to approve multiple PMs in one signed intent.
+     *
+     * ─── deadline+1 convention ───────────────────────────────────────────────────────────────
+     * All Aave V4 compact permits encode `deadline` as uint32 (4 bytes) to save calldata.
+     * Encoders write `uint32(deadline + 1)`; the decoder subtracts 1 with `sub(shr(224, slot), 1)`.
+     *
+     *   - Reserves the numeric 0 slot for "not encoded" while still allowing deadline = 0.
+     *   - Max representable deadline: 2^32 - 2 ≈ Feb 7, 2106. Deadlines beyond wrap mod 2^32.
+     *   - If the caller forgets the +1, decoded deadline is off by 1; the signed digest won't
+     *     match, so the spoke reverts cleanly on `ECDSA: invalid signature` (no silent corruption).
+     *   - The +1 only exists in calldata — the signed EIP-712 struct uses the raw deadline.
+     *
+     * Compact signature (`vs`) is the EIP-2098 format: top bit = v_parity (v - 27), lower 255
+     * bits = s. Decoder recovers `v = 27 + (vs >> 255)` and `s = vs & 2^255 - 1`.
+     * @dev Compact calldata: count(1) | count * (pm(20) | approve(1)) | nonce(32) | deadline+1(4) | r(32) | vs(32)
+     *      Minimum length: 1 + 21 + 32 + 4 + 32 + 32 = 122 bytes (one update, equivalent to single-PM variant)
+     *      General length: 101 + count * 21
+     * @param target The Spoke address (signature is verified on the Spoke).
+     */
+    function _tryAaveV4PmsBatch(address target, uint256 permitOffset, uint256 permitLength, address callerAddress) internal {
+        assembly {
+            let ptr := mload(0x40)
+
+            // sanity: minimum length check (one update = 122 bytes)
+            if lt(permitLength, 122) {
+                mstore(ptr, _PERMIT_LENGTH_ERROR)
+                revert(ptr, 4)
+            }
+
+            let count := shr(248, calldataload(permitOffset))
+            let updatesBytes := mul(count, 21)
+            // expected length = 101 + count*21
+            if iszero(eq(permitLength, add(101, updatesBytes))) {
+                mstore(ptr, _PERMIT_LENGTH_ERROR)
+                revert(ptr, 4)
+            }
+
+            // trailer offsets (nonce | deadline+1 | r | vs)
+            let trailerStart := add(add(permitOffset, 1), updatesBytes)
+            let nonce := calldataload(trailerStart)
+            let deadline := sub(shr(224, calldataload(add(trailerStart, 0x20))), 1)
+            let r := calldataload(add(trailerStart, 0x24))
+            let vs := calldataload(add(trailerStart, 0x44))
+
+            // ─── ABI encode setUserPositionManagersWithSig((address,(address,bool)[],uint256,uint256),bytes) ───
+            // layout at ptr:
+            //   0x00 selector
+            //   0x04 offset to struct (= 0x40)
+            //   0x24 offset to signature (= 0xc0 + count*64 + 32) — set at end
+            //   0x44 struct.onBehalfOf
+            //   0x64 offset to updates array within struct (= 0x80)
+            //   0x84 struct.nonce
+            //   0xa4 struct.deadline
+            //   0xc4 updates.length
+            //   0xe4.. updates[i].pm (32) + updates[i].approve (32)
+            //   sigPos: signature length (65)
+            //   sigPos+32 r
+            //   sigPos+64 s
+            //   sigPos+96 v (left-aligned)
+            mstore(ptr, AAVE_V4_SET_USER_PMS_WITH_SIG)
+            mstore(add(ptr, 0x04), 0x40) // offset to struct
+            mstore(add(ptr, 0x44), callerAddress) // onBehalfOf
+            mstore(add(ptr, 0x64), 0x80) // offset to updates (within struct)
+            mstore(add(ptr, 0x84), nonce)
+            mstore(add(ptr, 0xa4), deadline)
+            mstore(add(ptr, 0xc4), count) // updates.length
+
+            // write each update: pm (20) and approve (1) from compact calldata
+            let srcCursor := add(permitOffset, 1) // skip count byte
+            let dstCursor := add(ptr, 0xe4)
+            for { let i := 0 } lt(i, count) { i := add(i, 1) } {
+                let packed := calldataload(srcCursor) // 32-byte window: pm(20) | approve(1) | next...
+                let pm := shr(96, packed) // top 20 bytes = pm
+                let approve := and(0x01, shr(88, packed)) // byte at position 20 = approve
+                mstore(dstCursor, pm)
+                mstore(add(dstCursor, 0x20), approve)
+                srcCursor := add(srcCursor, 21)
+                dstCursor := add(dstCursor, 0x40)
+            }
+
+            // signature block starts right after updates
+            let sigPos := dstCursor
+            // sigOffset (relative to args start at 0x04) = sigPos - 0x04
+            mstore(add(ptr, 0x24), sub(sigPos, add(ptr, 0x04)))
+            mstore(sigPos, 65) // signature length
+            mstore(add(sigPos, 0x20), r)
+            mstore(add(sigPos, 0x40), shr(1, shl(1, vs))) // s = vs & (2^255 - 1)
+            mstore(add(sigPos, 0x60), shl(248, add(27, shr(255, vs)))) // v left-aligned
+
+            let callLen := sub(add(sigPos, 0x80), ptr)
+            if iszero(call(gas(), target, 0, ptr, callLen, 0, 0)) {
+                returndatacopy(0, 0, returndatasize())
+                revert(0, returndatasize())
+            }
+        }
+    }
+
+    /**
+     * @notice Calls TakerPM.approveBorrowWithSig or TakerPM.approveWithdrawWithSig with a compact permit.
+     * @dev Both approvals share an identical EIP-712 struct layout, so a single handler parameterized
+     *      on the selector produces one bytecode block instead of two.
+     *      Compact calldata: spoke(20) | reserveId(32) | amount(32) | nonce(32) | deadline+1(4) | r(32) | vs(32) = 184 bytes
+     * @param selector AAVE_V4_APPROVE_BORROW_WITH_SIG (0x65c143f2) or AAVE_V4_APPROVE_WITHDRAW_WITH_SIG (0xa6484847).
+     * @param target The TakerPositionManager address.
+     */
+    function _tryAaveV4TakerPermit(
+        bytes32 selector,
+        address target,
+        uint256 permitOffset,
+        uint256 permitLength,
+        address callerAddress
+    )
+        internal
+    {
+        assembly {
+            let ptr := mload(0x40)
+            switch permitLength
+            case 184 {
+                let spoke := shr(96, calldataload(permitOffset))
+                let reserveId := calldataload(add(permitOffset, 0x14))
+                let amount := calldataload(add(permitOffset, 0x34))
+                let nonce := calldataload(add(permitOffset, 0x54))
+                let deadline := sub(shr(224, calldataload(add(permitOffset, 0x74))), 1)
+                let r := calldataload(add(permitOffset, 0x78))
+                let vs := calldataload(add(permitOffset, 0x98))
+
+                // approve{Borrow|Withdraw}WithSig((address,uint256,address,address,uint256,uint256,uint256),bytes)
+                mstore(ptr, selector)
+                mstore(add(ptr, 0x04), spoke)
+                mstore(add(ptr, 0x24), reserveId)
+                mstore(add(ptr, 0x44), callerAddress) // owner
+                mstore(add(ptr, 0x64), address()) // spender = composer
+                mstore(add(ptr, 0x84), amount)
+                mstore(add(ptr, 0xa4), nonce)
+                mstore(add(ptr, 0xc4), deadline)
+                mstore(add(ptr, 0xe4), 0x100) // offset to signature bytes
+                mstore(add(ptr, 0x104), 65) // signature length (r + s + v)
+                mstore(add(ptr, 0x124), r)
+                mstore(add(ptr, 0x144), shr(1, shl(1, vs))) // s = vs without MSB
+                mstore(add(ptr, 0x164), shl(248, add(27, shr(255, vs)))) // v byte left-aligned
+                if iszero(call(gas(), target, 0, ptr, 0x184, 0, 0)) {
+                    returndatacopy(0, 0, returndatasize())
+                    revert(0, returndatasize())
+                }
+            }
+            default {
+                mstore(ptr, _PERMIT_LENGTH_ERROR)
+                revert(ptr, 4)
+            }
+        }
+    }
+
+    /**
+     * @notice Calls ConfigPM.setCanSetUsingAsCollateralPermissionWithSig with a compact permit.
+     * @dev Compact calldata: spoke(20) | status(1) | nonce(32) | deadline+1(4) | r(32) | vs(32) = 121 bytes
+     * @param target The ConfigPositionManager address
+     */
+    function _tryAaveV4ConfigPermit(address target, uint256 permitOffset, uint256 permitLength, address callerAddress) internal {
+        assembly {
+            let ptr := mload(0x40)
+            switch permitLength
+            case 121 {
+                let spoke := shr(96, calldataload(permitOffset))
+                let status := shr(248, calldataload(add(permitOffset, 0x14)))
+                let nonce := calldataload(add(permitOffset, 0x15))
+                let deadline := sub(shr(224, calldataload(add(permitOffset, 0x35))), 1)
+                let r := calldataload(add(permitOffset, 0x39))
+                let vs := calldataload(add(permitOffset, 0x59))
+
+                // setCanSetUsingAsCollateralPermissionWithSig((address,address,address,bool,uint256,uint256),bytes)
+                mstore(ptr, AAVE_V4_CONFIG_COLLATERAL_PERM_WITH_SIG)
+                mstore(add(ptr, 0x04), spoke)
+                mstore(add(ptr, 0x24), callerAddress) // delegator
+                mstore(add(ptr, 0x44), address()) // delegatee = composer
+                mstore(add(ptr, 0x64), status)
+                mstore(add(ptr, 0x84), nonce)
+                mstore(add(ptr, 0xa4), deadline)
+                mstore(add(ptr, 0xc4), 0xe0) // offset to signature bytes
+                mstore(add(ptr, 0xe4), 65) // signature length (r + s + v)
+                mstore(add(ptr, 0x104), r)
+                mstore(add(ptr, 0x124), shr(1, shl(1, vs))) // s = vs without MSB
+                mstore(add(ptr, 0x144), shl(248, add(27, shr(255, vs)))) // v byte left-aligned
+                if iszero(call(gas(), target, 0, ptr, 0x164, 0, 0)) {
+                    returndatacopy(0, 0, returndatasize())
+                    revert(0, returndatasize())
+                }
+            }
+            default {
+                mstore(ptr, _PERMIT_LENGTH_ERROR)
+                revert(ptr, 4)
+            }
+        }
+    }
+
     /// @notice transferERC20from version using permit2
     function _transferFromPermit2(address token, address to, uint256 amount, address callerAddress) internal {
         assembly {

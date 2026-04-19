@@ -216,49 +216,14 @@ abstract contract AaveLending is ERC20Selectors, Masks {
      * | 36     | 20             | receiver                        |
      * | 56     | 20             | pool                            |
      */
+    /// @dev selector for Aave V3 pool.supply(address,uint256,address,uint16)
+    bytes32 internal constant AAVE_V3_SUPPLY = 0x617ba03700000000000000000000000000000000000000000000000000000000;
+
+    /// @dev selector for Aave V2 pool.deposit(address,uint256,address,uint16)
+    bytes32 internal constant AAVE_V2_DEPOSIT = 0xe8eda9df00000000000000000000000000000000000000000000000000000000;
+
     function _depositToAaveV3(uint256 currentOffset) internal returns (uint256) {
-        assembly {
-            let underlying := shr(96, calldataload(currentOffset))
-            // offset for amount at lower bytes
-            let amountData := shr(128, calldataload(add(currentOffset, 20)))
-            // receiver
-            let receiver := shr(96, calldataload(add(currentOffset, 36)))
-            // get pool
-            let pool := shr(96, calldataload(add(currentOffset, 56)))
-            // skip pool (end of data)
-            currentOffset := add(currentOffset, 76)
-
-            let amount := and(UINT112_MASK, amountData)
-            // zero is this balance
-            if iszero(amount) {
-                // selector for balanceOf(address)
-                mstore(0, ERC20_BALANCE_OF)
-                // add this address as parameter
-                mstore(0x04, address())
-                // call to token
-                if iszero(staticcall(gas(), underlying, 0x0, 0x24, 0x0, 0x20)) {
-                    returndatacopy(0, 0, returndatasize())
-                    revert(0, returndatasize())
-                }
-                // load the retrieved balance
-                amount := mload(0x0)
-            }
-
-            let ptr := mload(0x40)
-
-            // selector supply(address,uint256,address,uint16)
-            mstore(ptr, 0x617ba03700000000000000000000000000000000000000000000000000000000)
-            mstore(add(ptr, 0x04), underlying)
-            mstore(add(ptr, 0x24), amount)
-            mstore(add(ptr, 0x44), receiver)
-            mstore(add(ptr, 0x64), 0x0)
-            // call pool
-            if iszero(call(gas(), pool, 0x0, ptr, 0x84, 0x0, 0x0)) {
-                returndatacopy(0x0, 0x0, returndatasize())
-                revert(0x0, returndatasize())
-            }
-        }
-        return currentOffset;
+        return _depositToAavePool(currentOffset, AAVE_V3_SUPPLY);
     }
 
     /**
@@ -275,50 +240,41 @@ abstract contract AaveLending is ERC20Selectors, Masks {
      * | 56     | 20             | pool                            |
      */
     function _depositToAaveV2(uint256 currentOffset) internal returns (uint256) {
+        return _depositToAavePool(currentOffset, AAVE_V2_DEPOSIT);
+    }
+
+    /**
+     * @notice Shared handler for Aave V2 `deposit` and Aave V3 `supply`.
+     * @dev Same calldata layout and same call shape — only the selector differs.
+     *      Zero amount uses contract balance. Caller must have prior ERC20 approve to the pool.
+     */
+    function _depositToAavePool(uint256 currentOffset, bytes32 selector) internal returns (uint256) {
         assembly {
             let underlying := shr(96, calldataload(currentOffset))
-            // offset for amount at lower bytes
             let amountData := shr(128, calldataload(add(currentOffset, 20)))
-            // receiver
             let receiver := shr(96, calldataload(add(currentOffset, 36)))
-            // get pool
             let pool := shr(96, calldataload(add(currentOffset, 56)))
-            // skip pool (end of data)
             currentOffset := add(currentOffset, 76)
 
             let amount := and(UINT112_MASK, amountData)
-            // zero is this balance
             if iszero(amount) {
                 // selector for balanceOf(address)
                 mstore(0, ERC20_BALANCE_OF)
-                // add this address as parameter
                 mstore(0x04, address())
-                // call to token
-                if iszero(
-                    staticcall(
-                        gas(),
-                        underlying, // token
-                        0x0,
-                        0x24,
-                        0x0,
-                        0x20
-                    )
-                ) {
+                if iszero(staticcall(gas(), underlying, 0x0, 0x24, 0x0, 0x20)) {
                     returndatacopy(0, 0, returndatasize())
                     revert(0, returndatasize())
                 }
-                // load the retrieved balance
                 amount := mload(0x0)
             }
 
             let ptr := mload(0x40)
-            // selector deposit(address,uint256,address,uint16)
-            mstore(ptr, 0xe8eda9df00000000000000000000000000000000000000000000000000000000)
+            // supply(address,uint256,address,uint16) or deposit(address,uint256,address,uint16)
+            mstore(ptr, selector)
             mstore(add(ptr, 0x04), underlying)
             mstore(add(ptr, 0x24), amount)
             mstore(add(ptr, 0x44), receiver)
             mstore(add(ptr, 0x64), 0x0)
-            // call pool
             if iszero(call(gas(), pool, 0x0, ptr, 0x84, 0x0, 0x0)) {
                 returndatacopy(0x0, 0x0, returndatasize())
                 revert(0x0, returndatasize())

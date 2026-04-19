@@ -55,6 +55,7 @@ contract AaveV2FlashLoanCallback is Masks, DeltaErrors {
             case 7 { pool := GRANARY }
             case 16 { pool := VALAS }
             case 20 { pool := RADIANT_V2 }
+
             // We revert on any other id
             default {
                 mstore(0, INVALID_FLASH_LOAN)

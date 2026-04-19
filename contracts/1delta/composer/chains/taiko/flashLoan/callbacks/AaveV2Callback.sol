@@ -11,8 +11,6 @@ import {DeltaErrors} from "../../../../../shared/errors/Errors.sol";
 contract AaveV2FlashLoanCallback is Masks, DeltaErrors {
     // Aave v2s
     address private constant MERIDIAN = 0x1697A950a67d9040464287b88fCa6cb5FbEC09BA;
-    address private constant TAKOTAKO = 0x3A2Fd8a16030fFa8D66E47C3f1C0507c673C841e;
-    address private constant TAKOTAKO_ETH = 0xe882a56b8c0C1a5561Febf846614B88718Dc5D9E;
 
     /**
      * @notice Handles Aave V2 flash loan callback
@@ -46,26 +44,17 @@ contract AaveV2FlashLoanCallback is Masks, DeltaErrors {
             // - extract id from params
             let firstWord := calldataload(calldataOffset)
 
-            // Validate the caller
-            // We check that the caller is one of the lending pools
-            // This is a crucial check since this makes
-            // the initiator parameter the caller of flashLoan
-            let pool
             switch and(UINT8_MASK, shr(88, firstWord))
-            case 3 { pool := MERIDIAN }
-            case 4 { pool := TAKOTAKO }
-            case 5 { pool := TAKOTAKO_ETH }
-            // We revert on any other id
+            case 3 {
+                if xor(caller(), MERIDIAN) {
+                    mstore(0, INVALID_CALLER)
+                    revert(0, 0x4)
+                }
+            }
             default {
                 mstore(0, INVALID_FLASH_LOAN)
                 revert(0, 0x4)
             }
-            // revert if caller is not a whitelisted pool
-            if xor(caller(), pool) {
-                mstore(0, INVALID_CALLER)
-                revert(0, 0x4)
-            }
-
             // We require to self-initiate
             // this prevents caller impersonation,
             // but ONLY if the caller address is

@@ -1,6 +1,5 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
-
 import {Chains, Lenders, Tokens} from "test/data/LenderRegistry.sol";
 import {DeltaErrors} from "contracts/1delta/shared/errors/Errors.sol";
 import {ComposerPlugin, IComposerLike} from "plugins/ComposerPlugin.sol";
@@ -13,7 +12,6 @@ contract AaveV2FlashLoanCallbackTest is BaseTest, DeltaErrors {
     IComposerLike oneDV2;
     AaveV2MockPool mockPool;
 
-    address private POLTER;
     address private MAGSIN;
 
     address private WETH;
@@ -42,15 +40,6 @@ contract AaveV2FlashLoanCallbackTest is BaseTest, DeltaErrors {
         mockPool = new AaveV2MockPool();
     }
 
-    function test_unit_lending_flashloans_aaveV2_callback_polterPool() public {
-        replaceLendingPoolWithMock(POLTER);
-
-        bytes memory params = CalldataLib.encodeFlashLoan(WETH, 1e6, POLTER, uint8(3), uint8(11), sweepCall());
-
-        vm.prank(user);
-        oneDV2.deltaCompose(params);
-    }
-
     function test_unit_lending_flashloans_aaveV2_callback_magsinPool() public {
         replaceLendingPoolWithMock(MAGSIN);
 
@@ -61,7 +50,7 @@ contract AaveV2FlashLoanCallbackTest is BaseTest, DeltaErrors {
     }
 
     function test_unit_lending_flashloans_aaveV2_callback_wrongCallerRevert() public {
-        bytes memory params = CalldataLib.encodeFlashLoan(WETH, 1e6, address(mockPool), uint8(3), uint8(11), sweepCall());
+        bytes memory params = CalldataLib.encodeFlashLoan(WETH, 1e6, address(mockPool), uint8(3), uint8(84), sweepCall());
 
         vm.prank(user);
         vm.expectRevert(DeltaErrors.INVALID_CALLER);
@@ -84,18 +73,17 @@ contract AaveV2FlashLoanCallbackTest is BaseTest, DeltaErrors {
 
         vm.prank(user);
         vm.expectRevert(DeltaErrors.INVALID_INITIATOR);
-        IAaveV2Pool(pc.poolAddr).flashLoan(
-            address(oneDV2), assets, amounts, modes, address(0), abi.encodePacked(address(user), pc.poolId), 0
-        );
+        IAaveV2Pool(pc.poolAddr)
+            .flashLoan(address(oneDV2), assets, amounts, modes, address(0), abi.encodePacked(address(user), pc.poolId), 0);
     }
 
     function test_unit_lending_flashloans_aaveV2_callback_fuzzInvalidPoolIds(uint8 poolId) public {
-        replaceLendingPoolWithMock(POLTER);
+        replaceLendingPoolWithMock(MAGSIN);
 
         for (uint256 i = 0; i < validPools.length; i++) {
             if (poolId == validPools[i].poolId) return;
         }
-        bytes memory params = CalldataLib.encodeFlashLoan(WETH, 1e6, POLTER, uint8(3), uint8(poolId), sweepCall());
+        bytes memory params = CalldataLib.encodeFlashLoan(WETH, 1e6, MAGSIN, uint8(3), uint8(poolId), sweepCall());
         vm.prank(user);
         vm.expectRevert(DeltaErrors.INVALID_FLASH_LOAN);
         oneDV2.deltaCompose(params);
@@ -107,7 +95,6 @@ contract AaveV2FlashLoanCallbackTest is BaseTest, DeltaErrors {
     }
 
     function getAddressFromRegistry() internal {
-        POLTER = chain.getLendingController(Lenders.POLTER);
         MAGSIN = chain.getLendingController(Lenders.MAGSIN);
 
         // Get token addresses
@@ -115,7 +102,6 @@ contract AaveV2FlashLoanCallbackTest is BaseTest, DeltaErrors {
     }
 
     function populateValidPools() internal {
-        validPools.push(PoolCase({poolId: 11, poolAddr: POLTER, asset: WETH}));
         validPools.push(PoolCase({poolId: 84, poolAddr: MAGSIN, asset: WETH}));
     }
 

@@ -49,6 +49,7 @@ contract BalancerV2FlashLoanCallback is Slots, Masks, DeltaErrors {
             switch and(UINT8_MASK, shr(88, firstWord))
             case 0 { pool := BALANCER_V2 }
             case 2 { pool := SWAAP }
+
             // We revert on any other id
             default {
                 mstore(0, INVALID_FLASH_LOAN)
