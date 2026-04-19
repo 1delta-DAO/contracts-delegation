@@ -25,8 +25,7 @@ contract FlashLoanCallbacks is
     )
         internal
         virtual
-        override(
-            MorphoFlashLoanCallback //
+        override(MorphoFlashLoanCallback //
         )
     {}
 }

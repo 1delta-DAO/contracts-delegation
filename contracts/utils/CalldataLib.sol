@@ -2,8 +2,8 @@
 pragma solidity 0.8.34;
 
 import "contracts/1delta/composer/enums/DeltaEnums.sol";
-import "contracts/1delta/composer/swappers/dex/DexTypeMappings.sol";
-import "contracts/1delta/composer/swappers/callbacks/DexForkMappings.sol";
+import "contracts/1delta/composer/quoter/dex/DexTypeMappings.sol";
+import "contracts/1delta/composer/quoter/dex/DexForkMappings.sol";
 import {DexPayConfig, SweepType, DodoSelector, WrapOperation} from "contracts/1delta/composer/enums/MiscEnums.sol";
 
 // solhint-disable max-line-length
@@ -575,8 +575,9 @@ library CalldataLib {
     }
 
     function swapHead(uint256 amount, uint256 amountOutMin, address assetIn) internal pure returns (bytes memory) {
+        // ComposerCommands.SWAPS (0x10) — retained as legacy prefix for tests exercising the dropped swap path.
         return abi.encodePacked(
-            uint8(ComposerCommands.SWAPS),
+            uint8(0x10),
             uint128(amount),
             uint128(amountOutMin),
             assetIn //

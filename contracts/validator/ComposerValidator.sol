@@ -945,10 +945,6 @@ contract ComposerValidator is BaseComposerValidator, Masks {
     }
 
     // not implemented
-    function _validateSwap(uint256 currentOffset) internal view override returns (bool, string memory, uint256) {
-        revert();
-    }
-
     function _validateERC4626Operations(uint256 currentOffset) internal view override returns (bool, string memory, uint256) {
         revert();
     }

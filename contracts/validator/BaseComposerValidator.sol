@@ -70,9 +70,7 @@ abstract contract BaseComposerValidator is DeltaErrors {
         returns (bool isValid, string memory errorMessage, uint256 newOffset)
     {
         if (operation < ComposerCommands.PERMIT) {
-            if (operation == ComposerCommands.SWAPS) {
-                return _validateSwap(currentOffset);
-            } else if (operation == ComposerCommands.EXT_CALL) {
+            if (operation == ComposerCommands.EXT_CALL) {
                 return _validateExternalCall(currentOffset);
             } else if (operation == ComposerCommands.LENDING) {
                 return _validateLendingOperations(currentOffset);
@@ -97,8 +95,6 @@ abstract contract BaseComposerValidator is DeltaErrors {
     }
 
     // should be overriden by implementers of this contract
-    function _validateSwap(uint256 currentOffset) internal view virtual returns (bool, string memory, uint256);
-
     function _validateExternalCall(uint256 currentOffset) internal view virtual returns (bool, string memory, uint256);
 
     function _validateLendingOperations(uint256 currentOffset) internal view virtual returns (bool, string memory, uint256);

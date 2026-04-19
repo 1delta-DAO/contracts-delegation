@@ -1,4 +1,11 @@
-export const templateFlashLoan = (hasAaveV2: boolean, hasAaveV3: boolean, hasMorpho: boolean, hasBalancerV2: boolean, hasLista = false) => {
+export const templateFlashLoan = (
+    hasAaveV2: boolean,
+    hasAaveV3: boolean,
+    hasMorpho: boolean,
+    hasBalancerV2: boolean,
+    hasBalancerV3: boolean,
+    hasLista = false
+) => {
     let cbs: {imports: string; name: string}[] = [];
 
     if (hasAaveV2) {
@@ -36,10 +43,16 @@ export const templateFlashLoan = (hasAaveV2: boolean, hasAaveV3: boolean, hasMor
         });
     }
 
+    if (hasBalancerV3) {
+        cbs.push({
+            imports: `import {BalancerV3FlashLoanCallback} from "./callbacks/BalancerV3Callback.sol";`,
+            name: "BalancerV3FlashLoanCallback",
+        });
+    }
+
     // if (cbs.length === 0) throw new Error("No Flash loans")
 
-    return `
-// SPDX-License-Identifier: BUSL-1.1
+    return `// SPDX-License-Identifier: BUSL-1.1
 
 pragma solidity 0.8.34;
 

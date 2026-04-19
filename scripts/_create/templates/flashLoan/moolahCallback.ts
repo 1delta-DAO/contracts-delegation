@@ -1,5 +1,4 @@
-export const templateMoolah = (addressContants: string, switchCaseContent: string) => `
-// SPDX-License-Identifier: BUSL-1.1
+export const templateMoolah = (addressContants: string, switchCaseContent: string) => `// SPDX-License-Identifier: BUSL-1.1
 
 pragma solidity 0.8.34;
 
