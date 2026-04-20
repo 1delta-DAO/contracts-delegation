@@ -68,6 +68,7 @@ contract ComposerLite is
     )
         internal
         virtual
+        override
     {
         // data loop paramters
         uint256 maxIndex;

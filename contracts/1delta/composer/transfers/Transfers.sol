@@ -40,6 +40,8 @@ contract Transfers is AssetTransfers {
             return _approve(currentOffset);
         } else if (transferOperation == TransferIds.WRAP) {
             return _wrap(currentOffset);
+        } else if (transferOperation == TransferIds.SWEEP_NFT) {
+            return _sweepNft(currentOffset);
         } else {
             _invalidOperation();
         }

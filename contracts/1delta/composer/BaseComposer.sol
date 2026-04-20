@@ -69,6 +69,7 @@ abstract contract BaseComposer is
     )
         internal
         virtual
+        override
     {
         // data loop paramters
         uint256 maxIndex;

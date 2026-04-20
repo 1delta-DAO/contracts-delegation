@@ -14,6 +14,8 @@ library TransferIds {
     uint256 internal constant APPROVE = 5;
     // we add this for cases where the receive function does not forward 'wrap'
     uint256 internal constant WRAP = 6;
+    /// @dev Sweep every NFT the composer owns of an ERC721Enumerable collection to a recipient.
+    uint256 internal constant SWEEP_NFT = 7;
 }
 
 /**
@@ -40,6 +42,8 @@ library LenderIds {
     uint256 internal constant UP_TO_MORPHO = 5000;
     uint256 internal constant UP_TO_SILO_V2 = 6000;
     uint256 internal constant UP_TO_AAVE_V4 = 7000;
+    uint256 internal constant UP_TO_FLUID = 8000;
+    uint256 internal constant UP_TO_FLUID_SMART = 9000;
 }
 
 /**
@@ -53,6 +57,10 @@ library LenderOps {
     uint256 internal constant DEPOSIT_LENDING_TOKEN = 4;
     uint256 internal constant WITHDRAW_LENDING_TOKEN = 5;
     uint256 internal constant SET_COLLATERAL = 6;
+    /// @dev Fluid smart-vault (T2/T3/T4) `operate` — combined col & debt in one call.
+    uint256 internal constant FLUID_OPERATE = 10;
+    /// @dev Fluid smart-vault (T2/T3/T4) `operatePerfect` — share-precise / full-exit path.
+    uint256 internal constant FLUID_OPERATE_PERFECT = 11;
 }
 
 /**

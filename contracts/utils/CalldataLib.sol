@@ -1064,6 +1064,14 @@ library CalldataLib {
         ); // 14 bytes
     }
 
+    /// @notice Sweep every NFT the composer owns of `collection` to `receiver`.
+    /// @dev Targets ERC721Enumerable collections (uses `balanceOf` + `tokenOfOwnerByIndex`).
+    ///      Pair with a position-opening op (e.g. Fluid `DEPOSIT` with `nftId == 0`) to deliver
+    ///      the freshly-minted NFT to the user in the same `deltaCompose` call.
+    function encodeSweepNft(address collection, address receiver) internal pure returns (bytes memory) {
+        return abi.encodePacked(uint8(ComposerCommands.TRANSFERS), uint8(TransferIds.SWEEP_NFT), collection, receiver);
+    }
+
     function encodeUnwrap(
         address target,
         address receiver,
@@ -2123,5 +2131,371 @@ library CalldataLib {
 
         bytes memory data = abi.encodePacked(uint8(pms.length), updates, nonce, deadlinePlusOne, r, vs);
         return encodePermit(PermitIds.AAVE_V4_PMS_BATCH_PERMIT, spoke, data);
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────────
+    // Fluid (T1 vault + fToken)
+    // ─────────────────────────────────────────────────────────────────────────────
+
+    /// @dev Sentinel matching FluidLending's max-amount handling — UINT112_MASK.
+    ///      For WITHDRAW: pass to mean "withdraw all" (translates to type(int256).min).
+    ///      For REPAY:    pass to mean "repay all"    (translates to type(int256).min).
+    uint128 internal constant FLUID_MAX_AMOUNT = type(uint112).max;
+
+    /// @dev Native marker — same composer convention as CompoundV2 native handling.
+    function _fluidVaultBody(
+        address underlying,
+        uint128 amount,
+        uint256 nftId,
+        address receiver,
+        address vault
+    )
+        private
+        pure
+        returns (bytes memory)
+    {
+        return abi.encodePacked(underlying, amount, nftId, receiver, vault);
+    }
+
+    function encodeFluidDeposit(
+        address underlying,
+        uint128 amount,
+        uint256 nftId,
+        address receiver,
+        address vault
+    )
+        internal
+        pure
+        returns (bytes memory)
+    {
+        bytes memory body = _fluidVaultBody(underlying, amount, nftId, receiver, vault);
+        // Native: msg.value forwarded by the composer; no approve needed.
+        // ERC20: caller must already have funded the composer with `underlying` and we pre-approve the vault.
+        if (underlying == address(0)) {
+            return abi.encodePacked(
+                uint8(ComposerCommands.LENDING),
+                uint8(LenderOps.DEPOSIT),
+                uint16(LenderIds.UP_TO_FLUID - 1),
+                body
+            );
+        }
+        return abi.encodePacked(
+            encodeApprove(underlying, vault),
+            uint8(ComposerCommands.LENDING),
+            uint8(LenderOps.DEPOSIT),
+            uint16(LenderIds.UP_TO_FLUID - 1),
+            body
+        );
+    }
+
+    function encodeFluidBorrow(
+        address underlying,
+        uint128 amount,
+        uint256 nftId,
+        address receiver,
+        address vault
+    )
+        internal
+        pure
+        returns (bytes memory)
+    {
+        return abi.encodePacked(
+            uint8(ComposerCommands.LENDING),
+            uint8(LenderOps.BORROW),
+            uint16(LenderIds.UP_TO_FLUID - 1),
+            _fluidVaultBody(underlying, amount, nftId, receiver, vault)
+        );
+    }
+
+    function encodeFluidRepay(
+        address underlying,
+        uint128 amount,
+        uint256 nftId,
+        address receiver,
+        address vault
+    )
+        internal
+        pure
+        returns (bytes memory)
+    {
+        bytes memory body = _fluidVaultBody(underlying, amount, nftId, receiver, vault);
+        if (underlying == address(0)) {
+            return abi.encodePacked(
+                uint8(ComposerCommands.LENDING),
+                uint8(LenderOps.REPAY),
+                uint16(LenderIds.UP_TO_FLUID - 1),
+                body
+            );
+        }
+        return abi.encodePacked(
+            encodeApprove(underlying, vault),
+            uint8(ComposerCommands.LENDING),
+            uint8(LenderOps.REPAY),
+            uint16(LenderIds.UP_TO_FLUID - 1),
+            body
+        );
+    }
+
+    function encodeFluidWithdraw(
+        address underlying,
+        uint128 amount,
+        uint256 nftId,
+        address receiver,
+        address vault
+    )
+        internal
+        pure
+        returns (bytes memory)
+    {
+        return abi.encodePacked(
+            uint8(ComposerCommands.LENDING),
+            uint8(LenderOps.WITHDRAW),
+            uint16(LenderIds.UP_TO_FLUID - 1),
+            _fluidVaultBody(underlying, amount, nftId, receiver, vault)
+        );
+    }
+
+    /// @dev Sentinel matching FluidSmartLending's `FLUID_SMART_USE_BALANCE`. Place into an int256
+    ///      amount slot on a smart-vault op to have the composer resolve it from balanceOf(this)
+    ///      (or selfbalance() when the parallel token slot is `address(0)`).
+    int256 internal constant FLUID_SMART_USE_BALANCE = type(int256).max;
+
+    function _fluidSmartHeader(
+        uint8 vaultType,
+        uint128 callValue,
+        uint256 nftId,
+        address receiver,
+        address vault,
+        bool isPerfect
+    )
+        private
+        pure
+        returns (bytes memory)
+    {
+        return abi.encodePacked(
+            uint8(ComposerCommands.LENDING),
+            isPerfect ? uint8(LenderOps.FLUID_OPERATE_PERFECT) : uint8(LenderOps.FLUID_OPERATE),
+            uint16(LenderIds.UP_TO_FLUID_SMART - 1),
+            vaultType,
+            callValue,
+            nftId,
+            receiver,
+            vault
+        );
+    }
+
+    /// @notice Encode a `FluidSmartLending.FLUID_OPERATE` call against a T2 vault.
+    /// @param amounts [newColToken0, newColToken1, colSharesMinMax, newDebt]
+    /// @param tokens  per-slot token address; use `address(0)` on slots that don't use the
+    ///                balance sentinel, or the actual ERC20 / `address(0)` for native when they do
+    function encodeFluidSmartOperateT2(
+        uint128 callValue,
+        uint256 nftId,
+        address receiver,
+        address vault,
+        address[4] memory tokens,
+        int256[4] memory amounts
+    )
+        internal
+        pure
+        returns (bytes memory)
+    {
+        return abi.encodePacked(
+            _fluidSmartHeader(2, callValue, nftId, receiver, vault, false),
+            tokens[0],
+            tokens[1],
+            tokens[2],
+            tokens[3],
+            amounts[0],
+            amounts[1],
+            amounts[2],
+            amounts[3]
+        );
+    }
+
+    /// @notice Encode a `FluidSmartLending.FLUID_OPERATE` call against a T3 vault.
+    /// @param amounts [newCol, newDebtToken0, newDebtToken1, debtSharesMinMax]
+    function encodeFluidSmartOperateT3(
+        uint128 callValue,
+        uint256 nftId,
+        address receiver,
+        address vault,
+        address[4] memory tokens,
+        int256[4] memory amounts
+    )
+        internal
+        pure
+        returns (bytes memory)
+    {
+        return abi.encodePacked(
+            _fluidSmartHeader(3, callValue, nftId, receiver, vault, false),
+            tokens[0],
+            tokens[1],
+            tokens[2],
+            tokens[3],
+            amounts[0],
+            amounts[1],
+            amounts[2],
+            amounts[3]
+        );
+    }
+
+    /// @notice Encode a `FluidSmartLending.FLUID_OPERATE` call against a T4 vault.
+    /// @param amounts [newColToken0, newColToken1, colSharesMinMax, newDebtToken0, newDebtToken1, debtSharesMinMax]
+    function encodeFluidSmartOperateT4(
+        uint128 callValue,
+        uint256 nftId,
+        address receiver,
+        address vault,
+        address[6] memory tokens,
+        int256[6] memory amounts
+    )
+        internal
+        pure
+        returns (bytes memory)
+    {
+        return abi.encodePacked(
+            _fluidSmartHeader(4, callValue, nftId, receiver, vault, false),
+            tokens[0],
+            tokens[1],
+            tokens[2],
+            tokens[3],
+            tokens[4],
+            tokens[5],
+            amounts[0],
+            amounts[1],
+            amounts[2],
+            amounts[3],
+            amounts[4],
+            amounts[5]
+        );
+    }
+
+    /// @notice Encode a `FluidSmartLending.FLUID_OPERATE_PERFECT` call against a T2 vault.
+    /// @param amounts [perfectColShares, colToken0MinMax, colToken1MinMax, newDebt]
+    function encodeFluidSmartOperatePerfectT2(
+        uint128 callValue,
+        uint256 nftId,
+        address receiver,
+        address vault,
+        address[4] memory tokens,
+        int256[4] memory amounts
+    )
+        internal
+        pure
+        returns (bytes memory)
+    {
+        return abi.encodePacked(
+            _fluidSmartHeader(2, callValue, nftId, receiver, vault, true),
+            tokens[0],
+            tokens[1],
+            tokens[2],
+            tokens[3],
+            amounts[0],
+            amounts[1],
+            amounts[2],
+            amounts[3]
+        );
+    }
+
+    /// @notice Encode a `FluidSmartLending.FLUID_OPERATE_PERFECT` call against a T3 vault.
+    /// @param amounts [newCol, perfectDebtShares, debtToken0MinMax, debtToken1MinMax]
+    function encodeFluidSmartOperatePerfectT3(
+        uint128 callValue,
+        uint256 nftId,
+        address receiver,
+        address vault,
+        address[4] memory tokens,
+        int256[4] memory amounts
+    )
+        internal
+        pure
+        returns (bytes memory)
+    {
+        return abi.encodePacked(
+            _fluidSmartHeader(3, callValue, nftId, receiver, vault, true),
+            tokens[0],
+            tokens[1],
+            tokens[2],
+            tokens[3],
+            amounts[0],
+            amounts[1],
+            amounts[2],
+            amounts[3]
+        );
+    }
+
+    /// @notice Encode a `FluidSmartLending.FLUID_OPERATE_PERFECT` call against a T4 vault.
+    /// @param amounts [perfectColShares, colToken0MinMax, colToken1MinMax, perfectDebtShares, debtToken0MinMax, debtToken1MinMax]
+    function encodeFluidSmartOperatePerfectT4(
+        uint128 callValue,
+        uint256 nftId,
+        address receiver,
+        address vault,
+        address[6] memory tokens,
+        int256[6] memory amounts
+    )
+        internal
+        pure
+        returns (bytes memory)
+    {
+        return abi.encodePacked(
+            _fluidSmartHeader(4, callValue, nftId, receiver, vault, true),
+            tokens[0],
+            tokens[1],
+            tokens[2],
+            tokens[3],
+            tokens[4],
+            tokens[5],
+            amounts[0],
+            amounts[1],
+            amounts[2],
+            amounts[3],
+            amounts[4],
+            amounts[5]
+        );
+    }
+
+    function encodeFluidFTokenDeposit(
+        address underlying,
+        uint128 amount,
+        address receiver,
+        address fToken
+    )
+        internal
+        pure
+        returns (bytes memory)
+    {
+        return abi.encodePacked(
+            encodeApprove(underlying, fToken),
+            uint8(ComposerCommands.LENDING),
+            uint8(LenderOps.DEPOSIT_LENDING_TOKEN),
+            uint16(LenderIds.UP_TO_FLUID - 1),
+            underlying,
+            amount,
+            receiver,
+            fToken
+        );
+    }
+
+    function encodeFluidFTokenWithdraw(
+        address underlying,
+        uint128 amount,
+        address receiver,
+        address fToken
+    )
+        internal
+        pure
+        returns (bytes memory)
+    {
+        return abi.encodePacked(
+            uint8(ComposerCommands.LENDING),
+            uint8(LenderOps.WITHDRAW_LENDING_TOKEN),
+            uint16(LenderIds.UP_TO_FLUID - 1),
+            underlying,
+            amount,
+            receiver,
+            fToken
+        );
     }
 }

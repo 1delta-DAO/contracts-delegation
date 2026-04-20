@@ -486,4 +486,66 @@ contract AssetTransfers is BaseUtils {
         }
         return currentOffset;
     }
+
+    /**
+     * @notice Sweep every NFT this composer owns of an ERC721Enumerable collection to `receiver`.
+     * @dev Iterates `tokenOfOwnerByIndex(this, 0)` while `balanceOf(this) > 0`. Each iteration
+     *      reads index 0 (not i) because every successful `transferFrom` shifts the remaining
+     *      tokens back into the lower indices. Composer's stateless design means in normal flows
+     *      it holds at most a handful of freshly-minted NFTs, so the loop is bounded.
+     *      Requires the `collection` to implement ERC721Enumerable (Fluid VaultFactory does).
+     * @param currentOffset Current position in the calldata
+     * @return Updated calldata offset after processing
+     * @custom:calldata-offset-table
+     * | Offset | Length (bytes) | Description                               |
+     * |--------|----------------|-------------------------------------------|
+     * | 0      | 20             | collection (ERC721Enumerable)              |
+     * | 20     | 20             | receiver                                   |
+     */
+    function _sweepNft(uint256 currentOffset) internal returns (uint256) {
+        assembly {
+            let collection := shr(96, calldataload(currentOffset))
+            let receiver := shr(96, calldataload(add(currentOffset, 20)))
+            currentOffset := add(currentOffset, 40)
+
+            // No-op if receiver is the composer (avoid self-transfer cycles).
+            if xor(receiver, address()) {
+                let ptr := mload(0x40)
+                for {} 1 {} {
+                    // balanceOf(address(this))
+                    mstore(ptr, ERC20_BALANCE_OF)
+                    mstore(add(ptr, 0x04), address())
+                    if iszero(staticcall(gas(), collection, ptr, 0x24, ptr, 0x20)) {
+                        returndatacopy(0, 0, returndatasize())
+                        revert(0, returndatasize())
+                    }
+                    let bal := mload(ptr)
+                    if iszero(bal) { break }
+
+                    // tokenOfOwnerByIndex(address(this), 0) — read index 0 each iteration since
+                    // the prior transferFrom shifts later tokens back into lower indices.
+                    // selector 0x2f745c59
+                    mstore(ptr, 0x2f745c5900000000000000000000000000000000000000000000000000000000)
+                    mstore(add(ptr, 0x04), address())
+                    mstore(add(ptr, 0x24), 0)
+                    if iszero(staticcall(gas(), collection, ptr, 0x44, ptr, 0x20)) {
+                        returndatacopy(0, 0, returndatasize())
+                        revert(0, returndatasize())
+                    }
+                    let tokenId := mload(ptr)
+
+                    // collection.transferFrom(address(this), receiver, tokenId)
+                    mstore(ptr, ERC20_TRANSFER_FROM)
+                    mstore(add(ptr, 0x04), address())
+                    mstore(add(ptr, 0x24), receiver)
+                    mstore(add(ptr, 0x44), tokenId)
+                    if iszero(call(gas(), collection, 0, ptr, 0x64, 0, 0)) {
+                        returndatacopy(0, 0, returndatasize())
+                        revert(0, returndatasize())
+                    }
+                }
+            }
+        }
+        return currentOffset;
+    }
 }
