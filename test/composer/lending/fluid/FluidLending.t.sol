@@ -9,7 +9,12 @@ import {ComposerPlugin, IComposerLike} from "plugins/ComposerPlugin.sol";
 import {SweepType} from "contracts/1delta/composer/enums/MiscEnums.sol";
 
 interface IFluidVaultT1 {
-    function operate(uint256 nftId, int256 newCol, int256 newDebt, address to)
+    function operate(
+        uint256 nftId,
+        int256 newCol,
+        int256 newDebt,
+        address to
+    )
         external
         payable
         returns (uint256 nftId_, int256 finalCol, int256 finalDebt);
@@ -224,10 +229,8 @@ contract FluidLendingTest is BaseTest {
         //   5. sweep the (now-empty) position NFT back to user — required, the receiver hook
         //      reverts if the composer still owns the NFT after the inner dispatch
         bytes memory pull = CalldataLib.encodeTransferIn(USDC, address(composer), fundedUsdc);
-        bytes memory repayAll =
-            CalldataLib.encodeFluidRepay(USDC, CalldataLib.FLUID_MAX_AMOUNT, nftId, address(0), VAULT);
-        bytes memory withdrawAll =
-            CalldataLib.encodeFluidWithdraw(address(0), CalldataLib.FLUID_MAX_AMOUNT, nftId, user, VAULT);
+        bytes memory repayAll = CalldataLib.encodeFluidRepay(USDC, CalldataLib.FLUID_MAX_AMOUNT, nftId, address(0), VAULT);
+        bytes memory withdrawAll = CalldataLib.encodeFluidWithdraw(address(0), CalldataLib.FLUID_MAX_AMOUNT, nftId, user, VAULT);
         bytes memory sweepUsdc = CalldataLib.encodeSweep(USDC, user, 0, SweepType.VALIDATE);
         bytes memory sweepNft = CalldataLib.encodeSweepNft(VAULT_FACTORY, user);
         bytes memory innerOps = abi.encodePacked(pull, repayAll, withdrawAll, sweepUsdc, sweepNft);
@@ -262,9 +265,8 @@ contract FluidLendingTest is BaseTest {
         // Direct call to onERC721Received from a non-factory address must revert (InvalidCaller).
         vm.prank(user);
         vm.expectRevert();
-        (bool ok,) = address(composer).call(
-            abi.encodeWithSignature("onERC721Received(address,address,uint256,bytes)", user, user, uint256(1), innerOps)
-        );
+        (bool ok,) = address(composer)
+            .call(abi.encodeWithSignature("onERC721Received(address,address,uint256,bytes)", user, user, uint256(1), innerOps));
         ok; // silence unused warning — vm.expectRevert handles assertion
     }
 
@@ -275,8 +277,7 @@ contract FluidLendingTest is BaseTest {
         address attacker = address(0xBAD);
         vm.prank(user);
         // setApprovalForAll(operator, approved)
-        (bool ok,) =
-            VAULT_FACTORY.call(abi.encodeWithSignature("setApprovalForAll(address,bool)", attacker, true));
+        (bool ok,) = VAULT_FACTORY.call(abi.encodeWithSignature("setApprovalForAll(address,bool)", attacker, true));
         require(ok, "approve-for-all failed");
 
         // Attacker tries to drain the position by initiating the transfer with malicious calldata.

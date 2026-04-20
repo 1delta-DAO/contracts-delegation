@@ -377,9 +377,7 @@ abstract contract FluidLending is ERC20Selectors, Masks, DeltaErrors {
      *      via the inheritance chain — declared here so `onERC721Received` can re-enter compose
      *      with `from` as the caller.
      */
-    function _deltaComposeInternal(address callerAddress, uint256 currentOffset, uint256 calldataLength)
-        internal
-        virtual;
+    function _deltaComposeInternal(address callerAddress, uint256 currentOffset, uint256 calldataLength) internal virtual;
 
     /**
      * @notice ERC721 receiver hook — entry point for the Fluid NFT-custody flow.
@@ -414,10 +412,7 @@ abstract contract FluidLending is ERC20Selectors, Masks, DeltaErrors {
      *             `deltaCompose`'s argument).
      * @return The ERC721_RECEIVED magic selector on success.
      */
-    function onERC721Received(address operator, address from, uint256 tokenId, bytes calldata data)
-        external
-        returns (bytes4)
-    {
+    function onERC721Received(address operator, address from, uint256 tokenId, bytes calldata data) external returns (bytes4) {
         // Auth: caller must be the Fluid VaultFactory + transfer must be initiated by the owner.
         assembly {
             if xor(caller(), FLUID_VAULT_FACTORY) {

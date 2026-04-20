@@ -202,8 +202,7 @@ abstract contract UniversalLending is
             } else {
                 _invalidOperation();
             }
-        }
-        else {
+        } else {
             _invalidOperation();
         }
     }
