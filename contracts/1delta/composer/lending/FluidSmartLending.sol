@@ -98,10 +98,16 @@ abstract contract FluidSmartLending is ERC20Selectors, Masks {
      * @dev Share-precise variant. Use this for full exit on a smart side: pass
      *      `type(int256).min` for the share parameter (`perfectColShares_` /
      *      `perfectDebtShares_`). Per-token slippage guards (`*MinMax`) bound the actual
-     *      token amounts that flow in/out:
-     *        - withdrawing both tokens: negative on both, magnitude = min out per token
-     *        - withdrawing one token only: positive on the kept token, 0 on the skipped token
-     *        - depositing/minting: positive on both, magnitude = max in per token
+     *      token amounts that flow in/out — and **the sign matches the SHARE-action direction,
+     *      not the token-flow direction**:
+     *        - col side, withdrawing both tokens (`perfectColShares < 0`): both `colTokenXMinMax < 0`,
+     *          magnitude = min out per token.
+     *        - col side, withdrawing into one token only: positive on the kept token, 0 on the skipped one.
+     *        - col side, minting (`perfectColShares > 0`): both `colTokenXMinMax > 0`, magnitude = max in per token.
+     *        - debt side, repaying (`perfectDebtShares < 0`): both `debtTokenXMinMax < 0`, magnitude = max in
+     *          per token. Note: tokens flow IN to the vault, but the slippage caps follow the share action's sign,
+     *          which is negative for burn. Passing positive caps here trips Fluid's `VaultDex__InvalidOperateAmount`.
+     *        - debt side, borrowing (`perfectDebtShares > 0`): both `debtTokenXMinMax > 0`, magnitude = min out per token.
      * @param currentOffset Current position in the calldata
      * @return Updated calldata offset after processing
      * @custom:calldata-offset-table
@@ -134,48 +140,31 @@ abstract contract FluidSmartLending is ERC20Selectors, Masks {
     function _callFluidSmart(uint256 currentOffset, bool isPerfect) internal returns (uint256) {
         assembly {
             let vaultType := shr(248, calldataload(currentOffset))
-            let callValue := shr(128, calldataload(add(currentOffset, 1)))
-            let nftId := calldataload(add(currentOffset, 17))
-            let receiver := shr(96, calldataload(add(currentOffset, 49)))
-            let vault := shr(96, calldataload(add(currentOffset, 69)))
+            // Reject vaultType outside {2,3,4} early to surface encoder bugs.
+            if iszero(or(or(eq(vaultType, 2), eq(vaultType, 3)), eq(vaultType, 4))) { revert(0, 0) }
 
             // T2/T3 → 4 int256 amount fields; T4 → 6.
-            let isT4 := eq(vaultType, 4)
-            let numSlots := add(4, mul(isT4, 2))
-            let tokenBytes := mul(numSlots, 20) // 80 (T2/T3) or 120 (T4)
-
-            // Reject vaultType outside {2,3,4} early to surface encoder bugs.
-            if iszero(or(or(eq(vaultType, 2), eq(vaultType, 3)), isT4)) { revert(0, 0) }
-
-            // Pick selector by (isT4, isPerfect).
-            let selector
-            switch isPerfect
-            case 0 {
-                switch isT4
-                case 0 { selector := FLUID_T2_T3_OPERATE }
-                default { selector := FLUID_T4_OPERATE }
-            }
-            default {
-                switch isT4
-                case 0 { selector := FLUID_T2_T3_OPERATE_PERFECT }
-                default { selector := FLUID_T4_OPERATE_PERFECT }
-            }
-
-            // Build calldata: selector | nftId | <amountFields> | receiver
+            let numSlots := add(4, mul(eq(vaultType, 4), 2))
             let ptr := mload(0x40)
-            mstore(ptr, selector)
-            mstore(add(ptr, 0x04), nftId)
 
-            // Token slots start at offset 89; int256 params follow at 89 + tokenBytes.
-            let tokenStart := add(currentOffset, 89)
-            let amountStart := add(tokenStart, tokenBytes)
+            // Pick selector: pack (isPerfect, isT4) into a 2-bit index.
+            switch or(shl(1, isPerfect), eq(vaultType, 4))
+            case 0 { mstore(ptr, FLUID_T2_T3_OPERATE) }
+            case 1 { mstore(ptr, FLUID_T4_OPERATE) }
+            case 2 { mstore(ptr, FLUID_T2_T3_OPERATE_PERFECT) }
+            case 3 { mstore(ptr, FLUID_T4_OPERATE_PERFECT) }
+
+            // nftId
+            mstore(add(ptr, 0x04), calldataload(add(currentOffset, 17)))
 
             // Iterate amount slots, resolving the balance-sentinel where present.
-            let i := 0
-            for {} lt(i, numSlots) { i := add(i, 1) } {
-                let amount := calldataload(add(amountStart, mul(i, 32)))
+            let callValue := shr(128, calldataload(add(currentOffset, 1)))
+            for { let i := 0 } lt(i, numSlots) { i := add(i, 1) } {
+                // amount slot i lives at currentOffset + 89 + numSlots*20 + i*32
+                let amount := calldataload(add(currentOffset, add(89, add(mul(numSlots, 20), mul(i, 32)))))
                 if eq(amount, FLUID_SMART_USE_BALANCE) {
-                    let token := shr(96, calldataload(add(tokenStart, mul(i, 20))))
+                    // parallel token slot i lives at currentOffset + 89 + i*20
+                    let token := shr(96, calldataload(add(currentOffset, add(89, mul(i, 20)))))
                     switch iszero(token)
                     case 1 {
                         // Native side — selfbalance, and override callValue (Fluid: ≤1 native side).
@@ -195,14 +184,25 @@ abstract contract FluidSmartLending is ERC20Selectors, Masks {
                 mstore(add(ptr, add(0x24, mul(i, 32))), amount)
             }
 
-            mstore(add(ptr, add(0x24, mul(numSlots, 32))), receiver)
-            let callDataSize := add(0x44, mul(numSlots, 32))
-            if iszero(call(gas(), vault, callValue, ptr, callDataSize, 0x0, 0x0)) {
+            // Trailing receiver
+            mstore(add(ptr, add(0x24, mul(numSlots, 32))), shr(96, calldataload(add(currentOffset, 49))))
+
+            if iszero(
+                call(
+                    gas(),
+                    shr(96, calldataload(add(currentOffset, 69))), // vault
+                    callValue,
+                    ptr,
+                    add(0x44, mul(numSlots, 32)),
+                    0x0,
+                    0x0
+                )
+            ) {
                 returndatacopy(0x0, 0x0, returndatasize())
                 revert(0x0, returndatasize())
             }
 
-            currentOffset := add(currentOffset, add(89, add(tokenBytes, mul(32, numSlots))))
+            currentOffset := add(currentOffset, add(89, add(mul(numSlots, 20), mul(numSlots, 32))))
         }
         return currentOffset;
     }

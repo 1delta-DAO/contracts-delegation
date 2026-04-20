@@ -1874,6 +1874,22 @@ library CalldataLib {
         );
     }
 
+    function _fluidSmartTokens4(address[4] memory t) private pure returns (bytes memory) {
+        return abi.encodePacked(t[0], t[1], t[2], t[3]);
+    }
+
+    function _fluidSmartTokens6(address[6] memory t) private pure returns (bytes memory) {
+        return abi.encodePacked(t[0], t[1], t[2], t[3], t[4], t[5]);
+    }
+
+    function _fluidSmartAmounts4(int256[4] memory a) private pure returns (bytes memory) {
+        return abi.encodePacked(a[0], a[1], a[2], a[3]);
+    }
+
+    function _fluidSmartAmounts6(int256[6] memory a) private pure returns (bytes memory) {
+        return abi.encodePacked(a[0], a[1], a[2], a[3], a[4], a[5]);
+    }
+
     /// @notice Encode a `FluidSmartLending.FLUID_OPERATE` call against a T2 vault.
     /// @param amounts [newColToken0, newColToken1, colSharesMinMax, newDebt]
     /// @param tokens  per-slot token address; use `address(0)` on slots that don't use the
@@ -1892,14 +1908,8 @@ library CalldataLib {
     {
         return abi.encodePacked(
             _fluidSmartHeader(2, callValue, nftId, receiver, vault, false),
-            tokens[0],
-            tokens[1],
-            tokens[2],
-            tokens[3],
-            amounts[0],
-            amounts[1],
-            amounts[2],
-            amounts[3]
+            _fluidSmartTokens4(tokens),
+            _fluidSmartAmounts4(amounts)
         );
     }
 
@@ -1919,14 +1929,8 @@ library CalldataLib {
     {
         return abi.encodePacked(
             _fluidSmartHeader(3, callValue, nftId, receiver, vault, false),
-            tokens[0],
-            tokens[1],
-            tokens[2],
-            tokens[3],
-            amounts[0],
-            amounts[1],
-            amounts[2],
-            amounts[3]
+            _fluidSmartTokens4(tokens),
+            _fluidSmartAmounts4(amounts)
         );
     }
 
@@ -1946,18 +1950,8 @@ library CalldataLib {
     {
         return abi.encodePacked(
             _fluidSmartHeader(4, callValue, nftId, receiver, vault, false),
-            tokens[0],
-            tokens[1],
-            tokens[2],
-            tokens[3],
-            tokens[4],
-            tokens[5],
-            amounts[0],
-            amounts[1],
-            amounts[2],
-            amounts[3],
-            amounts[4],
-            amounts[5]
+            _fluidSmartTokens6(tokens),
+            _fluidSmartAmounts6(amounts)
         );
     }
 
@@ -1977,14 +1971,8 @@ library CalldataLib {
     {
         return abi.encodePacked(
             _fluidSmartHeader(2, callValue, nftId, receiver, vault, true),
-            tokens[0],
-            tokens[1],
-            tokens[2],
-            tokens[3],
-            amounts[0],
-            amounts[1],
-            amounts[2],
-            amounts[3]
+            _fluidSmartTokens4(tokens),
+            _fluidSmartAmounts4(amounts)
         );
     }
 
@@ -2004,14 +1992,8 @@ library CalldataLib {
     {
         return abi.encodePacked(
             _fluidSmartHeader(3, callValue, nftId, receiver, vault, true),
-            tokens[0],
-            tokens[1],
-            tokens[2],
-            tokens[3],
-            amounts[0],
-            amounts[1],
-            amounts[2],
-            amounts[3]
+            _fluidSmartTokens4(tokens),
+            _fluidSmartAmounts4(amounts)
         );
     }
 
@@ -2031,18 +2013,8 @@ library CalldataLib {
     {
         return abi.encodePacked(
             _fluidSmartHeader(4, callValue, nftId, receiver, vault, true),
-            tokens[0],
-            tokens[1],
-            tokens[2],
-            tokens[3],
-            tokens[4],
-            tokens[5],
-            amounts[0],
-            amounts[1],
-            amounts[2],
-            amounts[3],
-            amounts[4],
-            amounts[5]
+            _fluidSmartTokens6(tokens),
+            _fluidSmartAmounts6(amounts)
         );
     }
 

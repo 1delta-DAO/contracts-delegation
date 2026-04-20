@@ -84,6 +84,22 @@ T2 / T3 / T4 differ only in selector + arity; the layout is uniform:
 
 **Balance handling**: write `FLUID_SMART_USE_BALANCE` (`type(int256).max`) into an amount slot to have the composer substitute `balanceOf(this)` of the parallel token (or `selfbalance()` if `tokens[i] == address(0)`). Slippage / share-precise slots (`*MinMax`, `perfectColShares`, `perfectDebtShares`) are literal — the sentinel is not valid there.
 
+Two `*SharesMinMax` caps deserve special note since the sign convention is asymmetric across `operate` vs `operatePerfect`:
+
+- **`operate` smart sides**: `colSharesMinMax_` / `debtSharesMinMax_` are signed, and the sign indicates the operation direction.
+  - `> 0`: minting shares — value = **min** col shares to mint, **max** debt shares to mint.
+  - `< 0`: burning shares — magnitude = **max** col shares to burn, **min** debt shares to burn.
+  - `0`: disallowed if any token amount on the same side is non-zero. Use `type(int128).max` (NOT `type(int256).max`, which collides with the balance sentinel) for a loose upper bound.
+
+- **`operatePerfect` per-token MinMax** (`colTokenXMinMax_` / `debtTokenXMinMax_`): **the sign matches the SHARE-action direction, NOT the token-flow direction** — this is the surprise. Specifically:
+  - col side, `perfectColShares < 0` (withdraw, both tokens): both `colTokenXMinMax < 0`, magnitude = min out per token.
+  - col side, withdraw into one token only: positive on the kept token, `0` on the skipped one.
+  - col side, `perfectColShares > 0` (mint): both `colTokenXMinMax > 0`, magnitude = max in per token.
+  - debt side, `perfectDebtShares > 0` (borrow): both `debtTokenXMinMax > 0`, magnitude = min out per token.
+  - debt side, `perfectDebtShares < 0` (repay): **both `debtTokenXMinMax < 0`** even though tokens flow IN — magnitude = max in per token. Passing positive caps reverts inside `_debtOperatePerfectPayback` with `VaultDex__InvalidOperateAmount` (errorId `35001`).
+
+**Full close on T4**: the single-call form (`perfectColShares = perfectDebtShares = type(int256).min` in one `operatePerfect`) trips a Fluid DEX invariant. Split into two sequential `operatePerfect` calls — first repay-all on the smart-debt side (col untouched), then burn-all on the smart-col side (debt already zero). See `test_fluid_smart_t4_nft_custody_full_close_two_phase` for the full payload.
+
 Encoders: `encodeFluidSmartOperate{T2,T3,T4}` and `encodeFluidSmartOperatePerfect{T2,T3,T4}`.
 
 ## NFT-custody flow — `onERC721Received`
@@ -142,6 +158,27 @@ tokens  = [address(0)  , WSTETH     , address(0)        , address(0)]   // slot 
 ```
 Composer resolves slot 0 → `selfbalance()` and overrides `callValue`; slot 1 → `balanceOf(WSTETH)`; slots 2/3 stay literal.
 
+**Full close on T4** (smart col + smart debt) — two-phase via `operatePerfect`:
+```
+data =
+  TRANSFER_FROM(user→composer GHO buffer)
+| TRANSFER_FROM(user→composer USDC buffer)
+| APPROVE GHO → vault | APPROVE USDC → vault
+| FLUID_OPERATE_PERFECT(T4):                              // phase 1: repay-all debt
+    amounts = [0, 0, 0,                                    //  col untouched
+               int.min,                                    //  perfectDebtShares = burn ALL
+               -int128.max, -int128.max]                   //  per-token MAX-IN cap (NEGATIVE on burn)
+| FLUID_OPERATE_PERFECT(T4):                              // phase 2: burn-all col
+    amounts = [int.min, -1, -1,                            //  perfectColShares = burn ALL, loose min-out
+               0, 0, 0]                                    //  debt already zero
+| SWEEP GHO (validate, to=user) | SWEEP USDC (validate, to=user)
+| SWEEP_NFT(VAULT_FACTORY, user)
+VAULT_FACTORY.safeTransferFrom(user, composer, nftId, data)
+```
+Single-call form (`perfectColShares = perfectDebtShares = int.min` simultaneously) trips a Fluid DEX invariant; the two-phase split is the documented safe pattern.
+
 ## Tests
 
-[test/composer/lending/fluid/FluidLending.t.sol](../../../../test/composer/lending/fluid/FluidLending.t.sol) — 8 mainnet-fork tests against the ETH-USDC vault `0x0C8C77B7FF4c2aF7F6CEBbe67350A490E3DD6cB3`. Covers deposit / repay / NFT-custody borrow / NFT-custody withdraw / full close / open + sweep / direct-call auth / `setApprovalForAll` attack rejection.
+- [test/composer/lending/fluid/FluidLending.t.sol](../../../../test/composer/lending/fluid/FluidLending.t.sol) — 9 tests against the T1 ETH-USDC vault `0x0C8C77B7FF4c2aF7F6CEBbe67350A490E3DD6cB3`. Covers deposit / repay / NFT-custody borrow / NFT-custody withdraw / full close / open + sweep / direct-call auth / setApprovalForAll attack / unswept-NFT revert.
+- [test/composer/lending/fluid/FluidLendingSmartT2.t.sol](../../../../test/composer/lending/fluid/FluidLendingSmartT2.t.sol) — 4 tests against the T2 cbBTC/WBTC + USDT vault `0xf7FA55D14C71241e3c970E30C509Ff58b5f5D557`. Covers balanced open / open with balance sentinel / NFT-custody borrow more / full close via `operatePerfect` (single-call works on T2 since debt is simple).
+- [test/composer/lending/fluid/FluidLendingSmartT4.t.sol](../../../../test/composer/lending/fluid/FluidLendingSmartT4.t.sol) — 4 tests against the T4 GHO/USDC + GHO/USDC vault `0x20b32C597633f12B44CFAFe0ab27408028CA0f6A`. Covers balanced open / open with balance sentinel / NFT-custody shrink-col / two-phase full close.
