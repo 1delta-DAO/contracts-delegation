@@ -87,8 +87,6 @@ contract BaseTest is Test {
         // Initialize user
         userPrivateKey = 0x1de17a;
         user = vm.addr(userPrivateKey);
-        vm.deal(user, 100 ether);
-        vm.label(user, "user");
 
         // Create a fork
         string memory rpcUrl = chain.getRpcUrl();
@@ -105,6 +103,9 @@ contract BaseTest is Test {
                 vm.createSelectFork(rpcUrl, blockNumber);
             }
         }
+
+        vm.deal(user, 100 ether);
+        vm.label(user, "user");
     }
 
     /// @notice Utility function for signing messages

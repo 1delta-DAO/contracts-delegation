@@ -40,7 +40,7 @@ contract FluidLendingTest is BaseTest {
     /// @dev Fluid VaultFactory (ERC721 holding all position NFTs) on Ethereum mainnet.
     address internal constant VAULT_FACTORY = 0x324c5Dc1fC42c7a4D43d92df1eBA58a54d13Bf2d;
     /// @dev USDC on Ethereum mainnet.
-    address internal constant USDC = 0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48;
+    address internal USDC;
 
     /// @dev Composer's freshly-deployed CREATE address on mainnet may already hold a few wei of
     ///      ETH (an existing contract account at the same address). All composer-balance assertions
@@ -50,11 +50,8 @@ contract FluidLendingTest is BaseTest {
     function setUp() public {
         // Latest block — the vault is long-deployed; pin via env if determinism is needed.
         _init(Chains.ETHEREUM_MAINNET, 0, true);
+        USDC = chain.getTokenAddress(Tokens.USDC);
         composer = ComposerPlugin.getComposer(Chains.ETHEREUM_MAINNET);
-
-        // _init's `vm.deal(user, 100 ether)` runs before the fork is created and is dropped by
-        // createSelectFork. Re-fund the user post-fork so test calls have ETH to forward.
-        vm.deal(user, 100 ether);
 
         composerEthBaseline = address(composer).balance;
 
@@ -288,5 +285,24 @@ contract FluidLendingTest is BaseTest {
 
         // NFT must still be with the user — composer's `operator == from` check blocked the attack.
         assertEq(IFluidVaultFactory(VAULT_FACTORY).ownerOf(nftId), user, "nft not stolen");
+    }
+
+    function test_fluid_nft_custody_reverts_when_nft_not_swept_back() public {
+        uint256 nftId = _openPosition(user, 1 ether, 1000e6);
+
+        uint256 usdcBefore = IERC20All(USDC).balanceOf(user);
+
+        // Borrow ops but deliberately omit SWEEP_NFT.  The post-check in onERC721Received
+        // detects that the composer still owns the NFT and reverts the entire transaction,
+        // rolling back the borrow atomically.
+        bytes memory innerOps = CalldataLib.encodeFluidBorrow(USDC, 200e6, nftId, user, VAULT);
+
+        vm.prank(user);
+        vm.expectRevert();
+        IFluidVaultFactory(VAULT_FACTORY).safeTransferFrom(user, address(composer), nftId, innerOps);
+
+        // Both the NFT and the borrowed funds must be untouched — full atomic revert.
+        assertEq(IFluidVaultFactory(VAULT_FACTORY).ownerOf(nftId), user, "nft not stolen");
+        assertEq(IERC20All(USDC).balanceOf(user), usdcBefore, "no USDC leaked");
     }
 }
