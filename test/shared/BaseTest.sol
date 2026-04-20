@@ -70,7 +70,7 @@ contract BaseTest is Test {
     }
 
     function _getEnvRpc(string memory envVar) internal view returns (string memory) {
-        try vm.envString(envVar) returns (string memory rpc) {
+        try vm.rpcUrl(envVar) returns (string memory rpc) {
             return rpc;
         } catch {
             return "";
