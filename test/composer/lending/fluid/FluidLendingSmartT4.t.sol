@@ -42,6 +42,7 @@ interface IFluidVaultFactory {
     function safeTransferFrom(address from, address to, uint256 tokenId, bytes calldata data) external;
     function ownerOf(uint256 tokenId) external view returns (address);
     function balanceOf(address owner) external view returns (uint256);
+    function totalSupply() external view returns (uint256);
 }
 
 /**
@@ -133,11 +134,12 @@ contract FluidLendingSmartT4Test is BaseTest {
             CalldataLib.encodeTransferIn(GHO, address(composer), COL_GHO),
             CalldataLib.encodeTransferIn(USDC, address(composer), COL_USDC)
         );
+        uint256 predictedNftId = IFluidVaultFactory(VAULT_FACTORY).totalSupply() + 1;
         bytes memory opAndSweep = abi.encodePacked(
             CalldataLib.encodeApprove(GHO, VAULT),
             CalldataLib.encodeApprove(USDC, VAULT),
             CalldataLib.encodeFluidSmartOperateT4(0, 0, user, VAULT, tokens, amounts),
-            CalldataLib.encodeSweepNft(VAULT_FACTORY, user)
+            CalldataLib.encodeSweepNft(VAULT_FACTORY, user, predictedNftId)
         );
 
         uint256 nftsBefore = IFluidVaultFactory(VAULT_FACTORY).balanceOf(user);
@@ -173,11 +175,12 @@ contract FluidLendingSmartT4Test is BaseTest {
         amounts[3] = int256(DEBT_GHO);
         amounts[4] = int256(DEBT_USDC);
 
+        uint256 predictedNftId = IFluidVaultFactory(VAULT_FACTORY).totalSupply() + 1;
         bytes memory data = abi.encodePacked(
             CalldataLib.encodeApprove(GHO, VAULT),
             CalldataLib.encodeApprove(USDC, VAULT),
             CalldataLib.encodeFluidSmartOperateT4(0, 0, user, VAULT, tokens, amounts),
-            CalldataLib.encodeSweepNft(VAULT_FACTORY, user)
+            CalldataLib.encodeSweepNft(VAULT_FACTORY, user, predictedNftId)
         );
 
         uint256 nftsBefore = IFluidVaultFactory(VAULT_FACTORY).balanceOf(user);
@@ -213,7 +216,7 @@ contract FluidLendingSmartT4Test is BaseTest {
         amounts[5] = int256(0);
         return abi.encodePacked(
             CalldataLib.encodeFluidSmartOperateT4(0, nftId, user, VAULT, tokens, amounts),
-            CalldataLib.encodeSweepNft(VAULT_FACTORY, user)
+            CalldataLib.encodeSweepNft(VAULT_FACTORY, user, nftId)
         );
     }
 
@@ -297,7 +300,7 @@ contract FluidLendingSmartT4Test is BaseTest {
             // Sweep any repay-buffer dust + the (now-empty) NFT.
             CalldataLib.encodeSweep(GHO, user, 0, SweepType.VALIDATE),
             CalldataLib.encodeSweep(USDC, user, 0, SweepType.VALIDATE),
-            CalldataLib.encodeSweepNft(VAULT_FACTORY, user)
+            CalldataLib.encodeSweepNft(VAULT_FACTORY, user, nftId)
         );
     }
 

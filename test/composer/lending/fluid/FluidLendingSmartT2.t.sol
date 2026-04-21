@@ -39,6 +39,7 @@ interface IFluidVaultFactory {
     function ownerOf(uint256 tokenId) external view returns (address);
     function balanceOf(address owner) external view returns (uint256);
     function tokenOfOwnerByIndex(address owner, uint256 index) external view returns (uint256);
+    function totalSupply() external view returns (uint256);
 }
 
 /**
@@ -116,6 +117,7 @@ contract FluidLendingSmartT2Test is BaseTest {
 
         uint256 nftsBefore = IFluidVaultFactory(VAULT_FACTORY).balanceOf(user);
         uint256 usdtBefore = IERC20All(USDT).balanceOf(user);
+        uint256 predictedNftId = IFluidVaultFactory(VAULT_FACTORY).totalSupply() + 1;
 
         bytes memory data = abi.encodePacked(
             CalldataLib.encodeTransferIn(cbBTC, address(composer), COL0_AMOUNT),
@@ -123,7 +125,7 @@ contract FluidLendingSmartT2Test is BaseTest {
             CalldataLib.encodeApprove(cbBTC, VAULT),
             CalldataLib.encodeApprove(WBTC, VAULT),
             CalldataLib.encodeFluidSmartOperateT2(0, 0, user, VAULT, tokens, amounts),
-            CalldataLib.encodeSweepNft(VAULT_FACTORY, user)
+            CalldataLib.encodeSweepNft(VAULT_FACTORY, user, predictedNftId)
         );
 
         vm.prank(user);
@@ -154,12 +156,13 @@ contract FluidLendingSmartT2Test is BaseTest {
 
         uint256 nftsBefore = IFluidVaultFactory(VAULT_FACTORY).balanceOf(user);
         uint256 usdtBefore = IERC20All(USDT).balanceOf(user);
+        uint256 predictedNftId = IFluidVaultFactory(VAULT_FACTORY).totalSupply() + 1;
 
         bytes memory data = abi.encodePacked(
             CalldataLib.encodeApprove(cbBTC, VAULT),
             CalldataLib.encodeApprove(WBTC, VAULT),
             CalldataLib.encodeFluidSmartOperateT2(0, 0, user, VAULT, tokens, amounts),
-            CalldataLib.encodeSweepNft(VAULT_FACTORY, user)
+            CalldataLib.encodeSweepNft(VAULT_FACTORY, user, predictedNftId)
         );
 
         vm.prank(user);
@@ -187,7 +190,7 @@ contract FluidLendingSmartT2Test is BaseTest {
 
         bytes memory innerOps = abi.encodePacked(
             CalldataLib.encodeFluidSmartOperateT2(0, nftId, user, VAULT, tokens, amounts),
-            CalldataLib.encodeSweepNft(VAULT_FACTORY, user)
+            CalldataLib.encodeSweepNft(VAULT_FACTORY, user, nftId)
         );
 
         uint256 usdtBefore = IERC20All(USDT).balanceOf(user);
@@ -239,7 +242,7 @@ contract FluidLendingSmartT2Test is BaseTest {
             CalldataLib.encodeApprove(USDT, VAULT),
             closeCall,
             CalldataLib.encodeSweep(USDT, user, 0, SweepType.VALIDATE),
-            CalldataLib.encodeSweepNft(VAULT_FACTORY, user)
+            CalldataLib.encodeSweepNft(VAULT_FACTORY, user, nftId)
         );
 
         uint256 cbBefore = IERC20All(cbBTC).balanceOf(user);

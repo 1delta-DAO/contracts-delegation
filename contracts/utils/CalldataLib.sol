@@ -654,12 +654,11 @@ library CalldataLib {
         ); // 14 bytes
     }
 
-    /// @notice Sweep every NFT the composer owns of `collection` to `receiver`.
-    /// @dev Targets ERC721Enumerable collections (uses `balanceOf` + `tokenOfOwnerByIndex`).
-    ///      Pair with a position-opening op (e.g. Fluid `DEPOSIT` with `nftId == 0`) to deliver
-    ///      the freshly-minted NFT to the user in the same `deltaCompose` call.
-    function encodeSweepNft(address collection, address receiver) internal pure returns (bytes memory) {
-        return abi.encodePacked(uint8(ComposerCommands.TRANSFERS), uint8(TransferIds.SWEEP_NFT), collection, receiver);
+    /// @notice Transfer a single `tokenId` of `collection` held by the composer to `receiver`.
+    /// @dev Caller must know `tokenId` up front. For Fluid, predict via `VaultFactory.totalSupply() + 1`
+    ///      when opening a fresh position with `nftId == 0`.
+    function encodeSweepNft(address collection, address receiver, uint256 tokenId) internal pure returns (bytes memory) {
+        return abi.encodePacked(uint8(ComposerCommands.TRANSFERS), uint8(TransferIds.SWEEP_NFT), collection, receiver, tokenId);
     }
 
     function encodeUnwrap(

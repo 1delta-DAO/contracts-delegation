@@ -119,20 +119,20 @@ The dispatch re-enters `_deltaComposeInternal(from, …)`, so token-pull ops in 
 
 ## Generic NFT sweep — `TransferIds.SWEEP_NFT`
 
-40-byte body: `collection(20) | receiver(20)`. Iterates `balanceOf(this) → tokenOfOwnerByIndex(this, 0) → transferFrom(this, receiver, tokenId)` until the composer holds none of the collection. Works for any ERC721Enumerable.
+72-byte body: `collection(20) | receiver(20) | tokenId(32)`. Single `transferFrom(this, receiver, tokenId)`. Works for any ERC721 — no enumeration required. Caller must know `tokenId` up front.
 
-Pair with `DEPOSIT(nftId=0)` to deliver freshly-opened positions to a user, or include at the end of an `onERC721Received` payload to return the (possibly empty / repositioned) NFT.
+Pair with `DEPOSIT(nftId=0)` to deliver a freshly-opened position — predict the id via `VaultFactory.totalSupply() + 1` (Fluid assigns ids sequentially). For `onERC721Received` flows the id is the incoming `tokenId` already.
 
 ## Common flows
 
-**Open + immediately deliver to user** (single `deltaCompose`):
+**Open + immediately deliver to user** (single `deltaCompose`, `id = VaultFactory.totalSupply() + 1`):
 ```
-DEPOSIT (nftId=0, +col) | SWEEP_NFT(VAULT_FACTORY, user)
+DEPOSIT (nftId=0, +col) | SWEEP_NFT(VAULT_FACTORY, user, id)
 ```
 
 **Borrow more on an existing position** (NFT-custody):
 ```
-data = BORROW(nftId, +amount, user) | SWEEP_NFT(VAULT_FACTORY, user)
+data = BORROW(nftId, +amount, user) | SWEEP_NFT(VAULT_FACTORY, user, nftId)
 VAULT_FACTORY.safeTransferFrom(user, composer, nftId, data)
 ```
 
@@ -142,7 +142,7 @@ data = TRANSFER_FROM(user→composer USDC buffer)
      | REPAY (UINT112_MASK)               // Fluid's int.min sentinel
      | WITHDRAW(UINT112_MASK, to=user)    // ETH straight to user
      | SWEEP USDC (validate, to=user)     // refund repay buffer
-     | SWEEP_NFT(VAULT_FACTORY, user)     // empty NFT back to user
+     | SWEEP_NFT(VAULT_FACTORY, user, nftId)     // empty NFT back to user
 VAULT_FACTORY.safeTransferFrom(user, composer, nftId, data)
 ```
 
@@ -172,7 +172,7 @@ data =
     amounts = [int.min, -1, -1,                            //  perfectColShares = burn ALL, loose min-out
                0, 0, 0]                                    //  debt already zero
 | SWEEP GHO (validate, to=user) | SWEEP USDC (validate, to=user)
-| SWEEP_NFT(VAULT_FACTORY, user)
+| SWEEP_NFT(VAULT_FACTORY, user, nftId)
 VAULT_FACTORY.safeTransferFrom(user, composer, nftId, data)
 ```
 Single-call form (`perfectColShares = perfectDebtShares = int.min` simultaneously) trips a Fluid DEX invariant; the two-phase split is the documented safe pattern.

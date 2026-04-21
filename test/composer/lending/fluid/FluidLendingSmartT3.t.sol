@@ -38,6 +38,7 @@ interface IFluidVaultFactory {
     function safeTransferFrom(address from, address to, uint256 tokenId, bytes calldata data) external;
     function ownerOf(uint256 tokenId) external view returns (address);
     function balanceOf(address owner) external view returns (uint256);
+    function totalSupply() external view returns (uint256);
 }
 
 /**
@@ -125,11 +126,12 @@ contract FluidLendingSmartT3Test is BaseTest {
         amounts[2] = int256(DEBT_USDT);
         amounts[3] = int256(type(int128).max); // loose debtSharesMinMax cap
 
+        uint256 predictedNftId = IFluidVaultFactory(VAULT_FACTORY).totalSupply() + 1;
         bytes memory data = abi.encodePacked(
             CalldataLib.encodeTransferIn(WSTETH, address(composer), COL_AMOUNT),
             CalldataLib.encodeApprove(WSTETH, VAULT),
             CalldataLib.encodeFluidSmartOperateT3(0, 0, user, VAULT, tokens, amounts),
-            CalldataLib.encodeSweepNft(VAULT_FACTORY, user)
+            CalldataLib.encodeSweepNft(VAULT_FACTORY, user, predictedNftId)
         );
 
         uint256 nftsBefore = IFluidVaultFactory(VAULT_FACTORY).balanceOf(user);
@@ -164,10 +166,11 @@ contract FluidLendingSmartT3Test is BaseTest {
         amounts[2] = int256(DEBT_USDT);
         amounts[3] = int256(type(int128).max);
 
+        uint256 predictedNftId = IFluidVaultFactory(VAULT_FACTORY).totalSupply() + 1;
         bytes memory data = abi.encodePacked(
             CalldataLib.encodeApprove(WSTETH, VAULT),
             CalldataLib.encodeFluidSmartOperateT3(0, 0, user, VAULT, tokens, amounts),
-            CalldataLib.encodeSweepNft(VAULT_FACTORY, user)
+            CalldataLib.encodeSweepNft(VAULT_FACTORY, user, predictedNftId)
         );
 
         uint256 nftsBefore = IFluidVaultFactory(VAULT_FACTORY).balanceOf(user);
@@ -209,7 +212,7 @@ contract FluidLendingSmartT3Test is BaseTest {
         bytes memory innerOps = abi.encodePacked(
             CalldataLib.encodeApprove(WSTETH, VAULT),
             CalldataLib.encodeFluidSmartOperateT3(0, nftId, user, VAULT, tokens, amounts),
-            CalldataLib.encodeSweepNft(VAULT_FACTORY, user)
+            CalldataLib.encodeSweepNft(VAULT_FACTORY, user, nftId)
         );
 
         vm.prank(user);
@@ -272,7 +275,7 @@ contract FluidLendingSmartT3Test is BaseTest {
             _t3ClosePhase2WithdrawCol(nftId),
             CalldataLib.encodeSweep(USDC, user, 0, SweepType.VALIDATE),
             CalldataLib.encodeSweep(USDT, user, 0, SweepType.VALIDATE),
-            CalldataLib.encodeSweepNft(VAULT_FACTORY, user)
+            CalldataLib.encodeSweepNft(VAULT_FACTORY, user, nftId)
         );
     }
 

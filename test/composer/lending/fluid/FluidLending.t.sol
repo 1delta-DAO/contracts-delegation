@@ -25,6 +25,7 @@ interface IFluidVaultFactory {
     function ownerOf(uint256 tokenId) external view returns (address);
     function balanceOf(address owner) external view returns (uint256);
     function tokenOfOwnerByIndex(address owner, uint256 index) external view returns (uint256);
+    function totalSupply() external view returns (uint256);
 }
 
 /**
@@ -128,12 +129,11 @@ contract FluidLendingTest is BaseTest {
         uint256 borrowAmount = 800e6;
 
         // Compose: open position via DEPOSIT with nftId=0 (NFT minted to composer), then sweep
-        // every NFT the composer holds of the Fluid factory back to the user.
-        // For deposit-only opens you'd just use the deposit op; here we also borrow inline by
-        // chaining a BORROW that targets the same nftId — but at encode time nftId is unknown,
-        // so for simplicity this test only deposits collateral and confirms the NFT delivery.
+        // that NFT back to the user. Fluid assigns sequential ids so predict the new id as
+        // `totalSupply() + 1` and feed it to the sweep op.
+        uint256 predictedNftId = IFluidVaultFactory(VAULT_FACTORY).totalSupply() + 1;
         bytes memory open = CalldataLib.encodeFluidDeposit(address(0), uint128(colAmount), 0, address(0), VAULT);
-        bytes memory sweep = CalldataLib.encodeSweepNft(VAULT_FACTORY, user);
+        bytes memory sweep = CalldataLib.encodeSweepNft(VAULT_FACTORY, user, predictedNftId);
 
         vm.prank(user);
         composer.deltaCompose{value: colAmount}(abi.encodePacked(open, sweep));
@@ -153,7 +153,7 @@ contract FluidLendingTest is BaseTest {
         // composer (BORROW requires ownership) with inner ops borrow + sweep-NFT-to-user.
         bytes memory innerOps = abi.encodePacked(
             CalldataLib.encodeFluidBorrow(USDC, uint128(borrowAmount), newNftId, user, VAULT),
-            CalldataLib.encodeSweepNft(VAULT_FACTORY, user)
+            CalldataLib.encodeSweepNft(VAULT_FACTORY, user, newNftId)
         );
         uint256 usdcBefore = IERC20All(USDC).balanceOf(user);
         vm.prank(user);
@@ -174,7 +174,7 @@ contract FluidLendingTest is BaseTest {
         // hook will revert if the composer still owns the NFT after these ops.
         bytes memory innerOps = abi.encodePacked(
             CalldataLib.encodeFluidBorrow(USDC, uint128(borrowAmount), nftId, user, VAULT),
-            CalldataLib.encodeSweepNft(VAULT_FACTORY, user)
+            CalldataLib.encodeSweepNft(VAULT_FACTORY, user, nftId)
         );
 
         uint256 usdcBefore = IERC20All(USDC).balanceOf(user);
@@ -195,7 +195,7 @@ contract FluidLendingTest is BaseTest {
         // sweep the (still-collateralized) NFT back to user.
         bytes memory innerOps = abi.encodePacked(
             CalldataLib.encodeFluidWithdraw(address(0), uint128(withdrawAmount), nftId, user, VAULT),
-            CalldataLib.encodeSweepNft(VAULT_FACTORY, user)
+            CalldataLib.encodeSweepNft(VAULT_FACTORY, user, nftId)
         );
 
         uint256 ethBefore = user.balance;
@@ -229,7 +229,7 @@ contract FluidLendingTest is BaseTest {
         bytes memory repayAll = CalldataLib.encodeFluidRepay(USDC, CalldataLib.FLUID_MAX_AMOUNT, nftId, address(0), VAULT);
         bytes memory withdrawAll = CalldataLib.encodeFluidWithdraw(address(0), CalldataLib.FLUID_MAX_AMOUNT, nftId, user, VAULT);
         bytes memory sweepUsdc = CalldataLib.encodeSweep(USDC, user, 0, SweepType.VALIDATE);
-        bytes memory sweepNft = CalldataLib.encodeSweepNft(VAULT_FACTORY, user);
+        bytes memory sweepNft = CalldataLib.encodeSweepNft(VAULT_FACTORY, user, nftId);
         bytes memory innerOps = abi.encodePacked(pull, repayAll, withdrawAll, sweepUsdc, sweepNft);
 
         uint256 ethBefore = user.balance;
