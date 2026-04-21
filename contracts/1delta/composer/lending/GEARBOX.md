@@ -73,22 +73,34 @@ calls[0] = abi.encodeCall(
 ICreditFacadeV3(facade).multicall(ca, calls);
 ```
 
-Permission masks — use the minimum for the flow in question:
+**The permission mask is not caller-chosen.** `BotListV3.setBotPermissions`
+enforces `IBot(bot).requiredPermissions() == permissions` byte-for-byte
+— any other value reverts with `IncorrectBotPermissionsException`. This
+is Gearbox's way of saying "users don't scope bots; bots publish a
+fixed permission surface and users opt into the whole thing."
+
+The composer exposes `GearboxV3Lending.requiredPermissions()` returning:
 
 ```
-SUPPLY_ONLY       = ADD_COLLATERAL_PERMISSION
-WITHDRAW_ONLY     = WITHDRAW_COLLATERAL_PERMISSION
-BORROW_BUNDLE     = INCREASE_DEBT_PERMISSION | WITHDRAW_COLLATERAL_PERMISSION
-REPAY_BUNDLE      = ADD_COLLATERAL_PERMISSION | DECREASE_DEBT_PERMISSION | UPDATE_QUOTA_PERMISSION
-FULL_LENDING      = ADD_COLLATERAL_PERMISSION
-                  | WITHDRAW_COLLATERAL_PERMISSION
-                  | INCREASE_DEBT_PERMISSION
-                  | DECREASE_DEBT_PERMISSION
-                  | UPDATE_QUOTA_PERMISSION
+COMPOSER_REQUIRED = ADD_COLLATERAL_PERMISSION       // bit 0
+                  | INCREASE_DEBT_PERMISSION        // bit 1
+                  | DECREASE_DEBT_PERMISSION        // bit 2
+                  | WITHDRAW_COLLATERAL_PERMISSION  // bit 5
+                  | UPDATE_QUOTA_PERMISSION         // bit 6
+                  = 0x67
 ```
 
-`SET_BOT_PERMISSIONS_PERMISSION` is always stripped by the facade
-(`BOT_ALLOWED_PERMISSIONS`). A bot cannot escalate itself.
+So the mask a user passes to `setBotPermissions` must be **exactly
+`0x67`**. `SET_BOT_PERMISSIONS_PERMISSION` (bit 8) is excluded — bots
+cannot escalate themselves. `EXTERNAL_CALLS_PERMISSION` (bit 16) is
+omitted too — the composer never calls adapters inside a Gearbox
+multicall (no-adapter policy, §1).
+
+A consequence of the exact-match rule: there's no such thing as a
+"supply-only" or "repay-only" composer grant at the Gearbox level. If
+you want scope-limited delegation, deploy a separate bot wrapper that
+returns a smaller `requiredPermissions()` — but that's a separate
+integration from this composer.
 
 ### 2.2 Revocation — symmetric, owner-only
 
@@ -441,6 +453,47 @@ The composer holds no residual underlying at the end of the callback.
 If the caller oversizes the flash loan ("worst-case path"), the tail of
 the composer tx sweeps any leftover to the user via the standard
 `SWEEP(underlying, user)` op — same pattern as Fluid/Aave leverage.
+
+---
+
+## 6.5 Gearbox quirks that surface in integration
+
+A handful of Gearbox invariants are not encoder-visible but will bite a
+caller that mixes ops incautiously. Calling them out so they don't
+surprise anyone during integration:
+
+**Debt updates are once-per-block per CA.** `increaseDebt` /
+`decreaseDebt` revert with `DebtUpdatedTwiceInOneBlockException` if the
+same CA already had a debt change in the current block. Practical
+consequences:
+- After `openCreditAccount(…, [addCollateral, increaseDebt, …])`, the
+  same block cannot run another `increaseDebt` or `decreaseDebt` on
+  that CA. Any flow that opens-then-borrows-more must span blocks.
+- Leverage loops that want to stack debt atomically need to use a
+  single multicall with a single `increaseDebt` (plus adapter swaps) —
+  but we don't use adapters, so multi-step leverage must go through
+  the external flash-loan path (§4.3), not Gearbox's own.
+
+**`updateQuota` requires non-zero debt.** Calling `updateQuota` on a
+zero-debt CA reverts with `UpdateQuotaOnZeroDebtAccountException`.
+Correct ordering inside `openCreditAccount` is therefore:
+1. `addCollateral(token, amount)`
+2. `increaseDebt(…)`                — creates the debt
+3. `updateQuota(token, quota, 0)`   — now legal
+4. `setFullCheckParams(…)`          — final HF check with collateral counted
+
+The composer's `_repayGearboxV3Full` does the reverse (quota-strip
+before `decreaseDebt`) because pre-repay debt > 0, so the
+zero-debt-account constraint only bites on opens.
+
+**`withdrawCollateral(token, type(uint256).max, to)` leaves 1 wei
+behind on the CA.** Gearbox's facade does a deliberate
+`--amount` if the pre-sweep balance ≥ 1 (warm-slot optimization; see
+`CreditFacadeV3._withdrawCollateral` in core-v3). That 1 wei is not
+dust the composer produced — it's a protocol invariant. Tests that
+assert "CA holds 0 of underlying after full close" must allow the 1
+wei sentinel. The dust-safe repay flow (§5) still holds: no residue
+the composer *caused* is left anywhere.
 
 ---
 

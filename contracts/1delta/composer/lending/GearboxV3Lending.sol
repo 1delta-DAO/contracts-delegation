@@ -87,6 +87,26 @@ abstract contract GearboxV3Lending is ERC20Selectors, Masks, DeltaErrors {
     uint256 internal constant GEARBOX_KIND_BOT_MULTICALL = 0;
     uint256 internal constant GEARBOX_KIND_OPEN = 1;
 
+    /// @dev Gearbox's `BotListV3.setBotPermissions` enforces `IBot(bot).requiredPermissions() == permissions`
+    ///      — users must grant EXACTLY this mask, not a subset. The composer therefore exposes a fixed
+    ///      "full lending" mask covering every op it emits:
+    ///        bit 0  ADD_COLLATERAL_PERMISSION
+    ///        bit 1  INCREASE_DEBT_PERMISSION
+    ///        bit 2  DECREASE_DEBT_PERMISSION
+    ///        bit 5  WITHDRAW_COLLATERAL_PERMISSION
+    ///        bit 6  UPDATE_QUOTA_PERMISSION
+    ///      `SET_BOT_PERMISSIONS_PERMISSION` (bit 8) is never requested — bots cannot escalate themselves.
+    ///      `EXTERNAL_CALLS_PERMISSION` (bit 16) is omitted too — the composer never calls adapters
+    ///      inside a Gearbox multicall (no-adapter policy, see GEARBOX.md §1).
+    uint192 internal constant GEARBOX_COMPOSER_REQUIRED_PERMISSIONS =
+        uint192((1 << 0) | (1 << 1) | (1 << 2) | (1 << 5) | (1 << 6));
+
+    /// @notice Implements `IBot.requiredPermissions()` from Gearbox V3's BotListV3 — the mask that
+    ///         users must grant (exactly) via `facade.multicall([setBotPermissions(composer, mask)])`.
+    function requiredPermissions() external pure returns (uint192) {
+        return GEARBOX_COMPOSER_REQUIRED_PERMISSIONS;
+    }
+
     /**
      * @notice Supplies collateral to a Gearbox V3 Credit Account.
      * @dev Requires the composer to hold `ADD_COLLATERAL_PERMISSION` on `ca` (granted by the CA
