@@ -44,6 +44,7 @@ library LenderIds {
     uint256 internal constant UP_TO_AAVE_V4 = 7000;
     uint256 internal constant UP_TO_FLUID = 8000;
     uint256 internal constant UP_TO_FLUID_SMART = 9000;
+    uint256 internal constant UP_TO_GEARBOX_V3 = 10000;
 }
 
 /**
@@ -61,6 +62,8 @@ library LenderOps {
     uint256 internal constant FLUID_OPERATE = 10;
     /// @dev Fluid smart-vault (T2/T3/T4) `operatePerfect` — share-precise / full-exit path.
     uint256 internal constant FLUID_OPERATE_PERFECT = 11;
+    /// @dev Gearbox V3 generic `MultiCall[]` relay — `botMulticall` / `openCreditAccount` entrypoints.
+    uint256 internal constant GEARBOX_MULTICALL = 12;
 }
 
 /**

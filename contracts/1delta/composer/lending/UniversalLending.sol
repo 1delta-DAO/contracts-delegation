@@ -10,6 +10,7 @@ import {MorphoLending} from "./MorphoLending.sol";
 import {SiloV2Lending} from "./SiloV2Lending.sol";
 import {FluidLending} from "./FluidLending.sol";
 import {FluidSmartLending} from "./FluidSmartLending.sol";
+import {GearboxV3Lending} from "./GearboxV3Lending.sol";
 import {LenderIds, LenderOps} from "../enums/DeltaEnums.sol";
 import {DeltaErrors} from "contracts/1delta/shared/errors/Errors.sol";
 
@@ -29,7 +30,8 @@ abstract contract UniversalLending is
     MorphoLending,
     SiloV2Lending,
     FluidLending, // brings in DeltaErrors transitively
-    FluidSmartLending
+    FluidSmartLending,
+    GearboxV3Lending
 {
     /**
      * @notice Executes any lending operation across various lenders
@@ -79,6 +81,8 @@ abstract contract UniversalLending is
                 return _depositToAaveV4(currentOffset);
             } else if (lender < LenderIds.UP_TO_FLUID) {
                 return _depositToFluid(currentOffset);
+            } else if (lender >= LenderIds.UP_TO_FLUID_SMART && lender < LenderIds.UP_TO_GEARBOX_V3) {
+                return _depositToGearboxV3(currentOffset);
             } else {
                 _invalidOperation();
             }
@@ -101,6 +105,8 @@ abstract contract UniversalLending is
                 return _borrowFromAaveV4(currentOffset, callerAddress);
             } else if (lender < LenderIds.UP_TO_FLUID) {
                 return _borrowFromFluid(currentOffset);
+            } else if (lender >= LenderIds.UP_TO_FLUID_SMART && lender < LenderIds.UP_TO_GEARBOX_V3) {
+                return _borrowFromGearboxV3(currentOffset);
             } else {
                 _invalidOperation();
             }
@@ -123,6 +129,8 @@ abstract contract UniversalLending is
                 return _repayToAaveV4(currentOffset);
             } else if (lender < LenderIds.UP_TO_FLUID) {
                 return _repayToFluid(currentOffset);
+            } else if (lender >= LenderIds.UP_TO_FLUID_SMART && lender < LenderIds.UP_TO_GEARBOX_V3) {
+                return _repayToGearboxV3(currentOffset, callerAddress);
             } else {
                 _invalidOperation();
             }
@@ -145,6 +153,8 @@ abstract contract UniversalLending is
                 return _withdrawFromAaveV4(currentOffset, callerAddress);
             } else if (lender < LenderIds.UP_TO_FLUID) {
                 return _withdrawFromFluid(currentOffset);
+            } else if (lender >= LenderIds.UP_TO_FLUID_SMART && lender < LenderIds.UP_TO_GEARBOX_V3) {
+                return _withdrawFromGearboxV3(currentOffset);
             } else {
                 _invalidOperation();
             }
@@ -199,6 +209,16 @@ abstract contract UniversalLending is
         else if (lendingOperation == LenderOps.FLUID_OPERATE_PERFECT) {
             if (lender >= LenderIds.UP_TO_FLUID && lender < LenderIds.UP_TO_FLUID_SMART) {
                 return _fluidSmartOperatePerfect(currentOffset);
+            } else {
+                _invalidOperation();
+            }
+        }
+        /**
+         * Gearbox V3 generic multicall (botMulticall / openCreditAccount)
+         */
+        else if (lendingOperation == LenderOps.GEARBOX_MULTICALL) {
+            if (lender >= LenderIds.UP_TO_FLUID_SMART && lender < LenderIds.UP_TO_GEARBOX_V3) {
+                return _gearboxMulticall(currentOffset, callerAddress);
             } else {
                 _invalidOperation();
             }

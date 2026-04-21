@@ -2059,4 +2059,256 @@ library CalldataLib {
             fToken
         );
     }
+
+    // ─────────────────────────────────────────────────────────────────────────────
+    // Gearbox V3 — see GEARBOX.md for the full flow, permission UX, and dust-safe
+    // full-repay pattern.
+    // ─────────────────────────────────────────────────────────────────────────────
+
+    /// @dev Sentinel that matches the composer's full-repay branch — UINT112_MASK.
+    uint128 internal constant GEARBOX_REPAY_ALL = type(uint112).max;
+
+    /// @dev Sentinel that maps to Gearbox's `withdrawCollateral(token, uint256.max, to)` "sweep
+    ///      full balance" — used for full-withdraw flows.
+    uint128 internal constant GEARBOX_WITHDRAW_ALL = type(uint112).max;
+
+    /// @dev Gearbox permission bitmask (see `gearbox-interfaces/GearboxTypes.sol`). Re-exposed
+    ///      here so encoder-side UI helpers can refer to them by symbolic name.
+    uint192 internal constant GEARBOX_ADD_COLLATERAL_PERMISSION = 1 << 0;
+    uint192 internal constant GEARBOX_INCREASE_DEBT_PERMISSION = 1 << 1;
+    uint192 internal constant GEARBOX_DECREASE_DEBT_PERMISSION = 1 << 2;
+    uint192 internal constant GEARBOX_WITHDRAW_COLLATERAL_PERMISSION = 1 << 5;
+    uint192 internal constant GEARBOX_UPDATE_QUOTA_PERMISSION = 1 << 6;
+
+    /**
+     * @notice Encode a Gearbox V3 deposit-collateral op. Prepends an `APPROVE(token, cm)`.
+     * @dev See GEARBOX.md §3.1. `minHF` may be 0 to skip the trailing `setFullCheckParams`.
+     */
+    function encodeGearboxV3Supply(
+        address token,
+        uint128 amount,
+        address creditAccount,
+        address creditFacade,
+        address creditManager,
+        uint16 minHealthFactor
+    )
+        internal
+        pure
+        returns (bytes memory)
+    {
+        return abi.encodePacked(
+            encodeApprove(token, creditManager),
+            uint8(ComposerCommands.LENDING),
+            uint8(LenderOps.DEPOSIT),
+            uint16(LenderIds.UP_TO_GEARBOX_V3 - 1),
+            token,
+            amount,
+            creditAccount,
+            creditFacade,
+            minHealthFactor
+        );
+    }
+
+    /**
+     * @notice Encode a Gearbox V3 borrow op (increaseDebt + withdrawCollateral + HF check).
+     * @dev `minHealthFactor` is mandatory (should be > 10000 bps for user flows; see GEARBOX.md §3.1).
+     */
+    function encodeGearboxV3Borrow(
+        address underlying,
+        uint128 amount,
+        address receiver,
+        address creditAccount,
+        address creditFacade,
+        uint16 minHealthFactor
+    )
+        internal
+        pure
+        returns (bytes memory)
+    {
+        return abi.encodePacked(
+            uint8(ComposerCommands.LENDING),
+            uint8(LenderOps.BORROW),
+            uint16(LenderIds.UP_TO_GEARBOX_V3 - 1),
+            underlying,
+            amount,
+            receiver,
+            creditAccount,
+            creditFacade,
+            minHealthFactor
+        );
+    }
+
+    /**
+     * @notice Encode a Gearbox V3 partial-repay op.
+     * @dev `amount` must be > 0 and < `GEARBOX_REPAY_ALL` — zero-means-balance is rejected on
+     *      this primitive (would risk stranding residue on the CA). The composer does not
+     *      enforce that the post-repay debt stays above the pool's `minDebt`; if it would
+     *      land in `(0, minDebt)`, the facade reverts. For full exit, use `encodeGearboxV3RepayAll`.
+     *      Caller must have pre-funded the composer via a `TRANSFER_FROM` op (not prepended
+     *      here — keep it explicit so callers can batch).
+     */
+    function encodeGearboxV3RepayPartial(
+        address underlying,
+        uint128 amount,
+        address creditAccount,
+        address creditFacade,
+        address creditManager
+    )
+        internal
+        pure
+        returns (bytes memory)
+    {
+        if (amount == 0 || amount == GEARBOX_REPAY_ALL) revert("CL: gearbox partial repay needs literal amount");
+
+        return abi.encodePacked(
+            encodeApprove(underlying, creditManager),
+            uint8(ComposerCommands.LENDING),
+            uint8(LenderOps.REPAY),
+            uint16(LenderIds.UP_TO_GEARBOX_V3 - 1),
+            underlying,
+            amount,
+            creditAccount,
+            creditFacade,
+            uint8(0) // numQuotedTokens must be 0 for partial
+        );
+    }
+
+    /**
+     * @notice Encode a Gearbox V3 full-repay op (no dust, no sporadic reverts — see GEARBOX.md §5).
+     * @dev Funding is the caller's responsibility — emit a `TRANSFER_FROM` op upfront that moves
+     *      the buffered amount (`quotedDebt × (1 + bufferBps/10000)`) from the user to the
+     *      composer. The composer reads `balanceOf(this)` at execution for the inner
+     *      `addCollateral`. An `APPROVE(underlying, creditManager)` is prepended automatically.
+     * @param quotedTokens Currently-enabled quoted collateral tokens on `creditAccount`. Enumerate
+     *                     off-chain via
+     *                     `CreditManagerV3.enabledTokensMask(ca) & CreditManagerV3.quotedTokensMask()`
+     *                     and walk the bits.
+     */
+    function encodeGearboxV3RepayAll(
+        address underlying,
+        address creditAccount,
+        address creditFacade,
+        address creditManager,
+        address[] memory quotedTokens
+    )
+        internal
+        pure
+        returns (bytes memory)
+    {
+        if (quotedTokens.length > 255) revert("CL: gearbox too many quoted tokens");
+
+        bytes memory quotedBlob;
+        for (uint256 i = 0; i < quotedTokens.length; i++) {
+            quotedBlob = abi.encodePacked(quotedBlob, quotedTokens[i]);
+        }
+
+        return abi.encodePacked(
+            encodeApprove(underlying, creditManager),
+            uint8(ComposerCommands.LENDING),
+            uint8(LenderOps.REPAY),
+            uint16(LenderIds.UP_TO_GEARBOX_V3 - 1),
+            underlying,
+            GEARBOX_REPAY_ALL,
+            creditAccount,
+            creditFacade,
+            uint8(quotedTokens.length),
+            quotedBlob
+        );
+    }
+
+    /**
+     * @notice Encode a Gearbox V3 withdraw-collateral op.
+     * @dev `amount == GEARBOX_WITHDRAW_ALL` translates to Gearbox's own "sweep full balance"
+     *      sentinel on `withdrawCollateral`.
+     */
+    function encodeGearboxV3Withdraw(
+        address token,
+        uint128 amount,
+        address receiver,
+        address creditAccount,
+        address creditFacade,
+        uint16 minHealthFactor
+    )
+        internal
+        pure
+        returns (bytes memory)
+    {
+        return abi.encodePacked(
+            uint8(ComposerCommands.LENDING),
+            uint8(LenderOps.WITHDRAW),
+            uint16(LenderIds.UP_TO_GEARBOX_V3 - 1),
+            token,
+            amount,
+            receiver,
+            creditAccount,
+            creditFacade,
+            minHealthFactor
+        );
+    }
+
+    /// @dev Pack a single facade-inner call for the generic `GEARBOX_MULTICALL` op.
+    ///      Every `GEARBOX_MULTICALL` sub-call targets the facade (no adapters) — the encoder
+    ///      doesn't supply a target here, just the inner `callData` bytes.
+    function encodeGearboxV3FacadeCall(bytes memory innerCallData) internal pure returns (bytes memory) {
+        if (innerCallData.length > type(uint16).max) revert("CL: gearbox sub-call too long");
+        return abi.encodePacked(uint16(innerCallData.length), innerCallData);
+    }
+
+    /**
+     * @notice Encode a `botMulticall(creditAccount, calls)` via the generic Gearbox relay.
+     * @dev `calls` is the concatenation of `encodeGearboxV3FacadeCall(…)` outputs. `numCalls`
+     *      is implicit in the blob — callers must pass the explicit count so the composer
+     *      can iterate without a length scan.
+     */
+    function encodeGearboxV3BotMulticall(
+        address creditFacade,
+        address creditAccount,
+        uint16 numCalls,
+        bytes memory calls
+    )
+        internal
+        pure
+        returns (bytes memory)
+    {
+        return abi.encodePacked(
+            uint8(ComposerCommands.LENDING),
+            uint8(LenderOps.GEARBOX_MULTICALL),
+            uint16(LenderIds.UP_TO_GEARBOX_V3 - 1),
+            uint8(0), // kind = botMulticall
+            creditFacade,
+            creditAccount,
+            bytes32(0), // referralCode placeholder
+            numCalls,
+            calls
+        );
+    }
+
+    /**
+     * @notice Encode an `openCreditAccount(onBehalfOf=composerCaller, calls, referralCode)` via
+     *         the generic Gearbox relay.
+     * @dev `onBehalfOf` is hard-coded at dispatch to the authenticated deltaCompose caller —
+     *      the encoder cannot spoof it. See GEARBOX.md §3.2.
+     */
+    function encodeGearboxV3OpenCreditAccount(
+        address creditFacade,
+        uint256 referralCode,
+        uint16 numCalls,
+        bytes memory calls
+    )
+        internal
+        pure
+        returns (bytes memory)
+    {
+        return abi.encodePacked(
+            uint8(ComposerCommands.LENDING),
+            uint8(LenderOps.GEARBOX_MULTICALL),
+            uint16(LenderIds.UP_TO_GEARBOX_V3 - 1),
+            uint8(1), // kind = openCreditAccount
+            creditFacade,
+            address(0), // creditAccount slot unused
+            referralCode,
+            numCalls,
+            calls
+        );
+    }
 }
