@@ -126,12 +126,10 @@ contract FluidLendingSmartT3Test is BaseTest {
         amounts[2] = int256(DEBT_USDT);
         amounts[3] = int256(type(int128).max); // loose debtSharesMinMax cap
 
-        uint256 predictedNftId = IFluidVaultFactory(VAULT_FACTORY).totalSupply() + 1;
         bytes memory data = abi.encodePacked(
             CalldataLib.encodeTransferIn(WSTETH, address(composer), COL_AMOUNT),
             CalldataLib.encodeApprove(WSTETH, VAULT),
-            CalldataLib.encodeFluidSmartOperateT3(0, 0, user, VAULT, tokens, amounts),
-            CalldataLib.encodeSweepNft(VAULT_FACTORY, user, predictedNftId)
+            CalldataLib.encodeFluidSmartOperateT3(0, 0, user, user, VAULT, tokens, amounts)
         );
 
         uint256 nftsBefore = IFluidVaultFactory(VAULT_FACTORY).balanceOf(user);
@@ -166,11 +164,9 @@ contract FluidLendingSmartT3Test is BaseTest {
         amounts[2] = int256(DEBT_USDT);
         amounts[3] = int256(type(int128).max);
 
-        uint256 predictedNftId = IFluidVaultFactory(VAULT_FACTORY).totalSupply() + 1;
         bytes memory data = abi.encodePacked(
             CalldataLib.encodeApprove(WSTETH, VAULT),
-            CalldataLib.encodeFluidSmartOperateT3(0, 0, user, VAULT, tokens, amounts),
-            CalldataLib.encodeSweepNft(VAULT_FACTORY, user, predictedNftId)
+            CalldataLib.encodeFluidSmartOperateT3(0, 0, user, user, VAULT, tokens, amounts)
         );
 
         uint256 nftsBefore = IFluidVaultFactory(VAULT_FACTORY).balanceOf(user);
@@ -211,8 +207,8 @@ contract FluidLendingSmartT3Test is BaseTest {
 
         bytes memory innerOps = abi.encodePacked(
             CalldataLib.encodeApprove(WSTETH, VAULT),
-            CalldataLib.encodeFluidSmartOperateT3(0, nftId, user, VAULT, tokens, amounts),
-            CalldataLib.encodeSweepNft(VAULT_FACTORY, user, nftId)
+            CalldataLib.encodeFluidSmartOperateT3(0, nftId, user, address(0), VAULT, tokens, amounts)
+            // NFT returned by the custody callback — no explicit sweep.
         );
 
         vm.prank(user);
@@ -243,7 +239,7 @@ contract FluidLendingSmartT3Test is BaseTest {
         amounts[1] = type(int256).min; // perfectDebtShares = burn ALL
         amounts[2] = -int256(type(int128).max); // USDC max-in cap (negative)
         amounts[3] = -int256(type(int128).max); // USDT max-in cap (negative)
-        return CalldataLib.encodeFluidSmartOperatePerfectT3(0, nftId, user, VAULT, tokens, amounts);
+        return CalldataLib.encodeFluidSmartOperatePerfectT3(0, nftId, user, address(0), VAULT, tokens, amounts);
     }
 
     /// @dev Phase 2: withdraw-all simple col only. Debt slots 0 (already zero post-phase-1).
@@ -255,7 +251,7 @@ contract FluidLendingSmartT3Test is BaseTest {
         amounts[1] = int256(0);
         amounts[2] = int256(0);
         amounts[3] = int256(0);
-        return CalldataLib.encodeFluidSmartOperatePerfectT3(0, nftId, user, VAULT, tokens, amounts);
+        return CalldataLib.encodeFluidSmartOperatePerfectT3(0, nftId, user, address(0), VAULT, tokens, amounts);
     }
 
     function _buildT3TwoPhaseClose(uint256 nftId, uint256 usdcBuffer, uint256 usdtBuffer)
@@ -274,8 +270,8 @@ contract FluidLendingSmartT3Test is BaseTest {
             _t3ClosePhase1RepayDebt(nftId),
             _t3ClosePhase2WithdrawCol(nftId),
             CalldataLib.encodeSweep(USDC, user, 0, SweepType.VALIDATE),
-            CalldataLib.encodeSweep(USDT, user, 0, SweepType.VALIDATE),
-            CalldataLib.encodeSweepNft(VAULT_FACTORY, user, nftId)
+            CalldataLib.encodeSweep(USDT, user, 0, SweepType.VALIDATE)
+            // NFT returned by the custody callback.
         );
     }
 

@@ -77,8 +77,6 @@ abstract contract UniversalLending is
                 return _depositToSiloV2(currentOffset);
             } else if (lender < LenderIds.UP_TO_AAVE_V4) {
                 return _depositToAaveV4(currentOffset);
-            } else if (lender < LenderIds.UP_TO_FLUID) {
-                return _depositToFluid(currentOffset);
             } else {
                 _invalidOperation();
             }
@@ -99,8 +97,6 @@ abstract contract UniversalLending is
                 return _borrowFromSiloV2(currentOffset, callerAddress);
             } else if (lender < LenderIds.UP_TO_AAVE_V4) {
                 return _borrowFromAaveV4(currentOffset, callerAddress);
-            } else if (lender < LenderIds.UP_TO_FLUID) {
-                return _borrowFromFluid(currentOffset);
             } else {
                 _invalidOperation();
             }
@@ -121,8 +117,6 @@ abstract contract UniversalLending is
                 return _repayToSiloV2(currentOffset);
             } else if (lender < LenderIds.UP_TO_AAVE_V4) {
                 return _repayToAaveV4(currentOffset);
-            } else if (lender < LenderIds.UP_TO_FLUID) {
-                return _repayToFluid(currentOffset);
             } else {
                 _invalidOperation();
             }
@@ -143,8 +137,6 @@ abstract contract UniversalLending is
                 return _withdrawFromSiloV2(currentOffset, callerAddress);
             } else if (lender < LenderIds.UP_TO_AAVE_V4) {
                 return _withdrawFromAaveV4(currentOffset, callerAddress);
-            } else if (lender < LenderIds.UP_TO_FLUID) {
-                return _withdrawFromFluid(currentOffset);
             } else {
                 _invalidOperation();
             }
@@ -179,6 +171,17 @@ abstract contract UniversalLending is
         else if (lendingOperation == LenderOps.SET_COLLATERAL) {
             if (lender < LenderIds.UP_TO_AAVE_V4) {
                 return _setCollateralAaveV4(currentOffset, callerAddress);
+            } else {
+                _invalidOperation();
+            }
+        }
+        /**
+         * Fluid T1 operate — dual-axis col + debt in a single op, with fresh-mint auto-sweep.
+         * Supersedes the per-axis DEPOSIT/BORROW/REPAY/WITHDRAW fluid ops.
+         */
+        else if (lendingOperation == LenderOps.FLUID_OPERATE_T1) {
+            if (lender >= LenderIds.UP_TO_AAVE_V4 && lender < LenderIds.UP_TO_FLUID) {
+                return _callFluidOperate(currentOffset);
             } else {
                 _invalidOperation();
             }

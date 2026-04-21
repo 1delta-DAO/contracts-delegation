@@ -42,8 +42,14 @@ import {Masks} from "../../shared/masks/Masks.sol";
  * @dev Native handling on slots without the sentinel: encoder pre-computes `callValue`. With
  *      the sentinel on a native amount slot, the composer overrides `callValue` to match.
  *
- * @dev Ownership caveats per FLUID_VAULT_INTEGRATION.md still apply: BORROW/WITHDRAW operations
- *      (negative debt / negative col) require the composer to be ownerOf(nftId).
+ * @dev Fresh-NFT delivery: when the caller passes `nftId == 0`, Fluid mints a new position NFT
+ *      to the composer. If `nftReceiver` is non-zero, the composer reads the returned `nftId_`
+ *      out of the call's return data and immediately transfers it to `nftReceiver`. This is the
+ *      smart-variant counterpart to the T1 fresh-mint auto-sweep — front-run safe because the id
+ *      comes from the return value of the very call that produced it.
+ *
+ * @dev Ownership caveats per FLUID.md still apply: BORROW/WITHDRAW operations (negative debt /
+ *      negative col) require the composer to be ownerOf(nftId).
  */
 abstract contract FluidSmartLending is ERC20Selectors, Masks {
     /// @dev selector for VaultT2.operate(uint256,int256,int256,int256,int256,address)
@@ -65,6 +71,10 @@ abstract contract FluidSmartLending is ERC20Selectors, Masks {
     ///      (or `selfbalance()` if the address is 0). Equals `type(int256).max`.
     bytes32 internal constant FLUID_SMART_USE_BALANCE = 0x7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff;
 
+    /// @dev Fluid VaultFactory (ERC721) address — same deterministic deployment across all chains.
+    ///      Target for the fresh-mint auto-sweep. Mirrored from FluidLending to avoid coupling.
+    address internal constant FLUID_SMART_VAULT_FACTORY = 0x324c5Dc1fC42c7a4D43d92df1eBA58a54d13Bf2d;
+
     /**
      * @notice Calls `operate` on a Fluid smart vault (T2 / T3 / T4).
      * @dev Combined deposit + borrow / withdraw + repay in one call. Smart sides accept either
@@ -74,20 +84,6 @@ abstract contract FluidSmartLending is ERC20Selectors, Masks {
      *      amounts — use FLUID_OPERATE_PERFECT for full exit on a smart side.
      * @param currentOffset Current position in the calldata
      * @return Updated calldata offset after processing
-     * @custom:calldata-offset-table
-     * | Offset | Length | Description                                                |
-     * |--------|--------|------------------------------------------------------------|
-     * | 0      | 1      | vaultType (2 = T2, 3 = T3, 4 = T4)                          |
-     * | 1      | 16     | callValue (msg.value to forward; auto-overridden when a    |
-     * |        |        | balance-sentinel resolves on a native slot)                 |
-     * | 17     | 32     | nftId (0 = open new position; minted to composer)           |
-     * | 49     | 20     | receiver (to_ — recipient for any tokens out)               |
-     * | 69     | 4*20 / 6*20 | tokens[i] — per-slot ERC20 address (0 = native or slot |
-     * |        |        | not using balance-sentinel). T2/T3: 4 slots; T4: 6 slots.   |
-     * | next   | 4*32 / 6*32 | int256 params (slots match `tokens[i]`):              |
-     * |        |        | T2: newColToken0, newColToken1, colSharesMinMax, newDebt    |
-     * |        |        | T3: newCol, newDebtToken0, newDebtToken1, debtSharesMinMax  |
-     * |        |        | T4: newColToken0, newColToken1, colSharesMinMax, newDebtToken0, newDebtToken1, debtSharesMinMax |
      */
     function _fluidSmartOperate(uint256 currentOffset) internal returns (uint256) {
         return _callFluidSmart(currentOffset, false);
@@ -110,18 +106,6 @@ abstract contract FluidSmartLending is ERC20Selectors, Masks {
      *        - debt side, borrowing (`perfectDebtShares > 0`): both `debtTokenXMinMax > 0`, magnitude = min out per token.
      * @param currentOffset Current position in the calldata
      * @return Updated calldata offset after processing
-     * @custom:calldata-offset-table
-     * | Offset | Length | Description                                                          |
-     * |--------|--------|----------------------------------------------------------------------|
-     * | 0      | 1      | vaultType (2 = T2, 3 = T3, 4 = T4)                                    |
-     * | 1      | 16     | callValue                                                             |
-     * | 17     | 32     | nftId                                                                 |
-     * | 49     | 20     | receiver                                                              |
-     * | 69     | 4*20 / 6*20 | tokens[i] (parallel to int256 slots)                            |
-     * | next   | 4*32 / 6*32 | int256 params:                                                  |
-     * |        |        | T2: perfectColShares, colToken0MinMax, colToken1MinMax, newDebt        |
-     * |        |        | T3: newCol, perfectDebtShares, debtToken0MinMax, debtToken1MinMax      |
-     * |        |        | T4: perfectColShares, colToken0MinMax, colToken1MinMax, perfectDebtShares, debtToken0MinMax, debtToken1MinMax |
      */
     function _fluidSmartOperatePerfect(uint256 currentOffset) internal returns (uint256) {
         return _callFluidSmart(currentOffset, true);
@@ -130,12 +114,23 @@ abstract contract FluidSmartLending is ERC20Selectors, Masks {
     /**
      * @notice Shared dispatcher for Fluid smart-vault `operate` / `operatePerfect`.
      * @dev Layout: 1-byte vaultType | 16-byte callValue | 32-byte nftId | 20-byte receiver |
-     *      20-byte vault | numSlots × 20-byte token addresses | numSlots × 32-byte int256 params.
-     *      `numSlots` is 4 for T2/T3, 6 for T4. We pick the selector by `vaultType` (T2/T3 share,
+     *      20-byte nftReceiver | 20-byte vault | numSlots × 20-byte token addresses |
+     *      numSlots × 32-byte int256 params.
+     *      `numSlots` is 4 for T2/T3, 6 for T4. Pick the selector by `vaultType` (T2/T3 share,
      *      T4 differs), iterate each int256 slot resolving the balance-sentinel where present,
-     *      and append `receiver` as the trailing address. Return data (operate's int256 deltas,
-     *      operatePerfect's int256[] r_) is discarded — smart-vault settlement amounts are
-     *      derived from the share parameters and do not compose into other ops here.
+     *      and append `receiver` as the trailing address. After the call, if `nftId == 0` and
+     *      `nftReceiver != 0`, read the returned `nftId_` and transfer it to `nftReceiver`.
+     * @custom:calldata-offset-table
+     * | Offset | Length | Description                                                 |
+     * |--------|--------|-------------------------------------------------------------|
+     * | 0      | 1      | vaultType (2 = T2, 3 = T3, 4 = T4)                           |
+     * | 1      | 16     | callValue                                                    |
+     * | 17     | 32     | nftId (0 = open new)                                         |
+     * | 49     | 20     | receiver (vault `to_`)                                       |
+     * | 69     | 20     | nftReceiver (0 = keep; non-zero = auto-sweep minted NFT)     |
+     * | 89     | 20     | vault                                                        |
+     * | 109    | n × 20 | tokens[i] (parallel to int256 slots)                         |
+     * | next   | n × 32 | int256 params (see variant)                                  |
      */
     function _callFluidSmart(uint256 currentOffset, bool isPerfect) internal returns (uint256) {
         assembly {
@@ -154,17 +149,18 @@ abstract contract FluidSmartLending is ERC20Selectors, Masks {
             case 2 { mstore(ptr, FLUID_T2_T3_OPERATE_PERFECT) }
             case 3 { mstore(ptr, FLUID_T4_OPERATE_PERFECT) }
 
+            let nftId := calldataload(add(currentOffset, 17))
             // nftId
-            mstore(add(ptr, 0x04), calldataload(add(currentOffset, 17)))
+            mstore(add(ptr, 0x04), nftId)
 
             // Iterate amount slots, resolving the balance-sentinel where present.
             let callValue := shr(128, calldataload(add(currentOffset, 1)))
             for { let i := 0 } lt(i, numSlots) { i := add(i, 1) } {
-                // amount slot i lives at currentOffset + 89 + numSlots*20 + i*32
-                let amount := calldataload(add(currentOffset, add(89, add(mul(numSlots, 20), mul(i, 32)))))
+                // amount slot i lives at currentOffset + 109 + numSlots*20 + i*32
+                let amount := calldataload(add(currentOffset, add(109, add(mul(numSlots, 20), mul(i, 32)))))
                 if eq(amount, FLUID_SMART_USE_BALANCE) {
-                    // parallel token slot i lives at currentOffset + 89 + i*20
-                    let token := shr(96, calldataload(add(currentOffset, add(89, mul(i, 20)))))
+                    // parallel token slot i lives at currentOffset + 109 + i*20
+                    let token := shr(96, calldataload(add(currentOffset, add(109, mul(i, 20)))))
                     switch iszero(token)
                     case 1 {
                         // Native side — selfbalance, and override callValue (Fluid: ≤1 native side).
@@ -184,13 +180,13 @@ abstract contract FluidSmartLending is ERC20Selectors, Masks {
                 mstore(add(ptr, add(0x24, mul(i, 32))), amount)
             }
 
-            // Trailing receiver
+            // Trailing receiver (vault's to_)
             mstore(add(ptr, add(0x24, mul(numSlots, 32))), shr(96, calldataload(add(currentOffset, 49))))
 
             if iszero(
                 call(
                     gas(),
-                    shr(96, calldataload(add(currentOffset, 69))), // vault
+                    shr(96, calldataload(add(currentOffset, 89))), // vault
                     callValue,
                     ptr,
                     add(0x44, mul(numSlots, 32)),
@@ -202,7 +198,23 @@ abstract contract FluidSmartLending is ERC20Selectors, Masks {
                 revert(0x0, returndatasize())
             }
 
-            currentOffset := add(currentOffset, add(89, add(mul(numSlots, 20), mul(numSlots, 32))))
+            // Fresh-mint auto-sweep.
+            let nftReceiver := shr(96, calldataload(add(currentOffset, 69)))
+            if and(iszero(nftId), iszero(iszero(nftReceiver))) {
+                returndatacopy(0x0, 0x0, 0x20)
+                let newNftId := mload(0x0)
+
+                mstore(ptr, ERC20_TRANSFER_FROM)
+                mstore(add(ptr, 0x04), address())
+                mstore(add(ptr, 0x24), nftReceiver)
+                mstore(add(ptr, 0x44), newNftId)
+                if iszero(call(gas(), FLUID_SMART_VAULT_FACTORY, 0, ptr, 0x64, 0x0, 0x0)) {
+                    returndatacopy(0, 0, returndatasize())
+                    revert(0, returndatasize())
+                }
+            }
+
+            currentOffset := add(currentOffset, add(109, add(mul(numSlots, 20), mul(numSlots, 32))))
         }
         return currentOffset;
     }

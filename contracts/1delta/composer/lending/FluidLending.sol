@@ -9,50 +9,45 @@ import {DeltaErrors} from "../../shared/errors/Errors.sol";
 // solhint-disable max-line-length
 
 /**
- * @notice Lending base contract that wraps Fluid Protocol vaults and fTokens.
+ * @notice Lending base contract that wraps Fluid Protocol T1 vaults and fTokens.
  *
- * @dev Fluid VaultT1 exposes a single
- *      `operate(uint256 nftId, int256 newCol, int256 newDebt, address to)` entrypoint that
- *      handles all four core position actions via signed amounts:
- *        +collateral = deposit, -collateral = withdraw, +debt = borrow, -debt = repay.
- *      We map LenderOps DEPOSIT/BORROW/REPAY/WITHDRAW to the corresponding axis-and-sign in
- *      operate(), with `type(int256).min` as the "all" sentinel for full withdraw / full repay.
+ * @dev T1 vaults expose a single
+ *      `operate(uint256 nftId, int256 newCol, int256 newDebt, address to)` entrypoint returning
+ *      `(uint256 nftId_, int256 finalCol, int256 finalDebt)`. A single composer op directly wraps
+ *      that call, parameterizing BOTH axes at once with optional sentinels:
+ *        colAmount/debtAmount are signed int128 in calldata with:
+ *          `0`          → skip axis (newCol/newDebt = 0)
+ *          `+N`         → deposit (col) or borrow (debt) literal N
+ *          `-N`         → withdraw (col) or repay (debt) literal N
+ *          `int128.max` → "use composer balance" (positive direction; deposits only)
+ *          `int128.min` → Fluid's "all" sentinel (passed as int256.min on the wire)
+ *      When `colUnderlying == address(0)` (native collateral) and colAmount is a positive deposit,
+ *      the resolved amount is forwarded as msg.value. Same for native debt + repay. For a native
+ *      int128.min repay the composer forwards its entire native balance and lets Fluid refund.
  *
- * @dev fTokens are standard ERC4626 supply-side tokens. We map DEPOSIT_LENDING_TOKEN to
- *      `deposit(assets, receiver)` and WITHDRAW_LENDING_TOKEN to `withdraw(assets, receiver, owner)`
+ * @dev Fresh-NFT delivery: when `nftId == 0` on input, Fluid mints a new position NFT to the
+ *      composer. If `nftReceiver != 0`, the composer reads the returned `nftId_` out of the
+ *      `operate` return data and immediately `transferFrom(this, nftReceiver, nftId_)` on the
+ *      VaultFactory. This replaces the old pattern (separate SWEEP_NFT op with off-chain
+ *      `totalSupply() + 1` prediction) and is front-run-safe: the id comes from the return value
+ *      of the very call that produced it.
+ *
+ * @dev fTokens are standard ERC4626 supply-side tokens. DEPOSIT_LENDING_TOKEN maps to
+ *      `deposit(assets, receiver)`; WITHDRAW_LENDING_TOKEN to `withdraw(assets, receiver, owner)`
  *      with `owner = callerAddress`. Caller must have approved the composer for fToken shares
  *      before withdraw.
  *
- * @dev Native handling follows the composer's address(0) convention. The encoder passes
- *      `underlying = address(0)` for a native (ETH) side, and Fluid's own
- *      `0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE` sentinel never crosses the calldata
- *      boundary. Fluid's msg.value rules are honored:
- *        - native deposit:  msg.value == amount (exact)
- *        - native repay:    msg.value >= amount (excess refunded by Fluid to `to`)
- *      Borrow/withdraw of native always run with msg.value = 0; Fluid sends ETH to `to`.
+ * @dev Ownership caveats (see FLUID.md for the full table):
+ *        - positive-col (deposit) / negative-debt (repay) require no ownership — anyone can
+ *          supply or repay any nftId.
+ *        - positive-debt (borrow) / negative-col (withdraw) require the composer to be
+ *          ownerOf(nftId), so the NFT must already be in the composer's custody (or nftId == 0
+ *          to open a fresh position which is then minted to the composer).
  *
- * @dev Ownership caveats (see FLUID_DIRECT_INTEGRATION.md for the full table):
- *        - DEPOSIT/REPAY require no ownership — anyone can supply or repay any nftId.
- *        - BORROW/WITHDRAW require the composer to be ownerOf(nftId), so the NFT must already
- *          be in the composer's custody (or nftId == 0 to open a new position which is then
- *          minted to the composer and can be transferred onward by a follow-up op).
- *
- * @dev NFT-custody flow: this contract also implements `onERC721Received` so users can hand a
- *      Fluid position NFT to the composer for a one-shot custody window. The flow is:
- *
- *        1. user calls `VaultFactory.safeTransferFrom(user, composer, nftId, encodedComposerOps)`
- *        2. factory transfers NFT → composer's `onERC721Received` fires
- *        3. composer validates auth (msg.sender == VaultFactory, operator == from)
- *        4. composer re-enters `_deltaComposeInternal(from, ...)` with the encoded ops, which can
- *           now include BORROW/WITHDRAW since the composer is `ownerOf(nftId)`
- *        5. encoded ops MUST move the NFT out of the composer (typically via `SWEEP_NFT`); if
- *           the composer still owns `tokenId` after the inner dispatch, the whole call reverts
- *
- *      The Fluid VaultFactory address is the same on every chain (deterministic deployment), so
- *      it's hardcoded here as `FLUID_VAULT_FACTORY`. On chains where Fluid isn't deployed nothing
- *      legitimately calls `onERC721Received` from that address, so the gate is naturally inert.
- *      Token sweeps are the user's responsibility via ordinary composer transfer ops in the
- *      encoded payload.
+ * @dev NFT-custody flow: this contract implements `onERC721Received` so users can hand a Fluid
+ *      position NFT to the composer for a one-shot custody window. The callback runs the encoded
+ *      inner ops and, as a hard-coded post-step, transfers the NFT back to `from` if the composer
+ *      still owns it. Users don't need to encode any sweep — it's unconditional.
  */
 abstract contract FluidLending is ERC20Selectors, Masks, DeltaErrors {
     /// @dev selector for Fluid VaultT1.operate(uint256,int256,int256,address)
@@ -70,189 +65,132 @@ abstract contract FluidLending is ERC20Selectors, Masks, DeltaErrors {
     /// @dev Bit pattern for type(int256).min — Fluid's "all" sentinel for operate amounts.
     uint256 internal constant INT256_MIN_BITS = 0x8000000000000000000000000000000000000000000000000000000000000000;
 
+    /// @dev Raw 16-byte pattern for type(int128).min (the sign bit of an int128, alone).
+    ///      Used as the calldata sentinel for "Fluid-all" (maps to int256.min on the wire).
+    uint256 internal constant INT128_MIN_BITS = 0x80000000000000000000000000000000;
+
+    /// @dev Raw 16-byte pattern for type(int128).max. Used as the calldata sentinel for
+    ///      "use composer balance" on the positive deposit direction.
+    uint256 internal constant INT128_MAX_BITS = 0x7fffffffffffffffffffffffffffffff;
+
     /**
-     * @notice Deposits collateral into a Fluid vault position via operate(nftId, +amount, 0, to).
-     * @dev Zero amount uses contract balance (selfbalance() for native, balanceOf(this) for ERC20).
-     *      For non-zero nftId the deposit is credited to that position with no ownership check.
-     *      For nftId == 0 a new position is opened — owned by the composer.
-     *      For native (underlying == address(0)) `msg.value == amount` is forwarded.
-     *      For ERC20 the composer must have prior approve to the vault.
+     * @notice Single-op wrapper for Fluid T1 `vault.operate`.
+     * @dev Combined col + debt call. After the call, if the input `nftId` was 0 and `nftReceiver`
+     *      is non-zero, the composer transfers the freshly-minted position NFT to `nftReceiver`
+     *      using the `nftId_` that `operate` returned.
      * @param currentOffset Current position in the calldata
      * @return Updated calldata offset after processing
      * @custom:calldata-offset-table
-     * | Offset | Length (bytes) | Description                                  |
-     * |--------|----------------|----------------------------------------------|
-     * | 0      | 20             | underlying (address(0) for native)           |
-     * | 20     | 16             | amount (0 = use balance)                     |
-     * | 36     | 32             | nftId (0 = open new position)                |
-     * | 68     | 20             | receiver (to_; irrelevant for pure deposit)  |
-     * | 88     | 20             | vault                                        |
+     * | Offset | Length | Description                                                    |
+     * |--------|--------|----------------------------------------------------------------|
+     * | 0      | 20     | colUnderlying (address(0) for native)                          |
+     * | 20     | 20     | debtUnderlying (address(0) for native)                         |
+     * | 40     | 16     | colAmount (int128; see sentinels on the contract doc)          |
+     * | 56     | 16     | debtAmount (int128)                                            |
+     * | 72     | 32     | nftId (0 = open new position, minted to composer)              |
+     * | 104    | 20     | receiver (vault's `to_` — recipient of out-flows)              |
+     * | 124    | 20     | nftReceiver (0 = keep NFT in composer, non-zero = auto-sweep)  |
+     * | 144    | 20     | vault                                                          |
      */
-    function _depositToFluid(uint256 currentOffset) internal returns (uint256) {
-        return _callFluidOperate(currentOffset, true, true);
-    }
-
-    /**
-     * @notice Borrows debt from a Fluid vault position via operate(nftId, 0, +amount, receiver).
-     * @dev Composer must be ownerOf(nftId). Borrowed tokens land at `receiver`.
-     *      For native borrow the vault sends ETH directly to `receiver`.
-     * @param currentOffset Current position in the calldata
-     * @return Updated calldata offset after processing
-     * @custom:calldata-offset-table
-     * | Offset | Length (bytes) | Description                                  |
-     * |--------|----------------|----------------------------------------------|
-     * | 0      | 20             | underlying (address(0) for native, ignored)  |
-     * | 20     | 16             | amount                                       |
-     * | 36     | 32             | nftId                                        |
-     * | 68     | 20             | receiver                                     |
-     * | 88     | 20             | vault                                        |
-     */
-    function _borrowFromFluid(uint256 currentOffset) internal returns (uint256) {
-        return _callFluidOperate(currentOffset, false, true);
-    }
-
-    /**
-     * @notice Repays debt to a Fluid vault position via operate(nftId, 0, -amount, to).
-     * @dev Amount handling:
-     *        - amount == 0:           use Fluid's type(int256).min sentinel (repay ALL).
-     *        - amount == UINT112_MASK: use Fluid's type(int256).min sentinel (repay ALL).
-     *        - otherwise:             repay exactly `amount` (will revert if > debt).
-     *      For native repay, msg.value forwarded equals selfbalance() on the max path
-     *      (Fluid refunds the excess to `to`) and equals the literal amount otherwise.
-     *      For ERC20 the composer must have prior approve sufficient to cover Fluid's
-     *      execution-time debt computation.
-     * @param currentOffset Current position in the calldata
-     * @return Updated calldata offset after processing
-     * @custom:calldata-offset-table
-     * | Offset | Length (bytes) | Description                                  |
-     * |--------|----------------|----------------------------------------------|
-     * | 0      | 20             | underlying (address(0) for native)           |
-     * | 20     | 16             | amount                                       |
-     * | 36     | 32             | nftId                                        |
-     * | 68     | 20             | receiver (to_; native excess refund target)  |
-     * | 88     | 20             | vault                                        |
-     */
-    function _repayToFluid(uint256 currentOffset) internal returns (uint256) {
-        return _callFluidOperate(currentOffset, false, false);
-    }
-
-    /**
-     * @notice Withdraws collateral from a Fluid vault position via operate(nftId, -amount, 0, receiver).
-     * @dev Composer must be ownerOf(nftId). Amount handling:
-     *        - amount == UINT112_MASK: use Fluid's type(int256).min sentinel (withdraw ALL).
-     *        - otherwise:              withdraw exactly `amount`.
-     *      For native withdraw the vault sends ETH directly to `receiver` (msg.value = 0).
-     * @param currentOffset Current position in the calldata
-     * @return Updated calldata offset after processing
-     * @custom:calldata-offset-table
-     * | Offset | Length (bytes) | Description                                  |
-     * |--------|----------------|----------------------------------------------|
-     * | 0      | 20             | underlying (address(0) for native, ignored)  |
-     * | 20     | 16             | amount                                       |
-     * | 36     | 32             | nftId                                        |
-     * | 68     | 20             | receiver                                     |
-     * | 88     | 20             | vault                                        |
-     */
-    function _withdrawFromFluid(uint256 currentOffset) internal returns (uint256) {
-        return _callFluidOperate(currentOffset, true, false);
-    }
-
-    /**
-     * @notice Shared dispatcher for all four Fluid vault.operate flows.
-     * @dev Builds operate(nftId, newCol, newDebt, receiver):
-     *        axisIsCol=true, signIsPositive=true   → DEPOSIT  (newCol=+amount)
-     *        axisIsCol=true, signIsPositive=false  → WITHDRAW (newCol=-amount or int.min)
-     *        axisIsCol=false, signIsPositive=true  → BORROW   (newDebt=+amount)
-     *        axisIsCol=false, signIsPositive=false → REPAY    (newDebt=-amount or int.min)
-     *      Supply directions (DEPOSIT, REPAY) resolve amount==0 from the contract balance and
-     *      forward msg.value when the side is native (underlying == address(0)).
-     *      Take directions (BORROW, WITHDRAW) substitute UINT112_MASK with Fluid's int.min
-     *      "all" sentinel; for WITHDRAW that maps to "withdraw entire collateral",
-     *      for BORROW the sentinel is irrelevant (Fluid has no max-borrow semantics) and
-     *      callers should pass an explicit amount.
-     */
-    function _callFluidOperate(uint256 currentOffset, bool axisIsCol, bool signIsPositive) internal returns (uint256) {
+    function _callFluidOperate(uint256 currentOffset) internal returns (uint256) {
         assembly {
-            let underlying := shr(96, calldataload(currentOffset))
-            let amountData := shr(128, calldataload(add(currentOffset, 20)))
-            let nftId := calldataload(add(currentOffset, 36))
-            let receiver := shr(96, calldataload(add(currentOffset, 68)))
-            let vault := shr(96, calldataload(add(currentOffset, 88)))
-            currentOffset := add(currentOffset, 108)
-
-            let amount := and(UINT112_MASK, amountData)
-            let isNative := iszero(underlying)
-            let isMax := eq(amount, UINT112_MASK)
-
-            let opSignedAmount := 0
+            let ptr := mload(0x40)
             let callValue := 0
 
-            switch axisIsCol
-            case 1 {
-                switch signIsPositive
-                case 1 {
-                    // DEPOSIT — resolve amount=0 (and treat max sentinel the same way) to local balance
-                    if or(iszero(amount), isMax) {
-                        switch isNative
-                        case 1 { amount := selfbalance() }
+            // ── COL axis ────────────────────────────────────────────────────────
+            // raw bit-patterns: 0x80..00 = int128.min (withdraw-all), 0x7f..ff = int128.max (deposit-balance)
+            {
+                let colRaw := shr(128, calldataload(add(currentOffset, 40)))
+                let newCol := 0
+                if colRaw {
+                    let colUnderlying := shr(96, calldataload(currentOffset))
+                    switch colRaw
+                    case 0x80000000000000000000000000000000 { newCol := INT256_MIN_BITS }
+                    case 0x7fffffffffffffffffffffffffffffff {
+                        // use-composer-balance on the deposit side
+                        switch iszero(colUnderlying)
+                        case 1 {
+                            newCol := selfbalance()
+                            callValue := newCol
+                        }
                         default {
                             mstore(0, ERC20_BALANCE_OF)
                             mstore(0x04, address())
-                            if iszero(staticcall(gas(), underlying, 0x0, 0x24, 0x0, 0x20)) {
+                            if iszero(staticcall(gas(), colUnderlying, 0x0, 0x24, 0x0, 0x20)) {
                                 returndatacopy(0, 0, returndatasize())
                                 revert(0, returndatasize())
                             }
-                            amount := mload(0x0)
+                            newCol := mload(0x0)
                         }
                     }
-                    opSignedAmount := amount
-                    if isNative { callValue := amount }
+                    default {
+                        newCol := signextend(15, colRaw)
+                        // native + deposit (positive, sign bit clear) → forward as msg.value
+                        if iszero(colUnderlying) {
+                            if iszero(and(colRaw, 0x80000000000000000000000000000000)) {
+                                callValue := add(callValue, newCol)
+                            }
+                        }
+                    }
                 }
-                default {
-                    // WITHDRAW — UINT112_MASK → "all" sentinel, else negate
-                    switch isMax
-                    case 1 { opSignedAmount := INT256_MIN_BITS }
-                    default { opSignedAmount := sub(0, amount) }
-                }
+                mstore(add(ptr, 0x24), newCol)
             }
-            default {
-                switch signIsPositive
-                case 1 {
-                    // BORROW — pass +amount
-                    opSignedAmount := amount
-                }
-                default {
-                    // REPAY — amount=0 or max → "all" sentinel; else negate
-                    switch or(iszero(amount), isMax)
-                    case 1 {
-                        opSignedAmount := INT256_MIN_BITS
-                        // Cover whatever Fluid computes at execution time
-                        if isNative { callValue := selfbalance() }
+
+            // ── DEBT axis ───────────────────────────────────────────────────────
+            {
+                let debtRaw := shr(128, calldataload(add(currentOffset, 56)))
+                let newDebt := 0
+                if debtRaw {
+                    let debtUnderlying := shr(96, calldataload(add(currentOffset, 20)))
+                    switch debtRaw
+                    case 0x80000000000000000000000000000000 {
+                        newDebt := INT256_MIN_BITS
+                        // native repay-all → forward selfbalance(), Fluid refunds excess to `receiver`
+                        if iszero(debtUnderlying) { callValue := add(callValue, selfbalance()) }
                     }
                     default {
-                        opSignedAmount := sub(0, amount)
-                        if isNative { callValue := amount }
+                        newDebt := signextend(15, debtRaw)
+                        // native + repay (negative, sign bit set) → forward |amount|
+                        if iszero(debtUnderlying) {
+                            if and(debtRaw, 0x80000000000000000000000000000000) {
+                                callValue := add(callValue, sub(0, newDebt))
+                            }
+                        }
                     }
                 }
+                mstore(add(ptr, 0x44), newDebt)
             }
 
-            let newCol := 0
-            let newDebt := 0
-            switch axisIsCol
-            case 1 { newCol := opSignedAmount }
-            default { newDebt := opSignedAmount }
-
-            // operate(nftId, newCol, newDebt, to)
-            let ptr := mload(0x40)
+            // ── operate(nftId, newCol, newDebt, receiver) ───────────────────────
             mstore(ptr, FLUID_VAULT_OPERATE)
-            mstore(add(ptr, 0x04), nftId)
-            mstore(add(ptr, 0x24), newCol)
-            mstore(add(ptr, 0x44), newDebt)
-            mstore(add(ptr, 0x64), receiver)
-            if iszero(call(gas(), vault, callValue, ptr, 0x84, 0x0, 0x0)) {
+            mstore(add(ptr, 0x04), calldataload(add(currentOffset, 72))) // nftId
+            mstore(add(ptr, 0x64), shr(96, calldataload(add(currentOffset, 104)))) // receiver
+            if iszero(
+                call(gas(), shr(96, calldataload(add(currentOffset, 144))), callValue, ptr, 0x84, 0x0, 0x0) // vault
+            ) {
                 returndatacopy(0x0, 0x0, returndatasize())
                 revert(0x0, returndatasize())
             }
+
+            // ── fresh-mint auto-sweep ──────────────────────────────────────────
+            // If the caller asked to mint a new NFT (nftId == 0) and supplied a non-zero
+            // nftReceiver, forward the newly-minted id (return-data word 0) to it.
+            {
+                let nftReceiver := shr(96, calldataload(add(currentOffset, 124)))
+                if and(iszero(calldataload(add(currentOffset, 72))), iszero(iszero(nftReceiver))) {
+                    returndatacopy(0x0, 0x0, 0x20)
+                    mstore(ptr, ERC20_TRANSFER_FROM)
+                    mstore(add(ptr, 0x04), address())
+                    mstore(add(ptr, 0x24), nftReceiver)
+                    mstore(add(ptr, 0x44), mload(0x0))
+                    if iszero(call(gas(), FLUID_VAULT_FACTORY, 0, ptr, 0x64, 0x0, 0x0)) {
+                        returndatacopy(0, 0, returndatasize())
+                        revert(0, returndatasize())
+                    }
+                }
+            }
+
+            currentOffset := add(currentOffset, 164)
         }
         return currentOffset;
     }
@@ -366,10 +304,10 @@ abstract contract FluidLending is ERC20Selectors, Masks, DeltaErrors {
     bytes32 internal constant ERC721_OWNER_OF = 0x6352211e00000000000000000000000000000000000000000000000000000000;
 
     /// @dev Fluid VaultFactory (ERC721) address — same deterministic deployment across all chains.
-    ///      Used as the auth gate for `onERC721Received`. On chains where Fluid isn't deployed,
-    ///      no contract sits at this address, so the gate is naturally inert (nothing can ever
-    ///      legitimately call `onERC721Received` from this address) and the hook is safe to leave
-    ///      unconditionally enabled.
+    ///      Used as the auth gate for `onERC721Received` and as the target for the fresh-mint
+    ///      auto-sweep and the callback's hard-coded post-sweep.
+    ///      On chains where Fluid isn't deployed, no contract sits at this address, so the gate
+    ///      is naturally inert.
     address internal constant FLUID_VAULT_FACTORY = 0x324c5Dc1fC42c7a4D43d92df1eBA58a54d13Bf2d;
 
     /**
@@ -382,35 +320,28 @@ abstract contract FluidLending is ERC20Selectors, Masks, DeltaErrors {
     /**
      * @notice ERC721 receiver hook — entry point for the Fluid NFT-custody flow.
      * @dev When a user calls `VaultFactory.safeTransferFrom(user, composer, nftId, encodedOps)`,
-     *      this hook fires, validates auth, and executes the encoded composer ops with the user
-     *      as the caller (so vault.borrow / vault.withdraw pass the `ownerOf` check on the now-
-     *      composer-owned NFT). The encoded ops MUST move the NFT back out of the composer —
-     *      typically via `TransferIds.SWEEP_NFT` to the user, but any path that leaves the
-     *      composer no longer owning `tokenId` works (including a withdraw-all that leaves the
-     *      position empty, since `SWEEP_NFT` then ships the empty NFT off).
+     *      this hook fires, validates auth, executes the encoded composer ops with the user as
+     *      the caller, and then unconditionally returns the NFT to `from` if the composer still
+     *      owns it. The user does NOT need to encode any sweep op — the callback handles it.
      *
      *      Auth model:
      *        - msg.sender must equal `FLUID_VAULT_FACTORY`. Without this gate any contract could
      *          call `onERC721Received` directly and pass an arbitrary `from`, tricking the
      *          composer into running ops as that victim and consuming their token allowances.
-     *        - operator must equal from. This blocks the setApprovalForAll attack: a third
-     *          party who has been granted approval on the factory could otherwise initiate a
-     *          transfer with attacker-controlled `data` and hijack the position. Requiring
-     *          operator == from forces the position owner themselves to initiate.
-     *        - the composer must NOT still own `tokenId` after the inner dispatch finishes.
-     *          Without this, a forgotten `SWEEP_NFT` would leave the NFT stuck in the (stateless)
-     *          composer where the next caller could sweep it out. We surface forgetting as an
-     *          atomic revert instead of a silent loss.
+     *        - operator must equal from. Blocks the setApprovalForAll attack: a third party
+     *          holding approval on the factory could otherwise initiate a transfer with
+     *          attacker-controlled `data` and hijack the position. Requiring operator == from
+     *          forces the position owner themselves to initiate.
      *
-     *      Token sweeps for residual ERC20 balances are the user's responsibility — include the
-     *      relevant transfer / sweep ops in the encoded payload.
+     *      Position NFT handling (post inner-dispatch):
+     *        - If the composer no longer owns `tokenId` (the inner ops moved it) — nothing to do.
+     *        - If `ownerOf` reverts (full-close burned the NFT) — nothing to do.
+     *        - Otherwise the composer transfers the NFT back to `from`.
+     *      This replaces the prior "revert if still owned" safety net: forgetting a sweep in the
+     *      encoded ops no longer fails the tx — the NFT is guaranteed to come back to the owner.
      *
-     * @param operator The address that initiated the safeTransferFrom on the factory.
-     * @param from The previous owner of the NFT (the position owner).
-     * @param tokenId The Fluid position NFT id.
-     * @param data Composer ops to execute while the NFT is in custody (same encoding as
-     *             `deltaCompose`'s argument).
-     * @return The ERC721_RECEIVED magic selector on success.
+     *      Token sweeps for residual ERC20 balances are still the user's responsibility — include
+     *      the relevant transfer / sweep ops in the encoded payload.
      */
     function onERC721Received(address operator, address from, uint256 tokenId, bytes calldata data) external returns (bytes4) {
         // Auth: caller must be the Fluid VaultFactory + transfer must be initiated by the owner.
@@ -436,17 +367,24 @@ abstract contract FluidLending is ERC20Selectors, Masks, DeltaErrors {
             _deltaComposeInternal(from, dataOffset, dataLength);
         }
 
-        // Safety net: ensure the encoded ops moved the NFT out of the composer. If `ownerOf`
-        // reverts (NFT burned by the position-close flow, if Fluid ever burns), the composer
-        // certainly doesn't own it — treat that as success.
+        // Hard-coded return: if the composer still owns the NFT, ship it back to `from`. If the
+        // inner ops already moved it (e.g. an `operate` with nftReceiver set) or the position was
+        // burned on a full close, ownerOf either returns a different address or reverts — both
+        // cases fall through as a no-op.
         assembly {
             let ptr := mload(0x40)
             mstore(ptr, ERC721_OWNER_OF)
             mstore(add(ptr, 0x04), tokenId)
             if staticcall(gas(), FLUID_VAULT_FACTORY, ptr, 0x24, ptr, 0x20) {
                 if eq(mload(ptr), address()) {
-                    mstore(0, INVALID_OPERATION)
-                    revert(0, 0x4)
+                    mstore(ptr, ERC20_TRANSFER_FROM)
+                    mstore(add(ptr, 0x04), address())
+                    mstore(add(ptr, 0x24), from)
+                    mstore(add(ptr, 0x44), tokenId)
+                    if iszero(call(gas(), FLUID_VAULT_FACTORY, 0, ptr, 0x64, 0, 0)) {
+                        returndatacopy(0, 0, returndatasize())
+                        revert(0, returndatasize())
+                    }
                 }
             }
         }
