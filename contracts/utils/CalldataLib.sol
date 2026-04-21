@@ -2071,6 +2071,7 @@ library CalldataLib {
             amount,
             creditAccount,
             creditFacade,
+            creditManager,
             minHealthFactor
         );
     }
@@ -2078,6 +2079,8 @@ library CalldataLib {
     /**
      * @notice Encode a Gearbox V3 borrow op (increaseDebt + withdrawCollateral + HF check).
      * @dev `minHealthFactor` is mandatory (should be > 10000 bps for user flows; see GEARBOX.md §3.1).
+     *      `creditManager` is used at dispatch time to authenticate that the caller is the CA's
+     *      borrower — otherwise anyone could invoke this op on a bot-enabled CA and drain it.
      */
     function encodeGearboxV3Borrow(
         address underlying,
@@ -2085,6 +2088,7 @@ library CalldataLib {
         address receiver,
         address creditAccount,
         address creditFacade,
+        address creditManager,
         uint16 minHealthFactor
     )
         internal
@@ -2100,6 +2104,7 @@ library CalldataLib {
             receiver,
             creditAccount,
             creditFacade,
+            creditManager,
             minHealthFactor
         );
     }
@@ -2135,6 +2140,7 @@ library CalldataLib {
             amount,
             creditAccount,
             creditFacade,
+            creditManager,
             uint8(0) // numQuotedTokens must be 0 for partial
         );
     }
@@ -2177,6 +2183,7 @@ library CalldataLib {
             GEARBOX_REPAY_ALL,
             creditAccount,
             creditFacade,
+            creditManager,
             uint8(quotedTokens.length),
             quotedBlob
         );
@@ -2193,6 +2200,7 @@ library CalldataLib {
         address receiver,
         address creditAccount,
         address creditFacade,
+        address creditManager,
         uint16 minHealthFactor
     )
         internal
@@ -2208,6 +2216,7 @@ library CalldataLib {
             receiver,
             creditAccount,
             creditFacade,
+            creditManager,
             minHealthFactor
         );
     }
@@ -2229,6 +2238,7 @@ library CalldataLib {
     function encodeGearboxV3BotMulticall(
         address creditFacade,
         address creditAccount,
+        address creditManager,
         uint16 numCalls,
         bytes memory calls
     )
@@ -2243,6 +2253,7 @@ library CalldataLib {
             uint8(0), // kind = botMulticall
             creditFacade,
             creditAccount,
+            creditManager,
             bytes32(0), // referralCode placeholder
             numCalls,
             calls
@@ -2271,7 +2282,8 @@ library CalldataLib {
             uint16(LenderIds.UP_TO_GEARBOX_V3 - 1),
             uint8(1), // kind = openCreditAccount
             creditFacade,
-            address(0), // creditAccount slot unused
+            address(0), // creditAccount slot unused for open
+            address(0), // creditManager slot unused for open (no auth needed)
             referralCode,
             numCalls,
             calls

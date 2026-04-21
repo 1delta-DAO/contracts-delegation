@@ -80,7 +80,7 @@ abstract contract UniversalLending is
             } else if (lender < LenderIds.UP_TO_AAVE_V4) {
                 return _depositToAaveV4(currentOffset);
             } else if (lender >= LenderIds.UP_TO_FLUID_SMART && lender < LenderIds.UP_TO_GEARBOX_V3) {
-                return _depositToGearboxV3(currentOffset);
+                return _depositToGearboxV3(currentOffset, callerAddress);
             } else {
                 _invalidOperation();
             }
@@ -102,7 +102,7 @@ abstract contract UniversalLending is
             } else if (lender < LenderIds.UP_TO_AAVE_V4) {
                 return _borrowFromAaveV4(currentOffset, callerAddress);
             } else if (lender >= LenderIds.UP_TO_FLUID_SMART && lender < LenderIds.UP_TO_GEARBOX_V3) {
-                return _borrowFromGearboxV3(currentOffset);
+                return _borrowFromGearboxV3(currentOffset, callerAddress);
             } else {
                 _invalidOperation();
             }
@@ -146,7 +146,7 @@ abstract contract UniversalLending is
             } else if (lender < LenderIds.UP_TO_AAVE_V4) {
                 return _withdrawFromAaveV4(currentOffset, callerAddress);
             } else if (lender >= LenderIds.UP_TO_FLUID_SMART && lender < LenderIds.UP_TO_GEARBOX_V3) {
-                return _withdrawFromGearboxV3(currentOffset);
+                return _withdrawFromGearboxV3(currentOffset, callerAddress);
             } else {
                 _invalidOperation();
             }

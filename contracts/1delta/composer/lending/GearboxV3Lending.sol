@@ -73,6 +73,35 @@ abstract contract GearboxV3Lending is ERC20Selectors, Masks, DeltaErrors {
     /// @dev openCreditAccount(address,(address,bytes)[],uint256)
     bytes32 internal constant GEARBOX_OPEN_CREDIT_ACCOUNT = 0x92beab1d00000000000000000000000000000000000000000000000000000000;
 
+    /// @dev getBorrowerOrRevert(address) — ICreditManagerV3 auth helper.
+    bytes32 internal constant GEARBOX_GET_BORROWER_OR_REVERT = 0xc53afb1e00000000000000000000000000000000000000000000000000000000;
+
+    /**
+     * @dev Authenticates that `callerAddress` (the authenticated deltaCompose caller) is the
+     *      borrower of `creditAccount` by querying `CreditManagerV3.getBorrowerOrRevert`. Every
+     *      primitive that relays into `botMulticall` invokes this first — the composer holds a
+     *      bot role on the CA, so without this check any caller could invoke `deltaCompose` with
+     *      someone else's CA as target and drain it via `increaseDebt`+`withdrawCollateral`.
+     *
+     *      `openCreditAccount` (kind=1 of `GEARBOX_MULTICALL`) does NOT need this auth — that
+     *      entrypoint has no caller check on Gearbox's side (the CA is brand new), and the
+     *      composer pins `onBehalfOf = callerAddress` so there is no way to spoof the borrower.
+     */
+    function _gearboxAuthCaller(address creditManager, address creditAccount, address callerAddress) private view {
+        assembly {
+            mstore(0x0, GEARBOX_GET_BORROWER_OR_REVERT)
+            mstore(0x4, creditAccount)
+            if iszero(staticcall(gas(), creditManager, 0x0, 0x24, 0x0, 0x20)) {
+                returndatacopy(0, 0, returndatasize())
+                revert(0, returndatasize())
+            }
+            if xor(mload(0x0), callerAddress) {
+                mstore(0, INVALID_CALLER)
+                revert(0, 0x4)
+            }
+        }
+    }
+
     // ─────────────────────────────────────────────────────────────────────────────
     // Constants used when composing inner MultiCall arrays
     // ─────────────────────────────────────────────────────────────────────────────
@@ -113,6 +142,9 @@ abstract contract GearboxV3Lending is ERC20Selectors, Masks, DeltaErrors {
      *      owner via a direct `facade.multicall([setBotPermissions(composer, mask)])` — not
      *      through the composer, since `setBotPermissions` is borrower-only).
      *
+     *      Authentication: `callerAddress` must equal `ca.borrower`. Without this check any
+     *      caller could invoke `deltaCompose` with someone else's bot-enabled CA and drain it.
+     *
      *      Amount handling:
      *        - `amount == 0`: composer pulls its own `balanceOf(this)` of `underlying`.
      *        - otherwise:     uses the literal amount. The encoder is responsible for the
@@ -127,16 +159,24 @@ abstract contract GearboxV3Lending is ERC20Selectors, Masks, DeltaErrors {
      * | 20     | 16             | amount (0 = use composer balance)              |
      * | 36     | 20             | creditAccount                                  |
      * | 56     | 20             | creditFacade                                   |
-     * | 76     | 2              | minHealthFactor (bps; 0 = skip full check)     |
+     * | 76     | 20             | creditManager (for auth via getBorrowerOrRevert) |
+     * | 96     | 2              | minHealthFactor (bps; 0 = skip full check)     |
      */
-    function _depositToGearboxV3(uint256 currentOffset) internal returns (uint256) {
+    function _depositToGearboxV3(uint256 currentOffset, address callerAddress) internal returns (uint256) {
+        address creditAccount;
+        address creditManager;
+        assembly {
+            creditAccount := shr(96, calldataload(add(currentOffset, 36)))
+            creditManager := shr(96, calldataload(add(currentOffset, 76)))
+        }
+        _gearboxAuthCaller(creditManager, creditAccount, callerAddress);
+
         assembly {
             let token := shr(96, calldataload(currentOffset))
             let amount := and(UINT112_MASK, shr(128, calldataload(add(currentOffset, 20))))
-            let creditAccount := shr(96, calldataload(add(currentOffset, 36)))
             let creditFacade := shr(96, calldataload(add(currentOffset, 56)))
-            let minHF := and(UINT16_MASK, shr(240, calldataload(add(currentOffset, 76))))
-            currentOffset := add(currentOffset, 78)
+            let minHF := and(UINT16_MASK, shr(240, calldataload(add(currentOffset, 96))))
+            currentOffset := add(currentOffset, 98)
 
             if iszero(amount) {
                 mstore(0, ERC20_BALANCE_OF)
@@ -214,21 +254,23 @@ abstract contract GearboxV3Lending is ERC20Selectors, Masks, DeltaErrors {
      *      10000 bps) is too tight for user-facing leverage. Encoders should pass ≥ 10500.
      *
      * @custom:calldata-offset-table
-     * | Offset | Length (bytes) | Description                                    |
-     * |--------|----------------|------------------------------------------------|
-     * | 0      | 20             | underlying                                     |
-     * | 20     | 16             | amount                                         |
-     * | 36     | 20             | receiver                                       |
-     * | 56     | 20             | creditAccount                                  |
-     * | 76     | 20             | creditFacade                                   |
-     * | 96     | 2              | minHealthFactor (bps)                          |
+     * | Offset | Length (bytes) | Description                                      |
+     * |--------|----------------|--------------------------------------------------|
+     * | 0      | 20             | underlying                                       |
+     * | 20     | 16             | amount                                           |
+     * | 36     | 20             | receiver                                         |
+     * | 56     | 20             | creditAccount                                    |
+     * | 76     | 20             | creditFacade                                     |
+     * | 96     | 20             | creditManager (for auth via getBorrowerOrRevert) |
+     * | 116    | 2              | minHealthFactor (bps)                            |
      */
-    function _borrowFromGearboxV3(uint256 currentOffset) internal returns (uint256) {
+    function _borrowFromGearboxV3(uint256 currentOffset, address callerAddress) internal returns (uint256) {
         address underlying;
         uint256 amount;
         address receiver;
         address creditAccount;
         address creditFacade;
+        address creditManager;
         uint256 minHF;
         assembly {
             underlying := shr(96, calldataload(currentOffset))
@@ -236,10 +278,12 @@ abstract contract GearboxV3Lending is ERC20Selectors, Masks, DeltaErrors {
             receiver := shr(96, calldataload(add(currentOffset, 36)))
             creditAccount := shr(96, calldataload(add(currentOffset, 56)))
             creditFacade := shr(96, calldataload(add(currentOffset, 76)))
-            minHF := and(UINT16_MASK, shr(240, calldataload(add(currentOffset, 96))))
+            creditManager := shr(96, calldataload(add(currentOffset, 96)))
+            minHF := and(UINT16_MASK, shr(240, calldataload(add(currentOffset, 116))))
         }
+        _gearboxAuthCaller(creditManager, creditAccount, callerAddress);
         _gearboxBorrowRelay(underlying, amount, receiver, creditAccount, creditFacade, minHF);
-        return currentOffset + 98;
+        return currentOffset + 118;
     }
 
     /**
@@ -321,17 +365,18 @@ abstract contract GearboxV3Lending is ERC20Selectors, Masks, DeltaErrors {
      *
      * @custom:calldata-offset-table
      * Partial:
-     * | Offset | Length (bytes) | Description                                    |
-     * |--------|----------------|------------------------------------------------|
-     * | 0      | 20             | underlying                                     |
-     * | 20     | 16             | amount (partial: > 0 and < UINT112_MASK)       |
-     * | 36     | 20             | creditAccount                                  |
-     * | 56     | 20             | creditFacade                                   |
-     * | 76     | 1              | numQuotedTokens (must be 0 for partial)        |
+     * | Offset | Length (bytes) | Description                                      |
+     * |--------|----------------|--------------------------------------------------|
+     * | 0      | 20             | underlying                                       |
+     * | 20     | 16             | amount (partial: > 0 and < UINT112_MASK)         |
+     * | 36     | 20             | creditAccount                                    |
+     * | 56     | 20             | creditFacade                                     |
+     * | 76     | 20             | creditManager (for auth via getBorrowerOrRevert) |
+     * | 96     | 1              | numQuotedTokens (must be 0 for partial)          |
      *
      * Full (same layout, with amount = UINT112_MASK and N quoted-token entries):
-     * | 76     | 1              | numQuotedTokens (N)                            |
-     * | 77     | N × 20         | quotedTokens[]                                 |
+     * | 96     | 1              | numQuotedTokens (N)                              |
+     * | 97     | N × 20         | quotedTokens[]                                   |
      */
     function _repayToGearboxV3(uint256 currentOffset, address callerAddress) internal returns (uint256) {
         // Read the header; dispatch partial vs full path in Solidity so each variant's inner
@@ -340,25 +385,28 @@ abstract contract GearboxV3Lending is ERC20Selectors, Masks, DeltaErrors {
         uint128 amount;
         address creditAccount;
         address creditFacade;
+        address creditManager;
         uint256 numQuoted;
         assembly {
             underlying := shr(96, calldataload(currentOffset))
             amount := shr(128, calldataload(add(currentOffset, 20)))
             creditAccount := shr(96, calldataload(add(currentOffset, 36)))
             creditFacade := shr(96, calldataload(add(currentOffset, 56)))
-            numQuoted := and(UINT8_MASK, shr(248, calldataload(add(currentOffset, 76))))
+            creditManager := shr(96, calldataload(add(currentOffset, 76)))
+            numQuoted := and(UINT8_MASK, shr(248, calldataload(add(currentOffset, 96))))
         }
+        _gearboxAuthCaller(creditManager, creditAccount, callerAddress);
 
         if (amount == uint128(UINT112_MASK)) {
-            _repayGearboxV3Full(currentOffset + 77, underlying, creditAccount, creditFacade, numQuoted, callerAddress);
-            return currentOffset + 77 + numQuoted * 20;
+            _repayGearboxV3Full(currentOffset + 97, underlying, creditAccount, creditFacade, numQuoted, callerAddress);
+            return currentOffset + 97 + numQuoted * 20;
         }
 
         if (numQuoted != 0) {
             _invalidOperation();
         }
         _repayGearboxV3Partial(underlying, uint256(amount), creditAccount, creditFacade);
-        return currentOffset + 77;
+        return currentOffset + 97;
     }
 
     /**
@@ -578,24 +626,32 @@ abstract contract GearboxV3Lending is ERC20Selectors, Masks, DeltaErrors {
      *        - otherwise: literal amount.
      *
      * @custom:calldata-offset-table
-     * | Offset | Length (bytes) | Description                                    |
-     * |--------|----------------|------------------------------------------------|
-     * | 0      | 20             | token                                          |
-     * | 20     | 16             | amount (UINT112_MASK = withdraw all)           |
-     * | 36     | 20             | receiver                                       |
-     * | 56     | 20             | creditAccount                                  |
-     * | 76     | 20             | creditFacade                                   |
-     * | 96     | 2              | minHealthFactor (bps)                          |
+     * | Offset | Length (bytes) | Description                                      |
+     * |--------|----------------|--------------------------------------------------|
+     * | 0      | 20             | token                                            |
+     * | 20     | 16             | amount (UINT112_MASK = withdraw all)             |
+     * | 36     | 20             | receiver                                         |
+     * | 56     | 20             | creditAccount                                    |
+     * | 76     | 20             | creditFacade                                     |
+     * | 96     | 20             | creditManager (for auth via getBorrowerOrRevert) |
+     * | 116    | 2              | minHealthFactor (bps)                            |
      */
-    function _withdrawFromGearboxV3(uint256 currentOffset) internal returns (uint256) {
+    function _withdrawFromGearboxV3(uint256 currentOffset, address callerAddress) internal returns (uint256) {
+        address creditAccount;
+        address creditManager;
+        assembly {
+            creditAccount := shr(96, calldataload(add(currentOffset, 56)))
+            creditManager := shr(96, calldataload(add(currentOffset, 96)))
+        }
+        _gearboxAuthCaller(creditManager, creditAccount, callerAddress);
+
         assembly {
             let token := shr(96, calldataload(currentOffset))
             let amountData := shr(128, calldataload(add(currentOffset, 20)))
             let receiver := shr(96, calldataload(add(currentOffset, 36)))
-            let creditAccount := shr(96, calldataload(add(currentOffset, 56)))
             let creditFacade := shr(96, calldataload(add(currentOffset, 76)))
-            let minHF := and(UINT16_MASK, shr(240, calldataload(add(currentOffset, 96))))
-            currentOffset := add(currentOffset, 98)
+            let minHF := and(UINT16_MASK, shr(240, calldataload(add(currentOffset, 116))))
+            currentOffset := add(currentOffset, 118)
 
             let amount := and(UINT112_MASK, amountData)
             if eq(amount, UINT112_MASK) { amount := MAX_UINT256 }
@@ -661,38 +717,48 @@ abstract contract GearboxV3Lending is ERC20Selectors, Masks, DeltaErrors {
      * @custom:calldata-offset-table
      * | Offset | Length (bytes) | Description                                               |
      * |--------|----------------|-----------------------------------------------------------|
-     * | 0      | 1              | kind (0 = botMulticall, 1 = openCreditAccount)           |
+     * | 0      | 1              | kind (0 = botMulticall, 1 = openCreditAccount)            |
      * | 1      | 20             | creditFacade                                              |
      * | 21     | 20             | creditAccount (kind=0) or padding (kind=1)                |
-     * | 41     | 32             | referralCode (kind=1) or padding (kind=0)                 |
-     * | 73     | 2              | numCalls (N)                                              |
-     * | 75     | Σ              | N sub-calls: innerLen (2) | innerCalldata (innerLen)      |
+     * | 41     | 20             | creditManager (kind=0 auth) or padding (kind=1)           |
+     * | 61     | 32             | referralCode (kind=1) or padding (kind=0)                 |
+     * | 93     | 2              | numCalls (N)                                              |
+     * | 95     | Σ              | N sub-calls: innerLen (2) | innerCalldata (innerLen)      |
+     *
+     * @dev Auth (kind=0 only): `callerAddress` must be the `creditAccount`'s borrower — otherwise
+     *      any caller could invoke `deltaCompose` with someone else's bot-enabled CA as target
+     *      and drain it. `kind=1` (`openCreditAccount`) needs no such check — the entrypoint has
+     *      no caller constraint on Gearbox's side, and the composer pins `onBehalfOf =
+     *      callerAddress` so there's no way to open a CA owned by someone else.
      */
     function _gearboxMulticall(uint256 currentOffset, address callerAddress) internal returns (uint256) {
         // Pull fixed header fields, then dispatch to a helper so the outer frame stays shallow.
         uint256 kind;
         address creditFacade;
         address creditAccount;
+        address creditManager;
         uint256 numCalls;
         assembly {
             kind := shr(248, calldataload(currentOffset))
             creditFacade := shr(96, calldataload(add(currentOffset, 1)))
             creditAccount := shr(96, calldataload(add(currentOffset, 21)))
-            numCalls := and(UINT16_MASK, shr(240, calldataload(add(currentOffset, 73))))
+            creditManager := shr(96, calldataload(add(currentOffset, 41)))
+            numCalls := and(UINT16_MASK, shr(240, calldataload(add(currentOffset, 93))))
         }
         if (kind > GEARBOX_KIND_OPEN) {
             _invalidOperation();
         }
 
         if (kind == GEARBOX_KIND_BOT_MULTICALL) {
-            return _gearboxRelayBotMulticall(creditFacade, creditAccount, numCalls, currentOffset + 75);
+            _gearboxAuthCaller(creditManager, creditAccount, callerAddress);
+            return _gearboxRelayBotMulticall(creditFacade, creditAccount, numCalls, currentOffset + 95);
         }
         // kind == GEARBOX_KIND_OPEN
         uint256 referralCode;
         assembly {
-            referralCode := calldataload(add(currentOffset, 41))
+            referralCode := calldataload(add(currentOffset, 61))
         }
-        return _gearboxRelayOpen(creditFacade, callerAddress, referralCode, numCalls, currentOffset + 75);
+        return _gearboxRelayOpen(creditFacade, callerAddress, referralCode, numCalls, currentOffset + 95);
     }
 
     /**

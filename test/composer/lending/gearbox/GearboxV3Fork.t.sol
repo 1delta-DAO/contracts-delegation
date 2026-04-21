@@ -203,6 +203,50 @@ contract GearboxV3ForkTest is BaseTest {
     }
 
     // ─────────────────────────────────────────────────────────────────────────
+    // 0. Auth — non-owner caller must NOT be able to drain a bot-enabled CA
+    // ─────────────────────────────────────────────────────────────────────────
+
+    /// @notice The critical auth invariant. A user granting the composer bot permissions on
+    ///         their CA must not thereby make the CA drainable by any other caller who knows
+    ///         the CA address. Proven by:
+    ///           1. user opens CA, grants the composer bot role with the exact-match mask;
+    ///           2. mallory (not the borrower) calls `deltaCompose` with a borrow targeted at
+    ///              `ca = userCa, receiver = mallory`;
+    ///           3. the composer's `_gearboxAuthCaller` check rejects — no state change.
+    function test_fork_gearbox_auth_nonowner_cannot_drain() public {
+        uint256 seed = uint256(minDebt) * 10;
+        address ca = _openCaWithComposerBot(seed, _pickBorrowAmount(), PERM_COMPOSER_EXACT);
+
+        address mallory = address(0xbADbAd);
+        vm.label(mallory, "mallory");
+        vm.deal(mallory, 1 ether);
+
+        uint256 userDebtBefore = _debtOf(ca);
+        uint256 malloryBalBefore = IERC20All(underlying).balanceOf(mallory);
+
+        bytes memory data = CalldataLib.encodeGearboxV3Borrow(
+            underlying,
+            uint128(minDebt),
+            mallory, // attacker tries to redirect proceeds
+            ca,
+            creditFacade,
+            CREDIT_MANAGER,
+            10500
+        );
+
+        vm.prank(mallory);
+        vm.expectRevert(); // InvalidCaller() from the composer's auth check
+        composer.deltaCompose(data);
+
+        assertEq(_debtOf(ca), userDebtBefore, "CA debt unchanged");
+        assertEq(IERC20All(underlying).balanceOf(mallory), malloryBalBefore, "mallory received nothing");
+    }
+
+    function _debtOf(address ca) internal view returns (uint256 debt) {
+        (debt,,,,,,,) = ICM_V3Info(CREDIT_MANAGER).creditAccountInfo(ca);
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
     // 1. Supply onto an existing CA
     // ─────────────────────────────────────────────────────────────────────────
 
@@ -246,7 +290,7 @@ contract GearboxV3ForkTest is BaseTest {
         uint256 extraBorrow = uint256(minDebt); // borrow one more min-debt unit
 
         bytes memory data = CalldataLib.encodeGearboxV3Borrow(
-            underlying, uint128(extraBorrow), user, ca, creditFacade, 10500
+            underlying, uint128(extraBorrow), user, ca, creditFacade, CREDIT_MANAGER, 10500
         );
 
         vm.prank(user);
@@ -298,7 +342,7 @@ contract GearboxV3ForkTest is BaseTest {
         uint256 balBefore = IERC20All(ETHPLUS).balanceOf(user);
 
         bytes memory data = CalldataLib.encodeGearboxV3Withdraw(
-            ETHPLUS, uint128(pullOut), user, ca, creditFacade, 10500
+            ETHPLUS, uint128(pullOut), user, ca, creditFacade, CREDIT_MANAGER, 10500
         );
 
         vm.prank(user);

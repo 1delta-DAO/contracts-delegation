@@ -131,6 +131,29 @@ contract GearboxV3FacadeMock {
         debt = amt;
     }
 
+    /// @dev Gearbox's `CreditManagerV3.getBorrowerOrRevert` — the composer calls this on the
+    ///      address it was handed as `creditManager` to auth the caller. In the mock the facade
+    ///      plays both roles, so we expose it here. `_borrowers[ca]` is a per-test override;
+    ///      otherwise we return `_defaultBorrower` (set via `setBorrower`) so the single-CA
+    ///      tests don't have to map explicitly.
+    address internal _defaultBorrower;
+    mapping(address => address) internal _borrowers;
+
+    function setBorrower(address borrower) external {
+        _defaultBorrower = borrower;
+    }
+
+    function setBorrowerFor(address ca, address borrower) external {
+        _borrowers[ca] = borrower;
+    }
+
+    function getBorrowerOrRevert(address ca) external view returns (address) {
+        address b = _borrowers[ca];
+        if (b == address(0)) b = _defaultBorrower;
+        require(b != address(0), "CA does not exist");
+        return b;
+    }
+
     function _settleCalls(MultiCall[] calldata calls) internal {
         for (uint256 i = 0; i < calls.length; i++) {
             bytes4 sel = bytes4(calls[i].callData);

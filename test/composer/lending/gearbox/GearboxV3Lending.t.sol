@@ -44,6 +44,9 @@ contract GearboxV3LendingMockTest is BaseTest {
 
         facade = new GearboxV3FacadeMock(address(0), creditAccount);
         creditManager = address(facade);
+        // Default borrower for every CA in the mock is `user` — the composer's auth check will
+        // pass when `user` is the msg.sender of `deltaCompose`.
+        facade.setBorrower(user);
         underlying = new MockERC20("UnderlyingUSD", "uUSD", 6);
         collToken = new MockERC20("CollatBTC", "cBTC", 8);
         facade.setMockUnderlying(address(underlying));
@@ -149,6 +152,7 @@ contract GearboxV3LendingMockTest is BaseTest {
             user, // receiver
             creditAccount,
             address(facade),
+            creditManager,
             10500
         );
 
@@ -192,7 +196,7 @@ contract GearboxV3LendingMockTest is BaseTest {
 
         // Partial withdraw
         bytes memory withdraw = CalldataLib.encodeGearboxV3Withdraw(
-            address(collToken), 5e7, user, creditAccount, address(facade), 10500
+            address(collToken), 5e7, user, creditAccount, address(facade), creditManager, 10500
         );
         vm.prank(user);
         composer.deltaCompose(withdraw);
@@ -200,7 +204,7 @@ contract GearboxV3LendingMockTest is BaseTest {
 
         // Full withdraw via UINT112_MASK → Gearbox's uint256.max sentinel
         bytes memory wAll = CalldataLib.encodeGearboxV3Withdraw(
-            address(collToken), CalldataLib.GEARBOX_WITHDRAW_ALL, user, creditAccount, address(facade), 10500
+            address(collToken), CalldataLib.GEARBOX_WITHDRAW_ALL, user, creditAccount, address(facade), creditManager, 10500
         );
         vm.prank(user);
         composer.deltaCompose(wAll);
@@ -242,6 +246,60 @@ contract GearboxV3LendingMockTest is BaseTest {
 
         assertEq(facade.debt(), 300e6, "debt reduced by 200e6");
         assertEq(underlying.balanceOf(address(composer)), 0, "composer holds no residue");
+    }
+
+    /// @notice Non-owner caller invoking `deltaCompose` with someone else's CA must revert.
+    /// @dev Without this guard, any user who has granted the composer bot permissions would have
+    ///      their CA drainable by any caller who knows the CA address.
+    function test_gearboxV3_unauthorized_caller_cannot_drain_ca() public {
+        _fundPoolLiquidity(10_000e6);
+
+        // CA is owned by `user` in the mock (facade.setBorrower(user) in setUp).
+        // `mallory` is a fresh address, not the borrower.
+        address mallory = address(0xbADbAd);
+        vm.label(mallory, "mallory");
+        vm.deal(mallory, 1 ether);
+
+        // Mallory tries to borrow from user's CA and send the proceeds to herself.
+        bytes memory borrow = CalldataLib.encodeGearboxV3Borrow(
+            address(underlying),
+            1_000e6,
+            mallory, // receiver
+            creditAccount,
+            address(facade),
+            creditManager,
+            10500
+        );
+
+        vm.prank(mallory);
+        vm.expectRevert();
+        composer.deltaCompose(borrow);
+
+        // Sanity: same call from the real owner succeeds (auth is the ONLY difference).
+        vm.prank(user);
+        composer.deltaCompose(
+            CalldataLib.encodeGearboxV3Borrow(
+                address(underlying), 1_000e6, user, creditAccount, address(facade), creditManager, 10500
+            )
+        );
+        assertEq(underlying.balanceOf(user), 1_000e6, "owner can borrow");
+        assertEq(underlying.balanceOf(mallory), 0, "non-owner attempt took no funds");
+    }
+
+    /// @notice Non-owner caller invoking `GEARBOX_MULTICALL` (kind=botMulticall) must revert.
+    function test_gearboxV3_unauthorized_caller_cannot_use_generic_bot_multicall() public {
+        address mallory = address(0xbADbAd);
+        bytes memory inner =
+            abi.encodeWithSelector(SEL_WITHDRAW_COLLATERAL, address(collToken), uint256(1e8), mallory);
+
+        bytes memory packed = CalldataLib.encodeGearboxV3FacadeCall(inner);
+        bytes memory data = CalldataLib.encodeGearboxV3BotMulticall(
+            address(facade), creditAccount, creditManager, 1, packed
+        );
+
+        vm.prank(mallory);
+        vm.expectRevert();
+        composer.deltaCompose(data);
     }
 
     function test_gearboxV3_repay_partial_amount_zero_reverts() public {
@@ -409,7 +467,8 @@ contract GearboxV3LendingMockTest is BaseTest {
             CalldataLib.encodeGearboxV3FacadeCall(inner0), CalldataLib.encodeGearboxV3FacadeCall(inner1)
         );
 
-        bytes memory data = CalldataLib.encodeGearboxV3BotMulticall(address(facade), creditAccount, 2, packed);
+        bytes memory data =
+            CalldataLib.encodeGearboxV3BotMulticall(address(facade), creditAccount, creditManager, 2, packed);
 
         vm.prank(user);
         composer.deltaCompose(data);
@@ -431,12 +490,13 @@ contract GearboxV3LendingMockTest is BaseTest {
         bytes memory packed = CalldataLib.encodeGearboxV3FacadeCall(abi.encodeWithSelector(SEL_SET_FULL_CHECK, new uint256[](0), uint16(10000)));
         bytes memory data = abi.encodePacked(
             uint8(0x30), // ComposerCommands.LENDING
-            uint8(12), // LenderOps.GEARBOX_MULTICALL
+            uint8(13), // LenderOps.GEARBOX_MULTICALL
             uint16(9999), // lender in UP_TO_GEARBOX_V3 range
             uint8(2), // kind = 2 (invalid)
             address(facade),
-            address(0),
-            bytes32(0),
+            address(0), // creditAccount slot
+            address(0), // creditManager slot
+            bytes32(0), // referralCode
             uint16(1),
             packed
         );
