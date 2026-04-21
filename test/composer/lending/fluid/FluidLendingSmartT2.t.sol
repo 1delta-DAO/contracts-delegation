@@ -117,15 +117,14 @@ contract FluidLendingSmartT2Test is BaseTest {
 
         uint256 nftsBefore = IFluidVaultFactory(VAULT_FACTORY).balanceOf(user);
         uint256 usdtBefore = IERC20All(USDT).balanceOf(user);
-        uint256 predictedNftId = IFluidVaultFactory(VAULT_FACTORY).totalSupply() + 1;
 
         bytes memory data = abi.encodePacked(
             CalldataLib.encodeTransferIn(cbBTC, address(composer), COL0_AMOUNT),
             CalldataLib.encodeTransferIn(WBTC, address(composer), COL1_AMOUNT),
             CalldataLib.encodeApprove(cbBTC, VAULT),
             CalldataLib.encodeApprove(WBTC, VAULT),
-            CalldataLib.encodeFluidSmartOperateT2(0, 0, user, VAULT, tokens, amounts),
-            CalldataLib.encodeSweepNft(VAULT_FACTORY, user, predictedNftId)
+            // nftReceiver = user → auto-sweep freshly-minted NFT via returned nftId_.
+            CalldataLib.encodeFluidSmartOperateT2(0, 0, user, user, VAULT, tokens, amounts)
         );
 
         vm.prank(user);
@@ -156,13 +155,11 @@ contract FluidLendingSmartT2Test is BaseTest {
 
         uint256 nftsBefore = IFluidVaultFactory(VAULT_FACTORY).balanceOf(user);
         uint256 usdtBefore = IERC20All(USDT).balanceOf(user);
-        uint256 predictedNftId = IFluidVaultFactory(VAULT_FACTORY).totalSupply() + 1;
 
         bytes memory data = abi.encodePacked(
             CalldataLib.encodeApprove(cbBTC, VAULT),
             CalldataLib.encodeApprove(WBTC, VAULT),
-            CalldataLib.encodeFluidSmartOperateT2(0, 0, user, VAULT, tokens, amounts),
-            CalldataLib.encodeSweepNft(VAULT_FACTORY, user, predictedNftId)
+            CalldataLib.encodeFluidSmartOperateT2(0, 0, user, user, VAULT, tokens, amounts)
         );
 
         vm.prank(user);
@@ -188,10 +185,8 @@ contract FluidLendingSmartT2Test is BaseTest {
         amounts[2] = int256(0);
         amounts[3] = int256(100e6); // +100 USDT borrow
 
-        bytes memory innerOps = abi.encodePacked(
-            CalldataLib.encodeFluidSmartOperateT2(0, nftId, user, VAULT, tokens, amounts),
-            CalldataLib.encodeSweepNft(VAULT_FACTORY, user, nftId)
-        );
+        // No sweep op — the custody callback unconditionally returns the NFT to `from`.
+        bytes memory innerOps = CalldataLib.encodeFluidSmartOperateT2(0, nftId, user, address(0), VAULT, tokens, amounts);
 
         uint256 usdtBefore = IERC20All(USDT).balanceOf(user);
         vm.prank(user);
@@ -223,7 +218,7 @@ contract FluidLendingSmartT2Test is BaseTest {
         amounts[1] = -int256(1);
         amounts[2] = -int256(1);
         amounts[3] = type(int256).min;
-        return CalldataLib.encodeFluidSmartOperatePerfectT2(0, nftId, user, VAULT, tokens, amounts);
+        return CalldataLib.encodeFluidSmartOperatePerfectT2(0, nftId, user, address(0), VAULT, tokens, amounts);
     }
 
     function test_fluid_smart_t2_nft_custody_full_close_operate_perfect() public {
@@ -241,8 +236,8 @@ contract FluidLendingSmartT2Test is BaseTest {
             CalldataLib.encodeTransferIn(USDT, address(composer), usdtBuffer),
             CalldataLib.encodeApprove(USDT, VAULT),
             closeCall,
-            CalldataLib.encodeSweep(USDT, user, 0, SweepType.VALIDATE),
-            CalldataLib.encodeSweepNft(VAULT_FACTORY, user, nftId)
+            CalldataLib.encodeSweep(USDT, user, 0, SweepType.VALIDATE)
+            // NFT returned by the callback — no explicit sweep.
         );
 
         uint256 cbBefore = IERC20All(cbBTC).balanceOf(user);

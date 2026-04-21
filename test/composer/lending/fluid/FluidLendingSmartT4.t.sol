@@ -134,12 +134,10 @@ contract FluidLendingSmartT4Test is BaseTest {
             CalldataLib.encodeTransferIn(GHO, address(composer), COL_GHO),
             CalldataLib.encodeTransferIn(USDC, address(composer), COL_USDC)
         );
-        uint256 predictedNftId = IFluidVaultFactory(VAULT_FACTORY).totalSupply() + 1;
         bytes memory opAndSweep = abi.encodePacked(
             CalldataLib.encodeApprove(GHO, VAULT),
             CalldataLib.encodeApprove(USDC, VAULT),
-            CalldataLib.encodeFluidSmartOperateT4(0, 0, user, VAULT, tokens, amounts),
-            CalldataLib.encodeSweepNft(VAULT_FACTORY, user, predictedNftId)
+            CalldataLib.encodeFluidSmartOperateT4(0, 0, user, user, VAULT, tokens, amounts)
         );
 
         uint256 nftsBefore = IFluidVaultFactory(VAULT_FACTORY).balanceOf(user);
@@ -175,12 +173,10 @@ contract FluidLendingSmartT4Test is BaseTest {
         amounts[3] = int256(DEBT_GHO);
         amounts[4] = int256(DEBT_USDC);
 
-        uint256 predictedNftId = IFluidVaultFactory(VAULT_FACTORY).totalSupply() + 1;
         bytes memory data = abi.encodePacked(
             CalldataLib.encodeApprove(GHO, VAULT),
             CalldataLib.encodeApprove(USDC, VAULT),
-            CalldataLib.encodeFluidSmartOperateT4(0, 0, user, VAULT, tokens, amounts),
-            CalldataLib.encodeSweepNft(VAULT_FACTORY, user, predictedNftId)
+            CalldataLib.encodeFluidSmartOperateT4(0, 0, user, user, VAULT, tokens, amounts)
         );
 
         uint256 nftsBefore = IFluidVaultFactory(VAULT_FACTORY).balanceOf(user);
@@ -214,10 +210,8 @@ contract FluidLendingSmartT4Test is BaseTest {
         amounts[3] = int256(0);
         amounts[4] = int256(0);
         amounts[5] = int256(0);
-        return abi.encodePacked(
-            CalldataLib.encodeFluidSmartOperateT4(0, nftId, user, VAULT, tokens, amounts),
-            CalldataLib.encodeSweepNft(VAULT_FACTORY, user, nftId)
-        );
+        return CalldataLib.encodeFluidSmartOperateT4(0, nftId, user, address(0), VAULT, tokens, amounts);
+        // NFT returned by the custody callback.
     }
 
     function test_fluid_smart_t4_nft_custody_shrink_col_via_operate() public {
@@ -264,7 +258,7 @@ contract FluidLendingSmartT4Test is BaseTest {
         amounts[3] = type(int256).min;
         amounts[4] = -int256(type(int128).max);
         amounts[5] = -int256(type(int128).max);
-        return CalldataLib.encodeFluidSmartOperatePerfectT4(0, nftId, user, VAULT, tokens, amounts);
+        return CalldataLib.encodeFluidSmartOperatePerfectT4(0, nftId, user, address(0), VAULT, tokens, amounts);
     }
 
     /// @dev Phase 2: burn-all col only. Debt slots 0 (already zero post-phase-1).
@@ -279,7 +273,7 @@ contract FluidLendingSmartT4Test is BaseTest {
         amounts[3] = int256(0);
         amounts[4] = int256(0);
         amounts[5] = int256(0);
-        return CalldataLib.encodeFluidSmartOperatePerfectT4(0, nftId, user, VAULT, tokens, amounts);
+        return CalldataLib.encodeFluidSmartOperatePerfectT4(0, nftId, user, address(0), VAULT, tokens, amounts);
     }
 
     function _buildT4TwoPhaseClose(uint256 nftId, uint256 ghoBuffer, uint256 usdcBuffer)
@@ -297,10 +291,9 @@ contract FluidLendingSmartT4Test is BaseTest {
             pulls,
             _t4ClosePhase1RepayDebt(nftId),
             _t4ClosePhase2BurnCol(nftId),
-            // Sweep any repay-buffer dust + the (now-empty) NFT.
+            // Sweep any repay-buffer dust. NFT returned by the custody callback.
             CalldataLib.encodeSweep(GHO, user, 0, SweepType.VALIDATE),
-            CalldataLib.encodeSweep(USDC, user, 0, SweepType.VALIDATE),
-            CalldataLib.encodeSweepNft(VAULT_FACTORY, user, nftId)
+            CalldataLib.encodeSweep(USDC, user, 0, SweepType.VALIDATE)
         );
     }
 

@@ -62,8 +62,10 @@ library LenderOps {
     uint256 internal constant FLUID_OPERATE = 10;
     /// @dev Fluid smart-vault (T2/T3/T4) `operatePerfect` — share-precise / full-exit path.
     uint256 internal constant FLUID_OPERATE_PERFECT = 11;
+    /// @dev Fluid T1 `operate` — combined col & debt for simple vaults in a single op.
+    uint256 internal constant FLUID_OPERATE_T1 = 12;
     /// @dev Gearbox V3 generic `MultiCall[]` relay — `botMulticall` / `openCreditAccount` entrypoints.
-    uint256 internal constant GEARBOX_MULTICALL = 12;
+    uint256 internal constant GEARBOX_MULTICALL = 13;
 }
 
 /**

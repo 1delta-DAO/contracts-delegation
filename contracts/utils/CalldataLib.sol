@@ -1726,122 +1726,79 @@ library CalldataLib {
     // Fluid (T1 vault + fToken)
     // ─────────────────────────────────────────────────────────────────────────────
 
-    /// @dev Sentinel matching FluidLending's max-amount handling — UINT112_MASK.
-    ///      For WITHDRAW: pass to mean "withdraw all" (translates to type(int256).min).
-    ///      For REPAY:    pass to mean "repay all"    (translates to type(int256).min).
-    uint128 internal constant FLUID_MAX_AMOUNT = type(uint112).max;
+    /// @dev Sentinel for "Fluid-all" on a T1 operate axis — translates to type(int256).min
+    ///      on the wire. Pass on `colAmount` for withdraw-all, on `debtAmount` for repay-all.
+    int128 internal constant FLUID_ALL = type(int128).min;
 
-    /// @dev Native marker — same composer convention as CompoundV2 native handling.
-    function _fluidVaultBody(
-        address underlying,
-        uint128 amount,
+    /// @dev Sentinel for "use composer balance" on a T1 operate axis (positive direction only).
+    ///      Pass on `colAmount` to deposit the composer's entire balance of `colUnderlying`.
+    int128 internal constant FLUID_USE_BALANCE = type(int128).max;
+
+    /// @notice Encode a single `FLUID_OPERATE_T1` op wrapping `vault.operate(...)` with both axes
+    ///         parameterized. When `nftId == 0` a fresh position is opened; if `nftReceiver != 0`
+    ///         the composer ships the returned NFT to `nftReceiver` in the same call.
+    /// @param colUnderlying   address(0) for native collateral
+    /// @param debtUnderlying  address(0) for native debt
+    /// @param colAmount       int128 — 0 skip, +N deposit, -N withdraw, FLUID_ALL withdraw-all, FLUID_USE_BALANCE deposit-balance
+    /// @param debtAmount      int128 — 0 skip, +N borrow, -N repay, FLUID_ALL repay-all
+    /// @param nftId           0 = open new position
+    /// @param receiver        vault's `to_` — recipient of any out-flow (native or tokens)
+    /// @param nftReceiver     0 = keep NFT in composer; non-zero = auto-sweep minted NFT to this address
+    /// @param vault           target Fluid T1 vault
+    /// @dev Auto-prepends APPROVE ops for any positive-direction ERC20 side so Fluid can pull funds.
+    function encodeFluidT1Operate(
+        address colUnderlying,
+        address debtUnderlying,
+        int128 colAmount,
+        int128 debtAmount,
         uint256 nftId,
         address receiver,
-        address vault
-    )
-        private
-        pure
-        returns (bytes memory)
-    {
-        return abi.encodePacked(underlying, amount, nftId, receiver, vault);
-    }
-
-    function encodeFluidDeposit(
-        address underlying,
-        uint128 amount,
-        uint256 nftId,
-        address receiver,
+        address nftReceiver,
         address vault
     )
         internal
         pure
         returns (bytes memory)
     {
-        bytes memory body = _fluidVaultBody(underlying, amount, nftId, receiver, vault);
-        // Native: msg.value forwarded by the composer; no approve needed.
-        // ERC20: caller must already have funded the composer with `underlying` and we pre-approve the vault.
-        if (underlying == address(0)) {
-            return abi.encodePacked(
-                uint8(ComposerCommands.LENDING),
-                uint8(LenderOps.DEPOSIT),
-                uint16(LenderIds.UP_TO_FLUID - 1),
-                body
-            );
+        bytes memory approvals;
+        // Positive col-direction on an ERC20 collateral → Fluid pulls tokens → needs approve.
+        if (colUnderlying != address(0) && _fluidIsDepositAmount(colAmount)) {
+            approvals = abi.encodePacked(approvals, encodeApprove(colUnderlying, vault));
         }
+        // Negative debt-direction on an ERC20 debt → Fluid pulls tokens for repay → needs approve.
+        if (debtUnderlying != address(0) && _fluidIsRepayAmount(debtAmount)) {
+            approvals = abi.encodePacked(approvals, encodeApprove(debtUnderlying, vault));
+        }
+
+        bytes memory body = abi.encodePacked(
+            colUnderlying,
+            debtUnderlying,
+            colAmount, // 16 bytes signed (int128)
+            debtAmount, // 16 bytes signed (int128)
+            nftId, // 32 bytes
+            receiver,
+            nftReceiver,
+            vault
+        );
+
         return abi.encodePacked(
-            encodeApprove(underlying, vault),
+            approvals,
             uint8(ComposerCommands.LENDING),
-            uint8(LenderOps.DEPOSIT),
+            uint8(LenderOps.FLUID_OPERATE_T1),
             uint16(LenderIds.UP_TO_FLUID - 1),
             body
         );
     }
 
-    function encodeFluidBorrow(
-        address underlying,
-        uint128 amount,
-        uint256 nftId,
-        address receiver,
-        address vault
-    )
-        internal
-        pure
-        returns (bytes memory)
-    {
-        return abi.encodePacked(
-            uint8(ComposerCommands.LENDING),
-            uint8(LenderOps.BORROW),
-            uint16(LenderIds.UP_TO_FLUID - 1),
-            _fluidVaultBody(underlying, amount, nftId, receiver, vault)
-        );
+    /// @dev Positive signed int128 (deposit/borrow direction); `FLUID_USE_BALANCE` also counts as a
+    ///      deposit (pulls from the composer's balance). Zero and the all-sentinel don't pull.
+    function _fluidIsDepositAmount(int128 a) private pure returns (bool) {
+        return a > 0; // includes FLUID_USE_BALANCE (type(int128).max)
     }
 
-    function encodeFluidRepay(
-        address underlying,
-        uint128 amount,
-        uint256 nftId,
-        address receiver,
-        address vault
-    )
-        internal
-        pure
-        returns (bytes memory)
-    {
-        bytes memory body = _fluidVaultBody(underlying, amount, nftId, receiver, vault);
-        if (underlying == address(0)) {
-            return abi.encodePacked(
-                uint8(ComposerCommands.LENDING),
-                uint8(LenderOps.REPAY),
-                uint16(LenderIds.UP_TO_FLUID - 1),
-                body
-            );
-        }
-        return abi.encodePacked(
-            encodeApprove(underlying, vault),
-            uint8(ComposerCommands.LENDING),
-            uint8(LenderOps.REPAY),
-            uint16(LenderIds.UP_TO_FLUID - 1),
-            body
-        );
-    }
-
-    function encodeFluidWithdraw(
-        address underlying,
-        uint128 amount,
-        uint256 nftId,
-        address receiver,
-        address vault
-    )
-        internal
-        pure
-        returns (bytes memory)
-    {
-        return abi.encodePacked(
-            uint8(ComposerCommands.LENDING),
-            uint8(LenderOps.WITHDRAW),
-            uint16(LenderIds.UP_TO_FLUID - 1),
-            _fluidVaultBody(underlying, amount, nftId, receiver, vault)
-        );
+    /// @dev Negative signed int128 (withdraw/repay direction); `FLUID_ALL` also counts as a repay.
+    function _fluidIsRepayAmount(int128 a) private pure returns (bool) {
+        return a < 0; // includes FLUID_ALL (type(int128).min)
     }
 
     /// @dev Sentinel matching FluidSmartLending's `FLUID_SMART_USE_BALANCE`. Place into an int256
@@ -1854,6 +1811,7 @@ library CalldataLib {
         uint128 callValue,
         uint256 nftId,
         address receiver,
+        address nftReceiver,
         address vault,
         bool isPerfect
     )
@@ -1869,6 +1827,7 @@ library CalldataLib {
             callValue,
             nftId,
             receiver,
+            nftReceiver,
             vault
         );
     }
@@ -1893,10 +1852,12 @@ library CalldataLib {
     /// @param amounts [newColToken0, newColToken1, colSharesMinMax, newDebt]
     /// @param tokens  per-slot token address; use `address(0)` on slots that don't use the
     ///                balance sentinel, or the actual ERC20 / `address(0)` for native when they do
+    /// @param nftReceiver 0 = keep NFT in composer; non-zero = auto-sweep freshly-minted NFT there
     function encodeFluidSmartOperateT2(
         uint128 callValue,
         uint256 nftId,
         address receiver,
+        address nftReceiver,
         address vault,
         address[4] memory tokens,
         int256[4] memory amounts
@@ -1906,7 +1867,7 @@ library CalldataLib {
         returns (bytes memory)
     {
         return abi.encodePacked(
-            _fluidSmartHeader(2, callValue, nftId, receiver, vault, false),
+            _fluidSmartHeader(2, callValue, nftId, receiver, nftReceiver, vault, false),
             _fluidSmartTokens4(tokens),
             _fluidSmartAmounts4(amounts)
         );
@@ -1918,6 +1879,7 @@ library CalldataLib {
         uint128 callValue,
         uint256 nftId,
         address receiver,
+        address nftReceiver,
         address vault,
         address[4] memory tokens,
         int256[4] memory amounts
@@ -1927,7 +1889,7 @@ library CalldataLib {
         returns (bytes memory)
     {
         return abi.encodePacked(
-            _fluidSmartHeader(3, callValue, nftId, receiver, vault, false),
+            _fluidSmartHeader(3, callValue, nftId, receiver, nftReceiver, vault, false),
             _fluidSmartTokens4(tokens),
             _fluidSmartAmounts4(amounts)
         );
@@ -1939,6 +1901,7 @@ library CalldataLib {
         uint128 callValue,
         uint256 nftId,
         address receiver,
+        address nftReceiver,
         address vault,
         address[6] memory tokens,
         int256[6] memory amounts
@@ -1948,7 +1911,7 @@ library CalldataLib {
         returns (bytes memory)
     {
         return abi.encodePacked(
-            _fluidSmartHeader(4, callValue, nftId, receiver, vault, false),
+            _fluidSmartHeader(4, callValue, nftId, receiver, nftReceiver, vault, false),
             _fluidSmartTokens6(tokens),
             _fluidSmartAmounts6(amounts)
         );
@@ -1960,6 +1923,7 @@ library CalldataLib {
         uint128 callValue,
         uint256 nftId,
         address receiver,
+        address nftReceiver,
         address vault,
         address[4] memory tokens,
         int256[4] memory amounts
@@ -1969,7 +1933,7 @@ library CalldataLib {
         returns (bytes memory)
     {
         return abi.encodePacked(
-            _fluidSmartHeader(2, callValue, nftId, receiver, vault, true),
+            _fluidSmartHeader(2, callValue, nftId, receiver, nftReceiver, vault, true),
             _fluidSmartTokens4(tokens),
             _fluidSmartAmounts4(amounts)
         );
@@ -1981,6 +1945,7 @@ library CalldataLib {
         uint128 callValue,
         uint256 nftId,
         address receiver,
+        address nftReceiver,
         address vault,
         address[4] memory tokens,
         int256[4] memory amounts
@@ -1990,7 +1955,7 @@ library CalldataLib {
         returns (bytes memory)
     {
         return abi.encodePacked(
-            _fluidSmartHeader(3, callValue, nftId, receiver, vault, true),
+            _fluidSmartHeader(3, callValue, nftId, receiver, nftReceiver, vault, true),
             _fluidSmartTokens4(tokens),
             _fluidSmartAmounts4(amounts)
         );
@@ -2002,6 +1967,7 @@ library CalldataLib {
         uint128 callValue,
         uint256 nftId,
         address receiver,
+        address nftReceiver,
         address vault,
         address[6] memory tokens,
         int256[6] memory amounts
@@ -2011,7 +1977,7 @@ library CalldataLib {
         returns (bytes memory)
     {
         return abi.encodePacked(
-            _fluidSmartHeader(4, callValue, nftId, receiver, vault, true),
+            _fluidSmartHeader(4, callValue, nftId, receiver, nftReceiver, vault, true),
             _fluidSmartTokens6(tokens),
             _fluidSmartAmounts6(amounts)
         );
