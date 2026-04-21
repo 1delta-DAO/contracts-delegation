@@ -114,7 +114,34 @@ calls[0] = abi.encodeCall(
 ICreditFacadeV3(facade).multicall(ca, calls);
 ```
 
-### 2.3 Global bot ban recovery
+### 2.3 Caller authentication — composer-side
+
+Gearbox only asks "is the bot registered on this CA with the right
+permissions?" — it does not check *who invoked the bot*. Without an
+additional check on the composer side, any caller who knows a bot-
+enabled CA address could call `deltaCompose` with that CA as target and
+drain it via `increaseDebt` + `withdrawCollateral`.
+
+Every composer primitive that relays into `botMulticall` therefore
+includes a mandatory auth step:
+
+```solidity
+borrower = CreditManagerV3(creditManager).getBorrowerOrRevert(ca)
+if borrower != callerAddress  →  revert InvalidCaller()
+```
+
+`callerAddress` is the authenticated `deltaCompose` caller (either
+`msg.sender` or, inside a flash-loan callback, the validated initiator).
+For this reason the calldata layout for every Gearbox primitive includes
+a `creditManager (20)` field — the composer uses it to make the
+`getBorrowerOrRevert` staticcall.
+
+`openCreditAccount` (kind=1 of `GEARBOX_MULTICALL`) is exempt: the
+entrypoint has no caller check on Gearbox's side, and the composer pins
+`onBehalfOf = callerAddress`, so there's no way to open a CA owned by
+someone else.
+
+### 2.4 Global bot ban recovery
 
 Gearbox governance can globally ban the composer via
 `BotListV3.setBotForbiddenStatus(composer, true)`. Every `botMulticall` then
