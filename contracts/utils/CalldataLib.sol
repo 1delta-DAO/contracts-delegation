@@ -2055,8 +2055,7 @@ library CalldataLib {
         uint128 amount,
         address creditAccount,
         address creditFacade,
-        address creditManager,
-        uint16 minHealthFactor
+        address creditManager
     )
         internal
         pure
@@ -2071,8 +2070,7 @@ library CalldataLib {
             amount,
             creditAccount,
             creditFacade,
-            creditManager,
-            minHealthFactor
+            creditManager
         );
     }
 
@@ -2088,8 +2086,7 @@ library CalldataLib {
         address receiver,
         address creditAccount,
         address creditFacade,
-        address creditManager,
-        uint16 minHealthFactor
+        address creditManager
     )
         internal
         pure
@@ -2104,8 +2101,7 @@ library CalldataLib {
             receiver,
             creditAccount,
             creditFacade,
-            creditManager,
-            minHealthFactor
+            creditManager
         );
     }
 
@@ -2200,8 +2196,7 @@ library CalldataLib {
         address receiver,
         address creditAccount,
         address creditFacade,
-        address creditManager,
-        uint16 minHealthFactor
+        address creditManager
     )
         internal
         pure
@@ -2216,8 +2211,7 @@ library CalldataLib {
             receiver,
             creditAccount,
             creditFacade,
-            creditManager,
-            minHealthFactor
+            creditManager
         );
     }
 

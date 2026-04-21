@@ -152,15 +152,18 @@ abstract contract GearboxV3Lending is ERC20Selectors, Masks, DeltaErrors {
      *
      *      Token must be pre-approved to the CreditManager (encoder emits `APPROVE(token, cm)`).
      *
+     * @dev HF buffer is not a primitive-level concern — Gearbox's facade enforces HF ≥ 1.0 by
+     *      default. Callers who want a user-signed buffer should use `GEARBOX_MULTICALL` with an
+     *      explicit `setFullCheckParams` sub-call.
+     *
      * @custom:calldata-offset-table
-     * | Offset | Length (bytes) | Description                                    |
-     * |--------|----------------|------------------------------------------------|
-     * | 0      | 20             | underlying                                     |
-     * | 20     | 16             | amount (0 = use composer balance)              |
-     * | 36     | 20             | creditAccount                                  |
-     * | 56     | 20             | creditFacade                                   |
+     * | Offset | Length (bytes) | Description                                      |
+     * |--------|----------------|--------------------------------------------------|
+     * | 0      | 20             | underlying                                       |
+     * | 20     | 16             | amount (0 = use composer balance)                |
+     * | 36     | 20             | creditAccount                                    |
+     * | 56     | 20             | creditFacade                                     |
      * | 76     | 20             | creditManager (for auth via getBorrowerOrRevert) |
-     * | 96     | 2              | minHealthFactor (bps; 0 = skip full check)     |
      */
     function _depositToGearboxV3(uint256 currentOffset, address callerAddress) internal returns (uint256) {
         address creditAccount;
@@ -175,8 +178,7 @@ abstract contract GearboxV3Lending is ERC20Selectors, Masks, DeltaErrors {
             let token := shr(96, calldataload(currentOffset))
             let amount := and(UINT112_MASK, shr(128, calldataload(add(currentOffset, 20))))
             let creditFacade := shr(96, calldataload(add(currentOffset, 56)))
-            let minHF := and(UINT16_MASK, shr(240, calldataload(add(currentOffset, 96))))
-            currentOffset := add(currentOffset, 98)
+            currentOffset := add(currentOffset, 96)
 
             if iszero(amount) {
                 mstore(0, ERC20_BALANCE_OF)
@@ -189,53 +191,24 @@ abstract contract GearboxV3Lending is ERC20Selectors, Masks, DeltaErrors {
             }
 
             let ptr := mload(0x40)
-            let numCalls := 1
-            if iszero(iszero(minHF)) { numCalls := 2 }
 
-            // botMulticall(address ca, MultiCall[] calls)
+            // botMulticall(ca, [addCollateral(token, amount)]) — single tuple, always no HF tuple.
             mstore(ptr, GEARBOX_BOT_MULTICALL)
-            mstore(add(ptr, 0x04), creditAccount)         // ca
-            mstore(add(ptr, 0x24), 0x40)                   // offset to calls
-            mstore(add(ptr, 0x44), numCalls)               // calls.length
+            mstore(add(ptr, 0x04), creditAccount)
+            mstore(add(ptr, 0x24), 0x40)
+            mstore(add(ptr, 0x44), 1)                 // calls.length
+            mstore(add(ptr, 0x64), 0x20)              // head[0]
 
-            // heads: head[i] is offset from start-of-array-data (== position of calls.length + 32)
-            // tuple 0 lives directly after the heads → offset = numCalls * 0x20
-            mstore(add(ptr, 0x64), mul(numCalls, 0x20))
+            // tuple 0 at ptr + 0x84
+            mstore(add(ptr, 0x84), creditFacade)
+            mstore(add(ptr, 0xa4), 0x40)
+            mstore(add(ptr, 0xc4), 0x44)              // callData length = 68
+            mstore(add(ptr, 0xe4), GEARBOX_ADD_COLLATERAL)
+            mstore(add(ptr, 0xe8), token)
+            mstore(add(ptr, 0x108), amount)
+            mstore(add(ptr, 0x128), 0)                // pad trailing 28 bytes
 
-            // tuple 0 body: (facade target, bytes addCollateral(token, amount))
-            // tuple starts at offset 0x64 + numCalls*0x20 within the args area.
-            let tuple0 := add(ptr, add(0x64, mul(numCalls, 0x20)))
-            mstore(tuple0, creditFacade)                   // target
-            mstore(add(tuple0, 0x20), 0x40)                // callData offset within tuple
-            mstore(add(tuple0, 0x40), 0x44)                // callData length = 4 + 2*32 = 68
-            mstore(add(tuple0, 0x60), GEARBOX_ADD_COLLATERAL)
-            mstore(add(tuple0, 0x64), token)
-            mstore(add(tuple0, 0x84), amount)
-            // pad to 32 — 68 bytes rounds up to 96 → zero-fill the trailing 28 bytes
-            mstore(add(tuple0, 0xa4), 0)
-
-            let endCalls := add(tuple0, 0xc0)              // 0x60 header + 0x60 padded data
-
-            if iszero(iszero(minHF)) {
-                // head[1]
-                mstore(add(ptr, 0x84), sub(endCalls, add(ptr, 0x64)))
-                // tuple 1: setFullCheckParams(uint256[] hints, uint16 minHF) with empty hints
-                let tuple1 := endCalls
-                mstore(tuple1, creditFacade)
-                mstore(add(tuple1, 0x20), 0x40)
-                // callData = selector(4) + hints_offset(32) + minHF(32) + hints_len(32) = 100 bytes
-                mstore(add(tuple1, 0x40), 0x64)
-                mstore(add(tuple1, 0x60), GEARBOX_SET_FULL_CHECK_PARAMS)
-                mstore(add(tuple1, 0x64), 0x40)            // offset to hints
-                mstore(add(tuple1, 0x84), minHF)           // minHealthFactor
-                mstore(add(tuple1, 0xa4), 0)               // hints.length = 0
-                // pad: 100 bytes rounds to 128 → 28 zero bytes
-                mstore(add(tuple1, 0xc4), 0)
-                endCalls := add(tuple1, 0xe0)              // 0x60 header + 0x80 padded data
-            }
-
-            let callSize := sub(endCalls, ptr)
-            if iszero(call(gas(), creditFacade, 0x0, ptr, callSize, 0x0, 0x0)) {
+            if iszero(call(gas(), creditFacade, 0x0, ptr, 0x144, 0x0, 0x0)) {
                 returndatacopy(0x0, 0x0, returndatasize())
                 revert(0x0, returndatasize())
             }
@@ -250,8 +223,9 @@ abstract contract GearboxV3Lending is ERC20Selectors, Masks, DeltaErrors {
      *      at the facade during `withdrawCollateral` since the CA has no non-underlying balance to
      *      draw from after `increaseDebt`.
      *
-     *      `minHealthFactor` is **not optional** for borrows — the facade default (HF ≥ 1.0 at
-     *      10000 bps) is too tight for user-facing leverage. Encoders should pass ≥ 10500.
+     *      HF buffer is not a primitive-level concern — Gearbox's facade enforces HF ≥ 1.0 by
+     *      default. Callers who want a user-signed buffer should use `GEARBOX_MULTICALL` with an
+     *      explicit `setFullCheckParams` sub-call.
      *
      * @custom:calldata-offset-table
      * | Offset | Length (bytes) | Description                                      |
@@ -262,7 +236,6 @@ abstract contract GearboxV3Lending is ERC20Selectors, Masks, DeltaErrors {
      * | 56     | 20             | creditAccount                                    |
      * | 76     | 20             | creditFacade                                     |
      * | 96     | 20             | creditManager (for auth via getBorrowerOrRevert) |
-     * | 116    | 2              | minHealthFactor (bps)                            |
      */
     function _borrowFromGearboxV3(uint256 currentOffset, address callerAddress) internal returns (uint256) {
         address underlying;
@@ -271,7 +244,6 @@ abstract contract GearboxV3Lending is ERC20Selectors, Masks, DeltaErrors {
         address creditAccount;
         address creditFacade;
         address creditManager;
-        uint256 minHF;
         assembly {
             underlying := shr(96, calldataload(currentOffset))
             amount := and(UINT112_MASK, shr(128, calldataload(add(currentOffset, 20))))
@@ -279,70 +251,56 @@ abstract contract GearboxV3Lending is ERC20Selectors, Masks, DeltaErrors {
             creditAccount := shr(96, calldataload(add(currentOffset, 56)))
             creditFacade := shr(96, calldataload(add(currentOffset, 76)))
             creditManager := shr(96, calldataload(add(currentOffset, 96)))
-            minHF := and(UINT16_MASK, shr(240, calldataload(add(currentOffset, 116))))
         }
         _gearboxAuthCaller(creditManager, creditAccount, callerAddress);
-        _gearboxBorrowRelay(underlying, amount, receiver, creditAccount, creditFacade, minHF);
-        return currentOffset + 118;
+        _gearboxBorrowRelay(underlying, amount, receiver, creditAccount, creditFacade);
+        return currentOffset + 116;
     }
 
     /**
-     * @dev Helper — builds and dispatches a `botMulticall(ca, [increaseDebt, withdrawCollateral, setFullCheckParams])`.
-     *      Split out so the outer frame doesn't carry both the calldata-readers and the tuple-writers.
+     * @dev Helper — builds and dispatches a `botMulticall(ca, [increaseDebt, withdrawCollateral])`.
+     *      The facade's default HF ≥ 1.0 check always runs at the end — no `setFullCheckParams`.
      */
     function _gearboxBorrowRelay(
         address underlying,
         uint256 amount,
         address receiver,
         address creditAccount,
-        address creditFacade,
-        uint256 minHF
+        address creditFacade
     )
         private
     {
         assembly {
             let ptr := mload(0x40)
-            // Layout reference:
+            // Layout:
             //   tuple 0 increaseDebt:          size 0xa0
             //   tuple 1 withdrawCollateral:    size 0xe0
-            //   tuple 2 setFullCheckParams:    size 0xe0
             mstore(ptr, GEARBOX_BOT_MULTICALL)
             mstore(add(ptr, 0x04), creditAccount)
             mstore(add(ptr, 0x24), 0x40)
-            mstore(add(ptr, 0x44), 3)
-            mstore(add(ptr, 0x64), 0x60)        // head[0] = 3 * 0x20
-            mstore(add(ptr, 0x84), 0x100)       // head[1] = 0x60 + 0xa0
-            mstore(add(ptr, 0xa4), 0x1e0)       // head[2] = 0x60 + 0xa0 + 0xe0
+            mstore(add(ptr, 0x44), 2)
+            mstore(add(ptr, 0x64), 0x40)        // head[0] = 2 * 0x20
+            mstore(add(ptr, 0x84), 0xe0)        // head[1] = 0x40 + 0xa0
 
-            // tuple 0 — increaseDebt(amount) at ptr + 0xc4
-            mstore(add(ptr, 0xc4), creditFacade)
-            mstore(add(ptr, 0xe4), 0x40)
-            mstore(add(ptr, 0x104), 0x24)       // callData len = 36
-            mstore(add(ptr, 0x124), GEARBOX_INCREASE_DEBT)
-            mstore(add(ptr, 0x128), amount)
-            mstore(add(ptr, 0x148), 0)
+            // tuple 0 — increaseDebt(amount) at ptr + 0xa4
+            mstore(add(ptr, 0xa4), creditFacade)
+            mstore(add(ptr, 0xc4), 0x40)
+            mstore(add(ptr, 0xe4), 0x24)        // callData len = 36
+            mstore(add(ptr, 0x104), GEARBOX_INCREASE_DEBT)
+            mstore(add(ptr, 0x108), amount)
+            mstore(add(ptr, 0x128), 0)
 
-            // tuple 1 — withdrawCollateral(underlying, amount, receiver) at ptr + 0x164
-            mstore(add(ptr, 0x164), creditFacade)
-            mstore(add(ptr, 0x184), 0x40)
-            mstore(add(ptr, 0x1a4), 0x64)       // callData len = 100
-            mstore(add(ptr, 0x1c4), GEARBOX_WITHDRAW_COLLATERAL)
-            mstore(add(ptr, 0x1c8), underlying)
-            mstore(add(ptr, 0x1e8), amount)
-            mstore(add(ptr, 0x208), receiver)
-            mstore(add(ptr, 0x228), 0)
+            // tuple 1 — withdrawCollateral(underlying, amount, receiver) at ptr + 0x144
+            mstore(add(ptr, 0x144), creditFacade)
+            mstore(add(ptr, 0x164), 0x40)
+            mstore(add(ptr, 0x184), 0x64)       // callData len = 100
+            mstore(add(ptr, 0x1a4), GEARBOX_WITHDRAW_COLLATERAL)
+            mstore(add(ptr, 0x1a8), underlying)
+            mstore(add(ptr, 0x1c8), amount)
+            mstore(add(ptr, 0x1e8), receiver)
+            mstore(add(ptr, 0x208), 0)
 
-            // tuple 2 — setFullCheckParams([], minHF) at ptr + 0x244
-            mstore(add(ptr, 0x244), creditFacade)
-            mstore(add(ptr, 0x264), 0x40)
-            mstore(add(ptr, 0x284), 0x64)
-            mstore(add(ptr, 0x2a4), GEARBOX_SET_FULL_CHECK_PARAMS)
-            mstore(add(ptr, 0x2a8), 0x40)       // hints offset
-            mstore(add(ptr, 0x2c8), minHF)
-            mstore(add(ptr, 0x2e8), 0)          // hints.length = 0
-            mstore(add(ptr, 0x308), 0)
-
-            if iszero(call(gas(), creditFacade, 0x0, ptr, 0x324, 0x0, 0x0)) {
+            if iszero(call(gas(), creditFacade, 0x0, ptr, 0x224, 0x0, 0x0)) {
                 returndatacopy(0x0, 0x0, returndatasize())
                 revert(0x0, returndatasize())
             }
@@ -625,6 +583,10 @@ abstract contract GearboxV3Lending is ERC20Selectors, Masks, DeltaErrors {
      *          "sweep full balance" sentinel on `withdrawCollateral`.
      *        - otherwise: literal amount.
      *
+     * @dev HF buffer is not a primitive-level concern — Gearbox's facade enforces HF ≥ 1.0 by
+     *      default. Callers who want a user-signed buffer should use `GEARBOX_MULTICALL` with an
+     *      explicit `setFullCheckParams` sub-call.
+     *
      * @custom:calldata-offset-table
      * | Offset | Length (bytes) | Description                                      |
      * |--------|----------------|--------------------------------------------------|
@@ -634,7 +596,6 @@ abstract contract GearboxV3Lending is ERC20Selectors, Masks, DeltaErrors {
      * | 56     | 20             | creditAccount                                    |
      * | 76     | 20             | creditFacade                                     |
      * | 96     | 20             | creditManager (for auth via getBorrowerOrRevert) |
-     * | 116    | 2              | minHealthFactor (bps)                            |
      */
     function _withdrawFromGearboxV3(uint256 currentOffset, address callerAddress) internal returns (uint256) {
         address creditAccount;
@@ -650,51 +611,31 @@ abstract contract GearboxV3Lending is ERC20Selectors, Masks, DeltaErrors {
             let amountData := shr(128, calldataload(add(currentOffset, 20)))
             let receiver := shr(96, calldataload(add(currentOffset, 36)))
             let creditFacade := shr(96, calldataload(add(currentOffset, 76)))
-            let minHF := and(UINT16_MASK, shr(240, calldataload(add(currentOffset, 116))))
-            currentOffset := add(currentOffset, 118)
+            currentOffset := add(currentOffset, 116)
 
             let amount := and(UINT112_MASK, amountData)
             if eq(amount, UINT112_MASK) { amount := MAX_UINT256 }
 
             let ptr := mload(0x40)
-            let numCalls := 1
-            if iszero(iszero(minHF)) { numCalls := 2 }
 
+            // botMulticall(ca, [withdrawCollateral(token, amount, receiver)]) — single tuple.
             mstore(ptr, GEARBOX_BOT_MULTICALL)
             mstore(add(ptr, 0x04), creditAccount)
             mstore(add(ptr, 0x24), 0x40)
-            mstore(add(ptr, 0x44), numCalls)
-            mstore(add(ptr, 0x64), mul(numCalls, 0x20))
+            mstore(add(ptr, 0x44), 1)
+            mstore(add(ptr, 0x64), 0x20)                    // head[0]
 
-            // tuple 0: withdrawCollateral(token, amount, receiver) — payload 100 → total 0xe0
-            let t0 := add(ptr, add(0x64, mul(numCalls, 0x20)))
-            mstore(t0, creditFacade)
-            mstore(add(t0, 0x20), 0x40)
-            mstore(add(t0, 0x40), 0x64)
-            mstore(add(t0, 0x60), GEARBOX_WITHDRAW_COLLATERAL)
-            mstore(add(t0, 0x64), token)
-            mstore(add(t0, 0x84), amount)
-            mstore(add(t0, 0xa4), receiver)
-            mstore(add(t0, 0xc4), 0)
-            let endCalls := add(t0, 0xe0)
+            // tuple 0 at ptr + 0x84 — withdrawCollateral callData = 100 bytes, padded to 128
+            mstore(add(ptr, 0x84), creditFacade)
+            mstore(add(ptr, 0xa4), 0x40)
+            mstore(add(ptr, 0xc4), 0x64)                    // callData len = 100
+            mstore(add(ptr, 0xe4), GEARBOX_WITHDRAW_COLLATERAL)
+            mstore(add(ptr, 0xe8), token)
+            mstore(add(ptr, 0x108), amount)
+            mstore(add(ptr, 0x128), receiver)
+            mstore(add(ptr, 0x148), 0)                      // pad trailing 28 bytes
 
-            if iszero(iszero(minHF)) {
-                mstore(add(ptr, 0x84), sub(endCalls, add(ptr, 0x64)))
-                // tuple 1: setFullCheckParams([], minHF)
-                let t1 := endCalls
-                mstore(t1, creditFacade)
-                mstore(add(t1, 0x20), 0x40)
-                mstore(add(t1, 0x40), 0x64)
-                mstore(add(t1, 0x60), GEARBOX_SET_FULL_CHECK_PARAMS)
-                mstore(add(t1, 0x64), 0x40)
-                mstore(add(t1, 0x84), minHF)
-                mstore(add(t1, 0xa4), 0)
-                mstore(add(t1, 0xc4), 0)
-                endCalls := add(t1, 0xe0)
-            }
-
-            let callSize := sub(endCalls, ptr)
-            if iszero(call(gas(), creditFacade, 0x0, ptr, callSize, 0x0, 0x0)) {
+            if iszero(call(gas(), creditFacade, 0x0, ptr, 0x164, 0x0, 0x0)) {
                 returndatacopy(0x0, 0x0, returndatasize())
                 revert(0x0, returndatasize())
             }

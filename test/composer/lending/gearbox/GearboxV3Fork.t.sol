@@ -230,8 +230,7 @@ contract GearboxV3ForkTest is BaseTest {
             mallory, // attacker tries to redirect proceeds
             ca,
             creditFacade,
-            CREDIT_MANAGER,
-            10500
+            CREDIT_MANAGER
         );
 
         vm.prank(mallory);
@@ -266,7 +265,7 @@ contract GearboxV3ForkTest is BaseTest {
 
         bytes memory data = abi.encodePacked(
             CalldataLib.encodeTransferIn(ETHPLUS, address(composer), topUp),
-            CalldataLib.encodeGearboxV3Supply(ETHPLUS, uint128(topUp), ca, creditFacade, CREDIT_MANAGER, 10500)
+            CalldataLib.encodeGearboxV3Supply(ETHPLUS, uint128(topUp), ca, creditFacade, CREDIT_MANAGER)
         );
 
         vm.prank(user);
@@ -290,7 +289,7 @@ contract GearboxV3ForkTest is BaseTest {
         uint256 extraBorrow = uint256(minDebt); // borrow one more min-debt unit
 
         bytes memory data = CalldataLib.encodeGearboxV3Borrow(
-            underlying, uint128(extraBorrow), user, ca, creditFacade, CREDIT_MANAGER, 10500
+            underlying, uint128(extraBorrow), user, ca, creditFacade, CREDIT_MANAGER
         );
 
         vm.prank(user);
@@ -342,7 +341,7 @@ contract GearboxV3ForkTest is BaseTest {
         uint256 balBefore = IERC20All(ETHPLUS).balanceOf(user);
 
         bytes memory data = CalldataLib.encodeGearboxV3Withdraw(
-            ETHPLUS, uint128(pullOut), user, ca, creditFacade, CREDIT_MANAGER, 10500
+            ETHPLUS, uint128(pullOut), user, ca, creditFacade, CREDIT_MANAGER
         );
 
         vm.prank(user);

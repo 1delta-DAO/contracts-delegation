@@ -80,17 +80,12 @@ contract GearboxV3LendingMockTest is BaseTest {
     // 1. Supply / DEPOSIT
     // ─────────────────────────────────────────────────────────────────────────
 
-    function test_gearboxV3_supply_emits_addCollateral_and_setFullCheck() public {
+    function test_gearboxV3_supply_emits_addCollateral() public {
         _prime(collToken, user, 5e8);
 
         bytes memory transferIn = _transferInOp(collToken, 3e8);
         bytes memory supply = CalldataLib.encodeGearboxV3Supply(
-            address(collToken),
-            3e8,
-            creditAccount,
-            address(facade),
-            creditManager,
-            11000 // minHF = 1.1
+            address(collToken), 3e8, creditAccount, address(facade), creditManager
         );
 
         vm.prank(user);
@@ -99,7 +94,7 @@ contract GearboxV3LendingMockTest is BaseTest {
         assertFalse(facade.lastKindOpen(), "kind must be botMulticall");
         assertEq(facade.lastCaller(), address(composer), "facade called by composer");
         assertEq(facade.lastCa(), creditAccount, "ca arg matches");
-        assertEq(facade.lastCallsLength(), 2, "two sub-calls (addCollateral + setFullCheck)");
+        assertEq(facade.lastCallsLength(), 1, "one sub-call (addCollateral only)");
 
         (address t0, bytes memory cd0) = facade.getLastCall(0);
         assertEq(t0, address(facade), "sub-call target must be facade");
@@ -108,23 +103,17 @@ contract GearboxV3LendingMockTest is BaseTest {
         assertEq(tok, address(collToken));
         assertEq(amt, 3e8);
 
-        (, bytes memory cd1) = facade.getLastCall(1);
-        assertEq(bytes4(cd1), SEL_SET_FULL_CHECK, "second sub-call is setFullCheckParams");
-        (uint256[] memory hints, uint16 minHF) = abi.decode(_sliceCalldata(cd1), (uint256[], uint16));
-        assertEq(hints.length, 0, "empty hints");
-        assertEq(minHF, 11000, "minHF forwarded");
-
         // Balance should have landed on the CA escrow in the mock.
         assertEq(facade.caBalances(address(collToken)), 3e8, "CA holds 3e8 of collateral");
         assertEq(collToken.balanceOf(address(composer)), 0, "composer holds no residue");
     }
 
-    function test_gearboxV3_supply_minHF_zero_skips_setFullCheck() public {
+    function test_gearboxV3_supply_still_single_tuple() public {
         _prime(collToken, user, 2e8);
 
         bytes memory data = abi.encodePacked(
             _transferInOp(collToken, 1e8),
-            CalldataLib.encodeGearboxV3Supply(address(collToken), 1e8, creditAccount, address(facade), creditManager, 0)
+            CalldataLib.encodeGearboxV3Supply(address(collToken), 1e8, creditAccount, address(facade), creditManager)
         );
 
         vm.prank(user);
@@ -139,21 +128,12 @@ contract GearboxV3LendingMockTest is BaseTest {
     // 2. Borrow
     // ─────────────────────────────────────────────────────────────────────────
 
-    function test_gearboxV3_borrow_emits_increaseDebt_withdraw_setFullCheck() public {
+    function test_gearboxV3_borrow_emits_increaseDebt_and_withdraw() public {
         _fundPoolLiquidity(10_000e6);
-
-        // Put some collateral on the CA so the "health check" is plausible (mock doesn't enforce
-        // HF, but we match realistic flow).
         facade.setMockUnderlying(address(underlying));
 
         bytes memory borrow = CalldataLib.encodeGearboxV3Borrow(
-            address(underlying),
-            1_000e6,
-            user, // receiver
-            creditAccount,
-            address(facade),
-            creditManager,
-            10500
+            address(underlying), 1_000e6, user, creditAccount, address(facade), creditManager
         );
 
         vm.prank(user);
@@ -161,7 +141,7 @@ contract GearboxV3LendingMockTest is BaseTest {
 
         assertFalse(facade.lastKindOpen());
         assertEq(facade.lastCa(), creditAccount);
-        assertEq(facade.lastCallsLength(), 3, "3 sub-calls: increaseDebt, withdrawCollateral, setFullCheck");
+        assertEq(facade.lastCallsLength(), 2, "2 sub-calls: increaseDebt + withdrawCollateral");
 
         (, bytes memory cd0) = facade.getLastCall(0);
         assertEq(bytes4(cd0), SEL_INCREASE_DEBT);
@@ -175,12 +155,6 @@ contract GearboxV3LendingMockTest is BaseTest {
         assertEq(wAmt, 1_000e6);
         assertEq(to, user);
 
-        (, bytes memory cd2) = facade.getLastCall(2);
-        assertEq(bytes4(cd2), SEL_SET_FULL_CHECK);
-        (, uint16 minHF) = abi.decode(_sliceCalldata(cd2), (uint256[], uint16));
-        assertEq(minHF, 10500);
-
-        // User received the borrowed underlying, facade (pool liquidity) sent it.
         assertEq(underlying.balanceOf(user), 1_000e6, "user received borrowed amount");
         assertEq(facade.debt(), 1_000e6, "debt tracked");
     }
@@ -196,7 +170,7 @@ contract GearboxV3LendingMockTest is BaseTest {
 
         // Partial withdraw
         bytes memory withdraw = CalldataLib.encodeGearboxV3Withdraw(
-            address(collToken), 5e7, user, creditAccount, address(facade), creditManager, 10500
+            address(collToken), 5e7, user, creditAccount, address(facade), creditManager
         );
         vm.prank(user);
         composer.deltaCompose(withdraw);
@@ -204,7 +178,7 @@ contract GearboxV3LendingMockTest is BaseTest {
 
         // Full withdraw via UINT112_MASK → Gearbox's uint256.max sentinel
         bytes memory wAll = CalldataLib.encodeGearboxV3Withdraw(
-            address(collToken), CalldataLib.GEARBOX_WITHDRAW_ALL, user, creditAccount, address(facade), creditManager, 10500
+            address(collToken), CalldataLib.GEARBOX_WITHDRAW_ALL, user, creditAccount, address(facade), creditManager
         );
         vm.prank(user);
         composer.deltaCompose(wAll);
@@ -262,13 +236,7 @@ contract GearboxV3LendingMockTest is BaseTest {
 
         // Mallory tries to borrow from user's CA and send the proceeds to herself.
         bytes memory borrow = CalldataLib.encodeGearboxV3Borrow(
-            address(underlying),
-            1_000e6,
-            mallory, // receiver
-            creditAccount,
-            address(facade),
-            creditManager,
-            10500
+            address(underlying), 1_000e6, mallory, creditAccount, address(facade), creditManager
         );
 
         vm.prank(mallory);
@@ -279,7 +247,7 @@ contract GearboxV3LendingMockTest is BaseTest {
         vm.prank(user);
         composer.deltaCompose(
             CalldataLib.encodeGearboxV3Borrow(
-                address(underlying), 1_000e6, user, creditAccount, address(facade), creditManager, 10500
+                address(underlying), 1_000e6, user, creditAccount, address(facade), creditManager
             )
         );
         assertEq(underlying.balanceOf(user), 1_000e6, "owner can borrow");
