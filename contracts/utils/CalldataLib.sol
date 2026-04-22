@@ -1801,6 +1801,87 @@ library CalldataLib {
         return a < 0; // includes FLUID_ALL (type(int128).min)
     }
 
+    // ─────────────────────────────────────────────────────────────────────────────
+    // Single-axis convenience wrappers around `encodeFluidT1Operate`.
+    //
+    // These match the historical DEPOSIT / BORROW / REPAY / WITHDRAW signatures so callers that
+    // only touch one axis don't have to spell out the other side. Each one delegates to the
+    // dual-axis primitive with the unused axis pinned to 0. The sentinel mapping matches the
+    // old behavior:
+    //   encodeFluidDeposit:  amount == 0                  → FLUID_USE_BALANCE (deposit balance)
+    //   encodeFluidRepay:    amount == 0 | FLUID_MAX_AMT  → FLUID_ALL         (repay-all)
+    //   encodeFluidWithdraw: amount == FLUID_MAX_AMT      → FLUID_ALL         (withdraw-all)
+    //   encodeFluidBorrow:   amount is always literal
+    // ─────────────────────────────────────────────────────────────────────────────
+
+    /// @dev Historical sentinel for "max" on T1 repay/withdraw — UINT112_MASK. Preserved for
+    ///      callers still using the old per-axis encoders.
+    uint128 internal constant FLUID_MAX_AMOUNT = type(uint112).max;
+
+    /// @notice Deposit-only convenience wrapper. `amount == 0` means "deposit composer's balance".
+    function encodeFluidDeposit(
+        address underlying,
+        uint128 amount,
+        uint256 nftId,
+        address receiver,
+        address vault
+    )
+        internal
+        pure
+        returns (bytes memory)
+    {
+        int128 colAmount = amount == 0 ? FLUID_USE_BALANCE : int128(amount);
+        return encodeFluidT1Operate(underlying, address(0), colAmount, 0, nftId, receiver, address(0), vault);
+    }
+
+    /// @notice Borrow-only convenience wrapper. Amount is always literal.
+    function encodeFluidBorrow(
+        address underlying,
+        uint128 amount,
+        uint256 nftId,
+        address receiver,
+        address vault
+    )
+        internal
+        pure
+        returns (bytes memory)
+    {
+        return encodeFluidT1Operate(address(0), underlying, 0, int128(amount), nftId, receiver, address(0), vault);
+    }
+
+    /// @notice Repay-only convenience wrapper. `amount == 0` and `amount == FLUID_MAX_AMOUNT` both
+    ///         mean "repay-all" (maps to `type(int256).min` on the wire).
+    function encodeFluidRepay(
+        address underlying,
+        uint128 amount,
+        uint256 nftId,
+        address receiver,
+        address vault
+    )
+        internal
+        pure
+        returns (bytes memory)
+    {
+        int128 debtAmount = (amount == 0 || amount == FLUID_MAX_AMOUNT) ? FLUID_ALL : -int128(amount);
+        return encodeFluidT1Operate(address(0), underlying, 0, debtAmount, nftId, receiver, address(0), vault);
+    }
+
+    /// @notice Withdraw-only convenience wrapper. `amount == FLUID_MAX_AMOUNT` means "withdraw-all".
+    function encodeFluidWithdraw(
+        address underlying,
+        uint128 amount,
+        uint256 nftId,
+        address receiver,
+        address vault
+    )
+        internal
+        pure
+        returns (bytes memory)
+    {
+        int128 colAmount = amount == FLUID_MAX_AMOUNT ? FLUID_ALL : -int128(amount);
+        return encodeFluidT1Operate(underlying, address(0), colAmount, 0, nftId, receiver, address(0), vault);
+    }
+
     /// @dev Sentinel matching FluidSmartLending's `FLUID_SMART_USE_BALANCE`. Place into an int256
     ///      amount slot on a smart-vault op to have the composer resolve it from balanceOf(this)
     ///      (or selfbalance() when the parallel token slot is `address(0)`).
