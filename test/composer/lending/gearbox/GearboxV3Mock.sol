@@ -36,7 +36,10 @@ contract GearboxV3FacadeMock {
     RecordedOp[] internal _ops;
 
     constructor(address cm, address ca) {
-        creditManager = cm;
+        // When the caller passes 0, the mock self-binds so `facade.creditManager() == facade`.
+        // The composer derives CM from this getter to auth the caller, so it must return a
+        // contract that also implements `getBorrowerOrRevert` — which the facade mock does below.
+        creditManager = cm == address(0) ? address(this) : cm;
         creditAccount = ca;
     }
 

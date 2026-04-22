@@ -2142,6 +2142,9 @@ library CalldataLib {
         pure
         returns (bytes memory)
     {
+        // `creditManager` is only used to emit the `APPROVE(token, cm)` hop; the composer
+        // derives the CM at auth time from `creditFacade.creditManager()`, so it is not
+        // packed into the op body.
         return abi.encodePacked(
             encodeApprove(token, creditManager),
             uint8(ComposerCommands.LENDING),
@@ -2150,24 +2153,22 @@ library CalldataLib {
             token,
             amount,
             creditAccount,
-            creditFacade,
-            creditManager
+            creditFacade
         );
     }
 
     /**
      * @notice Encode a Gearbox V3 borrow op (increaseDebt + withdrawCollateral + HF check).
-     * @dev `minHealthFactor` is mandatory (should be > 10000 bps for user flows; see GEARBOX.md §3.1).
-     *      `creditManager` is used at dispatch time to authenticate that the caller is the CA's
-     *      borrower — otherwise anyone could invoke this op on a bot-enabled CA and drain it.
+     * @dev The composer authenticates the caller as the CA's borrower at dispatch time, deriving
+     *      the CM from `creditFacade.creditManager()` (immutable on CreditFacadeV3). No separate
+     *      `creditManager` parameter is needed.
      */
     function encodeGearboxV3Borrow(
         address underlying,
         uint128 amount,
         address receiver,
         address creditAccount,
-        address creditFacade,
-        address creditManager
+        address creditFacade
     )
         internal
         pure
@@ -2181,8 +2182,7 @@ library CalldataLib {
             amount,
             receiver,
             creditAccount,
-            creditFacade,
-            creditManager
+            creditFacade
         );
     }
 
@@ -2208,6 +2208,8 @@ library CalldataLib {
     {
         if (amount == 0 || amount == GEARBOX_REPAY_ALL) revert("CL: gearbox partial repay needs literal amount");
 
+        // `creditManager` is only used for the prepended `APPROVE(underlying, cm)`; the composer
+        // derives the CM for auth from `creditFacade.creditManager()`.
         return abi.encodePacked(
             encodeApprove(underlying, creditManager),
             uint8(ComposerCommands.LENDING),
@@ -2217,7 +2219,6 @@ library CalldataLib {
             amount,
             creditAccount,
             creditFacade,
-            creditManager,
             uint8(0) // numQuotedTokens must be 0 for partial
         );
     }
@@ -2251,6 +2252,8 @@ library CalldataLib {
             quotedBlob = abi.encodePacked(quotedBlob, quotedTokens[i]);
         }
 
+        // `creditManager` is only used for the prepended `APPROVE(underlying, cm)`; the composer
+        // derives the CM for auth from `creditFacade.creditManager()`.
         return abi.encodePacked(
             encodeApprove(underlying, creditManager),
             uint8(ComposerCommands.LENDING),
@@ -2260,7 +2263,6 @@ library CalldataLib {
             GEARBOX_REPAY_ALL,
             creditAccount,
             creditFacade,
-            creditManager,
             uint8(quotedTokens.length),
             quotedBlob
         );
@@ -2276,8 +2278,7 @@ library CalldataLib {
         uint128 amount,
         address receiver,
         address creditAccount,
-        address creditFacade,
-        address creditManager
+        address creditFacade
     )
         internal
         pure
@@ -2291,8 +2292,7 @@ library CalldataLib {
             amount,
             receiver,
             creditAccount,
-            creditFacade,
-            creditManager
+            creditFacade
         );
     }
 
@@ -2313,7 +2313,6 @@ library CalldataLib {
     function encodeGearboxV3BotMulticall(
         address creditFacade,
         address creditAccount,
-        address creditManager,
         uint16 numCalls,
         bytes memory calls
     )
@@ -2328,7 +2327,6 @@ library CalldataLib {
             uint8(0), // kind = botMulticall
             creditFacade,
             creditAccount,
-            creditManager,
             bytes32(0), // referralCode placeholder
             numCalls,
             calls
@@ -2358,7 +2356,6 @@ library CalldataLib {
             uint8(1), // kind = openCreditAccount
             creditFacade,
             address(0), // creditAccount slot unused for open
-            address(0), // creditManager slot unused for open (no auth needed)
             referralCode,
             numCalls,
             calls

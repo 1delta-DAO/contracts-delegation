@@ -133,7 +133,7 @@ contract GearboxV3LendingMockTest is BaseTest {
         facade.setMockUnderlying(address(underlying));
 
         bytes memory borrow = CalldataLib.encodeGearboxV3Borrow(
-            address(underlying), 1_000e6, user, creditAccount, address(facade), creditManager
+            address(underlying), 1_000e6, user, creditAccount, address(facade)
         );
 
         vm.prank(user);
@@ -170,7 +170,7 @@ contract GearboxV3LendingMockTest is BaseTest {
 
         // Partial withdraw
         bytes memory withdraw = CalldataLib.encodeGearboxV3Withdraw(
-            address(collToken), 5e7, user, creditAccount, address(facade), creditManager
+            address(collToken), 5e7, user, creditAccount, address(facade)
         );
         vm.prank(user);
         composer.deltaCompose(withdraw);
@@ -178,7 +178,7 @@ contract GearboxV3LendingMockTest is BaseTest {
 
         // Full withdraw via UINT112_MASK → Gearbox's uint256.max sentinel
         bytes memory wAll = CalldataLib.encodeGearboxV3Withdraw(
-            address(collToken), CalldataLib.GEARBOX_WITHDRAW_ALL, user, creditAccount, address(facade), creditManager
+            address(collToken), CalldataLib.GEARBOX_WITHDRAW_ALL, user, creditAccount, address(facade)
         );
         vm.prank(user);
         composer.deltaCompose(wAll);
@@ -236,7 +236,7 @@ contract GearboxV3LendingMockTest is BaseTest {
 
         // Mallory tries to borrow from user's CA and send the proceeds to herself.
         bytes memory borrow = CalldataLib.encodeGearboxV3Borrow(
-            address(underlying), 1_000e6, mallory, creditAccount, address(facade), creditManager
+            address(underlying), 1_000e6, mallory, creditAccount, address(facade)
         );
 
         vm.prank(mallory);
@@ -247,11 +247,51 @@ contract GearboxV3LendingMockTest is BaseTest {
         vm.prank(user);
         composer.deltaCompose(
             CalldataLib.encodeGearboxV3Borrow(
-                address(underlying), 1_000e6, user, creditAccount, address(facade), creditManager
+                address(underlying), 1_000e6, user, creditAccount, address(facade)
             )
         );
         assertEq(underlying.balanceOf(user), 1_000e6, "owner can borrow");
         assertEq(underlying.balanceOf(mallory), 0, "non-owner attempt took no funds");
+    }
+
+    /// @notice Regression: a fake facade whose `creditManager()` returns a lying CM must NOT
+    ///         let the attacker drain the victim's real CA.
+    /// @dev This pins the CM-derivation invariant: the composer binds auth to the same facade
+    ///      it will dispatch through. Path taken here — fake facade, auth passes (via the lying
+    ///      CM), dispatch goes to the fake facade. The real facade is never called, so the
+    ///      victim's CA on the real facade is untouched and the attacker receives nothing.
+    function test_gearboxV3_fake_facade_cannot_drain_real_ca() public {
+        // Seed victim's real CA on the real mock facade with collateral + debt capacity.
+        _fundPoolLiquidity(10_000e6);
+        collToken.mint(address(facade), 2e8);
+        _seedCaEscrow(address(collToken), 2e8);
+
+        // Attacker deploys a fake facade whose `creditManager()` self-binds (FakeFacadeCM
+        // implements both roles) and whose `getBorrowerOrRevert` returns `mallory` for any CA.
+        address mallory = address(0xbADbAd);
+        vm.label(mallory, "mallory");
+        FakeFacadeCM fake = new FakeFacadeCM(mallory);
+        vm.label(address(fake), "FakeFacadeCM");
+
+        uint256 malloryBalBefore = underlying.balanceOf(mallory);
+        uint256 caUnderlyingBefore = underlying.balanceOf(address(facade));
+        uint256 caCollBefore = facade.caBalances(address(collToken));
+
+        // Attacker submits a borrow op pointing at the fake facade, but naming the victim's
+        // real credit account. Under the fix, auth passes (the fake CM says mallory is the
+        // borrower) — but dispatch flows into `fake.botMulticall`, not the real facade, so
+        // no victim funds move. The fake facade's stub botMulticall is a no-op.
+        bytes memory borrow = CalldataLib.encodeGearboxV3Borrow(
+            address(underlying), 1_000e6, mallory, creditAccount, address(fake)
+        );
+
+        vm.prank(mallory);
+        composer.deltaCompose(borrow);
+
+        assertEq(underlying.balanceOf(mallory), malloryBalBefore, "attacker received nothing");
+        assertEq(underlying.balanceOf(address(facade)), caUnderlyingBefore, "real pool untouched");
+        assertEq(facade.caBalances(address(collToken)), caCollBefore, "victim collateral untouched");
+        assertEq(facade.debt(), 0, "real CA debt unchanged (never reached)");
     }
 
     /// @notice Non-owner caller invoking `GEARBOX_MULTICALL` (kind=botMulticall) must revert.
@@ -262,7 +302,7 @@ contract GearboxV3LendingMockTest is BaseTest {
 
         bytes memory packed = CalldataLib.encodeGearboxV3FacadeCall(inner);
         bytes memory data = CalldataLib.encodeGearboxV3BotMulticall(
-            address(facade), creditAccount, creditManager, 1, packed
+            address(facade), creditAccount, 1, packed
         );
 
         vm.prank(mallory);
@@ -436,7 +476,7 @@ contract GearboxV3LendingMockTest is BaseTest {
         );
 
         bytes memory data =
-            CalldataLib.encodeGearboxV3BotMulticall(address(facade), creditAccount, creditManager, 2, packed);
+            CalldataLib.encodeGearboxV3BotMulticall(address(facade), creditAccount, 2, packed);
 
         vm.prank(user);
         composer.deltaCompose(data);
@@ -463,7 +503,6 @@ contract GearboxV3LendingMockTest is BaseTest {
             uint8(2), // kind = 2 (invalid)
             address(facade),
             address(0), // creditAccount slot
-            address(0), // creditManager slot
             bytes32(0), // referralCode
             uint16(1),
             packed
@@ -497,4 +536,26 @@ contract GearboxV3LendingMockTest is BaseTest {
         // what `decreaseDebt` will receive via `POOL_SINK` transfer — not caBalances.
         facade.setDebt(amt);
     }
+}
+
+/// @dev Attacker-controlled contract that impersonates both CreditFacadeV3 and CreditManagerV3.
+///      `creditManager()` self-binds so the composer's auth derives the CM from this contract,
+///      `getBorrowerOrRevert` returns the attacker for any CA (the lie the fix defends against),
+///      and `botMulticall` is a silent no-op so the regression assertions run on a clean state.
+contract FakeFacadeCM {
+    address internal immutable _attacker;
+
+    constructor(address attacker) {
+        _attacker = attacker;
+    }
+
+    function creditManager() external view returns (address) {
+        return address(this);
+    }
+
+    function getBorrowerOrRevert(address) external view returns (address) {
+        return _attacker;
+    }
+
+    fallback() external payable {}
 }

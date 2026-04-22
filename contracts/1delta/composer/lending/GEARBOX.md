@@ -126,22 +126,62 @@ Every composer primitive that relays into `botMulticall` therefore
 includes a mandatory auth step:
 
 ```solidity
-borrower = CreditManagerV3(creditManager).getBorrowerOrRevert(ca)
+creditManager = ICreditFacadeV3(creditFacade).creditManager()   // immutable in CreditFacadeV3
+borrower      = ICreditManagerV3(creditManager).getBorrowerOrRevert(ca)
 if borrower != callerAddress  →  revert InvalidCaller()
 ```
 
 `callerAddress` is the authenticated `deltaCompose` caller (either
 `msg.sender` or, inside a flash-loan callback, the validated initiator).
-For this reason the calldata layout for every Gearbox primitive includes
-a `creditManager (20)` field — the composer uses it to make the
-`getBorrowerOrRevert` staticcall.
+
+**Why the CM is derived from the facade, not taken from calldata.** If the
+composer accepted `creditManager` directly, an attacker could pair the
+real facade (needed to reach a victim's CA) with an attacker-deployed
+"CM" whose `getBorrowerOrRevert` returns `callerAddress` for every CA —
+defeating the auth while the real facade drains the victim on dispatch.
+Deriving `creditManager` from `creditFacade.creditManager()` welds the
+auth-CM to the dispatch-CM: the attacker must pick one address for the
+facade, and that same address governs both the borrower query and the
+subsequent `botMulticall`. If they pick the real facade, auth correctly
+rejects a non-borrower; if they pick a fake facade, dispatch never
+reaches real Gearbox so no victim funds move. A fake facade called as
+the composer cannot spend the composer's max approvals either — those
+are granted to specific protocol addresses (real CMs), not to
+attacker-chosen spenders.
 
 `openCreditAccount` (kind=1 of `GEARBOX_MULTICALL`) is exempt: the
 entrypoint has no caller check on Gearbox's side, and the composer pins
 `onBehalfOf = callerAddress`, so there's no way to open a CA owned by
 someone else.
 
-### 2.4 Global bot ban recovery
+### 2.4 Attack vectors considered
+
+The composer's bot role on every user's CA is the whole business model —
+once a victim grants the composer the full mask, the composer can
+unilaterally move their funds as far as Gearbox is concerned. Everything
+below is about making sure only the victim can tell the composer to do
+that. Each row is a distinct attack path that was analyzed; the
+"Mitigation" column is the property actually enforced in code.
+
+| # | Vector | Where | Mitigation |
+|---|---|---|---|
+| A1 | **Impersonated caller.** Mallory knows Alice's CA address, calls `deltaCompose` with Alice's CA + real facade + withdraw-to-Mallory. Without a composer-side check, Gearbox's own auth accepts the call because the composer is a valid bot on Alice's CA. | Every primitive that relays `botMulticall`. | `_gearboxAuthCaller` rejects unless `callerAddress == borrower(ca)`. Covered by `test_gearboxV3_unauthorized_caller_cannot_drain_ca`. |
+| A2 | **CM spoofing.** Mallory pairs Alice's real CA + real facade with an attacker-deployed "CM" whose `getBorrowerOrRevert` returns Mallory for every CA, defeating A1's check while dispatch still flows through real Gearbox. | Historical bug in `_gearboxAuthCaller` — the CM used to come from calldata. | CM is derived from `creditFacade.creditManager()` (immutable in `CreditFacadeV3`). Attacker cannot decouple auth-CM from dispatch-CM. Covered by `test_gearboxV3_fake_facade_cannot_drain_real_ca`. |
+| A3 | **Fake facade.** Mallory submits a borrow op pointing at an attacker-deployed `FakeFacade` (which self-binds `creditManager()` to itself and lies in `getBorrowerOrRevert`). Auth passes, but dispatch goes to the fake. | `_gearboxAuthCaller` + dispatch target. | The composer dispatches to the same `creditFacade` it asked about. A fake facade run as `msg.sender = composer` cannot reach any real CA on real Gearbox, and cannot spend the composer's max approvals either (those are granted only to legitimate CM addresses). Same regression covers this. |
+| A4 | **`openCreditAccount` ownership spoof.** Mallory calls the generic multicall with `kind=1` and tries to supply `onBehalfOf = alice` so a new CA is opened in Alice's name (stuck with whatever debt the inner sub-calls rack up). | `_gearboxRelayOpen`. | `onBehalfOf` is hard-pinned to `callerAddress` in the builder (`mstore(add(ptr, 0x04), callerAddress)`); the calldata layout has no `onBehalfOf` field at all. Encoder cannot supply it. |
+| A5 | **Bot-permission escalation.** Composer calls `setBotPermissions` on a CA as the bot, granting itself `EXTERNAL_CALLS` or broadening the mask. | Gearbox-side. | `requiredPermissions()` omits `SET_BOT_PERMISSIONS_PERMISSION` (bit 8) and `EXTERNAL_CALLS_PERMISSION` (bit 16). `BotListV3.setBotPermissions` enforces `IBot(bot).requiredPermissions() == permissions` exactly, so users cannot accidentally grant either bit, and the composer cannot escalate itself. |
+| A6 | **Adapter pivot.** Encoder slips a `MultiCall.target` pointing at a Gearbox adapter or an unrelated contract through `_gearboxMulticall` to escape the facade-only invariant. | `_gearboxRelayBotMulticall` / `_gearboxRelayOpen` sub-call assembly. | Every sub-call's `target` is hard-coded to the encoded `creditFacade`; the encoder supplies only inner calldata. No-adapter policy in code. |
+| A7 | **Flash-loan callback caller spoof.** Inside a flash callback, `_deltaComposeInternal` runs with a `callerAddress` taken from callback calldata — if that address is attacker-controlled, it bypasses A1 entirely. | All flash callback callbacks across chains. | Flash callbacks validate the initiator (`pool`/`vault` is the expected flash provider, initiator matches the stashed originator) before forwarding into `_deltaComposeInternal`. Non-Gearbox concern; documented in the `flashLoan/` callback modules. |
+| A8 | **Bot globally forbidden mid-transaction.** Gearbox governance calls `setBotForbiddenStatus(composer, true)`; every existing user's `botMulticall` now reverts. Does not drain anyone, but strands positions. | Gearbox-side, external. | Not a drain vector — documented as a recovery path in §2.5 (below). Users can still revoke the dead bot role and open a new CA directly against the facade. |
+| A9 | **Reentrancy into `deltaCompose` via fake facade.** A fake facade run as `msg.sender = composer` re-enters `deltaCompose`; the re-entry runs with `callerAddress = composer`. | `BaseComposer.deltaCompose` (no `nonReentrant`). | `ComposerLite` carries `nonReentrant`. `BaseComposer` does not, but the composer holds no persistent fund state (max approvals are only to real protocols; any transient balance inside a single outer call belongs to the outer `callerAddress`), so a re-entry with `callerAddress = composer` has nothing to drain. Revisit if the composer ever starts holding state keyed on `msg.sender`. |
+| A10 | **Approval hijack via fake creditManager in APPROVE op.** Mallory emits an encoder-style `APPROVE(token, attackerAddress)` then a Gearbox primitive — composer grants an attacker max allowance of whatever token is transient. | `_approve` in `AssetTransfers`. | Approvals are durable by design (composer holds no funds between txs, per project policy). In-tx, `APPROVE` is an explicit composer op the caller signs for — Mallory can only set approvals with Mallory's own tokens, not Alice's. Alice's tokens are never transiently held without Alice initiating the `deltaCompose`. |
+
+The canonical invariant linking A1–A3: **the CM that answers "who is the
+borrower?" is the same CM the `botMulticall` flows through.** Break that
+binding and A2 re-opens; respect it and A1/A3 collapse to harmless
+revert paths.
+
+### 2.5 Global bot ban recovery
 
 Gearbox governance can globally ban the composer via
 `BotListV3.setBotForbiddenStatus(composer, true)`. Every `botMulticall` then
@@ -175,12 +215,13 @@ Calldata layouts (after the 3-byte op + lender header):
 | 0 | 20 | underlying |
 | 20 | 16 | amount (0 = use composer balance) |
 | 36 | 20 | creditAccount |
-| 56 | 20 | creditFacade |
-| 76 | 2 | minHealthFactor (bps; 0 = skip `setFullCheckParams`) |
+| 56 | 20 | creditFacade (CM derived via `creditManager()`) |
 
-Emits `facade.botMulticall(ca, [addCollateral(underlying, amount), setFullCheckParams(minHF)])`.
-Token must be pre-approved to the CreditManager (encoder emits one
-`APPROVE` op in front).
+Emits `facade.botMulticall(ca, [addCollateral(underlying, amount)])`.
+The facade's default HF ≥ 1.0 check runs at the end; callers who want
+a user-signed buffer should use `GEARBOX_MULTICALL` with an explicit
+`setFullCheckParams` sub-call. Token must be pre-approved to the
+CreditManager (encoder emits one `APPROVE` op in front).
 
 #### `BORROW` (`_borrowFromGearboxV3`)
 
@@ -190,14 +231,15 @@ Token must be pre-approved to the CreditManager (encoder emits one
 | 20 | 16 | amount |
 | 36 | 20 | receiver |
 | 56 | 20 | creditAccount |
-| 76 | 20 | creditFacade |
-| 96 | 2 | minHealthFactor (bps; **required > 10000**) |
+| 76 | 20 | creditFacade (CM derived via `creditManager()`) |
 
-Emits `botMulticall(ca, [increaseDebt(amount), withdrawCollateral(underlying, amount, receiver), setFullCheckParams(minHF)])`.
+Emits `botMulticall(ca, [increaseDebt(amount), withdrawCollateral(underlying, amount, receiver)])`.
 
-`minHealthFactor` is not optional on borrow — a borrow that lands at the
-default facade floor of 10000 bps (HF = 1.0) is a liquidation waiting on
-the next oracle tick. Encoders should pass `>= 10500` for user flows.
+HF buffer is not a primitive-level concern — Gearbox's facade enforces
+HF ≥ 1.0 by default. A borrow that lands at exactly HF = 1.0 is a
+liquidation waiting on the next oracle tick, so callers that want a
+user-signed buffer should use `GEARBOX_MULTICALL` with an explicit
+`setFullCheckParams` sub-call at the tail.
 
 #### `REPAY` (`_repayToGearboxV3`)
 
@@ -210,7 +252,7 @@ Two shapes, discriminated by `amount`:
 | 0 | 20 | underlying |
 | 20 | 16 | amount (must be > 0 — zero-means-balance is rejected) |
 | 36 | 20 | creditAccount |
-| 56 | 20 | creditFacade |
+| 56 | 20 | creditFacade (CM derived via `creditManager()`) |
 | 76 | 1 | numQuotedTokens (must be 0) |
 
 Emits `botMulticall(ca, [addCollateral(underlying, amount), decreaseDebt(amount)])`.
@@ -231,7 +273,7 @@ Caveats:
 | 0 | 20 | underlying |
 | 20 | 16 | amount (= UINT112_MASK sentinel) |
 | 36 | 20 | creditAccount |
-| 56 | 20 | creditFacade |
+| 56 | 20 | creditFacade (CM derived via `creditManager()`) |
 | 76 | 1 | numQuotedTokens (N) |
 | 77 | N × 20 | quotedTokens[] |
 
@@ -254,10 +296,12 @@ See §5 for the reasoning behind each step.
 | 20 | 16 | amount (UINT112_MASK = withdraw all) |
 | 36 | 20 | receiver |
 | 56 | 20 | creditAccount |
-| 76 | 20 | creditFacade |
-| 96 | 2 | minHealthFactor (bps) |
+| 76 | 20 | creditFacade (CM derived via `creditManager()`) |
 
-Emits `botMulticall(ca, [withdrawCollateral(token, amountOrMax, receiver), setFullCheckParams(minHF)])`.
+Emits `botMulticall(ca, [withdrawCollateral(token, amountOrMax, receiver)])`.
+HF buffer handled by facade default; callers who want a user-signed
+buffer should use `GEARBOX_MULTICALL` with an explicit
+`setFullCheckParams` sub-call.
 
 `UINT112_MASK` is translated to `type(uint256).max` for the
 `withdrawCollateral` argument (Gearbox's own "sweep full balance" sentinel).
@@ -541,7 +585,9 @@ the composer *caused* is left anywhere.
 
 Gearbox V3 deploys one facade + one credit manager per credit suite
 (underlying token × risk profile). There is no single "Gearbox address"
-to hardcode per chain — encoders must pass `(facade, creditManager)`
-explicitly per op. The ecosystem directory is at
+to hardcode per chain — encoders must pass `creditFacade` per op (the
+composer derives the paired CM via the facade's immutable getter), and
+pass `creditManager` only where a prepended `APPROVE(token, cm)` op is
+needed (DEPOSIT / REPAY). The ecosystem directory is at
 <https://docs.gearbox.fi/>; for runtime discovery use
 `DataCompressorV3` (see `gearbox-interfaces/IDataCompressorV3.sol`).
