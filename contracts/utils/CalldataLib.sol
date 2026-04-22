@@ -2,9 +2,7 @@
 pragma solidity 0.8.34;
 
 import "contracts/1delta/composer/enums/DeltaEnums.sol";
-import "contracts/1delta/composer/swappers/dex/DexTypeMappings.sol";
-import "contracts/1delta/composer/swappers/callbacks/DexForkMappings.sol";
-import {DexPayConfig, SweepType, DodoSelector, WrapOperation} from "contracts/1delta/composer/enums/MiscEnums.sol";
+import {SweepType} from "contracts/1delta/composer/enums/MiscEnums.sol";
 
 // solhint-disable max-line-length
 
@@ -574,413 +572,6 @@ library CalldataLib {
         ); // swaps max index for inner path
     }
 
-    function swapHead(uint256 amount, uint256 amountOutMin, address assetIn) internal pure returns (bytes memory) {
-        return abi.encodePacked(
-            uint8(ComposerCommands.SWAPS),
-            uint128(amount),
-            uint128(amountOutMin),
-            assetIn //
-        );
-    }
-
-    function attachBranch(
-        bytes memory data,
-        uint256 hops,
-        uint256 splits,
-        bytes memory splitsData
-    )
-        internal
-        pure
-        returns (bytes memory)
-    {
-        if (hops != 0 && splits != 0) revert("Invalid branching");
-        if (splitsData.length > 0 && splits == 0) revert("No splits but split data provided");
-        return abi.encodePacked(
-            data,
-            uint8(hops),
-            uint8(splits), //
-            splitsData
-        );
-    }
-
-    function encodeUniswapV2StyleSwap(
-        address tokenOut,
-        address receiver,
-        uint256 forkId,
-        address pool,
-        uint256 feeDenom, //
-        DexPayConfig cfg,
-        bytes memory flashCalldata
-    )
-        internal
-        pure
-        returns (bytes memory)
-    {
-        if (uint256(cfg) < 2 && flashCalldata.length > 2) revert("Invalid config for v2 swap");
-        return abi.encodePacked(
-            tokenOut,
-            receiver,
-            uint8(DexTypeMappings.UNISWAP_V2_ID),
-            pool,
-            uint16(feeDenom), // fee denom
-            uint8(forkId),
-            uint16(cfg == DexPayConfig.FLASH ? flashCalldata.length : uint256(cfg)), // cll length <- user pays
-            bytes(cfg == DexPayConfig.FLASH ? flashCalldata : new bytes(0))
-        );
-    }
-
-    function encodeUniswapV4StyleSwap(
-        bytes memory currentData,
-        address tokenOut,
-        address receiver,
-        address manager,
-        uint24 fee,
-        uint24 tickSpacing,
-        address hooks,
-        bytes memory hookData,
-        DexPayConfig cfg
-    )
-        internal
-        pure
-        returns (bytes memory)
-    {
-        if (cfg == DexPayConfig.FLASH) revert("Invalid config for v2 swap");
-        return abi.encodePacked(
-            currentData,
-            tokenOut,
-            receiver,
-            uint8(DexTypeMappings.UNISWAP_V4_ID),
-            hooks,
-            manager,
-            fee,
-            tickSpacing,
-            uint8(uint256(cfg)), // cll length <- user pays
-            uint16(hookData.length),
-            hookData
-        );
-    }
-
-    function encodeBalancerV2StyleSwap(
-        bytes memory currentData,
-        address tokenOut,
-        address receiver,
-        bytes32 poolId,
-        address balancerVault,
-        DexPayConfig cfg
-    )
-        internal
-        pure
-        returns (bytes memory)
-    {
-        if (cfg == DexPayConfig.FLASH) revert("Invalid config for v2 swap");
-        return abi.encodePacked(
-            currentData,
-            tokenOut,
-            receiver,
-            uint8(DexTypeMappings.BALANCER_V2_ID),
-            poolId,
-            balancerVault,
-            uint8(uint256(cfg)) // cll length <- user pays
-        );
-    }
-
-    function encodeLbStyleSwap(
-        bytes memory currentData,
-        address tokenOut,
-        address receiver,
-        address pool,
-        bool swapForY,
-        DexPayConfig cfg
-    )
-        internal
-        pure
-        returns (bytes memory)
-    {
-        if (cfg == DexPayConfig.FLASH) revert("Invalid config for v2 swap");
-        return abi.encodePacked(
-            currentData,
-            tokenOut,
-            receiver,
-            uint8(DexTypeMappings.LB_ID),
-            pool,
-            uint8(swapForY ? 1 : 0),
-            uint8(uint256(cfg)) // cll length <- user pays
-        );
-    }
-
-    function encodeSyncSwapStyleSwap(
-        bytes memory currentData,
-        address tokenOut,
-        address receiver,
-        address pool,
-        DexPayConfig cfg
-    )
-        internal
-        pure
-        returns (bytes memory)
-    {
-        if (cfg == DexPayConfig.FLASH) revert("Invalid config for v2 swap");
-        return abi.encodePacked(
-            currentData,
-            tokenOut,
-            receiver,
-            uint8(DexTypeMappings.SYNC_SWAP_ID),
-            pool,
-            uint8(uint256(cfg)) // cll length <- user pays
-        );
-    }
-
-    function encodeUniswapV3StyleSwap(
-        bytes memory currentData,
-        address tokenOut,
-        address receiver,
-        uint256 forkId,
-        address pool,
-        uint256 feeTier, //
-        DexPayConfig cfg,
-        bytes memory flashCalldata
-    )
-        internal
-        pure
-        returns (bytes memory)
-    {
-        if (uint256(cfg) < 2 && flashCalldata.length > 2) revert("Invalid config for v2 swap");
-        return abi.encodePacked(
-            currentData,
-            tokenOut,
-            receiver,
-            uint8(DexTypeMappings.UNISWAP_V3_ID),
-            pool,
-            uint8(forkId),
-            uint16(feeTier), // fee tier to validate pool
-            uint16(cfg == DexPayConfig.FLASH ? flashCalldata.length : uint256(cfg)), //
-            bytes(cfg == DexPayConfig.FLASH ? flashCalldata : new bytes(0))
-        );
-    }
-
-    function encodeIzumiStyleSwap(
-        bytes memory currentData,
-        address tokenOut,
-        address receiver,
-        uint256 forkId,
-        address pool,
-        uint256 feeTier, //
-        DexPayConfig cfg,
-        bytes memory flashCalldata
-    )
-        internal
-        pure
-        returns (bytes memory)
-    {
-        if (uint256(cfg) < 2 && flashCalldata.length > 2) revert("Invalid config for v2 swap");
-        return abi.encodePacked(
-            currentData,
-            tokenOut,
-            receiver,
-            uint8(DexTypeMappings.IZI_ID),
-            pool,
-            uint8(forkId),
-            uint16(feeTier), // fee tier to validate pool
-            uint16(cfg == DexPayConfig.FLASH ? flashCalldata.length : uint256(cfg)), //
-            bytes(cfg == DexPayConfig.FLASH ? flashCalldata : new bytes(0))
-        );
-    }
-
-    function encodeBalancerV3StyleSwap(
-        bytes memory currentData,
-        address tokenOut,
-        address receiver,
-        address balancerV3Vault,
-        address pool,
-        DexPayConfig cfg,
-        bytes memory poolUserData
-    )
-        internal
-        pure
-        returns (bytes memory)
-    {
-        return abi.encodePacked(
-            currentData,
-            tokenOut,
-            receiver,
-            uint8(DexTypeMappings.BALANCER_V3_ID), // dexId !== poolId here
-            pool,
-            balancerV3Vault,
-            uint8(cfg),
-            uint16(poolUserData.length), //
-            poolUserData
-        );
-    }
-
-    function encodeDodoStyleSwap(
-        bytes memory currentData,
-        address tokenOut,
-        address receiver,
-        address pool,
-        DodoSelector selector, //
-        uint256 poolId,
-        DexPayConfig cfg,
-        bytes memory flashCalldata
-    )
-        internal
-        pure
-        returns (bytes memory)
-    {
-        return abi.encodePacked(
-            currentData,
-            tokenOut,
-            receiver,
-            uint8(DexTypeMappings.DODO_ID),
-            pool,
-            uint8(selector),
-            uint16(poolId),
-            uint16(cfg == DexPayConfig.FLASH ? flashCalldata.length : uint256(cfg)), //
-            bytes(cfg == DexPayConfig.FLASH ? flashCalldata : new bytes(0))
-        );
-    }
-
-    function encodeWooStyleSwap(
-        bytes memory currentData,
-        address tokenOut,
-        address receiver,
-        address pool,
-        DexPayConfig cfg
-    )
-        internal
-        pure
-        returns (bytes memory)
-    {
-        if (cfg == DexPayConfig.FLASH) revert("No flash for Woo");
-        return abi.encodePacked(
-            currentData,
-            tokenOut,
-            receiver,
-            uint8(DexTypeMappings.WOO_FI_ID),
-            pool,
-            uint8(uint256(cfg)) //
-        );
-    }
-
-    function encodeGmxStyleSwap(
-        bytes memory currentData,
-        address tokenOut,
-        address receiver,
-        address pool,
-        DexPayConfig cfg
-    )
-        internal
-        pure
-        returns (bytes memory)
-    {
-        if (cfg == DexPayConfig.FLASH) revert("No flash for Woo");
-        return abi.encodePacked(
-            currentData,
-            tokenOut,
-            receiver,
-            uint8(DexTypeMappings.GMX_ID),
-            pool,
-            uint8(uint256(cfg)) //
-        );
-    }
-
-    function encodeKtxStyleSwap(
-        bytes memory currentData,
-        address tokenOut,
-        address receiver,
-        address pool,
-        DexPayConfig cfg
-    )
-        internal
-        pure
-        returns (bytes memory)
-    {
-        if (cfg == DexPayConfig.FLASH) revert("No flash for Woo");
-        return abi.encodePacked(
-            currentData,
-            tokenOut,
-            receiver,
-            uint8(DexTypeMappings.KTX_ID),
-            pool,
-            uint8(uint256(cfg)) //
-        );
-    }
-
-    function encodeCurveStyleSwap(
-        address tokenOut,
-        address receiver,
-        address pool,
-        uint256 indexIn, //
-        uint256 indexOut,
-        uint256 selectorId,
-        DexPayConfig cfg
-    )
-        internal
-        pure
-        returns (bytes memory)
-    {
-        if (cfg == DexPayConfig.FLASH) revert("Flash not yet supported for Curve");
-        return abi.encodePacked(
-            tokenOut,
-            receiver,
-            uint8(DexTypeMappings.CURVE_V1_STANDARD_ID),
-            pool,
-            uint8(indexIn),
-            uint8(indexOut),
-            uint8(selectorId), // fee tier to validate pool
-            uint16(uint256(cfg)) //
-        );
-    }
-
-    function encodeCurveNGStyleSwap(
-        address tokenOut,
-        address receiver,
-        address pool,
-        uint256 indexIn, //
-        uint256 indexOut,
-        //
-        uint256 selectorId,
-        //
-        DexPayConfig cfg
-    )
-        internal
-        pure
-        returns (bytes memory)
-    {
-        if (cfg == DexPayConfig.FLASH) revert("Flash not yet supported for Curve");
-        return abi.encodePacked(
-            tokenOut,
-            receiver,
-            uint8(DexTypeMappings.CURVE_RECEIVED_ID),
-            pool,
-            uint8(indexIn),
-            uint8(indexOut),
-            uint8(selectorId), // fee tier to validate pool
-            uint16(uint256(cfg)) //
-        );
-    }
-
-    // wapper operation for swaps
-    function encodeWrapperSwap(
-        bytes memory currentData,
-        address assetOut,
-        address receiver,
-        WrapOperation operation,
-        DexPayConfig cfg
-    )
-        internal
-        pure
-        returns (bytes memory)
-    {
-        return abi.encodePacked(
-            currentData,
-            assetOut,
-            receiver,
-            uint8(DexTypeMappings.ASSET_WRAP_ID),
-            uint8(uint256(operation)),
-            uint8(uint256(cfg)) //
-        ); // 14 bytes
-    }
-
     function encodeNextGenDexSettle(address singleton, uint256 nativeAmount) internal pure returns (bytes memory) {
         return abi.encodePacked(
             uint8(ComposerCommands.GEN_2025_SINGELTONS),
@@ -1061,6 +652,13 @@ library CalldataLib {
             asset,
             target //
         ); // 14 bytes
+    }
+
+    /// @notice Transfer a single `tokenId` of `collection` held by the composer to `receiver`.
+    /// @dev Caller must know `tokenId` up front. For Fluid, predict via `VaultFactory.totalSupply() + 1`
+    ///      when opening a fresh position with `nftId == 0`.
+    function encodeSweepNft(address collection, address receiver, uint256 tokenId) internal pure returns (bytes memory) {
+        return abi.encodePacked(uint8(ComposerCommands.TRANSFERS), uint8(TransferIds.SWEEP_NFT), collection, receiver, tokenId);
     }
 
     function encodeUnwrap(
@@ -2122,5 +1720,390 @@ library CalldataLib {
 
         bytes memory data = abi.encodePacked(uint8(pms.length), updates, nonce, deadlinePlusOne, r, vs);
         return encodePermit(PermitIds.AAVE_V4_PMS_BATCH_PERMIT, spoke, data);
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────────
+    // Fluid (T1 vault + fToken)
+    // ─────────────────────────────────────────────────────────────────────────────
+
+    /// @dev Sentinel for "Fluid-all" on a T1 operate axis — translates to type(int256).min
+    ///      on the wire. Pass on `colAmount` for withdraw-all, on `debtAmount` for repay-all.
+    int128 internal constant FLUID_ALL = type(int128).min;
+
+    /// @dev Sentinel for "use composer balance" on a T1 operate axis (positive direction only).
+    ///      Pass on `colAmount` to deposit the composer's entire balance of `colUnderlying`.
+    int128 internal constant FLUID_USE_BALANCE = type(int128).max;
+
+    /// @notice Encode a single `FLUID_OPERATE_T1` op wrapping `vault.operate(...)` with both axes
+    ///         parameterized. When `nftId == 0` a fresh position is opened; if `nftReceiver != 0`
+    ///         the composer ships the returned NFT to `nftReceiver` in the same call.
+    /// @param colUnderlying   address(0) for native collateral
+    /// @param debtUnderlying  address(0) for native debt
+    /// @param colAmount       int128 — 0 skip, +N deposit, -N withdraw, FLUID_ALL withdraw-all, FLUID_USE_BALANCE deposit-balance
+    /// @param debtAmount      int128 — 0 skip, +N borrow, -N repay, FLUID_ALL repay-all
+    /// @param nftId           0 = open new position
+    /// @param receiver        vault's `to_` — recipient of any out-flow (native or tokens)
+    /// @param nftReceiver     0 = keep NFT in composer; non-zero = auto-sweep minted NFT to this address
+    /// @param vault           target Fluid T1 vault
+    /// @dev Auto-prepends APPROVE ops for any positive-direction ERC20 side so Fluid can pull funds.
+    function encodeFluidT1Operate(
+        address colUnderlying,
+        address debtUnderlying,
+        int128 colAmount,
+        int128 debtAmount,
+        uint256 nftId,
+        address receiver,
+        address nftReceiver,
+        address vault
+    )
+        internal
+        pure
+        returns (bytes memory)
+    {
+        bytes memory approvals;
+        // Positive col-direction on an ERC20 collateral → Fluid pulls tokens → needs approve.
+        if (colUnderlying != address(0) && _fluidIsDepositAmount(colAmount)) {
+            approvals = abi.encodePacked(approvals, encodeApprove(colUnderlying, vault));
+        }
+        // Negative debt-direction on an ERC20 debt → Fluid pulls tokens for repay → needs approve.
+        if (debtUnderlying != address(0) && _fluidIsRepayAmount(debtAmount)) {
+            approvals = abi.encodePacked(approvals, encodeApprove(debtUnderlying, vault));
+        }
+
+        bytes memory body = abi.encodePacked(
+            colUnderlying,
+            debtUnderlying,
+            colAmount, // 16 bytes signed (int128)
+            debtAmount, // 16 bytes signed (int128)
+            nftId, // 32 bytes
+            receiver,
+            nftReceiver,
+            vault
+        );
+
+        return abi.encodePacked(
+            approvals,
+            uint8(ComposerCommands.LENDING),
+            uint8(LenderOps.FLUID_OPERATE_T1),
+            uint16(LenderIds.UP_TO_FLUID - 1),
+            body
+        );
+    }
+
+    /// @dev Positive signed int128 (deposit/borrow direction); `FLUID_USE_BALANCE` also counts as a
+    ///      deposit (pulls from the composer's balance). Zero and the all-sentinel don't pull.
+    function _fluidIsDepositAmount(int128 a) private pure returns (bool) {
+        return a > 0; // includes FLUID_USE_BALANCE (type(int128).max)
+    }
+
+    /// @dev Negative signed int128 (withdraw/repay direction); `FLUID_ALL` also counts as a repay.
+    function _fluidIsRepayAmount(int128 a) private pure returns (bool) {
+        return a < 0; // includes FLUID_ALL (type(int128).min)
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────────
+    // Single-axis convenience wrappers around `encodeFluidT1Operate`.
+    //
+    // These match the historical DEPOSIT / BORROW / REPAY / WITHDRAW signatures so callers that
+    // only touch one axis don't have to spell out the other side. Each one delegates to the
+    // dual-axis primitive with the unused axis pinned to 0. The sentinel mapping matches the
+    // old behavior:
+    //   encodeFluidDeposit:  amount == 0                  → FLUID_USE_BALANCE (deposit balance)
+    //   encodeFluidRepay:    amount == 0 | FLUID_MAX_AMT  → FLUID_ALL         (repay-all)
+    //   encodeFluidWithdraw: amount == FLUID_MAX_AMT      → FLUID_ALL         (withdraw-all)
+    //   encodeFluidBorrow:   amount is always literal
+    // ─────────────────────────────────────────────────────────────────────────────
+
+    /// @dev Historical sentinel for "max" on T1 repay/withdraw — UINT112_MASK. Preserved for
+    ///      callers still using the old per-axis encoders.
+    uint128 internal constant FLUID_MAX_AMOUNT = type(uint112).max;
+
+    /// @notice Deposit-only convenience wrapper. `amount == 0` means "deposit composer's balance".
+    function encodeFluidDeposit(
+        address underlying,
+        uint128 amount,
+        uint256 nftId,
+        address receiver,
+        address vault
+    )
+        internal
+        pure
+        returns (bytes memory)
+    {
+        int128 colAmount = amount == 0 ? FLUID_USE_BALANCE : int128(amount);
+        return encodeFluidT1Operate(underlying, address(0), colAmount, 0, nftId, receiver, address(0), vault);
+    }
+
+    /// @notice Borrow-only convenience wrapper. Amount is always literal.
+    function encodeFluidBorrow(
+        address underlying,
+        uint128 amount,
+        uint256 nftId,
+        address receiver,
+        address vault
+    )
+        internal
+        pure
+        returns (bytes memory)
+    {
+        return encodeFluidT1Operate(address(0), underlying, 0, int128(amount), nftId, receiver, address(0), vault);
+    }
+
+    /// @notice Repay-only convenience wrapper. `amount == 0` and `amount == FLUID_MAX_AMOUNT` both
+    ///         mean "repay-all" (maps to `type(int256).min` on the wire).
+    function encodeFluidRepay(
+        address underlying,
+        uint128 amount,
+        uint256 nftId,
+        address receiver,
+        address vault
+    )
+        internal
+        pure
+        returns (bytes memory)
+    {
+        int128 debtAmount = (amount == 0 || amount == FLUID_MAX_AMOUNT) ? FLUID_ALL : -int128(amount);
+        return encodeFluidT1Operate(address(0), underlying, 0, debtAmount, nftId, receiver, address(0), vault);
+    }
+
+    /// @notice Withdraw-only convenience wrapper. `amount == FLUID_MAX_AMOUNT` means "withdraw-all".
+    function encodeFluidWithdraw(
+        address underlying,
+        uint128 amount,
+        uint256 nftId,
+        address receiver,
+        address vault
+    )
+        internal
+        pure
+        returns (bytes memory)
+    {
+        int128 colAmount = amount == FLUID_MAX_AMOUNT ? FLUID_ALL : -int128(amount);
+        return encodeFluidT1Operate(underlying, address(0), colAmount, 0, nftId, receiver, address(0), vault);
+    }
+
+    /// @dev Sentinel matching FluidSmartLending's `FLUID_SMART_USE_BALANCE`. Place into an int256
+    ///      amount slot on a smart-vault op to have the composer resolve it from balanceOf(this)
+    ///      (or selfbalance() when the parallel token slot is `address(0)`).
+    int256 internal constant FLUID_SMART_USE_BALANCE = type(int256).max;
+
+    function _fluidSmartHeader(
+        uint8 vaultType,
+        uint128 callValue,
+        uint256 nftId,
+        address receiver,
+        address nftReceiver,
+        address vault,
+        bool isPerfect
+    )
+        private
+        pure
+        returns (bytes memory)
+    {
+        return abi.encodePacked(
+            uint8(ComposerCommands.LENDING),
+            isPerfect ? uint8(LenderOps.FLUID_OPERATE_PERFECT) : uint8(LenderOps.FLUID_OPERATE),
+            uint16(LenderIds.UP_TO_FLUID_SMART - 1),
+            vaultType,
+            callValue,
+            nftId,
+            receiver,
+            nftReceiver,
+            vault
+        );
+    }
+
+    function _fluidSmartTokens4(address[4] memory t) private pure returns (bytes memory) {
+        return abi.encodePacked(t[0], t[1], t[2], t[3]);
+    }
+
+    function _fluidSmartTokens6(address[6] memory t) private pure returns (bytes memory) {
+        return abi.encodePacked(t[0], t[1], t[2], t[3], t[4], t[5]);
+    }
+
+    function _fluidSmartAmounts4(int256[4] memory a) private pure returns (bytes memory) {
+        return abi.encodePacked(a[0], a[1], a[2], a[3]);
+    }
+
+    function _fluidSmartAmounts6(int256[6] memory a) private pure returns (bytes memory) {
+        return abi.encodePacked(a[0], a[1], a[2], a[3], a[4], a[5]);
+    }
+
+    /// @notice Encode a `FluidSmartLending.FLUID_OPERATE` call against a T2 vault.
+    /// @param amounts [newColToken0, newColToken1, colSharesMinMax, newDebt]
+    /// @param tokens  per-slot token address; use `address(0)` on slots that don't use the
+    ///                balance sentinel, or the actual ERC20 / `address(0)` for native when they do
+    /// @param nftReceiver 0 = keep NFT in composer; non-zero = auto-sweep freshly-minted NFT there
+    function encodeFluidSmartOperateT2(
+        uint128 callValue,
+        uint256 nftId,
+        address receiver,
+        address nftReceiver,
+        address vault,
+        address[4] memory tokens,
+        int256[4] memory amounts
+    )
+        internal
+        pure
+        returns (bytes memory)
+    {
+        return abi.encodePacked(
+            _fluidSmartHeader(2, callValue, nftId, receiver, nftReceiver, vault, false),
+            _fluidSmartTokens4(tokens),
+            _fluidSmartAmounts4(amounts)
+        );
+    }
+
+    /// @notice Encode a `FluidSmartLending.FLUID_OPERATE` call against a T3 vault.
+    /// @param amounts [newCol, newDebtToken0, newDebtToken1, debtSharesMinMax]
+    function encodeFluidSmartOperateT3(
+        uint128 callValue,
+        uint256 nftId,
+        address receiver,
+        address nftReceiver,
+        address vault,
+        address[4] memory tokens,
+        int256[4] memory amounts
+    )
+        internal
+        pure
+        returns (bytes memory)
+    {
+        return abi.encodePacked(
+            _fluidSmartHeader(3, callValue, nftId, receiver, nftReceiver, vault, false),
+            _fluidSmartTokens4(tokens),
+            _fluidSmartAmounts4(amounts)
+        );
+    }
+
+    /// @notice Encode a `FluidSmartLending.FLUID_OPERATE` call against a T4 vault.
+    /// @param amounts [newColToken0, newColToken1, colSharesMinMax, newDebtToken0, newDebtToken1, debtSharesMinMax]
+    function encodeFluidSmartOperateT4(
+        uint128 callValue,
+        uint256 nftId,
+        address receiver,
+        address nftReceiver,
+        address vault,
+        address[6] memory tokens,
+        int256[6] memory amounts
+    )
+        internal
+        pure
+        returns (bytes memory)
+    {
+        return abi.encodePacked(
+            _fluidSmartHeader(4, callValue, nftId, receiver, nftReceiver, vault, false),
+            _fluidSmartTokens6(tokens),
+            _fluidSmartAmounts6(amounts)
+        );
+    }
+
+    /// @notice Encode a `FluidSmartLending.FLUID_OPERATE_PERFECT` call against a T2 vault.
+    /// @param amounts [perfectColShares, colToken0MinMax, colToken1MinMax, newDebt]
+    function encodeFluidSmartOperatePerfectT2(
+        uint128 callValue,
+        uint256 nftId,
+        address receiver,
+        address nftReceiver,
+        address vault,
+        address[4] memory tokens,
+        int256[4] memory amounts
+    )
+        internal
+        pure
+        returns (bytes memory)
+    {
+        return abi.encodePacked(
+            _fluidSmartHeader(2, callValue, nftId, receiver, nftReceiver, vault, true),
+            _fluidSmartTokens4(tokens),
+            _fluidSmartAmounts4(amounts)
+        );
+    }
+
+    /// @notice Encode a `FluidSmartLending.FLUID_OPERATE_PERFECT` call against a T3 vault.
+    /// @param amounts [newCol, perfectDebtShares, debtToken0MinMax, debtToken1MinMax]
+    function encodeFluidSmartOperatePerfectT3(
+        uint128 callValue,
+        uint256 nftId,
+        address receiver,
+        address nftReceiver,
+        address vault,
+        address[4] memory tokens,
+        int256[4] memory amounts
+    )
+        internal
+        pure
+        returns (bytes memory)
+    {
+        return abi.encodePacked(
+            _fluidSmartHeader(3, callValue, nftId, receiver, nftReceiver, vault, true),
+            _fluidSmartTokens4(tokens),
+            _fluidSmartAmounts4(amounts)
+        );
+    }
+
+    /// @notice Encode a `FluidSmartLending.FLUID_OPERATE_PERFECT` call against a T4 vault.
+    /// @param amounts [perfectColShares, colToken0MinMax, colToken1MinMax, perfectDebtShares, debtToken0MinMax, debtToken1MinMax]
+    function encodeFluidSmartOperatePerfectT4(
+        uint128 callValue,
+        uint256 nftId,
+        address receiver,
+        address nftReceiver,
+        address vault,
+        address[6] memory tokens,
+        int256[6] memory amounts
+    )
+        internal
+        pure
+        returns (bytes memory)
+    {
+        return abi.encodePacked(
+            _fluidSmartHeader(4, callValue, nftId, receiver, nftReceiver, vault, true),
+            _fluidSmartTokens6(tokens),
+            _fluidSmartAmounts6(amounts)
+        );
+    }
+
+    function encodeFluidFTokenDeposit(
+        address underlying,
+        uint128 amount,
+        address receiver,
+        address fToken
+    )
+        internal
+        pure
+        returns (bytes memory)
+    {
+        return abi.encodePacked(
+            encodeApprove(underlying, fToken),
+            uint8(ComposerCommands.LENDING),
+            uint8(LenderOps.DEPOSIT_LENDING_TOKEN),
+            uint16(LenderIds.UP_TO_FLUID - 1),
+            underlying,
+            amount,
+            receiver,
+            fToken
+        );
+    }
+
+    function encodeFluidFTokenWithdraw(
+        address underlying,
+        uint128 amount,
+        address receiver,
+        address fToken
+    )
+        internal
+        pure
+        returns (bytes memory)
+    {
+        return abi.encodePacked(
+            uint8(ComposerCommands.LENDING),
+            uint8(LenderOps.WITHDRAW_LENDING_TOKEN),
+            uint16(LenderIds.UP_TO_FLUID - 1),
+            underlying,
+            amount,
+            receiver,
+            fToken
+        );
     }
 }

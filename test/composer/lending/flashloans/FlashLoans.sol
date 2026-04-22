@@ -10,6 +10,7 @@ import {BaseTest} from "test/shared/BaseTest.sol";
 import {Chains, Tokens, Lenders} from "test/data/LenderRegistry.sol";
 import "contracts/utils/CalldataLib.sol";
 import {SweepType} from "contracts/1delta/composer/enums/MiscEnums.sol";
+import {DexForkMappings} from "contracts/1delta/composer/quoter/dex/DexForkMappings.sol";
 import {ComposerPlugin, IComposerLike} from "plugins/ComposerPlugin.sol";
 
 // solhint-disable max-line-length

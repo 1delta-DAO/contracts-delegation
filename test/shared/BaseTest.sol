@@ -70,7 +70,7 @@ contract BaseTest is Test {
     }
 
     function _getEnvRpc(string memory envVar) internal view returns (string memory) {
-        try vm.envString(envVar) returns (string memory rpc) {
+        try vm.rpcUrl(envVar) returns (string memory rpc) {
             return rpc;
         } catch {
             return "";
@@ -87,8 +87,6 @@ contract BaseTest is Test {
         // Initialize user
         userPrivateKey = 0x1de17a;
         user = vm.addr(userPrivateKey);
-        vm.deal(user, 100 ether);
-        vm.label(user, "user");
 
         // Create a fork
         string memory rpcUrl = chain.getRpcUrl();
@@ -105,6 +103,9 @@ contract BaseTest is Test {
                 vm.createSelectFork(rpcUrl, blockNumber);
             }
         }
+
+        vm.deal(user, 100 ether);
+        vm.label(user, "user");
     }
 
     /// @notice Utility function for signing messages

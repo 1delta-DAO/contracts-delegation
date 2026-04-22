@@ -27,12 +27,12 @@ exclude_lints = [
 [fuzz]
 runs = 10000
 
-# RPC Overrides
+[rpc_endpoints]
 RPC_ETHEREUM_MAINNET = "https://eth.drpc.org"
-RPC_BNB_SMART_CHAIN_MAINNET = "https://binance.llamarpc.com"
+RPC_BNB_SMART_CHAIN_MAINNET = "https://public-bsc-mainnet.fastnode.io"
 RPC_BASE = "https://base.llamarpc.com"
 RPC_PLASMA_MAINNET = "https://rpc.plasma.to"
-RPC_ARBITRUM_ONE = "https://1rpc.io/arb"
+RPC_ARBITRUM_ONE = "https://arb1.lava.build"
 RPC_AVALANCHE_C_CHAIN = "https://avalanche-c-chain-rpc.publicnode.com"
 RPC_POLYGON_MAINNET = "https://polygon-rpc.com/"
 RPC_KATANA = "https://rpc.katana.network"

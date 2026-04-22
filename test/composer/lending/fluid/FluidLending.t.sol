@@ -1,0 +1,354 @@
+// SPDX-License-Identifier: UNLICENSED
+pragma solidity ^0.8.19;
+
+import {IERC20All} from "test/shared/interfaces/IERC20All.sol";
+import {BaseTest} from "test/shared/BaseTest.sol";
+import {Chains, Tokens} from "test/data/LenderRegistry.sol";
+import {CalldataLib} from "contracts/utils/CalldataLib.sol";
+import {ComposerPlugin, IComposerLike} from "plugins/ComposerPlugin.sol";
+import {SweepType} from "contracts/1delta/composer/enums/MiscEnums.sol";
+
+interface IFluidVaultT1 {
+    function operate(
+        uint256 nftId,
+        int256 newCol,
+        int256 newDebt,
+        address to
+    )
+        external
+        payable
+        returns (uint256 nftId_, int256 finalCol, int256 finalDebt);
+}
+
+interface IFluidVaultFactory {
+    function safeTransferFrom(address from, address to, uint256 tokenId, bytes calldata data) external;
+    function ownerOf(uint256 tokenId) external view returns (address);
+    function balanceOf(address owner) external view returns (uint256);
+    function tokenOfOwnerByIndex(address owner, uint256 index) external view returns (uint256);
+    function totalSupply() external view returns (uint256);
+}
+
+/**
+ * @notice Integration tests for FluidLending against the Fluid ETH-USDC vault on Ethereum mainnet.
+ * @dev Vault `0x0C8C77B7FF4c2aF7F6CEBbe67350A490E3DD6cB3` is a T1 vault with ETH collateral,
+ *      USDC debt. Tests run against a forked mainnet via the BaseTest harness.
+ *
+ *      All flows use the consolidated `encodeFluidT1Operate` op. Inner ops no longer encode a
+ *      `SWEEP_NFT` on the custody path — the `onERC721Received` callback unconditionally returns
+ *      the NFT to `from` if the composer still owns it after the inner dispatch. For fresh
+ *      opens via `deltaCompose`, the op's `nftReceiver` argument drives an auto-sweep from the
+ *      `nftId_` returned by `vault.operate` — no off-chain prediction needed.
+ */
+contract FluidLendingTest is BaseTest {
+    IComposerLike internal composer;
+
+    /// @dev Fluid ETH-USDC vault (T1) on Ethereum mainnet.
+    address internal constant VAULT = 0x0C8C77B7FF4c2aF7F6CEBbe67350A490E3DD6cB3;
+    /// @dev Fluid VaultFactory (ERC721 holding all position NFTs) on Ethereum mainnet.
+    address internal constant VAULT_FACTORY = 0x324c5Dc1fC42c7a4D43d92df1eBA58a54d13Bf2d;
+    /// @dev USDC on Ethereum mainnet.
+    address internal USDC;
+
+    /// @dev Composer's freshly-deployed CREATE address on mainnet may already hold a few wei of
+    ///      ETH (an existing contract account at the same address). All composer-balance assertions
+    ///      compare against the snapshot taken in setUp() instead of literal zero.
+    uint256 internal composerEthBaseline;
+
+    function setUp() public {
+        _init(Chains.ETHEREUM_MAINNET, 0, true);
+        USDC = chain.getTokenAddress(Tokens.USDC);
+        composer = ComposerPlugin.getComposer(Chains.ETHEREUM_MAINNET);
+
+        composerEthBaseline = address(composer).balance;
+
+        vm.label(address(composer), "Composer");
+        vm.label(VAULT, "FluidEthUsdcVault");
+        vm.label(VAULT_FACTORY, "FluidVaultFactory");
+        vm.label(USDC, "USDC");
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // Helpers
+    // ─────────────────────────────────────────────────────────────────────────
+
+    /// @dev Open a fresh ETH/USDC position from `owner_` directly against the vault. NFT is
+    ///      minted to `owner_` (msg.sender on the vault). Returns the freshly minted nftId.
+    function _openPosition(address owner_, uint256 ethCol, uint256 usdcDebt) internal returns (uint256 nftId) {
+        vm.prank(owner_);
+        (nftId,,) = IFluidVaultT1(VAULT).operate{value: ethCol}(0, int256(ethCol), int256(usdcDebt), owner_);
+        require(nftId != 0, "open position failed");
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // 1. Direct ops on a position the user owns (deposit / repay don't need NFT custody)
+    // ─────────────────────────────────────────────────────────────────────────
+
+    function test_fluid_deposit_native_collateral_to_existing_position() public {
+        uint256 nftId = _openPosition(user, 1 ether, 1000e6);
+        uint256 userEthBefore = user.balance;
+
+        uint256 topUp = 0.5 ether;
+        // Native col deposit, debt axis skipped, existing nftId so no mint-sweep.
+        bytes memory data = CalldataLib.encodeFluidT1Operate(
+            address(0),
+            address(0),
+            int128(uint128(topUp)),
+            0,
+            nftId,
+            address(0),
+            address(0),
+            VAULT
+        );
+
+        vm.prank(user);
+        composer.deltaCompose{value: topUp}(data);
+
+        assertEq(userEthBefore - user.balance, topUp, "user paid topUp");
+        assertEq(address(composer).balance, composerEthBaseline, "composer holds no extra ETH");
+        assertEq(IFluidVaultFactory(VAULT_FACTORY).ownerOf(nftId), user, "user still owns nft");
+    }
+
+    function test_fluid_repay_usdc_to_existing_position() public {
+        uint256 nftId = _openPosition(user, 1 ether, 1000e6);
+
+        uint256 repayAmount = 500e6;
+        deal(USDC, user, repayAmount);
+        vm.prank(user);
+        IERC20All(USDC).approve(address(composer), type(uint256).max);
+
+        bytes memory pull = CalldataLib.encodeTransferIn(USDC, address(composer), repayAmount);
+        // Debt-side literal repay; encoder auto-prepends APPROVE(USDC, VAULT).
+        bytes memory repay = CalldataLib.encodeFluidT1Operate(
+            address(0),
+            USDC,
+            0,
+            -int128(uint128(repayAmount)),
+            nftId,
+            user,
+            address(0),
+            VAULT
+        );
+
+        uint256 usdcBefore = IERC20All(USDC).balanceOf(user);
+
+        vm.prank(user);
+        composer.deltaCompose(abi.encodePacked(pull, repay));
+
+        assertEq(usdcBefore - IERC20All(USDC).balanceOf(user), repayAmount, "user spent repayAmount");
+        assertEq(IERC20All(USDC).balanceOf(address(composer)), 0, "composer holds no USDC");
+        assertEq(IFluidVaultFactory(VAULT_FACTORY).ownerOf(nftId), user, "user still owns nft");
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // 1b. Open new position via composer + auto-sweep to user (no prediction)
+    // ─────────────────────────────────────────────────────────────────────────
+
+    function test_fluid_open_new_position_and_sweep_nft_to_user() public {
+        uint256 userNftsBefore = IFluidVaultFactory(VAULT_FACTORY).balanceOf(user);
+
+        uint256 colAmount = 1 ether;
+        uint256 borrowAmount = 800e6;
+
+        // Single op opens a new T1 position and hands the freshly-minted NFT to `user` using
+        // the `nftId_` that `vault.operate` returned — no off-chain totalSupply prediction.
+        bytes memory open = CalldataLib.encodeFluidT1Operate(
+            address(0),
+            address(0),
+            int128(uint128(colAmount)),
+            0,
+            0, // nftId == 0 → open new
+            address(0),
+            user, // nftReceiver — auto-sweep target
+            VAULT
+        );
+
+        vm.prank(user);
+        composer.deltaCompose{value: colAmount}(open);
+
+        uint256 userNftsAfter = IFluidVaultFactory(VAULT_FACTORY).balanceOf(user);
+        assertEq(userNftsAfter - userNftsBefore, 1, "user got 1 new NFT");
+        assertEq(IFluidVaultFactory(VAULT_FACTORY).balanceOf(address(composer)), 0, "composer holds no NFTs");
+
+        uint256 newNftId = IFluidVaultFactory(VAULT_FACTORY).tokenOfOwnerByIndex(user, userNftsAfter - 1);
+        assertEq(IFluidVaultFactory(VAULT_FACTORY).ownerOf(newNftId), user, "user owns the new NFT");
+
+        // Second half: borrow against the fresh position via custody. Inner op is just the borrow —
+        // the callback auto-returns the NFT to user after the dispatch, no explicit sweep needed.
+        bytes memory innerBorrow = CalldataLib.encodeFluidT1Operate(
+            address(0),
+            USDC,
+            0,
+            int128(uint128(borrowAmount)),
+            newNftId,
+            user,
+            address(0),
+            VAULT
+        );
+        uint256 usdcBefore = IERC20All(USDC).balanceOf(user);
+        vm.prank(user);
+        IFluidVaultFactory(VAULT_FACTORY).safeTransferFrom(user, address(composer), newNftId, innerBorrow);
+        assertEq(IERC20All(USDC).balanceOf(user) - usdcBefore, borrowAmount, "borrow against fresh position");
+        assertEq(IFluidVaultFactory(VAULT_FACTORY).ownerOf(newNftId), user, "nft back with user");
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // 2. NFT-custody flow (BORROW / WITHDRAW require composer to be ownerOf)
+    // ─────────────────────────────────────────────────────────────────────────
+
+    function test_fluid_nft_custody_borrow_more_and_return() public {
+        uint256 nftId = _openPosition(user, 1 ether, 1000e6);
+
+        uint256 borrowAmount = 200e6;
+        // Inner ops: a single borrow. Callback's hard-coded post-step ships the NFT back.
+        bytes memory innerOps = CalldataLib.encodeFluidT1Operate(
+            address(0),
+            USDC,
+            0,
+            int128(uint128(borrowAmount)),
+            nftId,
+            user,
+            address(0),
+            VAULT
+        );
+
+        uint256 usdcBefore = IERC20All(USDC).balanceOf(user);
+
+        vm.prank(user);
+        IFluidVaultFactory(VAULT_FACTORY).safeTransferFrom(user, address(composer), nftId, innerOps);
+
+        assertEq(IERC20All(USDC).balanceOf(user) - usdcBefore, borrowAmount, "user received borrow");
+        assertEq(IFluidVaultFactory(VAULT_FACTORY).ownerOf(nftId), user, "nft returned to user by callback");
+        assertEq(IERC20All(USDC).balanceOf(address(composer)), 0, "composer holds no USDC");
+    }
+
+    function test_fluid_nft_custody_withdraw_partial_collateral_and_return() public {
+        uint256 nftId = _openPosition(user, 1 ether, 1000e6);
+
+        uint256 withdrawAmount = 0.1 ether;
+        // Withdraw native ETH straight to user via vault.operate's `to_`. Callback auto-returns the NFT.
+        bytes memory innerOps = CalldataLib.encodeFluidT1Operate(
+            address(0),
+            address(0),
+            -int128(uint128(withdrawAmount)),
+            0,
+            nftId,
+            user,
+            address(0),
+            VAULT
+        );
+
+        uint256 ethBefore = user.balance;
+
+        vm.prank(user);
+        IFluidVaultFactory(VAULT_FACTORY).safeTransferFrom(user, address(composer), nftId, innerOps);
+
+        assertEq(user.balance - ethBefore, withdrawAmount, "user received withdrawn ETH");
+        assertEq(IFluidVaultFactory(VAULT_FACTORY).ownerOf(nftId), user, "nft returned to user by callback");
+        assertEq(address(composer).balance, composerEthBaseline, "composer holds no extra ETH");
+    }
+
+    function test_fluid_nft_custody_full_close_repay_all_withdraw_all() public {
+        uint256 nftId = _openPosition(user, 1 ether, 1000e6);
+
+        uint256 fundedUsdc = 1100e6;
+        deal(USDC, user, fundedUsdc);
+        vm.prank(user);
+        IERC20All(USDC).approve(address(composer), type(uint256).max);
+
+        // One combined op repays all debt and withdraws all collateral in a single vault.operate
+        // — T1 has no DEX ratio concerns so a dual-axis close is fine.
+        bytes memory pull = CalldataLib.encodeTransferIn(USDC, address(composer), fundedUsdc);
+        bytes memory close = CalldataLib.encodeFluidT1Operate(
+            address(0), // col native
+            USDC, // debt ERC20
+            CalldataLib.FLUID_ALL, // withdraw-all collateral
+            CalldataLib.FLUID_ALL, // repay-all debt
+            nftId,
+            user, // to_ — withdrawn ETH flows here
+            address(0),
+            VAULT
+        );
+        // Any residual USDC (repay buffer Fluid didn't consume) goes back to user.
+        bytes memory sweepUsdc = CalldataLib.encodeSweep(USDC, user, 0, SweepType.VALIDATE);
+        bytes memory innerOps = abi.encodePacked(pull, close, sweepUsdc);
+
+        uint256 ethBefore = user.balance;
+        uint256 usdcBefore = IERC20All(USDC).balanceOf(user);
+
+        vm.prank(user);
+        IFluidVaultFactory(VAULT_FACTORY).safeTransferFrom(user, address(composer), nftId, innerOps);
+
+        assertApproxEqAbs(user.balance - ethBefore, 1 ether, 1e6, "ETH collateral fully withdrawn");
+        uint256 usdcSpent = usdcBefore - IERC20All(USDC).balanceOf(user);
+        assertGe(usdcSpent, 1000e6, "spent at least the principal");
+        assertLe(usdcSpent, fundedUsdc, "spent at most the funded amount");
+        assertEq(IERC20All(USDC).balanceOf(address(composer)), 0, "composer holds no USDC");
+        assertEq(address(composer).balance, composerEthBaseline, "composer holds no extra ETH");
+        // Position fully unwound — the NFT still lives (empty) and is returned to user by the callback.
+        assertEq(IFluidVaultFactory(VAULT_FACTORY).ownerOf(nftId), user, "nft returned to user by callback");
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // 3. Auth — onERC721Received gating
+    // ─────────────────────────────────────────────────────────────────────────
+
+    function test_fluid_nft_custody_reverts_when_caller_is_not_factory() public {
+        bytes memory innerOps = CalldataLib.encodeFluidT1Operate(
+            address(0),
+            USDC,
+            0,
+            int128(100e6),
+            1,
+            user,
+            address(0),
+            VAULT
+        );
+
+        // Direct call to onERC721Received from a non-factory address must revert (InvalidCaller).
+        vm.prank(user);
+        vm.expectRevert();
+        (bool ok,) = address(composer)
+            .call(abi.encodeWithSignature("onERC721Received(address,address,uint256,bytes)", user, user, uint256(1), innerOps));
+        ok; // silence unused warning — vm.expectRevert handles assertion
+    }
+
+    function test_fluid_nft_custody_reverts_when_operator_differs_from_owner() public {
+        uint256 nftId = _openPosition(user, 1 ether, 1000e6);
+
+        address attacker = address(0xBAD);
+        vm.prank(user);
+        (bool ok,) = VAULT_FACTORY.call(abi.encodeWithSignature("setApprovalForAll(address,bool)", attacker, true));
+        require(ok, "approve-for-all failed");
+
+        bytes memory maliciousOps = CalldataLib.encodeFluidT1Operate(
+            address(0),
+            USDC,
+            0,
+            int128(999e6),
+            nftId,
+            attacker,
+            address(0),
+            VAULT
+        );
+        vm.prank(attacker);
+        vm.expectRevert();
+        IFluidVaultFactory(VAULT_FACTORY).safeTransferFrom(user, address(composer), nftId, maliciousOps);
+
+        assertEq(IFluidVaultFactory(VAULT_FACTORY).ownerOf(nftId), user, "nft not stolen");
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // 3b. Callback post-step: unconditional NFT return even with empty inner data
+    // ─────────────────────────────────────────────────────────────────────────
+
+    function test_fluid_nft_custody_returns_nft_with_empty_inner_ops() public {
+        uint256 nftId = _openPosition(user, 1 ether, 1000e6);
+
+        // Empty inner-op payload — the callback skips _deltaComposeInternal (data.length == 0) and
+        // only executes the hard-coded post-step, which ships the NFT straight back to user.
+        vm.prank(user);
+        IFluidVaultFactory(VAULT_FACTORY).safeTransferFrom(user, address(composer), nftId, new bytes(0));
+
+        assertEq(IFluidVaultFactory(VAULT_FACTORY).ownerOf(nftId), user, "callback returned the NFT");
+    }
+}

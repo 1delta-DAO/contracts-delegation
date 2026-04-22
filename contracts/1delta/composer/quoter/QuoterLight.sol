@@ -2,7 +2,7 @@
 pragma solidity 0.8.34;
 
 import {Masks} from "../../shared/masks/Masks.sol";
-import {DexTypeMappings} from "../swappers/dex/DexTypeMappings.sol";
+import {DexTypeMappings} from "./dex/DexTypeMappings.sol";
 import {V4TypeQuoter} from "./dex/V4TypeQuoter.sol";
 import {V3TypeQuoter} from "./dex/V3TypeQuoter.sol";
 import {BalancerV3Quoter} from "./dex/BalancerV3Quoter.sol";

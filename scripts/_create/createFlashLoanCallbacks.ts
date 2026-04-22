@@ -11,11 +11,13 @@ import {templateComposer} from "./templates/composer";
 import {CREATE_CHAIN_IDS, getChainKey, toCamelCaseWithFirstUpper} from "./config";
 import {templateUniversalFlashLoan} from "./templates/flashLoan/universalFlashLoan";
 import {templateBalancerV2Trigger} from "./templates/flashLoan/balancerV2Trigger";
-import {BALANCER_V2_FORKS, FLASH_LOAN_IDS} from "@1delta/dex-registry";
+import {BALANCER_V2_FORKS, BALANCER_V3_FORKS, FLASH_LOAN_IDS, UNISWAP_V4_FORKS} from "@1delta/dex-registry";
 import {CANCUN_OR_HIGHER} from "./chain/evmVersion";
 import {fetchLenderMetaFromDirAndInitialize} from "./utils";
 import {aavePools, morphoPools} from "@1delta/data-sdk";
 import {templateMoolah} from "./templates/flashLoan/moolahCallback";
+import {templateBalancerV3} from "./templates/flashLoan/balancerV3Callback";
+import {DEX_TO_CHAINS_EXCLUSIONS} from "./dex/blacklists";
 
 /** constant for the head part */
 function createConstant(pool: string, lender: string) {
@@ -259,6 +261,30 @@ async function main() {
             });
         });
 
+        let poolIdsBalancerV3: FlashLoanIdData[] = [];
+        Object.entries(BALANCER_V3_FORKS).forEach(([dex, maps]) => {
+            Object.entries(maps.vault).forEach(([chains, address]) => {
+                if (chains === chain) {
+                    if (!DEX_TO_CHAINS_EXCLUSIONS[dex]?.includes(chain))
+                        poolIdsBalancerV3.push({
+                            entityName: dex,
+                            entityId: maps.forkId,
+                            pool: address,
+                        });
+                }
+            });
+        });
+
+        // Presence of UniV4 determines whether this chain's Composer inherits SwapCallbacks
+        let hasUniV4 = false;
+        Object.entries(UNISWAP_V4_FORKS).forEach(([dex, maps]) => {
+            Object.entries(maps.pm).forEach(([chains]) => {
+                if (chains === chain && !DEX_TO_CHAINS_EXCLUSIONS[dex]?.includes(chain)) {
+                    hasUniV4 = true;
+                }
+            });
+        });
+
         /**
          * Create code snippets
          * `constantsData` for the head constants
@@ -360,6 +386,41 @@ async function main() {
             switchCaseContentLista += multiSwitchCaseEnd;
         }
         /**
+         * Balancer V3
+         */
+        let constantsDataBalancerV3 = ``;
+        let switchCaseContentBalancerV3 = ``;
+        poolIdsBalancerV3 = poolIdsBalancerV3.sort((a, b) => (Number(a.entityId) < Number(b.entityId) ? -1 : 1));
+        if (poolIdsBalancerV3.length === 1) {
+            const {pool, entityName} = poolIdsBalancerV3[0];
+            constantsDataBalancerV3 += createConstant(pool, entityName);
+            // reuse the V4/BalV3 single-vault validator
+            switchCaseContentBalancerV3 += `
+        if xor(caller(), ${entityName}) {
+            mstore(0, INVALID_CALLER)
+            revert(0, 0x4)
+        }
+    `;
+        } else if (poolIdsBalancerV3.length > 1) {
+            switchCaseContentBalancerV3 += `switch poolId`;
+            poolIdsBalancerV3.forEach(({pool, entityName, entityId}) => {
+                constantsDataBalancerV3 += createConstant(pool, entityName);
+                switchCaseContentBalancerV3 += `case ${entityId} {
+        if xor(caller(), ${entityName}) {
+            mstore(0, INVALID_CALLER)
+            revert(0, 0x4)
+        }
+    }\n`;
+            });
+            switchCaseContentBalancerV3 += `
+                default {
+                    mstore(0x0, BAD_POOL)
+                    revert(0x0, 0x4)
+                }
+            `;
+        }
+
+        /**
          * Balancer V2
          */
         let constantsDataBalancerV2 = ``;
@@ -413,6 +474,11 @@ async function main() {
             poolIdsBalancerV2.length > 0,
             templateBalancerV2(constantsDataBalancerV2, switchCaseContentBalancerV2, isCancun)
         );
+        writeOrDeleteCallback(
+            "BalancerV3Callback.sol",
+            poolIdsBalancerV3.length > 0,
+            templateBalancerV3(constantsDataBalancerV3, switchCaseContentBalancerV3, poolIdsBalancerV3.length > 1)
+        );
 
         const filePathFlashCallbacks = `./contracts/1delta/composer/chains/${key}/flashLoan/FlashLoanCallbacks.sol`;
         fs.writeFileSync(
@@ -422,6 +488,7 @@ async function main() {
                 lenderIdsAaveV3.length > 0,
                 lenderIdsMorphoBlue.length > 0,
                 poolIdsBalancerV2.length > 0,
+                poolIdsBalancerV3.length > 0,
                 lenderIdsLista.length > 0
             )
         );
@@ -446,7 +513,7 @@ async function main() {
         }
 
         const filePathComposer = `./contracts/1delta/composer/chains/${key}/Composer.sol`;
-        fs.writeFileSync(filePathComposer, templateComposer(toCamelCaseWithFirstUpper(key)));
+        fs.writeFileSync(filePathComposer, templateComposer(toCamelCaseWithFirstUpper(key), hasUniV4));
 
         console.log(`Generated flash loan callbacks on ${chain}`);
     }

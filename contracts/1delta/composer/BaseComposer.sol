@@ -8,20 +8,17 @@ import {Transfers} from "./transfers/Transfers.sol";
 import {ERC4626Operations} from "./ERC4626/ERC4626Operations.sol";
 import {UniversalLending} from "./lending/UniversalLending.sol";
 import {Permits} from "./permit/Permits.sol";
-import {Swaps} from "./swappers/Swaps.sol";
 import {Gen2025DexActions} from "./singletons/Gen2025DexActions.sol";
 import {DeadLogger} from "../shared/logs/DeadLogger.sol";
 
 /**
  * @title Base aggregator contract that needs overrides for explicit chains.
- *        Allows spot and margin swap aggregation
  *        Efficient batching through compact calldata usage.
  *        Needs to inherit callback implementations
  * @author 1delta Labs AG
  */
 abstract contract BaseComposer is
     DeadLogger,
-    Swaps,
     Gen2025DexActions,
     UniversalLending,
     ERC4626Operations,
@@ -72,6 +69,7 @@ abstract contract BaseComposer is
     )
         internal
         virtual
+        override
     {
         // data loop paramters
         uint256 maxIndex;
@@ -99,9 +97,7 @@ abstract contract BaseComposer is
                 currentOffset := add(1, currentOffset)
             }
             if (operation < ComposerCommands.PERMIT) {
-                if (operation == ComposerCommands.SWAPS) {
-                    currentOffset = _swap(currentOffset, callerAddress);
-                } else if (operation == ComposerCommands.EXT_CALL) {
+                if (operation == ComposerCommands.EXT_CALL) {
                     currentOffset = _callExternal(currentOffset);
                 } else if (operation == ComposerCommands.LENDING) {
                     currentOffset = _lendingOperations(callerAddress, currentOffset);

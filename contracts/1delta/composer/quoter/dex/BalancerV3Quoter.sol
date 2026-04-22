@@ -2,7 +2,7 @@
 pragma solidity 0.8.34;
 
 import {Masks} from "../../../shared/masks/Masks.sol";
-import {DexTypeMappings} from "../../swappers/dex/DexTypeMappings.sol";
+import {DexTypeMappings} from "./DexTypeMappings.sol";
 import {QuoterUtils} from "./utils/QuoterUtils.sol";
 
 interface IBalancerV3VaultSelectors {

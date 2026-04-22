@@ -31,9 +31,7 @@ export const templateUniversalFlashLoan = (hasMorpho: boolean, hasAaveV2: boolea
     }
 
     if (inherits.length === 0)
-        return `
-
-    // SPDX-License-Identifier: BUSL-1.1
+        return `// SPDX-License-Identifier: BUSL-1.1
 
 pragma solidity 0.8.34;
 
@@ -56,9 +54,7 @@ contract UniversalFlashLoan is FlashLoanCallbacks {
     
     `;
 
-    return `
-
-// SPDX-License-Identifier: BUSL-1.1
+    return `// SPDX-License-Identifier: BUSL-1.1
 
 pragma solidity 0.8.34;
 

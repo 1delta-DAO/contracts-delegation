@@ -19,7 +19,6 @@ contract GasZipTest is BaseTest {
     address private gasZipRouter = 0x2a37D63EAdFe4b4682a3c28C1c2cD4F109Cc2762;
 
     function setUp() public virtual {
-        rpcOverrides[Chains.ETHEREUM_MAINNET] = "wss://0xrpc.io/eth";
         _init(Chains.ETHEREUM_MAINNET, 0, true);
 
         callForwarder = new CallForwarder();

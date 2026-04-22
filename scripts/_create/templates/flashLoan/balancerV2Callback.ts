@@ -1,5 +1,4 @@
-export const templateBalancerV2 = (addressContants: string, switchCaseContent: string, cancun = false) => `
-// SPDX-License-Identifier: BUSL-1.1
+export const templateBalancerV2 = (addressContants: string, switchCaseContent: string, cancun = false) => `// SPDX-License-Identifier: BUSL-1.1
 
 pragma solidity 0.8.34;
 

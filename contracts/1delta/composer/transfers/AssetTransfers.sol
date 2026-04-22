@@ -486,4 +486,39 @@ contract AssetTransfers is BaseUtils {
         }
         return currentOffset;
     }
+
+    /**
+     * @notice Transfer a single ERC721 `tokenId` held by the composer to `receiver`.
+     * @dev Caller must supply the exact `tokenId`. Any ERC721 is supported; no enumeration
+     *      extension required. Bubbles up the collection's revert if the composer isn't the
+     *      current owner.
+     * @param currentOffset Current position in the calldata
+     * @return Updated calldata offset after processing
+     * @custom:calldata-offset-table
+     * | Offset | Length (bytes) | Description |
+     * |--------|----------------|-------------|
+     * | 0      | 20             | collection  |
+     * | 20     | 20             | receiver    |
+     * | 40     | 32             | tokenId     |
+     */
+    function _sweepNft(uint256 currentOffset) internal returns (uint256) {
+        assembly {
+            let collection := shr(96, calldataload(currentOffset))
+            let receiver := shr(96, calldataload(add(currentOffset, 20)))
+            let tokenId := calldataload(add(currentOffset, 40))
+
+            let ptr := mload(0x40)
+            mstore(ptr, ERC20_TRANSFER_FROM)
+            mstore(add(ptr, 0x04), address())
+            mstore(add(ptr, 0x24), receiver)
+            mstore(add(ptr, 0x44), tokenId)
+            if iszero(call(gas(), collection, 0, ptr, 0x64, 0, 0)) {
+                returndatacopy(0, 0, returndatasize())
+                revert(0, returndatasize())
+            }
+
+            currentOffset := add(currentOffset, 72)
+        }
+        return currentOffset;
+    }
 }

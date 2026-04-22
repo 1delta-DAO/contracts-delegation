@@ -8,6 +8,8 @@ import {CompoundV3Lending} from "./CompoundV3Lending.sol";
 import {CompoundV2Lending} from "./CompoundV2Lending.sol";
 import {MorphoLending} from "./MorphoLending.sol";
 import {SiloV2Lending} from "./SiloV2Lending.sol";
+import {FluidLending} from "./FluidLending.sol";
+import {FluidSmartLending} from "./FluidSmartLending.sol";
 import {LenderIds, LenderOps} from "../enums/DeltaEnums.sol";
 import {DeltaErrors} from "contracts/1delta/shared/errors/Errors.sol";
 
@@ -26,7 +28,8 @@ abstract contract UniversalLending is
     CompoundV2Lending,
     MorphoLending,
     SiloV2Lending,
-    DeltaErrors
+    FluidLending, // brings in DeltaErrors transitively
+    FluidSmartLending
 {
     /**
      * @notice Executes any lending operation across various lenders
@@ -142,13 +145,25 @@ abstract contract UniversalLending is
          * deposit lendingToken
          */
         else if (lendingOperation == LenderOps.DEPOSIT_LENDING_TOKEN) {
-            return _encodeMorphoDeposit(currentOffset, callerAddress);
+            if (lender < LenderIds.UP_TO_MORPHO) {
+                return _encodeMorphoDeposit(currentOffset, callerAddress);
+            } else if (lender >= LenderIds.UP_TO_AAVE_V4 && lender < LenderIds.UP_TO_FLUID) {
+                return _depositToFluidFToken(currentOffset);
+            } else {
+                _invalidOperation();
+            }
         }
         /**
          * withdraw lendingToken
          */
         else if (lendingOperation == LenderOps.WITHDRAW_LENDING_TOKEN) {
-            return _encodeMorphoWithdraw(currentOffset, callerAddress);
+            if (lender < LenderIds.UP_TO_MORPHO) {
+                return _encodeMorphoWithdraw(currentOffset, callerAddress);
+            } else if (lender >= LenderIds.UP_TO_AAVE_V4 && lender < LenderIds.UP_TO_FLUID) {
+                return _withdrawFromFluidFToken(currentOffset, callerAddress);
+            } else {
+                _invalidOperation();
+            }
         }
         /**
          * Set collateral status (Aave V4 only)
@@ -156,6 +171,37 @@ abstract contract UniversalLending is
         else if (lendingOperation == LenderOps.SET_COLLATERAL) {
             if (lender < LenderIds.UP_TO_AAVE_V4) {
                 return _setCollateralAaveV4(currentOffset, callerAddress);
+            } else {
+                _invalidOperation();
+            }
+        }
+        /**
+         * Fluid T1 operate — dual-axis col + debt in a single op, with fresh-mint auto-sweep.
+         * Supersedes the per-axis DEPOSIT/BORROW/REPAY/WITHDRAW fluid ops.
+         */
+        else if (lendingOperation == LenderOps.FLUID_OPERATE_T1) {
+            if (lender >= LenderIds.UP_TO_AAVE_V4 && lender < LenderIds.UP_TO_FLUID) {
+                return _callFluidOperate(currentOffset);
+            } else {
+                _invalidOperation();
+            }
+        }
+        /**
+         * Fluid smart-vault (T2/T3/T4) operate
+         */
+        else if (lendingOperation == LenderOps.FLUID_OPERATE) {
+            if (lender >= LenderIds.UP_TO_FLUID && lender < LenderIds.UP_TO_FLUID_SMART) {
+                return _fluidSmartOperate(currentOffset);
+            } else {
+                _invalidOperation();
+            }
+        }
+        /**
+         * Fluid smart-vault (T2/T3/T4) operatePerfect
+         */
+        else if (lendingOperation == LenderOps.FLUID_OPERATE_PERFECT) {
+            if (lender >= LenderIds.UP_TO_FLUID && lender < LenderIds.UP_TO_FLUID_SMART) {
+                return _fluidSmartOperatePerfect(currentOffset);
             } else {
                 _invalidOperation();
             }
