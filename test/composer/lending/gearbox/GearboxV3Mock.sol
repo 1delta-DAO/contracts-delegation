@@ -9,6 +9,27 @@ struct MultiCall {
     bytes callData;
 }
 
+/// @dev Mirror of Gearbox V3's `CollateralDebtData`. The safe-repay primitive parses the returndata
+///      via `mload` at fixed offsets relying on this exact field order, so we must match the real
+///      struct one-for-one. Returning the struct by value (not as a multi-value tuple) is what
+///      produces the leading outer-offset pointer the primitive's assembly expects.
+struct CollateralDebtData {
+    uint256 debt;
+    uint256 cumulativeIndexNow;
+    uint256 cumulativeIndexLastUpdate;
+    uint128 cumulativeQuotaInterest;
+    uint256 accruedInterest;
+    uint256 accruedFees;
+    uint256 totalDebtUSD;
+    uint256 totalValue;
+    uint256 totalValueUSD;
+    uint256 twvUSD;
+    uint256 enabledTokensMask;
+    uint256 quotedTokensMask;
+    address[] quotedTokens;
+    address _poolQuotaKeeper;
+}
+
 interface IMintable {
     function transferFrom(address, address, uint256) external returns (bool);
     function transfer(address, uint256) external returns (bool);
@@ -202,5 +223,45 @@ contract GearboxV3FacadeMock {
 
     function setMockUnderlying(address u) external {
         mockUnderlying = u;
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // Gearbox V3 CM read stubs — used by the safe-repay primitive
+    // ─────────────────────────────────────────────────────────────────────────
+    //
+    // `_repaySafeGearboxV3` calls `calcDebtAndCollateral(ca, DEBT_ONLY)` and `debtLimits()`. For
+    // the mock these are plain storage reads; tests configure them via the setters below.
+
+    uint256 public mockAccruedInterest;
+    uint256 public mockAccruedFees;
+    uint128 public mockMinDebt;
+    uint128 public mockMaxDebt;
+
+    function setMockAccruals(uint256 interest, uint256 fees) external {
+        mockAccruedInterest = interest;
+        mockAccruedFees = fees;
+    }
+
+    function setMockDebtLimits(uint128 min_, uint128 max_) external {
+        mockMinDebt = min_;
+        mockMaxDebt = max_;
+    }
+
+    /// @dev `debtLimits()` — ICreditFacadeV3 getter. Returns the bounds the safe-partial primitive
+    ///      uses to clamp against the forbidden `(0, minDebt)` window.
+    function debtLimits() external view returns (uint128, uint128) {
+        return (mockMinDebt, mockMaxDebt);
+    }
+
+    /// @dev `calcDebtAndCollateral(ca, task)` — returns a `CollateralDebtData` struct whose
+    ///      `debt + accruedInterest + accruedFees` fields are what the safe-repay primitive sums
+    ///      to get `maxRepayment`. Returning-by-value matches the real CM's ABI: the returndata
+    ///      starts with an outer offset pointer to the struct, which the primitive's assembly
+    ///      skips before reading the fields.
+    function calcDebtAndCollateral(address, /*ca*/ uint8 /*task*/ ) external view returns (CollateralDebtData memory cdd) {
+        cdd.debt = debt;
+        cdd.accruedInterest = mockAccruedInterest;
+        cdd.accruedFees = mockAccruedFees;
+        cdd.quotedTokens = new address[](0);
     }
 }

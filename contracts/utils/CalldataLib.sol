@@ -2224,15 +2224,31 @@ library CalldataLib {
     }
 
     /**
-     * @notice Encode a Gearbox V3 full-repay op (no dust, no sporadic reverts — see GEARBOX.md §5).
-     * @dev Funding is the caller's responsibility — emit a `TRANSFER_FROM` op upfront that moves
-     *      the buffered amount (`quotedDebt × (1 + bufferBps/10000)`) from the user to the
-     *      composer. The composer reads `balanceOf(this)` at execution for the inner
-     *      `addCollateral`. An `APPROVE(underlying, creditManager)` is prepended automatically.
-     * @param quotedTokens Currently-enabled quoted collateral tokens on `creditAccount`. Enumerate
-     *                     off-chain via
+     * @notice Encode a Gearbox V3 repay that closes the position when funds permit, and
+     *         degrades to a partial otherwise.
+     * @dev The composer reads `maxRepayment` on-chain via `calcDebtAndCollateral(DEBT_ONLY)` and
+     *      computes `amt = min(balanceOf(composer), maxRepayment)`:
+     *        - `amt == maxRepayment` AND `quotedTokens.length > 0`: close-out — emit
+     *          `[updateQuota × N, addCollateral(underlying, maxRepayment), decreaseDebt(max)]`.
+     *          Exact deposit, no trailing `withdrawCollateral` sweep. Surplus stays on composer
+     *          for explicit sweep (integrates cleanly with flash-close flows).
+     *        - otherwise: partial — `[addCollateral(amt), decreaseDebt(amt)]`. The caller's
+     *          quotedTokens list is ignored when funds are short; the primitive prefers
+     *          executing a partial over reverting. This is the "repay 99.9k of a 100k debt
+     *          when 100 wei short" behavior — no funding arithmetic reverts.
+     *
+     *      Funding: emit a `TRANSFER_FROM` op upfront to move `underlying` from the user to the
+     *      composer. For a guaranteed close-out, transfer at least `maxRepayment`; otherwise the
+     *      primitive will partial-pay whatever is delivered. An `APPROVE(underlying,
+     *      creditManager)` is prepended automatically.
+     *
+     *      Dispatched through `LenderOps.REPAY` with amount = `UINT112_MASK`.
+     *
+     * @param quotedTokens Currently-enabled quoted collateral tokens on `creditAccount` — used
+     *                     only for the close-out branch. Enumerate off-chain via
      *                     `CreditManagerV3.enabledTokensMask(ca) & CreditManagerV3.quotedTokensMask()`
-     *                     and walk the bits.
+     *                     and walk the bits. Empty is legal (CA with no quotas enabled, or if
+     *                     the caller accepts only a partial path).
      */
     function encodeGearboxV3RepayAll(
         address underlying,
@@ -2265,6 +2281,45 @@ library CalldataLib {
             creditFacade,
             uint8(quotedTokens.length),
             quotedBlob
+        );
+    }
+
+    /**
+     * @notice Encode a Gearbox V3 **safe-max partial** repay — "repay as much as possible
+     *         without closing". The composer reads `maxRepay` on-chain, computes `amt =
+     *         min(balanceOf(composer), maxRepay)`, and emits `addCollateral + decreaseDebt(amt)`.
+     *         Purpose-built for liquidation-prevention flows that need to execute even when the
+     *         caller delivered less than the full debt.
+     *
+     * @dev Dispatched through `LenderOps.REPAY` with `amount = UINT112_MASK` (the "safe-max"
+     *      sentinel) and `numQuoted = 0`. With no quoted-tokens list, the composer never
+     *      attempts a close-out — if `bal >= maxRepay` the partial pays exactly `maxRepay`
+     *      which takes debt to zero; if the CA has enabled quotas at that point, Gearbox's
+     *      `DebtToZeroWithActiveQuotasException` reverts (caller error — should have used
+     *      `encodeGearboxV3RepayAll` with the quoted list). `creditManager` is only used for
+     *      the prepended `APPROVE(underlying, cm)`; the composer derives its own CM for auth
+     *      and on-chain reads from `creditFacade.creditManager()`.
+     */
+    function encodeGearboxV3RepayPartialMax(
+        address underlying,
+        address creditAccount,
+        address creditFacade,
+        address creditManager
+    )
+        internal
+        pure
+        returns (bytes memory)
+    {
+        return abi.encodePacked(
+            encodeApprove(underlying, creditManager),
+            uint8(ComposerCommands.LENDING),
+            uint8(LenderOps.REPAY),
+            uint16(LenderIds.UP_TO_GEARBOX_V3 - 1),
+            underlying,
+            GEARBOX_REPAY_ALL, // UINT112_MASK → safe-max sentinel
+            creditAccount,
+            creditFacade,
+            uint8(0) // numQuotedTokens — 0 means "never close", always degrade to partial
         );
     }
 

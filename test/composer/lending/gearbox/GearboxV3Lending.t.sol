@@ -339,76 +339,13 @@ contract GearboxV3LendingMockTest is BaseTest {
     // 5. Full repay — the dust-safe path
     // ─────────────────────────────────────────────────────────────────────────
 
-    function test_gearboxV3_repay_all_emits_strip_quotas_add_decrease_max_withdraw_residue() public {
-        // CA has 500e6 debt and 2 active quoted tokens; user pulls 520e6 (4% buffer).
-        _fundPoolLiquidity(500e6);
-        _seedDebt(500e6);
-        _prime(underlying, user, 520e6);
-
-        address[] memory quoted = new address[](2);
-        quoted[0] = address(collToken);
-        quoted[1] = address(0xDe); // second dummy quoted token
-
-        bytes memory data = abi.encodePacked(
-            _transferInOp(underlying, 520e6),
-            CalldataLib.encodeGearboxV3RepayAll(
-                address(underlying), creditAccount, address(facade), creditManager, quoted
-            )
-        );
-
-        uint256 userBalBefore = underlying.balanceOf(user);
-
-        vm.prank(user);
-        composer.deltaCompose(data);
-
-        _assertRepayAllSequence(quoted, 520e6);
-
-        // Dust assertions
-        assertEq(facade.debt(), 0, "debt zeroed");
-        assertEq(facade.caBalances(address(underlying)), 0, "no residue on CA");
-        assertEq(underlying.balanceOf(address(composer)), 0, "no residue on composer");
-        assertEq(userBalBefore - underlying.balanceOf(user), 500e6, "user net spent = exact debt");
-    }
-
-    /// @dev Moves the per-sub-call selector/arg assertions out of the test body so the test
-    ///      function's stack stays under the solc limit.
-    function _assertRepayAllSequence(address[] memory quoted, uint256 pulledAmount) private view {
-        assertEq(facade.lastCallsLength(), quoted.length + 3, "updateQuota x N + add + dec + withdraw");
-
-        for (uint256 i = 0; i < quoted.length; i++) {
-            (, bytes memory cd) = facade.getLastCall(i);
-            assertEq(bytes4(cd), SEL_UPDATE_QUOTA);
-            (address tok, int96 qc,) = abi.decode(_sliceCalldata(cd), (address, int96, uint96));
-            assertEq(tok, quoted[i]);
-            assertEq(qc, type(int96).min, "quotaChange = int96.min");
-        }
-
-        {
-            (, bytes memory cd) = facade.getLastCall(quoted.length);
-            assertEq(bytes4(cd), SEL_ADD_COLLATERAL);
-            (address tok, uint256 amt) = abi.decode(_sliceCalldata(cd), (address, uint256));
-            assertEq(tok, address(underlying));
-            assertEq(amt, pulledAmount, "addCollateral uses composer balance");
-        }
-
-        {
-            (, bytes memory cd) = facade.getLastCall(quoted.length + 1);
-            assertEq(bytes4(cd), SEL_DECREASE_DEBT);
-            uint256 amt = abi.decode(_sliceCalldata(cd), (uint256));
-            assertEq(amt, type(uint256).max, "decreaseDebt arg = uint256.max");
-        }
-
-        {
-            (, bytes memory cd) = facade.getLastCall(quoted.length + 2);
-            assertEq(bytes4(cd), SEL_WITHDRAW_COLLATERAL);
-            (address tok, uint256 amt, address to) = abi.decode(_sliceCalldata(cd), (address, uint256, address));
-            assertEq(tok, address(underlying));
-            assertEq(amt, type(uint256).max, "withdraw residue sentinel");
-            assertEq(to, user, "residue goes to callerAddress");
-        }
-    }
-
+    /// @dev Edge case: `encodeGearboxV3RepayAll` with an empty quotedTokens list — valid when
+    ///      the CA has no enabled quoted collateral. The safe-close path emits just
+    ///      [addCollateral(maxRepay), decreaseDebt(max)] — 2 sub-calls, no quota strip, no sweep.
     function test_gearboxV3_repay_all_no_quoted_tokens() public {
+        // Mock stubs: maxRepay = debt (no accrual), bal >= maxRepay required for safe-close.
+        facade.setMockAccruals(0, 0);
+        facade.setMockDebtLimits(1, type(uint128).max);
         _fundPoolLiquidity(100e6);
         _seedDebt(100e6);
         _prime(underlying, user, 105e6);
@@ -425,8 +362,8 @@ contract GearboxV3LendingMockTest is BaseTest {
         vm.prank(user);
         composer.deltaCompose(data);
 
-        // No quota strip → only addCollateral + decreaseDebt + withdrawCollateral = 3
-        assertEq(facade.lastCallsLength(), 3);
+        // No quotas to strip, no sweep -> addCollateral + decreaseDebt = 2 sub-calls.
+        assertEq(facade.lastCallsLength(), 2);
         assertEq(facade.debt(), 0);
     }
 
@@ -535,6 +472,190 @@ contract GearboxV3LendingMockTest is BaseTest {
         // The facade's token balance (from `_fundPoolLiquidity`) represents the pool side; it's
         // what `decreaseDebt` will receive via `POOL_SINK` transfer — not caBalances.
         facade.setDebt(amt);
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // 7. Safe-repay primitive — clamped partial + pinned close-out
+    //
+    // Exercises `GEARBOX_REPAY_SAFE`. The mock's `calcDebtAndCollateral` and `debtLimits` stubs
+    // stand in for the real CM/facade reads so we can drive the primitive's two branches
+    // deterministically without a fork.
+    // ─────────────────────────────────────────────────────────────────────────
+
+    /// SP1: safe-partial, bal well below (maxRepay - minDebt). Consumes the full caller balance;
+    ///      emits [addCollateral(bal), decreaseDebt(bal)]. Leaves remainder ≥ minDebt.
+    function test_gearboxV3_safe_partial_below_window_consumes_bal() public {
+        uint128 minDebt = 50e6;
+        uint128 maxDebt = 100_000e6;
+        facade.setMockDebtLimits(minDebt, maxDebt);
+        facade.setMockAccruals(10e6, 0); // 10e6 interest, 0 fees → maxRepay = debt + 10e6
+        _fundPoolLiquidity(10_000e6);
+        _seedDebt(500e6); // maxRepay = 510e6, safeCap = 460e6
+
+        uint256 repayAmt = 100e6; // well below 460e6
+        _prime(underlying, user, repayAmt);
+
+        bytes memory data = abi.encodePacked(
+            _transferInOp(underlying, repayAmt),
+            CalldataLib.encodeGearboxV3RepayPartialMax(
+                address(underlying), creditAccount, address(facade), creditManager
+            )
+        );
+
+        vm.prank(user);
+        composer.deltaCompose(data);
+
+        assertEq(facade.lastCallsLength(), 2, "addCollateral + decreaseDebt");
+        (, bytes memory cd0) = facade.getLastCall(0);
+        assertEq(bytes4(cd0), SEL_ADD_COLLATERAL);
+        (, uint256 depAmt) = abi.decode(_sliceCalldata(cd0), (address, uint256));
+        assertEq(depAmt, repayAmt, "deposit = caller balance");
+
+        (, bytes memory cd1) = facade.getLastCall(1);
+        assertEq(bytes4(cd1), SEL_DECREASE_DEBT);
+        uint256 decAmt = abi.decode(_sliceCalldata(cd1), (uint256));
+        assertEq(decAmt, repayAmt, "decreaseDebt arg = caller balance (no clamp hit)");
+
+        assertEq(facade.debt(), 500e6 - repayAmt, "debt reduced by exactly repayAmt");
+        assertEq(underlying.balanceOf(address(composer)), 0, "composer residue 0");
+    }
+
+    /// SP2: safe-partial, bal above maxRepay. Caps payment at maxRepay — primitive never
+    ///      overpays Gearbox. Residue (bal - maxRepay) stays on composer for explicit sweep.
+    ///      Note: the composer intentionally does NOT clamp further by `minDebt`; if a caller
+    ///      lands in the `(maxRepay - minDebt, maxRepay)` window the facade reverts naturally
+    ///      — same policy as the Lista lender path.
+    function test_gearboxV3_safe_partial_caps_at_maxRepay_residue_on_composer() public {
+        facade.setMockAccruals(5e6, 2e6); // maxRepay = debt + 7e6
+        _fundPoolLiquidity(10_000e6);
+        _seedDebt(500e6); // maxRepay = 507e6
+
+        uint256 funding = 600e6; // comfortably above maxRepay
+        _prime(underlying, user, funding);
+
+        bytes memory data = abi.encodePacked(
+            _transferInOp(underlying, funding),
+            CalldataLib.encodeGearboxV3RepayPartialMax(
+                address(underlying), creditAccount, address(facade), creditManager
+            )
+        );
+
+        vm.prank(user);
+        composer.deltaCompose(data);
+
+        (, bytes memory cd1) = facade.getLastCall(1);
+        uint256 decAmt = abi.decode(_sliceCalldata(cd1), (uint256));
+        assertEq(decAmt, 507e6, "decreaseDebt capped at maxRepay (no overpay)");
+
+        uint256 expectedResidue = funding - 507e6;
+        assertEq(underlying.balanceOf(address(composer)), expectedResidue, "surplus stays on composer");
+    }
+
+    /// SP3: safe-partial with zero balance reverts with InvalidOperation (composer's way of
+    ///      saying "nothing to do"). Pins the "bal == 0" edge.
+    function test_gearboxV3_safe_partial_zero_balance_reverts() public {
+        uint128 minDebt = 50e6;
+        facade.setMockDebtLimits(minDebt, 100_000e6);
+        facade.setMockAccruals(0, 0);
+        _seedDebt(500e6);
+
+        // No prime, no transferIn — composer has 0 underlying.
+        bytes memory data = CalldataLib.encodeGearboxV3RepayPartialMax(
+            address(underlying), creditAccount, address(facade), creditManager
+        );
+
+        vm.prank(user);
+        vm.expectRevert();
+        composer.deltaCompose(data);
+    }
+
+    /// SP4: pinned close-out with sufficient funding. Emits [updateQuota × N, addCollateral(maxRepay),
+    ///      decreaseDebt(max)] — NO trailing withdrawCollateral sweep (the fix for §8 N2).
+    function test_gearboxV3_safe_close_pins_deposit_and_omits_sweep() public {
+        uint128 minDebt = 50e6;
+        facade.setMockDebtLimits(minDebt, 100_000e6);
+        facade.setMockAccruals(7e6, 3e6); // maxRepay = debt + 10e6
+        _fundPoolLiquidity(10_000e6);
+        _seedDebt(500e6); // maxRepay = 510e6
+
+        address[] memory quoted = new address[](2);
+        quoted[0] = address(collToken);
+        quoted[1] = address(0xDe);
+
+        uint256 funding = 600e6; // comfortably above maxRepay
+        _prime(underlying, user, funding);
+
+        bytes memory data = abi.encodePacked(
+            _transferInOp(underlying, funding),
+            CalldataLib.encodeGearboxV3RepayAll(
+                address(underlying), creditAccount, address(facade), creditManager, quoted
+            )
+        );
+
+        vm.prank(user);
+        composer.deltaCompose(data);
+
+        // 2 quota strips + addCollateral + decreaseDebt = 4 sub-calls. Crucially, NOT 5 — no
+        // withdrawCollateral at the tail.
+        assertEq(facade.lastCallsLength(), quoted.length + 2, "N quotas + add + decrease (no sweep)");
+
+        // tuple N = addCollateral(maxRepay), exact deposit (not balanceOf).
+        (, bytes memory cdAdd) = facade.getLastCall(quoted.length);
+        assertEq(bytes4(cdAdd), SEL_ADD_COLLATERAL);
+        (, uint256 depAmt) = abi.decode(_sliceCalldata(cdAdd), (address, uint256));
+        assertEq(depAmt, 510e6, "addCollateral pinned to maxRepay");
+
+        // tuple N+1 = decreaseDebt(max) — CM clamps to maxRepayment internally.
+        (, bytes memory cdDec) = facade.getLastCall(quoted.length + 1);
+        assertEq(bytes4(cdDec), SEL_DECREASE_DEBT);
+        assertEq(abi.decode(_sliceCalldata(cdDec), (uint256)), type(uint256).max, "decreaseDebt = max");
+
+        assertEq(facade.debt(), 0, "debt zeroed");
+        // Residue on composer = funding - maxRepay. Mock's addCollateral pulls exactly depAmt.
+        assertEq(underlying.balanceOf(address(composer)), funding - 510e6, "residue on composer");
+    }
+
+    /// SP5: **under-funded close-out degrades to partial** rather than reverting. The caller
+    ///      signaled close intent via quotedTokens, but composer balance is short of maxRepay;
+    ///      the primitive executes a partial repay instead. The quota strip is skipped (no
+    ///      close happens). This is the "100 wei short of a 100k repay — still do the 99.9k"
+    ///      property that motivated the merge of the two safe shapes.
+    function test_gearboxV3_safe_close_underfunded_degrades_to_partial() public {
+        facade.setMockAccruals(10e6, 0);
+        _fundPoolLiquidity(10_000e6);
+        _seedDebt(500e6); // maxRepay = 510e6
+
+        address[] memory quoted = new address[](1);
+        quoted[0] = address(collToken);
+
+        uint256 funding = 400e6; // below maxRepay = 510e6 → partial path
+        _prime(underlying, user, funding);
+
+        bytes memory data = abi.encodePacked(
+            _transferInOp(underlying, funding),
+            CalldataLib.encodeGearboxV3RepayAll(
+                address(underlying), creditAccount, address(facade), creditManager, quoted
+            )
+        );
+
+        vm.prank(user);
+        composer.deltaCompose(data); // executes — does NOT revert
+
+        // Partial shape: 2 sub-calls only (addCollateral + decreaseDebt). No quota strip.
+        assertEq(facade.lastCallsLength(), 2, "partial shape on under-funded close intent");
+
+        (, bytes memory cdAdd) = facade.getLastCall(0);
+        assertEq(bytes4(cdAdd), SEL_ADD_COLLATERAL);
+        (, uint256 depAmt) = abi.decode(_sliceCalldata(cdAdd), (address, uint256));
+        assertEq(depAmt, funding, "deposit = caller balance (not maxRepay)");
+
+        (, bytes memory cdDec) = facade.getLastCall(1);
+        assertEq(bytes4(cdDec), SEL_DECREASE_DEBT);
+        uint256 decAmt = abi.decode(_sliceCalldata(cdDec), (uint256));
+        assertEq(decAmt, funding, "decreaseDebt = caller balance (literal, not max)");
+
+        assertEq(facade.debt(), 500e6 - funding, "debt reduced by funding, not closed");
+        assertEq(underlying.balanceOf(address(composer)), 0, "composer consumed all funds");
     }
 }
 

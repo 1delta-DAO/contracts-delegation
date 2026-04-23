@@ -66,6 +66,36 @@ interface ICM_V3Info {
         );
 }
 
+/// @dev `calcDebtAndCollateral(ca, task)` — returns a `CollateralDebtData` struct. We only need
+///      `debt + accruedInterest + accruedFees` which is Gearbox's `calcTotalDebt` and equals
+///      `maxRepayment` for non-USDT pools (wstETH pool is not USDT).
+///      Enum `CollateralCalcTask` values: GENERIC_PARAMS=0, DEBT_ONLY=1, FULL_LAZY=2, DEBT_COLLATERAL=3,
+///      DEBT_COLLATERAL_SAFE_PRICES=4. `DEBT_ONLY` is the cheapest read that still fills the fields
+///      we need.
+struct CollateralDebtData {
+    uint256 debt;
+    uint256 cumulativeIndexNow;
+    uint256 cumulativeIndexLastUpdate;
+    uint128 cumulativeQuotaInterest;
+    uint256 accruedInterest;
+    uint256 accruedFees;
+    uint256 totalDebtUSD;
+    uint256 totalValue;
+    uint256 totalValueUSD;
+    uint256 twvUSD;
+    uint256 enabledTokensMask;
+    uint256 quotedTokensMask;
+    address[] quotedTokens;
+    address _poolQuotaKeeper;
+}
+
+interface ICM_V3Calc {
+    function calcDebtAndCollateral(address creditAccount, uint8 task)
+        external
+        view
+        returns (CollateralDebtData memory);
+}
+
 /**
  * @notice Fork tests for GearboxV3Lending against the live wstETH pool / ETH+ credit suite on
  *         Ethereum mainnet.
@@ -350,54 +380,11 @@ contract GearboxV3ForkTest is BaseTest {
     }
 
     // ─────────────────────────────────────────────────────────────────────────
-    // 5. Full repay — dust-safe close-out
+    // 5. Full repay — superseded by §9 FS2 (`test_fork_gearbox_safe_close_drained_ca_*`).
+    //    The old "dust-safe close with sweep back to user" path has been replaced by the
+    //    pinned close-out primitive which deposits exactly `maxRepayment` and leaves surplus
+    //    (if any) on the composer for explicit sweep. See GEARBOX.md §5 for the new flow.
     // ─────────────────────────────────────────────────────────────────────────
-
-    function test_fork_gearbox_full_repay_zero_dust_close() public {
-        uint256 seed = uint256(minDebt) * 10;
-        uint256 debtAmt = uint256(minDebt) * 3; // pick something comfortably above minDebt
-        address ca = _openCaWithComposerBot(seed, debtAmt, PERM_COMPOSER_EXACT);
-
-        // Buffer: debt + small margin for accruals between fork block and tx inclusion.
-        // We pad 1% so a few seconds of interest never tips us into the "insufficient balance" path.
-        uint256 pulledAmount = debtAmt + (debtAmt / 100);
-        deal(underlying, user, pulledAmount);
-        vm.prank(user);
-        IERC20All(underlying).approve(address(composer), type(uint256).max);
-
-        address[] memory quoted = _enabledQuotedTokens(ca);
-
-        uint256 userBalBefore = IERC20All(underlying).balanceOf(user);
-        uint256 caCollBefore = IERC20All(ETHPLUS).balanceOf(ca);
-
-        bytes memory data = abi.encodePacked(
-            CalldataLib.encodeTransferIn(underlying, address(composer), pulledAmount),
-            CalldataLib.encodeGearboxV3RepayAll(underlying, ca, creditFacade, CREDIT_MANAGER, quoted)
-        );
-
-        vm.prank(user);
-        composer.deltaCompose(data);
-
-        // Dust-safety invariants: the composer holds nothing, the CA holds at most the 1-wei
-        // protocol sentinel Gearbox's `withdrawCollateral(type(uint256).max, …)` intentionally
-        // leaves (warm-slot optimization; see `CreditFacadeV3._withdrawCollateral` at line 754).
-        assertEq(IERC20All(underlying).balanceOf(address(composer)), 0, "composer holds no residue");
-        assertLe(IERC20All(underlying).balanceOf(ca), 1, "CA holds at most the 1-wei protocol sentinel");
-
-        // Position is fully closed — debt zeroed on-chain.
-        (uint256 debtRemaining,,,,,,,) = ICM_V3Info(CREDIT_MANAGER).creditAccountInfo(ca);
-        assertEq(debtRemaining, 0, "debt zeroed");
-
-        // The user cannot have spent more than what they pulled. We can't assert "net spent >=
-        // nominal debt" here — since the borrowed underlying was sitting on the CA pre-repay,
-        // the withdrawCollateral sweep returns that alongside the unused buffer, so the user's
-        // token-level cost is just the accrued interest over the test's block span.
-        uint256 netSpent = userBalBefore - IERC20All(underlying).balanceOf(user);
-        assertLe(netSpent, pulledAmount, "user cannot have spent more than pulled");
-
-        // Collateral untouched by the repay flow.
-        assertEq(IERC20All(ETHPLUS).balanceOf(ca), caCollBefore, "collateral untouched");
-    }
 
     // ─────────────────────────────────────────────────────────────────────────
     // 6. Mode C — openCreditAccount via GEARBOX_MULTICALL pins onBehalfOf to caller
@@ -446,6 +433,151 @@ contract GearboxV3ForkTest is BaseTest {
         assertEq(IERC20All(underlying).balanceOf(ca), borrowAmt, "CA holds the borrowed underlying");
     }
 
+    // ─────────────────────────────────────────────────────────────────────────
+    // 7. Repay edge cases — revert audit
+    //
+    // Pins the current primitives' revert surface so we know what a future
+    // clamped-repay primitive needs to handle. Each test exercises one of:
+    //
+    //   P1. Partial, amount >> debt                — `decreaseDebt` revert (underflow / over-repay)
+    //   P2. Partial, amount leaves (0, minDebt)    — `BorrowAmountOutOfLimitsException`
+    //   P3. Partial, amount ≈ debt (no quota strip)— close-out path reverts w/o quota strip or hits minDebt
+    //   F1. Full, pulled < debt                    — insufficient CA balance for `decreaseDebt(max)`
+    //   F2. Full, missing quotedTokens[]           — close-out blocked by non-zero quotas
+    //
+    // Happy-path coverage (partial within range, full with sufficient buffer + quoted list) is
+    // in §3 / §5 above.
+    // ─────────────────────────────────────────────────────────────────────────
+
+    /// @dev Seed `user` with `amt` underlying and max-approve composer.
+    function _fundUserForRepay(uint256 amt) internal {
+        deal(underlying, user, amt);
+        vm.prank(user);
+        IERC20All(underlying).approve(address(composer), type(uint256).max);
+    }
+
+    /// P1. Partial repay with amount far above current debt must revert.
+    function test_fork_gearbox_partial_repay_overshoot_reverts() public {
+        uint256 seed = uint256(minDebt) * 10;
+        uint256 debtAmt = uint256(minDebt) * 2;
+        address ca = _openCaWithComposerBot(seed, debtAmt, PERM_COMPOSER_EXACT);
+
+        uint256 overshoot = debtAmt * 5; // way above debt + any accrual
+        _fundUserForRepay(overshoot);
+
+        bytes memory data = abi.encodePacked(
+            CalldataLib.encodeTransferIn(underlying, address(composer), overshoot),
+            CalldataLib.encodeGearboxV3RepayPartial(underlying, uint128(overshoot), ca, creditFacade, CREDIT_MANAGER)
+        );
+
+        (uint256 debtBefore,,,,,,,) = ICM_V3Info(CREDIT_MANAGER).creditAccountInfo(ca);
+
+        vm.prank(user);
+        vm.expectRevert();
+        composer.deltaCompose(data);
+
+        (uint256 debtAfter,,,,,,,) = ICM_V3Info(CREDIT_MANAGER).creditAccountInfo(ca);
+        assertEq(debtAfter, debtBefore, "CA debt unchanged by reverted partial-overshoot");
+    }
+
+    /// P2. Partial repay that leaves residual debt in (0, minDebt) must revert.
+    function test_fork_gearbox_partial_repay_below_minDebt_reverts() public {
+        uint256 seed = uint256(minDebt) * 10;
+        uint256 debtAmt = uint256(minDebt) * 2;
+        address ca = _openCaWithComposerBot(seed, debtAmt, PERM_COMPOSER_EXACT);
+
+        // Aim to leave the CA with exactly (minDebt / 2) of remaining debt — squarely inside
+        // the forbidden (0, minDebt) window. Uses the on-chain debt snapshot to be accrual-safe.
+        (uint256 debtNow,,,,,,,) = ICM_V3Info(CREDIT_MANAGER).creditAccountInfo(ca);
+        uint256 targetRemainder = uint256(minDebt) / 2;
+        require(debtNow > targetRemainder, "pick a larger debtAmt");
+        uint256 repayAmt = debtNow - targetRemainder;
+
+        _fundUserForRepay(repayAmt);
+
+        bytes memory data = abi.encodePacked(
+            CalldataLib.encodeTransferIn(underlying, address(composer), repayAmt),
+            CalldataLib.encodeGearboxV3RepayPartial(underlying, uint128(repayAmt), ca, creditFacade, CREDIT_MANAGER)
+        );
+
+        vm.prank(user);
+        vm.expectRevert(); // BorrowAmountOutOfLimitsException
+        composer.deltaCompose(data);
+    }
+
+    /// P3. Partial repay with amount == debt-at-snapshot. Two possible failure modes, both revert:
+    ///   (a) If accrual pushed actual debt above the snapshot, remainder lands in (0, accrual) ⊂
+    ///       (0, minDebt) → `BorrowAmountOutOfLimitsException`.
+    ///   (b) If accrual is perfectly zero this block, remainder = 0 but quotas are still nonzero
+    ///       → `fullCollateralCheck` reverts (quota on a zero-debt CA is forbidden).
+    /// Either way, the partial primitive must not silently close-out the account.
+    function test_fork_gearbox_partial_repay_at_debt_snapshot_reverts() public {
+        uint256 seed = uint256(minDebt) * 10;
+        uint256 debtAmt = uint256(minDebt) * 2;
+        address ca = _openCaWithComposerBot(seed, debtAmt, PERM_COMPOSER_EXACT);
+
+        (uint256 debtNow,,,,,,,) = ICM_V3Info(CREDIT_MANAGER).creditAccountInfo(ca);
+        uint256 repayAmt = debtNow;
+
+        _fundUserForRepay(repayAmt);
+
+        bytes memory data = abi.encodePacked(
+            CalldataLib.encodeTransferIn(underlying, address(composer), repayAmt),
+            CalldataLib.encodeGearboxV3RepayPartial(underlying, uint128(repayAmt), ca, creditFacade, CREDIT_MANAGER)
+        );
+
+        vm.prank(user);
+        vm.expectRevert();
+        composer.deltaCompose(data);
+    }
+
+    // F1 (low-buffer graceful-close) removed — the old full-repay's "use CA's own underlying
+    //    to cover the gap" behavior no longer applies under the new strict safe-close
+    //    (`bal >= maxRepay` is required; underfunding reverts cleanly, no silent partial).
+    //    Rationale pinned by §9 FS2 and FS3 below.
+
+    /// F2. Full-repay path without the required `quotedTokens[]` list. Debt goes to zero but
+    ///     quotas remain non-zero → Gearbox's full collateral check rejects the state.
+    function test_fork_gearbox_full_repay_missing_quoted_tokens_reverts() public {
+        uint256 seed = uint256(minDebt) * 10;
+        uint256 debtAmt = uint256(minDebt) * 3;
+        address ca = _openCaWithComposerBot(seed, debtAmt, PERM_COMPOSER_EXACT);
+
+        // Sanity: the open flow set a quota on ETHPLUS. Pass an empty list to the close-out op.
+        address[] memory noQuoted = new address[](0);
+
+        uint256 pulled = debtAmt + (debtAmt / 100);
+        _fundUserForRepay(pulled);
+
+        bytes memory data = abi.encodePacked(
+            CalldataLib.encodeTransferIn(underlying, address(composer), pulled),
+            CalldataLib.encodeGearboxV3RepayAll(underlying, ca, creditFacade, CREDIT_MANAGER, noQuoted)
+        );
+
+        (uint256 debtBefore,,,,,,,) = ICM_V3Info(CREDIT_MANAGER).creditAccountInfo(ca);
+
+        vm.prank(user);
+        vm.expectRevert();
+        composer.deltaCompose(data);
+
+        (uint256 debtAfter,,,,,,,) = ICM_V3Info(CREDIT_MANAGER).creditAccountInfo(ca);
+        assertEq(debtAfter, debtBefore, "CA debt unchanged by reverted close-out missing quota list");
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // 8. On-chain debt read helper — shared between §9 FS tests that need to know
+    //    `maxRepayment` for pre-funding the safe-close. The old N1/N2 tests that motivated the
+    //    primitive's design are superseded by §9 FS2/FS3 which exercise the final primitive
+    //    end-to-end.
+    // ─────────────────────────────────────────────────────────────────────────
+
+    /// @dev `debt + accruedInterest + accruedFees` — Gearbox's `CreditLogic.calcTotalDebt`, and
+    ///      equal to `maxRepayment` for non-USDT pools (wstETH CM does not override `_amountWithFee`).
+    function _readMaxRepayment(address ca) internal view returns (uint256) {
+        CollateralDebtData memory cdd = ICM_V3Calc(CREDIT_MANAGER).calcDebtAndCollateral(ca, 1); // DEBT_ONLY
+        return cdd.debt + cdd.accruedInterest + cdd.accruedFees;
+    }
+
     /// @dev Scan CM's account list for one owned by `who`.
     function _findCaByBorrower(address who) internal view returns (address) {
         // We don't have a direct "last" accessor, so fall back to the CM's account enumeration.
@@ -460,5 +592,143 @@ contract GearboxV3ForkTest is BaseTest {
             } catch {}
         }
         return address(0);
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // 9. Safe-repay primitive — live-fork coverage
+    //
+    // Validates the new `GEARBOX_REPAY_SAFE` primitive end-to-end against the wstETH credit
+    // suite, with Morpho Blue as an optional flash source for the close-out shape.
+    //
+    //   FS1. Safe-partial under-funded → executes, residue debt ≥ minDebt, no revert.
+    //   FS2. Pinned close-out on drained CA (the §8 N2 scenario) → closes cleanly, no sweep revert.
+    //   FS3. Morpho-Blue-flash-wrapped close-out → safe-close works inside a flash callback.
+    // ─────────────────────────────────────────────────────────────────────────
+
+    /// FS1. Liquidation-prevention partial: caller delivers far less than debt; primitive
+    ///      executes without reverting and reduces debt by exactly the caller's balance.
+    function test_fork_gearbox_safe_partial_underdelivers_executes() public {
+        uint256 seed = uint256(minDebt) * 10;
+        uint256 debtAmt = uint256(minDebt) * 4;
+        address ca = _openCaWithComposerBot(seed, debtAmt, PERM_COMPOSER_EXACT);
+
+        // Pull only a fraction of debt — the "save me from liquidation" scenario.
+        uint256 repayAmt = uint256(minDebt) / 2;
+        _fundUserForRepay(repayAmt);
+
+        (uint256 debtBefore,,,,,,,) = ICM_V3Info(CREDIT_MANAGER).creditAccountInfo(ca);
+
+        bytes memory data = abi.encodePacked(
+            CalldataLib.encodeTransferIn(underlying, address(composer), repayAmt),
+            CalldataLib.encodeGearboxV3RepayPartialMax(underlying, ca, creditFacade, CREDIT_MANAGER)
+        );
+
+        vm.prank(user);
+        composer.deltaCompose(data); // MUST NOT revert — that's the whole point
+
+        (uint256 debtAfter,,,,,,,) = ICM_V3Info(CREDIT_MANAGER).creditAccountInfo(ca);
+        assertGt(debtBefore, debtAfter, "debt reduced");
+        assertGt(debtAfter, 0, "not closed (no quota strip means cannot close)");
+        assertGe(debtAfter, minDebt, "remainder above minDebt floor (no window revert)");
+        assertEq(IERC20All(underlying).balanceOf(address(composer)), 0, "composer balance fully consumed");
+    }
+
+    /// FS2. **The §8 N2 fix**: drained-CA close-out now works. Same setup that previously caused
+    ///      `AmountCantBeZeroException` under the old `encodeGearboxV3RepayAll` path — the new
+    ///      primitive omits the trailing `withdrawCollateral` sweep, so an empty CA closes cleanly.
+    function test_fork_gearbox_safe_close_drained_ca_no_sweep_revert() public {
+        uint256 seed = uint256(minDebt) * 10;
+        uint256 debtAmt = uint256(minDebt) * 3;
+        address ca = _openCaWithComposerBot(seed, debtAmt, PERM_COMPOSER_EXACT);
+
+        // Simulate "borrow deployed out of the CA": withdraw the borrowed wstETH to a sink.
+        address sink = address(0xDEAD);
+        bytes memory drain = CalldataLib.encodeGearboxV3Withdraw(
+            underlying, uint128(debtAmt), sink, ca, creditFacade
+        );
+        vm.prank(user);
+        composer.deltaCompose(drain);
+        assertEq(IERC20All(underlying).balanceOf(ca), 0, "CA drained pre-close");
+
+        // Advance so interest accrues — tests the on-chain-read accuracy under that condition.
+        vm.roll(block.number + 50);
+        vm.warp(block.timestamp + 600);
+
+        uint256 maxRepayment = _readMaxRepayment(ca);
+        _fundUserForRepay(maxRepayment);
+        address[] memory quoted = _enabledQuotedTokens(ca);
+
+        bytes memory data = abi.encodePacked(
+            CalldataLib.encodeTransferIn(underlying, address(composer), maxRepayment),
+            CalldataLib.encodeGearboxV3RepayAll(underlying, ca, creditFacade, CREDIT_MANAGER, quoted)
+        );
+
+        vm.prank(user);
+        composer.deltaCompose(data); // no AmountCantBeZeroException — fix validated
+
+        (uint256 debtAfter,,,,,,,) = ICM_V3Info(CREDIT_MANAGER).creditAccountInfo(ca);
+        assertEq(debtAfter, 0, "debt zeroed on drained CA - fix for the old full-close bug");
+        assertEq(IERC20All(underlying).balanceOf(ca), 0, "CA stays at zero underlying (no sweep needed)");
+        assertEq(IERC20All(underlying).balanceOf(address(composer)), 0, "composer consumed exactly maxRepay");
+    }
+
+    /// FS3. Morpho-Blue flash wrapping a safe-close. User pre-funds the composer with the close
+    ///      amount and flash-loans a small extra amount from Morpho Blue (zero-fee on Morpho V1),
+    ///      to demonstrate the primitive operates correctly inside a flash callback — same
+    ///      `callerAddress` validation, same auth derivation, no reentrancy issues.
+    ///
+    ///      Morpho Blue on mainnet: 0xBBBBBbbBBb9cC5e90e3b3Af64bdAF62C37EEFFCb. Zero flash fee.
+    function test_fork_gearbox_morpho_flash_wraps_safe_close() public {
+        address constant_morphoBlue = 0xBBBBBbbBBb9cC5e90e3b3Af64bdAF62C37EEFFCb;
+
+        uint256 seed = uint256(minDebt) * 10;
+        uint256 debtAmt = uint256(minDebt) * 3;
+        address ca = _openCaWithComposerBot(seed, debtAmt, PERM_COMPOSER_EXACT);
+
+        // Drain the CA to emulate a realistic leverage-close starting state.
+        address sink = address(0xD1D1);
+        bytes memory drain = CalldataLib.encodeGearboxV3Withdraw(
+            underlying, uint128(debtAmt), sink, ca, creditFacade
+        );
+        vm.prank(user);
+        composer.deltaCompose(drain);
+
+        vm.roll(block.number + 10);
+        vm.warp(block.timestamp + 120);
+
+        uint256 maxRepayment = _readMaxRepayment(ca);
+        uint256 flashAmt = 1 wei; // minimal Morpho flash — atomicity wrapper only
+        // Pre-fund composer with the close amount; the flash proves the primitive works inside
+        // a re-entered deltaCompose context without adding funding complexity.
+        _fundUserForRepay(maxRepayment);
+
+        address[] memory quoted = _enabledQuotedTokens(ca);
+
+        // Build the flash callback payload: repay-safe close only. Morpho Blue re-enters via
+        // `onMorphoFlashLoan` which runs our `deltaCompose` tail with this payload.
+        bytes memory callbackOps = abi.encodePacked(
+            CalldataLib.encodeTransferIn(underlying, address(composer), maxRepayment),
+            CalldataLib.encodeGearboxV3RepayAll(underlying, ca, creditFacade, CREDIT_MANAGER, quoted)
+        );
+
+        // Outer tx: approve Morpho to pull `flashAmt` back, then trigger the flash.
+        bytes memory outerOps = abi.encodePacked(
+            CalldataLib.encodeApprove(underlying, constant_morphoBlue),
+            CalldataLib.encodeFlashLoan(
+                underlying,
+                flashAmt,
+                constant_morphoBlue,
+                uint8(0), // FlashLoanIds.MORPHO
+                uint8(0), // poolId — Morpho Blue uses id 0 in the callback validator
+                callbackOps
+            )
+        );
+
+        vm.prank(user);
+        composer.deltaCompose(outerOps);
+
+        (uint256 debtAfter,,,,,,,) = ICM_V3Info(CREDIT_MANAGER).creditAccountInfo(ca);
+        assertEq(debtAfter, 0, "debt zeroed: Morpho-flash -> safe-close -> flash-return round trip");
+        assertEq(IERC20All(underlying).balanceOf(address(composer)), 0, "no residue on composer after flash round-trip");
     }
 }

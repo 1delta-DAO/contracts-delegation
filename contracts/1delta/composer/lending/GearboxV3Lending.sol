@@ -80,13 +80,22 @@ abstract contract GearboxV3Lending is ERC20Selectors, Masks, DeltaErrors {
     ///      composer is about to route through, so auth cannot be decoupled from dispatch.
     bytes32 internal constant GEARBOX_CREDIT_MANAGER_GETTER = 0xc12c21c000000000000000000000000000000000000000000000000000000000;
 
+    /// @dev calcDebtAndCollateral(address,uint8) — returns a `CollateralDebtData` struct. The
+    ///      composer uses task = 1 (`DEBT_ONLY`, the cheapest option that fills the debt + interest
+    ///      + fee fields). See `_gearboxReadMaxRepay`.
+    bytes32 internal constant GEARBOX_CALC_DEBT_AND_COLLATERAL =
+        0x0d334ca600000000000000000000000000000000000000000000000000000000;
+
     /**
      * @dev Authenticates that `callerAddress` (the authenticated deltaCompose caller) is the
-     *      borrower of `creditAccount`. The CM used for the borrower query is derived from
-     *      `creditFacade.creditManager()` (immutable in CreditFacadeV3), NOT taken from calldata
-     *      — otherwise an attacker could pair a real facade with an attacker-deployed "CM" that
-     *      returns `callerAddress` for every CA, bypassing auth while the real facade drains the
-     *      victim on dispatch.
+     *      borrower of `creditAccount`, and returns the derived CreditManager so primitives that
+     *      follow-up with on-chain reads (e.g. the pinned-repay primitive reading `maxRepayment`)
+     *      can reuse it without another `facade.creditManager()` staticcall.
+     *
+     *      The CM used for the borrower query is derived from `creditFacade.creditManager()`
+     *      (immutable in CreditFacadeV3), NOT taken from calldata — otherwise an attacker could
+     *      pair a real facade with an attacker-deployed "CM" that returns `callerAddress` for
+     *      every CA, bypassing auth while the real facade drains the victim on dispatch.
      *
      *      The invariant enforced here: the CM answering the borrower question is the same CM
      *      the subsequent `botMulticall` will flow through. Attacker can pick one address
@@ -98,8 +107,19 @@ abstract contract GearboxV3Lending is ERC20Selectors, Masks, DeltaErrors {
      *      `openCreditAccount` (kind=1 of `GEARBOX_MULTICALL`) does NOT need this auth — that
      *      entrypoint has no caller check on Gearbox's side (the CA is brand new), and the
      *      composer pins `onBehalfOf = callerAddress` so there is no way to spoof the borrower.
+     *
+     *      Callers that don't need the return value may discard it; Solidity allows dropping
+     *      private-function returns silently.
      */
-    function _gearboxAuthCaller(address creditFacade, address creditAccount, address callerAddress) private view {
+    function _gearboxAuthCaller(
+        address creditFacade,
+        address creditAccount,
+        address callerAddress
+    )
+        private
+        view
+        returns (address creditManager)
+    {
         assembly {
             // creditManager := creditFacade.creditManager()
             mstore(0x0, GEARBOX_CREDIT_MANAGER_GETTER)
@@ -107,7 +127,7 @@ abstract contract GearboxV3Lending is ERC20Selectors, Masks, DeltaErrors {
                 returndatacopy(0, 0, returndatasize())
                 revert(0, returndatasize())
             }
-            let creditManager := mload(0x0)
+            creditManager := mload(0x0)
 
             // borrower := creditManager.getBorrowerOrRevert(creditAccount); require == callerAddress
             mstore(0x0, GEARBOX_GET_BORROWER_OR_REVERT)
@@ -120,6 +140,45 @@ abstract contract GearboxV3Lending is ERC20Selectors, Masks, DeltaErrors {
                 mstore(0, INVALID_CALLER)
                 revert(0, 0x4)
             }
+        }
+    }
+
+    /**
+     * @dev Returns the exact amount of underlying the CM would consume if `decreaseDebt(max)` were
+     *      called right now: `debt + accruedInterest + accruedFees` (Gearbox's `calcTotalDebt`).
+     *      This equals `maxRepayment` for non-USDT pools (where CreditManagerV3's `_amountWithFee`
+     *      is the identity). USDT-fee pools would slightly overshoot this read; not a concern on
+     *      any current V3 pool (no fee-on-transfer USDT in production).
+     *
+     *      Same-tx race: the read and the subsequent `botMulticall` run in the same transaction
+     *      without intervening state mutations to the CA's debt fields. `updateQuota` settles
+     *      quota fees but does not change the debt+interest+fees sum. So the read at dispatch
+     *      equals the value `decreaseDebt(max)` clamps to at consumption.
+     *
+     *      Struct-with-dynamic-fields returndata layout (CollateralDebtData has `address[]`):
+     *        ptr + 0x00 : outer tuple offset (= 0x20, ignored)
+     *        ptr + 0x20 : debt
+     *        ptr + 0x40 : cumulativeIndexNow
+     *        ptr + 0x60 : cumulativeIndexLastUpdate
+     *        ptr + 0x80 : cumulativeQuotaInterest (padded)
+     *        ptr + 0xa0 : accruedInterest
+     *        ptr + 0xc0 : accruedFees
+     */
+    function _gearboxReadMaxRepay(address creditManager, address creditAccount) private view returns (uint256 maxRepay) {
+        assembly {
+            let ptr := mload(0x40)
+            mstore(ptr, GEARBOX_CALC_DEBT_AND_COLLATERAL)
+            mstore(add(ptr, 0x04), creditAccount)
+            mstore(add(ptr, 0x24), 1) // CollateralCalcTask.DEBT_ONLY
+            // We need returndata bytes 0..0xe0 to reach `accruedFees`. Buffer 0x100.
+            if iszero(staticcall(gas(), creditManager, ptr, 0x44, ptr, 0x100)) {
+                returndatacopy(0, 0, returndatasize())
+                revert(0, returndatasize())
+            }
+            let debt := mload(add(ptr, 0x20))
+            let accruedInterest := mload(add(ptr, 0xa0))
+            let accruedFees := mload(add(ptr, 0xc0))
+            maxRepay := add(add(debt, accruedInterest), accruedFees)
         }
     }
 
@@ -215,17 +274,17 @@ abstract contract GearboxV3Lending is ERC20Selectors, Masks, DeltaErrors {
             mstore(ptr, GEARBOX_BOT_MULTICALL)
             mstore(add(ptr, 0x04), creditAccount)
             mstore(add(ptr, 0x24), 0x40)
-            mstore(add(ptr, 0x44), 1)                 // calls.length
-            mstore(add(ptr, 0x64), 0x20)              // head[0]
+            mstore(add(ptr, 0x44), 1) // calls.length
+            mstore(add(ptr, 0x64), 0x20) // head[0]
 
             // tuple 0 at ptr + 0x84
             mstore(add(ptr, 0x84), creditFacade)
             mstore(add(ptr, 0xa4), 0x40)
-            mstore(add(ptr, 0xc4), 0x44)              // callData length = 68
+            mstore(add(ptr, 0xc4), 0x44) // callData length = 68
             mstore(add(ptr, 0xe4), GEARBOX_ADD_COLLATERAL)
             mstore(add(ptr, 0xe8), token)
             mstore(add(ptr, 0x108), amount)
-            mstore(add(ptr, 0x128), 0)                // pad trailing 28 bytes
+            mstore(add(ptr, 0x128), 0) // pad trailing 28 bytes
 
             if iszero(call(gas(), creditFacade, 0x0, ptr, 0x144, 0x0, 0x0)) {
                 returndatacopy(0x0, 0x0, returndatasize())
@@ -295,13 +354,13 @@ abstract contract GearboxV3Lending is ERC20Selectors, Masks, DeltaErrors {
             mstore(add(ptr, 0x04), creditAccount)
             mstore(add(ptr, 0x24), 0x40)
             mstore(add(ptr, 0x44), 2)
-            mstore(add(ptr, 0x64), 0x40)        // head[0] = 2 * 0x20
-            mstore(add(ptr, 0x84), 0xe0)        // head[1] = 0x40 + 0xa0
+            mstore(add(ptr, 0x64), 0x40) // head[0] = 2 * 0x20
+            mstore(add(ptr, 0x84), 0xe0) // head[1] = 0x40 + 0xa0
 
             // tuple 0 — increaseDebt(amount) at ptr + 0xa4
             mstore(add(ptr, 0xa4), creditFacade)
             mstore(add(ptr, 0xc4), 0x40)
-            mstore(add(ptr, 0xe4), 0x24)        // callData len = 36
+            mstore(add(ptr, 0xe4), 0x24) // callData len = 36
             mstore(add(ptr, 0x104), GEARBOX_INCREASE_DEBT)
             mstore(add(ptr, 0x108), amount)
             mstore(add(ptr, 0x128), 0)
@@ -309,7 +368,7 @@ abstract contract GearboxV3Lending is ERC20Selectors, Masks, DeltaErrors {
             // tuple 1 — withdrawCollateral(underlying, amount, receiver) at ptr + 0x144
             mstore(add(ptr, 0x144), creditFacade)
             mstore(add(ptr, 0x164), 0x40)
-            mstore(add(ptr, 0x184), 0x64)       // callData len = 100
+            mstore(add(ptr, 0x184), 0x64) // callData len = 100
             mstore(add(ptr, 0x1a4), GEARBOX_WITHDRAW_COLLATERAL)
             mstore(add(ptr, 0x1a8), underlying)
             mstore(add(ptr, 0x1c8), amount)
@@ -324,38 +383,57 @@ abstract contract GearboxV3Lending is ERC20Selectors, Masks, DeltaErrors {
     }
 
     /**
-     * @notice Repays debt on a Gearbox V3 Credit Account. Two shapes discriminated by `amount`:
+     * @notice Repays debt on a Gearbox V3 Credit Account. Three shapes discriminated by `amount`:
      *
-     *         Partial (`amount ∈ (0, UINT112_MASK)`): emits
-     *           `botMulticall(ca, [addCollateral(underlying, amount), decreaseDebt(amount)])`.
-     *         If the resulting debt would fall in `(0, minDebt)` the facade reverts with
-     *         `BorrowAmountOutOfLimitsException` — the encoder's problem to avoid.
+     *         **Zero-means-balance** (`amount == 0`, `numQuoted == 0`): substitutes
+     *         `balanceOf(composer, underlying)` for the amount and emits a literal partial —
+     *         aligns with the zero-sentinel convention used by the other lenders in this
+     *         composer (Aave, Morpho, etc.).
      *
-     *         Full (`amount == UINT112_MASK`): emits a multi-step repay-all sequence — strip
-     *         every quoted collateral token's quota first (Gearbox forbids non-zero quotas
-     *         with zero debt), deposit the pulled underlying, call `decreaseDebt(uint256.max)`
-     *         (CM caps internally to `maxRepayment`), then sweep the residue back to
-     *         `callerAddress`. No dust, no sporadic reverts. See GEARBOX.md §5.
+     *         **Explicit literal** (`amount ∈ (0, UINT112_MASK)`, `numQuoted == 0`): emits
+     *         `botMulticall(ca, [addCollateral(underlying, amount), decreaseDebt(amount)])` with
+     *         the supplied amount. Caller is responsible for avoiding the `(0, minDebt)`
+     *         remainder window.
+     *
+     *         **Safe max** (`amount == UINT112_MASK`): the "repay as much as possible safely"
+     *         flag. On-chain reads `maxRepay` via `calcDebtAndCollateral(DEBT_ONLY)`, computes
+     *         `amt = min(balanceOf(composer), maxRepay)`, then **degrades gracefully**:
+     *           - `amt == maxRepay` AND `numQuoted > 0`: full close-out — strip the N quotas,
+     *             deposit `maxRepay`, `decreaseDebt(uint256.max)`. Exact deposit; no trailing
+     *             `withdrawCollateral(max)` sweep (fixes the drained-CA revert that afflicted
+     *             the old `_repayGearboxV3Full`). Surplus (if `bal > maxRepay`) stays on the
+     *             composer for explicit sweep — integrates cleanly with flash-close patterns.
+     *           - otherwise: partial — `[addCollateral(amt), decreaseDebt(amt)]`. No quota
+     *             strip. If the caller supplied `quotedTokens` but composer balance was short,
+     *             the list is ignored (intentional: the caller is short of funds and we prefer
+     *             executing a partial over reverting — "repay 99.9k of a 100k debt when 100 wei
+     *             short" instead of failing outright).
+     *
+     *         The safe-max path may still revert if the resulting remainder lands in Gearbox's
+     *         `(0, minDebt)` window — same policy as the Lista lender path; UI is expected to
+     *         warn based on `minDebt`.
+     *
+     * @dev Race-free in-transaction: the `calcDebtAndCollateral` read and subsequent
+     *      `botMulticall` run in the same tx; Gearbox accrues no additional interest between
+     *      them (no state-root updates mid-tx), so the read matches what `decreaseDebt`
+     *      consumes. See `_gearboxReadMaxRepay` NatSpec.
      *
      * @custom:calldata-offset-table
-     * Partial:
-     * | Offset | Length (bytes) | Description                                      |
-     * |--------|----------------|--------------------------------------------------|
-     * | 0      | 20             | underlying                                       |
-     * | 20     | 16             | amount (partial: > 0 and < UINT112_MASK)         |
-     * | 36     | 20             | creditAccount                                    |
-     * | 56     | 20             | creditFacade (CM derived via creditManager())    |
-     * | 76     | 1              | numQuotedTokens (must be 0 for partial)          |
-     *
-     * Full (same layout, with amount = UINT112_MASK and N quoted-token entries):
-     * | 76     | 1              | numQuotedTokens (N)                              |
-     * | 77     | N × 20         | quotedTokens[]                                   |
+     * | Offset | Length (bytes) | Description                                                |
+     * |--------|----------------|------------------------------------------------------------|
+     * | 0      | 20             | underlying                                                 |
+     * | 20     | 16             | amount (0 = use composer balance, UINT112_MASK = safe-max, else literal) |
+     * | 36     | 20             | creditAccount                                              |
+     * | 56     | 20             | creditFacade (CM derived via creditManager())              |
+     * | 76     | 1              | numQuotedTokens (must be 0 for partial shapes)             |
+     * | 77     | N × 20         | quotedTokens[] (only when safe-close with N > 0)           |
      */
     function _repayToGearboxV3(uint256 currentOffset, address callerAddress) internal returns (uint256) {
-        // Read the header; dispatch partial vs full path in Solidity so each variant's inner
-        // multicall layout can be hand-packed without conditional bookkeeping inside one block.
+        // Read the header; dispatch between the three shapes in Solidity so each variant's
+        // inner multicall layout can be hand-packed without conditional bookkeeping inside one
+        // assembly block.
         address underlying;
-        uint128 amount;
+        uint256 amount;
         address creditAccount;
         address creditFacade;
         uint256 numQuoted;
@@ -366,18 +444,51 @@ abstract contract GearboxV3Lending is ERC20Selectors, Masks, DeltaErrors {
             creditFacade := shr(96, calldataload(add(currentOffset, 56)))
             numQuoted := and(UINT8_MASK, shr(248, calldataload(add(currentOffset, 76))))
         }
-        _gearboxAuthCaller(creditFacade, creditAccount, callerAddress);
+        address creditManager = _gearboxAuthCaller(creditFacade, creditAccount, callerAddress);
 
-        if (amount == uint128(UINT112_MASK)) {
-            _repayGearboxV3Full(currentOffset + 77, underlying, creditAccount, creditFacade, numQuoted, callerAddress);
+        // Safe clamp: both `0` and `UINT112_MASK` route here. Always does what's possible; never
+        // reverts on arithmetic ("100k repay with 100 wei short" still executes as a 99.9k
+        // partial). The close-out path only engages when bal is sufficient AND the caller
+        // supplied a quotedTokens list.
+        if (amount == UINT112_MASK) {
+            uint256 maxRepay = _gearboxReadMaxRepay(creditManager, creditAccount);
+            uint256 bal = _balanceOfSelf(underlying);
+            uint256 amt = bal < maxRepay ? bal : maxRepay;
+            if (amt == 0) _invalidOperation();
+
+            if (amt == maxRepay && numQuoted > 0) {
+                // Close-out: exact deposit, quota strip, decreaseDebt(max). No trailing sweep.
+                _repayGearboxV3SafeClose(currentOffset + 77, underlying, creditAccount, creditFacade, maxRepay, numQuoted);
+            } else {
+                // Partial: either bal was short, or caller didn't supply quoted tokens. The
+                // quoted list (if any) is deliberately ignored — the caller signaled close
+                // intent but we can't close, so we execute what we can instead of reverting.
+                _repayGearboxV3Partial(underlying, amt, creditAccount, creditFacade);
+            }
             return currentOffset + 77 + numQuoted * 20;
         }
 
-        if (numQuoted != 0) {
-            _invalidOperation();
+        if (amount == 0) {
+            amount = _balanceOfSelf(underlying);
         }
+
+        // Explicit-literal partial: caller-controlled amount in (0, UINT112_MASK).
+        if (numQuoted != 0) _invalidOperation();
         _repayGearboxV3Partial(underlying, uint256(amount), creditAccount, creditFacade);
         return currentOffset + 77;
+    }
+
+    /// @dev ERC20 `balanceOf(address(this))` — helper shared by the REPAY shapes.
+    function _balanceOfSelf(address token) private view returns (uint256 bal) {
+        assembly {
+            mstore(0, ERC20_BALANCE_OF)
+            mstore(0x04, address())
+            if iszero(staticcall(gas(), token, 0x0, 0x24, 0x0, 0x20)) {
+                returndatacopy(0, 0, returndatasize())
+                revert(0, returndatasize())
+            }
+            bal := mload(0x0)
+        }
     }
 
     /**
@@ -391,7 +502,6 @@ abstract contract GearboxV3Lending is ERC20Selectors, Masks, DeltaErrors {
             _invalidOperation();
         }
         assembly {
-
             let ptr := mload(0x40)
             // 2 inner calls: addCollateral (0xa4 payload padded → tuple 0xc0),
             //                decreaseDebt (0x24 payload padded → tuple 0xa0)
@@ -401,8 +511,8 @@ abstract contract GearboxV3Lending is ERC20Selectors, Masks, DeltaErrors {
             mstore(add(ptr, 0x04), creditAccount)
             mstore(add(ptr, 0x24), 0x40)
             mstore(add(ptr, 0x44), numCalls)
-            mstore(add(ptr, 0x64), mul(numCalls, 0x20))                     // head[0] = 0x40
-            mstore(add(ptr, 0x84), add(mul(numCalls, 0x20), 0xc0))          // head[1] = 0x40 + 0xc0 = 0x100
+            mstore(add(ptr, 0x64), mul(numCalls, 0x20)) // head[0] = 0x40
+            mstore(add(ptr, 0x84), add(mul(numCalls, 0x20), 0xc0)) // head[1] = 0x40 + 0xc0 = 0x100
 
             // tuple 0: addCollateral(underlying, amount) — at ptr + 0x64 + 0x40 = ptr + 0xa4
             let t0 := add(ptr, 0xa4)
@@ -432,49 +542,40 @@ abstract contract GearboxV3Lending is ERC20Selectors, Masks, DeltaErrors {
     }
 
     /**
-     * @dev Full repay-all via `botMulticall`. Strips N quotas first, then
-     *      `addCollateral(underlying, balanceOf(this))`, then `decreaseDebt(uint256.max)`,
-     *      then `withdrawCollateral(underlying, uint256.max, callerAddress)`.
+     * @dev Pinned-close emitter. Emits `botMulticall(ca, [updateQuota × N, addCollateral(maxRepay),
+     *      decreaseDebt(max)])`. Reuses the quota/addCollateral/decreaseDebt tuple writers; the
+     *      intentional absence of a `withdrawCollateral(max)` tail is the fix for the old
+     *      full-repay path's `AmountCantBeZeroException` on drained CAs — the deposit is exact,
+     *      so nothing remains on the CA to sweep.
+     *
+     *      Surplus handling shifts to the caller: if `balanceOf(composer) > maxRepay` the
+     *      surplus stays on the composer rather than being round-tripped through Gearbox. Flash
+     *      close-out patterns naturally consume it for flash repayment; delever patterns add an
+     *      explicit `TRANSFER` sweep downstream.
      */
-    function _repayGearboxV3Full(
+    function _repayGearboxV3SafeClose(
         uint256 quotedTokensOffset,
         address underlying,
         address creditAccount,
         address creditFacade,
-        uint256 numQuoted,
-        address callerAddress
+        uint256 maxRepay,
+        uint256 numQuoted
     )
         private
     {
-        // Resolve pulled amount from composer balance first, outside the assembly block, to
-        // keep the main builder's stack depth manageable.
-        uint256 pulledAmount;
-        assembly {
-            mstore(0, ERC20_BALANCE_OF)
-            mstore(0x04, address())
-            if iszero(staticcall(gas(), underlying, 0x0, 0x24, 0x0, 0x20)) {
-                returndatacopy(0, 0, returndatasize())
-                revert(0, returndatasize())
-            }
-            pulledAmount := mload(0x0)
-        }
-
-        // Write the outer botMulticall header + heads area.
         uint256 ptr;
         assembly {
             ptr := mload(0x40)
             mstore(ptr, GEARBOX_BOT_MULTICALL)
             mstore(add(ptr, 0x04), creditAccount)
             mstore(add(ptr, 0x24), 0x40)
-            mstore(add(ptr, 0x44), add(numQuoted, 3))
+            mstore(add(ptr, 0x44), add(numQuoted, 2))
         }
 
-        // updateQuota tuples + the three trailing ops. Each helper returns the running cursor
-        // (memory position immediately after the last tuple written).
-        uint256 cursor = _gearboxWriteQuotaTuples(ptr, quotedTokensOffset, numQuoted, creditFacade);
-        cursor = _gearboxWriteAddCollateralTuple(ptr, cursor, creditFacade, underlying, pulledAmount, numQuoted);
+        // Total calls = N + 2 (quotas + addCollateral + decreaseDebt). No sweep.
+        uint256 cursor = _gearboxWriteQuotaTuples(ptr, quotedTokensOffset, numQuoted, numQuoted + 2, creditFacade);
+        cursor = _gearboxWriteAddCollateralTuple(ptr, cursor, creditFacade, underlying, maxRepay, numQuoted);
         cursor = _gearboxWriteDecreaseDebtMaxTuple(ptr, cursor, creditFacade, numQuoted + 1);
-        cursor = _gearboxWriteSweepResidueTuple(ptr, cursor, creditFacade, underlying, callerAddress, numQuoted + 2);
 
         assembly {
             if iszero(call(gas(), creditFacade, 0x0, ptr, sub(cursor, ptr), 0x0, 0x0)) {
@@ -486,10 +587,16 @@ abstract contract GearboxV3Lending is ERC20Selectors, Masks, DeltaErrors {
 
     /// @dev Helper — writes N `updateQuota(tok_i, int96.min, 0)` tuples + their heads. Returns
     ///      the memory cursor just past the last tuple.
+    ///
+    ///      `totalCalls` is the total number of sub-calls in the outer multicall so this helper
+    ///      can place the body cursor after the full heads-array of size `totalCalls * 0x20`.
+    ///      Full-repay passes `numQuoted + 3` (N quotas + addCollateral + decreaseDebt +
+    ///      withdrawCollateral sweep); safe-close passes `numQuoted + 2` (no sweep).
     function _gearboxWriteQuotaTuples(
         uint256 ptr,
         uint256 quotedTokensOffset,
         uint256 numQuoted,
+        uint256 totalCalls,
         address creditFacade
     )
         private
@@ -499,7 +606,7 @@ abstract contract GearboxV3Lending is ERC20Selectors, Masks, DeltaErrors {
         uint256 cursor;
         assembly {
             let headsBase := add(ptr, 0x64)
-            cursor := add(headsBase, mul(add(numQuoted, 3), 0x20))
+            cursor := add(headsBase, mul(totalCalls, 0x20))
             for { let i := 0 } lt(i, numQuoted) { i := add(i, 1) } {
                 mstore(add(headsBase, mul(i, 0x20)), sub(cursor, headsBase))
                 mstore(cursor, creditFacade)
@@ -543,7 +650,12 @@ abstract contract GearboxV3Lending is ERC20Selectors, Masks, DeltaErrors {
         return cursor;
     }
 
-    function _gearboxWriteDecreaseDebtMaxTuple(uint256 ptr, uint256 cursor, address creditFacade, uint256 headIndex)
+    function _gearboxWriteDecreaseDebtMaxTuple(
+        uint256 ptr,
+        uint256 cursor,
+        address creditFacade,
+        uint256 headIndex
+    )
         private
         pure
         returns (uint256)
@@ -557,33 +669,6 @@ abstract contract GearboxV3Lending is ERC20Selectors, Masks, DeltaErrors {
             mstore(add(cursor, 0x64), MAX_UINT256)
             mstore(add(cursor, 0x84), 0)
             cursor := add(cursor, 0xa0)
-        }
-        return cursor;
-    }
-
-    function _gearboxWriteSweepResidueTuple(
-        uint256 ptr,
-        uint256 cursor,
-        address creditFacade,
-        address token,
-        address receiver,
-        uint256 headIndex
-    )
-        private
-        pure
-        returns (uint256)
-    {
-        assembly {
-            mstore(add(add(ptr, 0x64), mul(headIndex, 0x20)), sub(cursor, add(ptr, 0x64)))
-            mstore(cursor, creditFacade)
-            mstore(add(cursor, 0x20), 0x40)
-            mstore(add(cursor, 0x40), 0x64)
-            mstore(add(cursor, 0x60), GEARBOX_WITHDRAW_COLLATERAL)
-            mstore(add(cursor, 0x64), token)
-            mstore(add(cursor, 0x84), MAX_UINT256)
-            mstore(add(cursor, 0xa4), receiver)
-            mstore(add(cursor, 0xc4), 0)
-            cursor := add(cursor, 0xe0)
         }
         return cursor;
     }
@@ -634,17 +719,17 @@ abstract contract GearboxV3Lending is ERC20Selectors, Masks, DeltaErrors {
             mstore(add(ptr, 0x04), creditAccount)
             mstore(add(ptr, 0x24), 0x40)
             mstore(add(ptr, 0x44), 1)
-            mstore(add(ptr, 0x64), 0x20)                    // head[0]
+            mstore(add(ptr, 0x64), 0x20) // head[0]
 
             // tuple 0 at ptr + 0x84 — withdrawCollateral callData = 100 bytes, padded to 128
             mstore(add(ptr, 0x84), creditFacade)
             mstore(add(ptr, 0xa4), 0x40)
-            mstore(add(ptr, 0xc4), 0x64)                    // callData len = 100
+            mstore(add(ptr, 0xc4), 0x64) // callData len = 100
             mstore(add(ptr, 0xe4), GEARBOX_WITHDRAW_COLLATERAL)
             mstore(add(ptr, 0xe8), token)
             mstore(add(ptr, 0x108), amount)
             mstore(add(ptr, 0x128), receiver)
-            mstore(add(ptr, 0x148), 0)                      // pad trailing 28 bytes
+            mstore(add(ptr, 0x148), 0) // pad trailing 28 bytes
 
             if iszero(call(gas(), creditFacade, 0x0, ptr, 0x164, 0x0, 0x0)) {
                 returndatacopy(0x0, 0x0, returndatasize())
