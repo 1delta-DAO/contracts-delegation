@@ -781,9 +781,7 @@ abstract contract GearboxV3Lending is ERC20Selectors, Masks, DeltaErrors {
             creditAccount := shr(96, calldataload(add(currentOffset, 21)))
             numCalls := and(UINT16_MASK, shr(240, calldataload(add(currentOffset, 73))))
         }
-        if (kind > GEARBOX_KIND_OPEN) {
-            _invalidOperation();
-        }
+        if (kind > GEARBOX_KIND_OPEN || numCalls == 0) _invalidOperation();
 
         if (kind == GEARBOX_KIND_BOT_MULTICALL) {
             _gearboxAuthCaller(creditFacade, creditAccount, callerAddress);

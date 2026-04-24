@@ -450,6 +450,29 @@ contract GearboxV3LendingMockTest is BaseTest {
         composer.deltaCompose(data);
     }
 
+    /// @notice botMulticall with numCalls=0 is rejected — there is no reason to call Gearbox
+    ///         with zero sub-calls (not even for a forced HF check, which Gearbox only runs at
+    ///         the end of a real multicall). The composer guards against this with _invalidOperation.
+    function test_gearboxV3_bot_multicall_zero_calls_reverts() public {
+        bytes memory data = CalldataLib.encodeGearboxV3BotMulticall(
+            creditAccount, 0, new bytes(0)
+        );
+
+        vm.prank(user);
+        vm.expectRevert();
+        composer.deltaCompose(data);
+    }
+
+    /// @notice openCreditAccount with numCalls=0 is rejected — same guard as botMulticall.
+    function test_gearboxV3_open_credit_account_zero_calls_reverts() public {
+        bytes memory data =
+            CalldataLib.encodeGearboxV3OpenCreditAccount(address(facade), 0, 0, new bytes(0));
+
+        vm.prank(user);
+        vm.expectRevert();
+        composer.deltaCompose(data);
+    }
+
     // ─────────────────────────────────────────────────────────────────────────
     // Internal helpers
     // ─────────────────────────────────────────────────────────────────────────
