@@ -28,7 +28,7 @@ exclude_lints = [
 runs = 10000
 
 [rpc_endpoints]
-RPC_ETHEREUM_MAINNET = "https://eth.drpc.org"
+RPC_ETHEREUM_MAINNET = "https://eth.meowrpc.com"
 RPC_BNB_SMART_CHAIN_MAINNET = "https://public-bsc-mainnet.fastnode.io"
 RPC_BASE = "https://base.llamarpc.com"
 RPC_PLASMA_MAINNET = "https://rpc.plasma.to"
