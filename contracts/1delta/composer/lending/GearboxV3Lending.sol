@@ -76,9 +76,16 @@ abstract contract GearboxV3Lending is ERC20Selectors, Masks, DeltaErrors {
     /// @dev getBorrowerOrRevert(address) — ICreditManagerV3 auth helper.
     bytes32 internal constant GEARBOX_GET_BORROWER_OR_REVERT = 0xc53afb1e00000000000000000000000000000000000000000000000000000000;
 
-    /// @dev creditManager() — ICreditFacadeV3 immutable getter. Used to derive the CM the
-    ///      composer is about to route through, so auth cannot be decoupled from dispatch.
+    /// @dev creditManager() — shared by ICreditAccountV3 and ICreditFacadeV3 (same selector).
+    ///      Called on the credit account to derive the CM; the CM is then used to derive the
+    ///      facade and to authenticate the caller. Nothing in the auth chain comes from calldata.
     bytes32 internal constant GEARBOX_CREDIT_MANAGER_GETTER = 0xc12c21c000000000000000000000000000000000000000000000000000000000;
+
+    /// @dev creditFacade() — ICreditManagerV3 immutable getter. Used to derive the facade the
+    ///      composer will dispatch through, chained from the CM that was itself derived from the
+    ///      credit account. This completes the CA → CM → facade derivation chain so no address
+    ///      in the auth path ever comes from unverified calldata.
+    bytes32 internal constant GEARBOX_CREDIT_FACADE_GETTER = 0x2f7a188100000000000000000000000000000000000000000000000000000000;
 
     /// @dev calcDebtAndCollateral(address,uint8) — returns a `CollateralDebtData` struct. The
     ///      composer uses task = 1 (`DEBT_ONLY`, the cheapest option that fills the debt + interest
@@ -88,48 +95,55 @@ abstract contract GearboxV3Lending is ERC20Selectors, Masks, DeltaErrors {
 
     /**
      * @dev Authenticates that `callerAddress` (the authenticated deltaCompose caller) is the
-     *      borrower of `creditAccount`, and returns the derived CreditManager so primitives that
-     *      follow-up with on-chain reads (e.g. the pinned-repay primitive reading `maxRepayment`)
-     *      can reuse it without another `facade.creditManager()` staticcall.
+     *      borrower of `creditAccount`. Returns both the derived CreditManager and the derived
+     *      CreditFacade so callers can dispatch without additional staticcalls.
      *
-     *      The CM used for the borrower query is derived from `creditFacade.creditManager()`
-     *      (immutable in CreditFacadeV3), NOT taken from calldata — otherwise an attacker could
-     *      pair a real facade with an attacker-deployed "CM" that returns `callerAddress` for
-     *      every CA, bypassing auth while the real facade drains the victim on dispatch.
+     *      Derivation chain (mirrors AccountMigratorBot — nothing comes from calldata):
+     *        1. creditManager := creditAccount.creditManager()   — immutable in every Gearbox CA
+     *        2. creditFacade  := creditManager.creditFacade()    — immutable in CreditManagerV3
+     *        3. borrower      := creditManager.getBorrowerOrRevert(creditAccount)
+     *           require borrower == callerAddress
      *
-     *      The invariant enforced here: the CM answering the borrower question is the same CM
-     *      the subsequent `botMulticall` will flow through. Attacker can pick one address
-     *      (`creditFacade`) and that same address is used for both auth-derivation AND dispatch:
-     *        - real facade  → truthful CM → real borrower check → rejects non-borrowers.
-     *        - fake facade  → attacker CM → auth may pass → but dispatch goes to the fake
-     *                         facade, which cannot reach any real CA in Gearbox.
+     *      This eliminates every calldata-injection vector in the auth path:
+     *        - Attacker cannot supply a fake facade to spoof the CM (CM comes from the CA).
+     *        - Attacker cannot supply a fake CM to spoof the facade (facade comes from the CM
+     *          that was itself derived from the CA).
+     *        - Attacker cannot supply victim's real CA (real CM reports victim as borrower →
+     *          auth fails for non-victim caller).
+     *        - Attacker can supply their own real CA with a malicious inner CM/facade chain,
+     *          but then dispatch is scoped to their own CA; Gearbox's per-CA bot-permission
+     *          registry prevents any cross-CA effect.
      *
      *      `openCreditAccount` (kind=1 of `GEARBOX_MULTICALL`) does NOT need this auth — that
      *      entrypoint has no caller check on Gearbox's side (the CA is brand new), and the
      *      composer pins `onBehalfOf = callerAddress` so there is no way to spoof the borrower.
-     *
-     *      Callers that don't need the return value may discard it; Solidity allows dropping
-     *      private-function returns silently.
      */
     function _gearboxAuthCaller(
-        address creditFacade,
         address creditAccount,
         address callerAddress
     )
         private
         view
-        returns (address creditManager)
+        returns (address creditManager, address creditFacade)
     {
         assembly {
-            // creditManager := creditFacade.creditManager()
+            // 1. creditManager := creditAccount.creditManager()
             mstore(0x0, GEARBOX_CREDIT_MANAGER_GETTER)
-            if iszero(staticcall(gas(), creditFacade, 0x0, 0x4, 0x0, 0x20)) {
+            if iszero(staticcall(gas(), creditAccount, 0x0, 0x4, 0x0, 0x20)) {
                 returndatacopy(0, 0, returndatasize())
                 revert(0, returndatasize())
             }
             creditManager := mload(0x0)
 
-            // borrower := creditManager.getBorrowerOrRevert(creditAccount); require == callerAddress
+            // 2. creditFacade := creditManager.creditFacade()
+            mstore(0x0, GEARBOX_CREDIT_FACADE_GETTER)
+            if iszero(staticcall(gas(), creditManager, 0x0, 0x4, 0x0, 0x20)) {
+                returndatacopy(0, 0, returndatasize())
+                revert(0, returndatasize())
+            }
+            creditFacade := mload(0x0)
+
+            // 3. borrower := creditManager.getBorrowerOrRevert(creditAccount); require == callerAddress
             mstore(0x0, GEARBOX_GET_BORROWER_OR_REVERT)
             mstore(0x4, creditAccount)
             if iszero(staticcall(gas(), creditManager, 0x0, 0x24, 0x0, 0x20)) {
@@ -242,21 +256,19 @@ abstract contract GearboxV3Lending is ERC20Selectors, Masks, DeltaErrors {
      * | 0      | 20             | underlying                                       |
      * | 20     | 16             | amount (0 = use composer balance)                |
      * | 36     | 20             | creditAccount                                    |
-     * | 56     | 20             | creditFacade (CM derived via creditManager())    |
      */
     function _depositToGearboxV3(uint256 currentOffset, address callerAddress) internal returns (uint256) {
         address creditAccount;
         address creditFacade;
         assembly {
             creditAccount := shr(96, calldataload(add(currentOffset, 36)))
-            creditFacade := shr(96, calldataload(add(currentOffset, 56)))
         }
-        _gearboxAuthCaller(creditFacade, creditAccount, callerAddress);
+        (, creditFacade) = _gearboxAuthCaller(creditAccount, callerAddress);
 
         assembly {
             let token := shr(96, calldataload(currentOffset))
             let amount := and(UINT112_MASK, shr(128, calldataload(add(currentOffset, 20))))
-            currentOffset := add(currentOffset, 76)
+            currentOffset := add(currentOffset, 56)
 
             if iszero(amount) {
                 mstore(0, ERC20_BALANCE_OF)
@@ -312,24 +324,21 @@ abstract contract GearboxV3Lending is ERC20Selectors, Masks, DeltaErrors {
      * | 20     | 16             | amount                                           |
      * | 36     | 20             | receiver                                         |
      * | 56     | 20             | creditAccount                                    |
-     * | 76     | 20             | creditFacade (CM derived via creditManager())    |
      */
     function _borrowFromGearboxV3(uint256 currentOffset, address callerAddress) internal returns (uint256) {
         address underlying;
         uint256 amount;
         address receiver;
         address creditAccount;
-        address creditFacade;
         assembly {
             underlying := shr(96, calldataload(currentOffset))
             amount := and(UINT112_MASK, shr(128, calldataload(add(currentOffset, 20))))
             receiver := shr(96, calldataload(add(currentOffset, 36)))
             creditAccount := shr(96, calldataload(add(currentOffset, 56)))
-            creditFacade := shr(96, calldataload(add(currentOffset, 76)))
         }
-        _gearboxAuthCaller(creditFacade, creditAccount, callerAddress);
+        (, address creditFacade) = _gearboxAuthCaller(creditAccount, callerAddress);
         _gearboxBorrowRelay(underlying, amount, receiver, creditAccount, creditFacade);
-        return currentOffset + 96;
+        return currentOffset + 76;
     }
 
     /**
@@ -424,9 +433,8 @@ abstract contract GearboxV3Lending is ERC20Selectors, Masks, DeltaErrors {
      * | 0      | 20             | underlying                                                 |
      * | 20     | 16             | amount (0 = use composer balance, UINT112_MASK = safe-max, else literal) |
      * | 36     | 20             | creditAccount                                              |
-     * | 56     | 20             | creditFacade (CM derived via creditManager())              |
-     * | 76     | 1              | numQuotedTokens (must be 0 for partial shapes)             |
-     * | 77     | N × 20         | quotedTokens[] (only when safe-close with N > 0)           |
+     * | 56     | 1              | numQuotedTokens (must be 0 for partial shapes)             |
+     * | 57     | N × 20         | quotedTokens[] (only when safe-close with N > 0)           |
      */
     function _repayToGearboxV3(uint256 currentOffset, address callerAddress) internal returns (uint256) {
         // Read the header; dispatch between the three shapes in Solidity so each variant's
@@ -435,16 +443,14 @@ abstract contract GearboxV3Lending is ERC20Selectors, Masks, DeltaErrors {
         address underlying;
         uint256 amount;
         address creditAccount;
-        address creditFacade;
         uint256 numQuoted;
         assembly {
             underlying := shr(96, calldataload(currentOffset))
             amount := shr(128, calldataload(add(currentOffset, 20)))
             creditAccount := shr(96, calldataload(add(currentOffset, 36)))
-            creditFacade := shr(96, calldataload(add(currentOffset, 56)))
-            numQuoted := and(UINT8_MASK, shr(248, calldataload(add(currentOffset, 76))))
+            numQuoted := and(UINT8_MASK, shr(248, calldataload(add(currentOffset, 56))))
         }
-        address creditManager = _gearboxAuthCaller(creditFacade, creditAccount, callerAddress);
+        (address creditManager, address creditFacade) = _gearboxAuthCaller(creditAccount, callerAddress);
 
         // Safe clamp: both `0` and `UINT112_MASK` route here. Always does what's possible; never
         // reverts on arithmetic ("100k repay with 100 wei short" still executes as a 99.9k
@@ -458,14 +464,14 @@ abstract contract GearboxV3Lending is ERC20Selectors, Masks, DeltaErrors {
 
             if (amt == maxRepay && numQuoted > 0) {
                 // Close-out: exact deposit, quota strip, decreaseDebt(max). No trailing sweep.
-                _repayGearboxV3SafeClose(currentOffset + 77, underlying, creditAccount, creditFacade, maxRepay, numQuoted);
+                _repayGearboxV3SafeClose(currentOffset + 57, underlying, creditAccount, creditFacade, maxRepay, numQuoted);
             } else {
                 // Partial: either bal was short, or caller didn't supply quoted tokens. The
                 // quoted list (if any) is deliberately ignored — the caller signaled close
                 // intent but we can't close, so we execute what we can instead of reverting.
                 _repayGearboxV3Partial(underlying, amt, creditAccount, creditFacade);
             }
-            return currentOffset + 77 + numQuoted * 20;
+            return currentOffset + 57 + numQuoted * 20;
         }
 
         if (amount == 0) {
@@ -475,7 +481,7 @@ abstract contract GearboxV3Lending is ERC20Selectors, Masks, DeltaErrors {
         // Explicit-literal partial: caller-controlled amount in (0, UINT112_MASK).
         if (numQuoted != 0) _invalidOperation();
         _repayGearboxV3Partial(underlying, uint256(amount), creditAccount, creditFacade);
-        return currentOffset + 77;
+        return currentOffset + 57;
     }
 
     /// @dev ERC20 `balanceOf(address(this))` — helper shared by the REPAY shapes.
@@ -692,22 +698,20 @@ abstract contract GearboxV3Lending is ERC20Selectors, Masks, DeltaErrors {
      * | 20     | 16             | amount (UINT112_MASK = withdraw all)             |
      * | 36     | 20             | receiver                                         |
      * | 56     | 20             | creditAccount                                    |
-     * | 76     | 20             | creditFacade (CM derived via creditManager())    |
      */
     function _withdrawFromGearboxV3(uint256 currentOffset, address callerAddress) internal returns (uint256) {
         address creditAccount;
         address creditFacade;
         assembly {
             creditAccount := shr(96, calldataload(add(currentOffset, 56)))
-            creditFacade := shr(96, calldataload(add(currentOffset, 76)))
         }
-        _gearboxAuthCaller(creditFacade, creditAccount, callerAddress);
+        (, creditFacade) = _gearboxAuthCaller(creditAccount, callerAddress);
 
         assembly {
             let token := shr(96, calldataload(currentOffset))
             let amountData := shr(128, calldataload(add(currentOffset, 20)))
             let receiver := shr(96, calldataload(add(currentOffset, 36)))
-            currentOffset := add(currentOffset, 96)
+            currentOffset := add(currentOffset, 76)
 
             let amount := and(UINT112_MASK, amountData)
             if eq(amount, UINT112_MASK) { amount := MAX_UINT256 }
@@ -755,44 +759,38 @@ abstract contract GearboxV3Lending is ERC20Selectors, Masks, DeltaErrors {
      * | Offset | Length (bytes) | Description                                               |
      * |--------|----------------|-----------------------------------------------------------|
      * | 0      | 1              | kind (0 = botMulticall, 1 = openCreditAccount)            |
-     * | 1      | 20             | creditFacade (CM derived via creditManager())             |
-     * | 21     | 20             | creditAccount (kind=0) or padding (kind=1)                |
+     * | 1      | 20             | creditAccount (kind=0) OR creditFacade (kind=1)           |
+     * | 21     | 20             | padding                                                   |
      * | 41     | 32             | referralCode (kind=1) or padding (kind=0)                 |
-     * | 73     | 2              | numCalls (N)                                              |
+     * | 73     | 2              | numCalls (N, must be > 0)                                 |
      * | 75     | Σ              | N sub-calls: innerLen (2) | innerCalldata (innerLen)      |
      *
-     * @dev Auth (kind=0 only): `callerAddress` must be the `creditAccount`'s borrower — otherwise
-     *      any caller could invoke `deltaCompose` with someone else's bot-enabled CA as target
-     *      and drain it. The CM used for auth is derived from `creditFacade.creditManager()` to
-     *      prevent decoupling the auth-CM from the dispatch-CM. `kind=1` (`openCreditAccount`)
-     *      needs no such check — the entrypoint has no caller constraint on Gearbox's side, and
-     *      the composer pins `onBehalfOf = callerAddress` so there's no way to open a CA owned
-     *      by someone else.
+     * @dev Auth (kind=0 only): CM and facade are derived from `creditAccount` via the
+     *      CA → CM → facade chain — nothing in the auth path comes from calldata.
+     *      `kind=1` (`openCreditAccount`) needs no such check — the entrypoint has no caller
+     *      constraint on Gearbox's side, and the composer pins `onBehalfOf = callerAddress`.
      */
     function _gearboxMulticall(uint256 currentOffset, address callerAddress) internal returns (uint256) {
-        // Pull fixed header fields, then dispatch to a helper so the outer frame stays shallow.
         uint256 kind;
-        address creditFacade;
-        address creditAccount;
+        address addr1; // creditAccount for kind=0, creditFacade for kind=1
         uint256 numCalls;
         assembly {
             kind := shr(248, calldataload(currentOffset))
-            creditFacade := shr(96, calldataload(add(currentOffset, 1)))
-            creditAccount := shr(96, calldataload(add(currentOffset, 21)))
+            addr1 := shr(96, calldataload(add(currentOffset, 1)))
             numCalls := and(UINT16_MASK, shr(240, calldataload(add(currentOffset, 73))))
         }
         if (kind > GEARBOX_KIND_OPEN || numCalls == 0) _invalidOperation();
 
         if (kind == GEARBOX_KIND_BOT_MULTICALL) {
-            _gearboxAuthCaller(creditFacade, creditAccount, callerAddress);
-            return _gearboxRelayBotMulticall(creditFacade, creditAccount, numCalls, currentOffset + 75);
+            (, address creditFacade) = _gearboxAuthCaller(addr1, callerAddress);
+            return _gearboxRelayBotMulticall(creditFacade, addr1, numCalls, currentOffset + 75);
         }
-        // kind == GEARBOX_KIND_OPEN
+        // kind == GEARBOX_KIND_OPEN: addr1 is creditFacade (no CA to derive from yet)
         uint256 referralCode;
         assembly {
             referralCode := calldataload(add(currentOffset, 41))
         }
-        return _gearboxRelayOpen(creditFacade, callerAddress, referralCode, numCalls, currentOffset + 75);
+        return _gearboxRelayOpen(addr1, callerAddress, referralCode, numCalls, currentOffset + 75);
     }
 
     /**

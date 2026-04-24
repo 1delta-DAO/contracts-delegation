@@ -264,4 +264,24 @@ contract GearboxV3FacadeMock {
         cdd.accruedFees = mockAccruedFees;
         cdd.quotedTokens = new address[](0);
     }
+
+    /// @dev `creditFacade()` — ICreditManagerV3 getter. The composer calls this on the CM
+    ///      (which in the mock is `address(this)`) to derive the facade address in the auth chain.
+    function creditFacade() external view returns (address) {
+        return address(this);
+    }
+}
+
+/// @dev Minimal credit account mock. The composer calls `creditAccount.creditManager()` to derive
+///      the CM in the auth chain. Returns the facade address (mock plays both CM and facade roles).
+contract CreditAccountMock {
+    address private _creditManager;
+
+    constructor(address cm) {
+        _creditManager = cm;
+    }
+
+    function creditManager() external view returns (address) {
+        return _creditManager;
+    }
 }

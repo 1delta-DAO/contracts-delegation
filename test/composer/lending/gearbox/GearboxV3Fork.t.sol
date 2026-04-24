@@ -258,8 +258,7 @@ contract GearboxV3ForkTest is BaseTest {
             underlying,
             uint128(minDebt),
             mallory, // attacker tries to redirect proceeds
-            ca,
-            creditFacade
+            ca
         );
 
         vm.prank(mallory);
@@ -294,7 +293,7 @@ contract GearboxV3ForkTest is BaseTest {
 
         bytes memory data = abi.encodePacked(
             CalldataLib.encodeTransferIn(ETHPLUS, address(composer), topUp),
-            CalldataLib.encodeGearboxV3Supply(ETHPLUS, uint128(topUp), ca, creditFacade, CREDIT_MANAGER)
+            CalldataLib.encodeGearboxV3Supply(ETHPLUS, uint128(topUp), ca, CREDIT_MANAGER)
         );
 
         vm.prank(user);
@@ -318,7 +317,7 @@ contract GearboxV3ForkTest is BaseTest {
         uint256 extraBorrow = uint256(minDebt); // borrow one more min-debt unit
 
         bytes memory data = CalldataLib.encodeGearboxV3Borrow(
-            underlying, uint128(extraBorrow), user, ca, creditFacade
+            underlying, uint128(extraBorrow), user, ca
         );
 
         vm.prank(user);
@@ -348,7 +347,7 @@ contract GearboxV3ForkTest is BaseTest {
 
         bytes memory data = abi.encodePacked(
             CalldataLib.encodeTransferIn(underlying, address(composer), repayAmt),
-            CalldataLib.encodeGearboxV3RepayPartial(underlying, uint128(repayAmt), ca, creditFacade, CREDIT_MANAGER)
+            CalldataLib.encodeGearboxV3RepayPartial(underlying, uint128(repayAmt), ca, CREDIT_MANAGER)
         );
 
         vm.prank(user);
@@ -370,7 +369,7 @@ contract GearboxV3ForkTest is BaseTest {
         uint256 balBefore = IERC20All(ETHPLUS).balanceOf(user);
 
         bytes memory data = CalldataLib.encodeGearboxV3Withdraw(
-            ETHPLUS, uint128(pullOut), user, ca, creditFacade
+            ETHPLUS, uint128(pullOut), user, ca
         );
 
         vm.prank(user);
@@ -467,7 +466,7 @@ contract GearboxV3ForkTest is BaseTest {
 
         bytes memory data = abi.encodePacked(
             CalldataLib.encodeTransferIn(underlying, address(composer), overshoot),
-            CalldataLib.encodeGearboxV3RepayPartial(underlying, uint128(overshoot), ca, creditFacade, CREDIT_MANAGER)
+            CalldataLib.encodeGearboxV3RepayPartial(underlying, uint128(overshoot), ca, CREDIT_MANAGER)
         );
 
         (uint256 debtBefore,,,,,,,) = ICM_V3Info(CREDIT_MANAGER).creditAccountInfo(ca);
@@ -497,7 +496,7 @@ contract GearboxV3ForkTest is BaseTest {
 
         bytes memory data = abi.encodePacked(
             CalldataLib.encodeTransferIn(underlying, address(composer), repayAmt),
-            CalldataLib.encodeGearboxV3RepayPartial(underlying, uint128(repayAmt), ca, creditFacade, CREDIT_MANAGER)
+            CalldataLib.encodeGearboxV3RepayPartial(underlying, uint128(repayAmt), ca, CREDIT_MANAGER)
         );
 
         vm.prank(user);
@@ -523,7 +522,7 @@ contract GearboxV3ForkTest is BaseTest {
 
         bytes memory data = abi.encodePacked(
             CalldataLib.encodeTransferIn(underlying, address(composer), repayAmt),
-            CalldataLib.encodeGearboxV3RepayPartial(underlying, uint128(repayAmt), ca, creditFacade, CREDIT_MANAGER)
+            CalldataLib.encodeGearboxV3RepayPartial(underlying, uint128(repayAmt), ca, CREDIT_MANAGER)
         );
 
         vm.prank(user);
@@ -551,7 +550,7 @@ contract GearboxV3ForkTest is BaseTest {
 
         bytes memory data = abi.encodePacked(
             CalldataLib.encodeTransferIn(underlying, address(composer), pulled),
-            CalldataLib.encodeGearboxV3RepayAll(underlying, ca, creditFacade, CREDIT_MANAGER, noQuoted)
+            CalldataLib.encodeGearboxV3RepayAll(underlying, ca, CREDIT_MANAGER, noQuoted)
         );
 
         (uint256 debtBefore,,,,,,,) = ICM_V3Info(CREDIT_MANAGER).creditAccountInfo(ca);
@@ -620,7 +619,7 @@ contract GearboxV3ForkTest is BaseTest {
 
         bytes memory data = abi.encodePacked(
             CalldataLib.encodeTransferIn(underlying, address(composer), repayAmt),
-            CalldataLib.encodeGearboxV3RepayPartialMax(underlying, ca, creditFacade, CREDIT_MANAGER)
+            CalldataLib.encodeGearboxV3RepayPartialMax(underlying, ca, CREDIT_MANAGER)
         );
 
         vm.prank(user);
@@ -644,7 +643,7 @@ contract GearboxV3ForkTest is BaseTest {
         // Simulate "borrow deployed out of the CA": withdraw the borrowed wstETH to a sink.
         address sink = address(0xDEAD);
         bytes memory drain = CalldataLib.encodeGearboxV3Withdraw(
-            underlying, uint128(debtAmt), sink, ca, creditFacade
+            underlying, uint128(debtAmt), sink, ca
         );
         vm.prank(user);
         composer.deltaCompose(drain);
@@ -660,7 +659,7 @@ contract GearboxV3ForkTest is BaseTest {
 
         bytes memory data = abi.encodePacked(
             CalldataLib.encodeTransferIn(underlying, address(composer), maxRepayment),
-            CalldataLib.encodeGearboxV3RepayAll(underlying, ca, creditFacade, CREDIT_MANAGER, quoted)
+            CalldataLib.encodeGearboxV3RepayAll(underlying, ca, CREDIT_MANAGER, quoted)
         );
 
         vm.prank(user);
@@ -688,7 +687,7 @@ contract GearboxV3ForkTest is BaseTest {
         // Drain the CA to emulate a realistic leverage-close starting state.
         address sink = address(0xD1D1);
         bytes memory drain = CalldataLib.encodeGearboxV3Withdraw(
-            underlying, uint128(debtAmt), sink, ca, creditFacade
+            underlying, uint128(debtAmt), sink, ca
         );
         vm.prank(user);
         composer.deltaCompose(drain);
@@ -708,7 +707,7 @@ contract GearboxV3ForkTest is BaseTest {
         // `onMorphoFlashLoan` which runs our `deltaCompose` tail with this payload.
         bytes memory callbackOps = abi.encodePacked(
             CalldataLib.encodeTransferIn(underlying, address(composer), maxRepayment),
-            CalldataLib.encodeGearboxV3RepayAll(underlying, ca, creditFacade, CREDIT_MANAGER, quoted)
+            CalldataLib.encodeGearboxV3RepayAll(underlying, ca, CREDIT_MANAGER, quoted)
         );
 
         // Outer tx: approve Morpho to pull `flashAmt` back, then trigger the flash.

@@ -2135,16 +2135,14 @@ library CalldataLib {
         address token,
         uint128 amount,
         address creditAccount,
-        address creditFacade,
         address creditManager
     )
         internal
         pure
         returns (bytes memory)
     {
-        // `creditManager` is only used to emit the `APPROVE(token, cm)` hop; the composer
-        // derives the CM at auth time from `creditFacade.creditManager()`, so it is not
-        // packed into the op body.
+        // `creditManager` is only used to emit the `APPROVE(token, cm)` hop. The composer
+        // derives CM and facade on-chain from the credit account via the CA→CM→facade chain.
         return abi.encodePacked(
             encodeApprove(token, creditManager),
             uint8(ComposerCommands.LENDING),
@@ -2152,8 +2150,7 @@ library CalldataLib {
             uint16(LenderIds.UP_TO_GEARBOX_V3 - 1),
             token,
             amount,
-            creditAccount,
-            creditFacade
+            creditAccount
         );
     }
 
@@ -2167,8 +2164,7 @@ library CalldataLib {
         address underlying,
         uint128 amount,
         address receiver,
-        address creditAccount,
-        address creditFacade
+        address creditAccount
     )
         internal
         pure
@@ -2181,8 +2177,7 @@ library CalldataLib {
             underlying,
             amount,
             receiver,
-            creditAccount,
-            creditFacade
+            creditAccount
         );
     }
 
@@ -2199,7 +2194,6 @@ library CalldataLib {
         address underlying,
         uint128 amount,
         address creditAccount,
-        address creditFacade,
         address creditManager
     )
         internal
@@ -2208,8 +2202,6 @@ library CalldataLib {
     {
         if (amount == 0 || amount == GEARBOX_REPAY_ALL) revert("CL: gearbox partial repay needs literal amount");
 
-        // `creditManager` is only used for the prepended `APPROVE(underlying, cm)`; the composer
-        // derives the CM for auth from `creditFacade.creditManager()`.
         return abi.encodePacked(
             encodeApprove(underlying, creditManager),
             uint8(ComposerCommands.LENDING),
@@ -2218,7 +2210,6 @@ library CalldataLib {
             underlying,
             amount,
             creditAccount,
-            creditFacade,
             uint8(0) // numQuotedTokens must be 0 for partial
         );
     }
@@ -2253,7 +2244,6 @@ library CalldataLib {
     function encodeGearboxV3RepayAll(
         address underlying,
         address creditAccount,
-        address creditFacade,
         address creditManager,
         address[] memory quotedTokens
     )
@@ -2268,8 +2258,6 @@ library CalldataLib {
             quotedBlob = abi.encodePacked(quotedBlob, quotedTokens[i]);
         }
 
-        // `creditManager` is only used for the prepended `APPROVE(underlying, cm)`; the composer
-        // derives the CM for auth from `creditFacade.creditManager()`.
         return abi.encodePacked(
             encodeApprove(underlying, creditManager),
             uint8(ComposerCommands.LENDING),
@@ -2278,7 +2266,6 @@ library CalldataLib {
             underlying,
             GEARBOX_REPAY_ALL,
             creditAccount,
-            creditFacade,
             uint8(quotedTokens.length),
             quotedBlob
         );
@@ -2303,7 +2290,6 @@ library CalldataLib {
     function encodeGearboxV3RepayPartialMax(
         address underlying,
         address creditAccount,
-        address creditFacade,
         address creditManager
     )
         internal
@@ -2318,7 +2304,6 @@ library CalldataLib {
             underlying,
             GEARBOX_REPAY_ALL, // UINT112_MASK → safe-max sentinel
             creditAccount,
-            creditFacade,
             uint8(0) // numQuotedTokens — 0 means "never close", always degrade to partial
         );
     }
@@ -2332,8 +2317,7 @@ library CalldataLib {
         address token,
         uint128 amount,
         address receiver,
-        address creditAccount,
-        address creditFacade
+        address creditAccount
     )
         internal
         pure
@@ -2346,8 +2330,7 @@ library CalldataLib {
             token,
             amount,
             receiver,
-            creditAccount,
-            creditFacade
+            creditAccount
         );
     }
 
@@ -2366,7 +2349,6 @@ library CalldataLib {
      *      can iterate without a length scan.
      */
     function encodeGearboxV3BotMulticall(
-        address creditFacade,
         address creditAccount,
         uint16 numCalls,
         bytes memory calls
@@ -2380,8 +2362,8 @@ library CalldataLib {
             uint8(LenderOps.GEARBOX_MULTICALL),
             uint16(LenderIds.UP_TO_GEARBOX_V3 - 1),
             uint8(0), // kind = botMulticall
-            creditFacade,
-            creditAccount,
+            creditAccount, // CM+facade derived on-chain from this
+            address(0), // second addr slot unused for kind=0
             bytes32(0), // referralCode placeholder
             numCalls,
             calls
