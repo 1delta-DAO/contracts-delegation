@@ -3,7 +3,6 @@
 pragma solidity 0.8.34;
 
 import {AaveV3FlashLoans} from "../../../flashLoan/AaveV3.sol";
-import {BalancerV2FlashLoans} from "./BalancerV2.sol";
 
 import {FlashLoanCallbacks} from "./FlashLoanCallbacks.sol";
 import {FlashLoanIds} from "../../../enums/DeltaEnums.sol";
@@ -15,7 +14,6 @@ import {DeltaErrors} from "../../../../shared/errors/Errors.sol";
  */
 contract UniversalFlashLoan is
     AaveV3FlashLoans,
-    BalancerV2FlashLoans,
     FlashLoanCallbacks //
 {
     /**
@@ -39,8 +37,6 @@ contract UniversalFlashLoan is
 
         if (flashLoanType == FlashLoanIds.AAVE_V3) {
             return aaveV3FlashLoan(currentOffset, callerAddress);
-        } else if (flashLoanType == FlashLoanIds.BALANCER_V2) {
-            return balancerV2FlashLoan(currentOffset, callerAddress);
         } else {
             _invalidOperation();
         }

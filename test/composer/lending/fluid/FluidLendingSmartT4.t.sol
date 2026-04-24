@@ -88,16 +88,17 @@ contract FluidLendingSmartT4Test is BaseTest {
         vm.startPrank(owner_);
         IERC20All(GHO).approve(VAULT, type(uint256).max);
         IERC20All(USDC).approve(VAULT, type(uint256).max);
-        (nftId,,) = IFluidVaultT4(VAULT).operate(
-            0,
-            int256(COL_GHO),
-            int256(COL_USDC),
-            int256(1), // min col shares
-            int256(DEBT_GHO),
-            int256(DEBT_USDC),
-            int256(type(int128).max), // max debt shares — loose upper bound (below the FLUID_SMART_USE_BALANCE sentinel)
-            owner_
-        );
+        (nftId,,) = IFluidVaultT4(VAULT)
+            .operate(
+                0,
+                int256(COL_GHO),
+                int256(COL_USDC),
+                int256(1), // min col shares
+                int256(DEBT_GHO),
+                int256(DEBT_USDC),
+                int256(type(int128).max), // max debt shares — loose upper bound (below the FLUID_SMART_USE_BALANCE sentinel)
+                owner_
+            );
         vm.stopPrank();
         require(nftId != 0, "open T4 failed");
     }
@@ -148,12 +149,8 @@ contract FluidLendingSmartT4Test is BaseTest {
         composer.deltaCompose(abi.encodePacked(pulls, opAndSweep));
 
         assertEq(IFluidVaultFactory(VAULT_FACTORY).balanceOf(user) - nftsBefore, 1, "user got new NFT");
-        assertApproxEqAbs(
-            ghoBefore - IERC20All(GHO).balanceOf(user), COL_GHO - DEBT_GHO, 1, "GHO net-outflow ~ col-debt"
-        );
-        assertApproxEqAbs(
-            usdcBefore - IERC20All(USDC).balanceOf(user), COL_USDC - DEBT_USDC, 1, "USDC net-outflow ~ col-debt"
-        );
+        assertApproxEqAbs(ghoBefore - IERC20All(GHO).balanceOf(user), COL_GHO - DEBT_GHO, 1, "GHO net-outflow ~ col-debt");
+        assertApproxEqAbs(usdcBefore - IERC20All(USDC).balanceOf(user), COL_USDC - DEBT_USDC, 1, "USDC net-outflow ~ col-debt");
         assertEq(IERC20All(GHO).balanceOf(address(composer)), 0, "composer holds no GHO");
         assertEq(IERC20All(USDC).balanceOf(address(composer)), 0, "composer holds no USDC");
     }
@@ -196,11 +193,7 @@ contract FluidLendingSmartT4Test is BaseTest {
     // ─── 3. NFT-custody: shrink-col via operate (partial withdraw of both col tokens) ───
 
     /// @dev Withdraw ~10% of each col token via a balanced negative-amount operate call.
-    function _buildT4ShrinkColOps(uint256 nftId, uint256 token0Out, uint256 token1Out)
-        internal
-        view
-        returns (bytes memory)
-    {
+    function _buildT4ShrinkColOps(uint256 nftId, uint256 token0Out, uint256 token1Out) internal view returns (bytes memory) {
         address[6] memory tokens;
         int256[6] memory amounts;
         amounts[0] = -int256(token0Out);
@@ -224,9 +217,8 @@ contract FluidLendingSmartT4Test is BaseTest {
         uint256 usdcBefore = IERC20All(USDC).balanceOf(user);
 
         vm.prank(user);
-        IFluidVaultFactory(VAULT_FACTORY).safeTransferFrom(
-            user, address(composer), nftId, _buildT4ShrinkColOps(nftId, gOut, uOut)
-        );
+        IFluidVaultFactory(VAULT_FACTORY)
+            .safeTransferFrom(user, address(composer), nftId, _buildT4ShrinkColOps(nftId, gOut, uOut));
 
         assertGt(IERC20All(GHO).balanceOf(user) - ghoBefore, 0, "some GHO returned");
         assertGt(IERC20All(USDC).balanceOf(user) - usdcBefore, 0, "some USDC returned");
@@ -276,11 +268,7 @@ contract FluidLendingSmartT4Test is BaseTest {
         return CalldataLib.encodeFluidSmartOperatePerfectT4(0, nftId, user, address(0), VAULT, tokens, amounts);
     }
 
-    function _buildT4TwoPhaseClose(uint256 nftId, uint256 ghoBuffer, uint256 usdcBuffer)
-        internal
-        view
-        returns (bytes memory)
-    {
+    function _buildT4TwoPhaseClose(uint256 nftId, uint256 ghoBuffer, uint256 usdcBuffer) internal view returns (bytes memory) {
         bytes memory pulls = abi.encodePacked(
             CalldataLib.encodeTransferIn(GHO, address(composer), ghoBuffer),
             CalldataLib.encodeTransferIn(USDC, address(composer), usdcBuffer),

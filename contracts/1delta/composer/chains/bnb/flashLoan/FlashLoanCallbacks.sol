@@ -6,7 +6,6 @@ import {AaveV2FlashLoanCallback} from "./callbacks/AaveV2Callback.sol";
 import {AaveV3FlashLoanCallback} from "./callbacks/AaveV3Callback.sol";
 import {MoolahFlashLoanCallback} from "./callbacks/MoolahCallback.sol";
 import {MorphoFlashLoanCallback} from "./callbacks/MorphoCallback.sol";
-import {BalancerV2FlashLoanCallback} from "./callbacks/BalancerV2Callback.sol";
 
 /**
  * @title Flash loan callbacks - these are chain-specific
@@ -16,8 +15,7 @@ contract FlashLoanCallbacks is
     AaveV2FlashLoanCallback,
     AaveV3FlashLoanCallback,
     MoolahFlashLoanCallback,
-    MorphoFlashLoanCallback,
-    BalancerV2FlashLoanCallback //
+    MorphoFlashLoanCallback //
 {
     /**
      * @notice Internal function to execute compose operations
@@ -37,8 +35,7 @@ contract FlashLoanCallbacks is
             AaveV2FlashLoanCallback,
             AaveV3FlashLoanCallback,
             MoolahFlashLoanCallback,
-            MorphoFlashLoanCallback,
-            BalancerV2FlashLoanCallback //
+            MorphoFlashLoanCallback //
         )
     {}
 }

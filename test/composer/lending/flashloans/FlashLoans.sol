@@ -25,7 +25,6 @@ contract FlashLoanLightTest is BaseTest {
     address internal MORPHO = 0xBBBBBbbBBb9cC5e90e3b3Af64bdAF62C37EEFFCb;
     address internal AAVE_V3_POOL;
     address internal GRANARY_POOL;
-    address private BALANCER_V2_VAULT = 0xBA12222222228d8Ba445958a75a0704d566BF2C8;
     address internal constant UNI_V4_PM = 0x498581fF718922c3f8e6A244956aF099B2652b2b;
 
     // balancer dex data
@@ -129,61 +128,6 @@ contract FlashLoanLightTest is BaseTest {
 
         vm.expectRevert();
         oneD.executeOperation(asset, 0, 9, user, d);
-    }
-
-    function test_unit_lending_flashloans_balancerV2_basic() external {
-        address asset = WETH;
-        uint256 sweepAm = 30.0e18;
-        vm.deal(address(oneD), sweepAm);
-        uint256 amount = 1.0e18;
-        deal(asset, address(oneD), 0.0009e18); // fee
-        bytes memory dp = CalldataLib.encodeSweep(
-            address(0),
-            user,
-            sweepAm, //
-            SweepType.AMOUNT
-        );
-
-        bytes memory t = CalldataLib.encodeSweep(
-            asset,
-            BALANCER_V2_VAULT,
-            amount, //
-            SweepType.AMOUNT
-        );
-        bytes memory d = CalldataLib.encodeBalancerV2FlashLoan(
-            asset,
-            amount,
-            uint8(0), //
-            abi.encodePacked(dp, t)
-        );
-
-        vm.prank(user);
-        oneD.deltaCompose(d);
-
-        address[] memory assets = new address[](1);
-        uint256[] memory ams = new uint256[](1);
-
-        vm.expectRevert(bytes4(keccak256("InvalidFlashLoan()")));
-        oneD.receiveFlashLoan(
-            assets,
-            ams,
-            ams,
-            abi.encodePacked(
-                uint8(0), // correct Id
-                user // victim
-            )
-        );
-
-        vm.expectRevert(bytes4(keccak256("InvalidFlashLoan()")));
-        oneD.receiveFlashLoan(
-            assets,
-            ams,
-            ams,
-            abi.encodePacked(
-                uint8(99), // wrong Id
-                user // victim
-            )
-        );
     }
 
     function test_unit_lending_flashloans_balancerV3_basic() external {

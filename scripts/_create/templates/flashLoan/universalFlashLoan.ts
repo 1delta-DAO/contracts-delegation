@@ -1,4 +1,4 @@
-export const templateUniversalFlashLoan = (hasMorpho: boolean, hasAaveV2: boolean, hasAaveV3: boolean, hasBalancerV2: boolean) => {
+export const templateUniversalFlashLoan = (hasMorpho: boolean, hasAaveV2: boolean, hasAaveV3: boolean) => {
     let isFirst = true;
 
     let imports = ``;
@@ -21,13 +21,6 @@ export const templateUniversalFlashLoan = (hasMorpho: boolean, hasAaveV2: boolea
         isFirst = false;
         imports += `import {AaveV2FlashLoans} from "../../../flashLoan/AaveV2.sol";\n`;
         inherits.push("AaveV2FlashLoans");
-    }
-
-    if (hasBalancerV2) {
-        data += balancerV2Snippet(isFirst);
-        isFirst = false;
-        imports += `import {BalancerV2FlashLoans} from "./BalancerV2.sol";\n`;
-        inherits.push("BalancerV2FlashLoans");
     }
 
     if (inherits.length === 0)
@@ -122,19 +115,6 @@ function morphoSnippet(isFirst: boolean) {
     return `
          else if (flashLoanType == FlashLoanIds.MORPHO) {
             return morphoFlashLoan(currentOffset, callerAddress);
-        }`;
-}
-
-function balancerV2Snippet(isFirst: boolean) {
-    if (isFirst) {
-        return `
-        if (flashLoanType == FlashLoanIds.BALANCER_V2) {
-            return balancerV2FlashLoan(currentOffset, callerAddress);
-        } `;
-    }
-    return `
-         else if (flashLoanType == FlashLoanIds.BALANCER_V2) {
-            return balancerV2FlashLoan(currentOffset, callerAddress);
         }`;
 }
 

@@ -258,7 +258,15 @@ contract GearboxV3FacadeMock {
     ///      to get `maxRepayment`. Returning-by-value matches the real CM's ABI: the returndata
     ///      starts with an outer offset pointer to the struct, which the primitive's assembly
     ///      skips before reading the fields.
-    function calcDebtAndCollateral(address, /*ca*/ uint8 /*task*/ ) external view returns (CollateralDebtData memory cdd) {
+    function calcDebtAndCollateral(
+        address,
+        /*ca*/
+        uint8 /*task*/
+    )
+        external
+        view
+        returns (CollateralDebtData memory cdd)
+    {
         cdd.debt = debt;
         cdd.accruedInterest = mockAccruedInterest;
         cdd.accruedFees = mockAccruedFees;
