@@ -93,9 +93,7 @@ contract GearboxV3LendingMockTest is BaseTest {
         _prime(collToken, user, 5e8);
 
         bytes memory transferIn = _transferInOp(collToken, 3e8);
-        bytes memory supply = CalldataLib.encodeGearboxV3Supply(
-            address(collToken), 3e8, creditAccount, creditManager
-        );
+        bytes memory supply = CalldataLib.encodeGearboxV3Supply(address(collToken), 3e8, creditAccount, creditManager);
 
         vm.prank(user);
         composer.deltaCompose(abi.encodePacked(transferIn, supply));
@@ -141,9 +139,7 @@ contract GearboxV3LendingMockTest is BaseTest {
         _fundPoolLiquidity(10_000e6);
         facade.setMockUnderlying(address(underlying));
 
-        bytes memory borrow = CalldataLib.encodeGearboxV3Borrow(
-            address(underlying), 1_000e6, user, creditAccount
-        );
+        bytes memory borrow = CalldataLib.encodeGearboxV3Borrow(address(underlying), 1_000e6, user, creditAccount);
 
         vm.prank(user);
         composer.deltaCompose(borrow);
@@ -178,17 +174,14 @@ contract GearboxV3LendingMockTest is BaseTest {
         _seedCaEscrow(address(collToken), 2e8);
 
         // Partial withdraw
-        bytes memory withdraw = CalldataLib.encodeGearboxV3Withdraw(
-            address(collToken), 5e7, user, creditAccount
-        );
+        bytes memory withdraw = CalldataLib.encodeGearboxV3Withdraw(address(collToken), 5e7, user, creditAccount);
         vm.prank(user);
         composer.deltaCompose(withdraw);
         assertEq(collToken.balanceOf(user), 5e7, "user received partial withdraw");
 
         // Full withdraw via UINT112_MASK → Gearbox's uint256.max sentinel
-        bytes memory wAll = CalldataLib.encodeGearboxV3Withdraw(
-            address(collToken), CalldataLib.GEARBOX_WITHDRAW_ALL, user, creditAccount
-        );
+        bytes memory wAll =
+            CalldataLib.encodeGearboxV3Withdraw(address(collToken), CalldataLib.GEARBOX_WITHDRAW_ALL, user, creditAccount);
         vm.prank(user);
         composer.deltaCompose(wAll);
 
@@ -211,9 +204,7 @@ contract GearboxV3LendingMockTest is BaseTest {
 
         bytes memory data = abi.encodePacked(
             _transferInOp(underlying, 200e6),
-            CalldataLib.encodeGearboxV3RepayPartial(
-                address(underlying), 200e6, creditAccount, creditManager
-            )
+            CalldataLib.encodeGearboxV3RepayPartial(address(underlying), 200e6, creditAccount, creditManager)
         );
 
         vm.prank(user);
@@ -244,9 +235,7 @@ contract GearboxV3LendingMockTest is BaseTest {
         vm.deal(mallory, 1 ether);
 
         // Mallory tries to borrow from user's CA and send the proceeds to herself.
-        bytes memory borrow = CalldataLib.encodeGearboxV3Borrow(
-            address(underlying), 1_000e6, mallory, creditAccount
-        );
+        bytes memory borrow = CalldataLib.encodeGearboxV3Borrow(address(underlying), 1_000e6, mallory, creditAccount);
 
         vm.prank(mallory);
         vm.expectRevert();
@@ -254,11 +243,7 @@ contract GearboxV3LendingMockTest is BaseTest {
 
         // Sanity: same call from the real owner succeeds (auth is the ONLY difference).
         vm.prank(user);
-        composer.deltaCompose(
-            CalldataLib.encodeGearboxV3Borrow(
-                address(underlying), 1_000e6, user, creditAccount
-            )
-        );
+        composer.deltaCompose(CalldataLib.encodeGearboxV3Borrow(address(underlying), 1_000e6, user, creditAccount));
         assertEq(underlying.balanceOf(user), 1_000e6, "owner can borrow");
         assertEq(underlying.balanceOf(mallory), 0, "non-owner attempt took no funds");
     }
@@ -277,9 +262,7 @@ contract GearboxV3LendingMockTest is BaseTest {
 
         // PART 1: Direct attack — mallory passes the victim's real CA in calldata.
         // Auth chain: realCA.creditManager() → realCM.getBorrowerOrRevert(realCA) = user ≠ mallory → REVERT.
-        bytes memory borrow = CalldataLib.encodeGearboxV3Borrow(
-            address(underlying), 1_000e6, mallory, creditAccount
-        );
+        bytes memory borrow = CalldataLib.encodeGearboxV3Borrow(address(underlying), 1_000e6, mallory, creditAccount);
         vm.prank(mallory);
         vm.expectRevert();
         composer.deltaCompose(borrow);
@@ -290,9 +273,7 @@ contract GearboxV3LendingMockTest is BaseTest {
         FakeCMFacade fakeCMFacade = new FakeCMFacade(mallory);
         FakeCreditAccount fakeCA = new FakeCreditAccount(address(fakeCMFacade));
 
-        bytes memory borrowFake = CalldataLib.encodeGearboxV3Borrow(
-            address(underlying), 1_000e6, mallory, address(fakeCA)
-        );
+        bytes memory borrowFake = CalldataLib.encodeGearboxV3Borrow(address(underlying), 1_000e6, mallory, address(fakeCA));
         vm.prank(mallory);
         composer.deltaCompose(borrowFake); // auth passes for fakeCA — but is a no-op
 
@@ -304,13 +285,10 @@ contract GearboxV3LendingMockTest is BaseTest {
     /// @notice Non-owner caller invoking `GEARBOX_MULTICALL` (kind=botMulticall) must revert.
     function test_gearboxV3_unauthorized_caller_cannot_use_generic_bot_multicall() public {
         address mallory = address(0xbADbAd);
-        bytes memory inner =
-            abi.encodeWithSelector(SEL_WITHDRAW_COLLATERAL, address(collToken), uint256(1e8), mallory);
+        bytes memory inner = abi.encodeWithSelector(SEL_WITHDRAW_COLLATERAL, address(collToken), uint256(1e8), mallory);
 
         bytes memory packed = CalldataLib.encodeGearboxV3FacadeCall(inner);
-        bytes memory data = CalldataLib.encodeGearboxV3BotMulticall(
-            creditAccount, 1, packed
-        );
+        bytes memory data = CalldataLib.encodeGearboxV3BotMulticall(creditAccount, 1, packed);
 
         vm.prank(mallory);
         vm.expectRevert();
@@ -360,9 +338,7 @@ contract GearboxV3LendingMockTest is BaseTest {
 
         bytes memory data = abi.encodePacked(
             _transferInOp(underlying, 105e6),
-            CalldataLib.encodeGearboxV3RepayAll(
-                address(underlying), creditAccount, creditManager, quoted
-            )
+            CalldataLib.encodeGearboxV3RepayAll(address(underlying), creditAccount, creditManager, quoted)
         );
 
         vm.prank(user);
@@ -414,12 +390,10 @@ contract GearboxV3LendingMockTest is BaseTest {
         bytes memory inner0 = abi.encodeWithSelector(SEL_UPDATE_QUOTA, address(collToken), int96(100_000), uint96(0));
         bytes memory inner1 = abi.encodeWithSelector(SEL_SET_FULL_CHECK, new uint256[](0), uint16(10500));
 
-        bytes memory packed = abi.encodePacked(
-            CalldataLib.encodeGearboxV3FacadeCall(inner0), CalldataLib.encodeGearboxV3FacadeCall(inner1)
-        );
+        bytes memory packed =
+            abi.encodePacked(CalldataLib.encodeGearboxV3FacadeCall(inner0), CalldataLib.encodeGearboxV3FacadeCall(inner1));
 
-        bytes memory data =
-            CalldataLib.encodeGearboxV3BotMulticall(creditAccount, 2, packed);
+        bytes memory data = CalldataLib.encodeGearboxV3BotMulticall(creditAccount, 2, packed);
 
         vm.prank(user);
         composer.deltaCompose(data);
@@ -438,7 +412,8 @@ contract GearboxV3LendingMockTest is BaseTest {
 
     function test_gearboxV3_generic_multicall_rejects_unknown_kind() public {
         // Build a LENDING/GEARBOX_MULTICALL op with kind = 2 (close — unreachable by design).
-        bytes memory packed = CalldataLib.encodeGearboxV3FacadeCall(abi.encodeWithSelector(SEL_SET_FULL_CHECK, new uint256[](0), uint16(10000)));
+        bytes memory packed =
+            CalldataLib.encodeGearboxV3FacadeCall(abi.encodeWithSelector(SEL_SET_FULL_CHECK, new uint256[](0), uint16(10000)));
         bytes memory data = abi.encodePacked(
             uint8(0x30), // ComposerCommands.LENDING
             uint8(13), // LenderOps.GEARBOX_MULTICALL
@@ -460,9 +435,7 @@ contract GearboxV3LendingMockTest is BaseTest {
     ///         with zero sub-calls (not even for a forced HF check, which Gearbox only runs at
     ///         the end of a real multicall). The composer guards against this with _invalidOperation.
     function test_gearboxV3_bot_multicall_zero_calls_reverts() public {
-        bytes memory data = CalldataLib.encodeGearboxV3BotMulticall(
-            creditAccount, 0, new bytes(0)
-        );
+        bytes memory data = CalldataLib.encodeGearboxV3BotMulticall(creditAccount, 0, new bytes(0));
 
         vm.prank(user);
         vm.expectRevert();
@@ -471,8 +444,7 @@ contract GearboxV3LendingMockTest is BaseTest {
 
     /// @notice openCreditAccount with numCalls=0 is rejected — same guard as botMulticall.
     function test_gearboxV3_open_credit_account_zero_calls_reverts() public {
-        bytes memory data =
-            CalldataLib.encodeGearboxV3OpenCreditAccount(address(facade), 0, 0, new bytes(0));
+        bytes memory data = CalldataLib.encodeGearboxV3OpenCreditAccount(address(facade), 0, 0, new bytes(0));
 
         vm.prank(user);
         vm.expectRevert();
@@ -526,9 +498,7 @@ contract GearboxV3LendingMockTest is BaseTest {
 
         bytes memory data = abi.encodePacked(
             _transferInOp(underlying, repayAmt),
-            CalldataLib.encodeGearboxV3RepayPartialMax(
-                address(underlying), creditAccount, creditManager
-            )
+            CalldataLib.encodeGearboxV3RepayPartialMax(address(underlying), creditAccount, creditManager)
         );
 
         vm.prank(user);
@@ -564,9 +534,7 @@ contract GearboxV3LendingMockTest is BaseTest {
 
         bytes memory data = abi.encodePacked(
             _transferInOp(underlying, funding),
-            CalldataLib.encodeGearboxV3RepayPartialMax(
-                address(underlying), creditAccount, creditManager
-            )
+            CalldataLib.encodeGearboxV3RepayPartialMax(address(underlying), creditAccount, creditManager)
         );
 
         vm.prank(user);
@@ -589,9 +557,7 @@ contract GearboxV3LendingMockTest is BaseTest {
         _seedDebt(500e6);
 
         // No prime, no transferIn — composer has 0 underlying.
-        bytes memory data = CalldataLib.encodeGearboxV3RepayPartialMax(
-            address(underlying), creditAccount, creditManager
-        );
+        bytes memory data = CalldataLib.encodeGearboxV3RepayPartialMax(address(underlying), creditAccount, creditManager);
 
         vm.prank(user);
         vm.expectRevert();
@@ -616,9 +582,7 @@ contract GearboxV3LendingMockTest is BaseTest {
 
         bytes memory data = abi.encodePacked(
             _transferInOp(underlying, funding),
-            CalldataLib.encodeGearboxV3RepayAll(
-                address(underlying), creditAccount, creditManager, quoted
-            )
+            CalldataLib.encodeGearboxV3RepayAll(address(underlying), creditAccount, creditManager, quoted)
         );
 
         vm.prank(user);
@@ -662,9 +626,7 @@ contract GearboxV3LendingMockTest is BaseTest {
 
         bytes memory data = abi.encodePacked(
             _transferInOp(underlying, funding),
-            CalldataLib.encodeGearboxV3RepayAll(
-                address(underlying), creditAccount, creditManager, quoted
-            )
+            CalldataLib.encodeGearboxV3RepayAll(address(underlying), creditAccount, creditManager, quoted)
         );
 
         vm.prank(user);

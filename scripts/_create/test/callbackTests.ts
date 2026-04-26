@@ -1,12 +1,11 @@
 import {AAVE_V2_LENDERS, AAVE_V3_LENDERS} from "@1delta/lender-registry";
 import {isLenderExcluded} from "../lenderExclusions";
-import {BALANCER_V2_FORKS, FLASH_LOAN_IDS} from "@1delta/dex-registry";
+import {FLASH_LOAN_IDS} from "@1delta/dex-registry";
 import * as fs from "fs";
 import {CREATE_CHAIN_IDS, getChainEnum} from "../config";
 import path from "path";
 import {templateAaveV3Test} from "../templates/test/templates/aaveV3CallbackTest";
 import {templateAaveV2Test} from "../templates/test/templates/aaveV2CallbackTest";
-import {templateBalancerV2Test} from "../templates/test/templates/balancerV2CallbackTest";
 import {CANCUN_OR_HIGHER} from "../chain/evmVersion";
 import {fetchLenderMetaFromDirAndInitialize} from "../utils";
 import {aavePools} from "@1delta/data-sdk";
@@ -32,7 +31,6 @@ async function main() {
 
         let lendersAaveV3: LenderData[] = [];
         let lendersAaveV2: LenderData[] = [];
-        let poolsBalancerV2: LenderData[] = [];
 
         // Collect AaveV2 and AaveV3 lenders
         Object.entries(aavePools()).forEach(([lender, maps]) => {
@@ -64,25 +62,9 @@ async function main() {
             });
         });
 
-        // Collect Balancer V2 pools
-        Object.entries(BALANCER_V2_FORKS).forEach(([lender, maps]) => {
-            Object.entries(maps).forEach(([chainId, e]) => {
-                if (chainId === chain) {
-                    const assetType = determineDefaultAssetType(lender, chainId);
-                    poolsBalancerV2.push({
-                        entityName: lender,
-                        entityId: FLASH_LOAN_IDS[lender].toString(),
-                        pool: e,
-                        assetType,
-                    });
-                }
-            });
-        });
-
         // Sort by entity ID
         lendersAaveV2 = lendersAaveV2.sort((a, b) => (Number(a.entityId) < Number(b.entityId) ? -1 : 1));
         lendersAaveV3 = lendersAaveV3.sort((a, b) => (Number(a.entityId) < Number(b.entityId) ? -1 : 1));
-        poolsBalancerV2 = poolsBalancerV2.sort((a, b) => (Number(a.entityId) < Number(b.entityId) ? -1 : 1));
 
         // Create the test files directory
         const testDir = `./test/composer/lending/callbacks/`;
@@ -102,14 +84,6 @@ async function main() {
             fs.mkdirSync(path.join(testDir, "aaveV2"), {recursive: true});
             console.log(`Generating AaveV2 test file: ${filePath}`);
             fs.writeFileSync(filePath, templateAaveV2Test(key, lendersAaveV2));
-        }
-
-        if (poolsBalancerV2.length > 0) {
-            const chainKeyForFile = key.toLowerCase();
-            const filePath = path.join(testDir, "balancerV2", `BalancerV2Callback.${chainKeyForFile}.mock.sol`);
-            fs.mkdirSync(path.join(testDir, "balancerV2"), {recursive: true});
-            console.log(`Generating BalancerV2 test file: ${filePath}`);
-            fs.writeFileSync(filePath, templateBalancerV2Test(key, poolsBalancerV2, isCancun));
         }
 
         console.log(`Generated test files for chain ${chain}`);

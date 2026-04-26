@@ -879,7 +879,12 @@ contract ComposerValidator is BaseComposerValidator, Masks {
             currentOffset := add(currentOffset, 1)
         }
 
-        if (flashLoanType > FlashLoanIds.AAVE_V2) {
+        // Only MORPHO=0, AAVE_V3=2, AAVE_V2=3 are valid; type 1 (formerly BALANCER_V2) is rejected explicitly
+        if (
+            flashLoanType != FlashLoanIds.MORPHO &&
+            flashLoanType != FlashLoanIds.AAVE_V3 &&
+            flashLoanType != FlashLoanIds.AAVE_V2
+        ) {
             return (false, "Invalid flash loan type", currentOffset);
         }
 

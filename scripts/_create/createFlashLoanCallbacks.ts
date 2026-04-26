@@ -6,12 +6,10 @@ import {templateAaveV2} from "./templates/flashLoan/aaveV2Callback";
 import {templateAaveV3} from "./templates/flashLoan/aaveV3Callback";
 import {templateFlashLoan} from "./templates/flashLoan/flashLoanCallbacks.ts";
 import {templateMorphoBlue} from "./templates/flashLoan/morphoCallback";
-import {templateBalancerV2} from "./templates/flashLoan/balancerV2Callback";
 import {templateComposer} from "./templates/composer";
 import {CREATE_CHAIN_IDS, getChainKey, toCamelCaseWithFirstUpper} from "./config";
 import {templateUniversalFlashLoan} from "./templates/flashLoan/universalFlashLoan";
-import {templateBalancerV2Trigger} from "./templates/flashLoan/balancerV2Trigger";
-import {BALANCER_V2_FORKS, BALANCER_V3_FORKS, FLASH_LOAN_IDS, UNISWAP_V4_FORKS} from "@1delta/dex-registry";
+import {BALANCER_V3_FORKS, FLASH_LOAN_IDS, UNISWAP_V4_FORKS} from "@1delta/dex-registry";
 import {CANCUN_OR_HIGHER} from "./chain/evmVersion";
 import {fetchLenderMetaFromDirAndInitialize} from "./utils";
 import {aavePools, morphoPools} from "@1delta/data-sdk";
@@ -43,20 +41,6 @@ function createCaseSolo(lender: string, lenderId: string) {
                     mstore(0, INVALID_FLASH_LOAN)
                     revert(0, 0x4)
                 }`;
-}
-
-/** switch-case entry for flash loan that validates a caller */
-function createCaseTriggerBalancerV2(lender: string, lenderId: string) {
-    return `case ${lenderId} {
-                pool := ${lender}
-            }\n`;
-}
-
-/** switch-case entry for flash loan that validates a caller */
-function createCaseSoloTriggerBalancerV2(lender: string) {
-    return `
-             let pool := ${lender}
-    `;
 }
 
 /** start of switch case clauses if we allow multiple flash loan sources */
@@ -248,19 +232,6 @@ async function main() {
             });
         });
 
-        let poolIdsBalancerV2: FlashLoanIdData[] = [];
-        Object.entries(BALANCER_V2_FORKS).forEach(([lender, maps]) => {
-            Object.entries(maps.vault).forEach(([chains, e]) => {
-                if (chains === chain) {
-                    poolIdsBalancerV2.push({
-                        entityName: lender,
-                        entityId: FLASH_LOAN_IDS[lender].toString(),
-                        pool: e,
-                    });
-                }
-            });
-        });
-
         let poolIdsBalancerV3: FlashLoanIdData[] = [];
         Object.entries(BALANCER_V3_FORKS).forEach(([dex, maps]) => {
             Object.entries(maps.vault).forEach(([chains, address]) => {
@@ -420,35 +391,6 @@ async function main() {
             `;
         }
 
-        /**
-         * Balancer V2
-         */
-        let constantsDataBalancerV2 = ``;
-        let switchCaseContentBalancerV2 = ``;
-        let switchCaseContentBalancerV2Trigger = ``;
-        poolIdsBalancerV2 = poolIdsBalancerV2.sort((a, b) => (Number(a.entityId) < Number(b.entityId) ? -1 : 1));
-        if (poolIdsBalancerV2.length === 1) {
-            const {pool, entityName, entityId} = poolIdsBalancerV2[0];
-            constantsDataBalancerV2 += createConstant(pool, entityName);
-            switchCaseContentBalancerV2 += createCaseSolo(entityName, entityId);
-            switchCaseContentBalancerV2Trigger += createCaseSoloTriggerBalancerV2(entityName);
-        } else {
-            switchCaseContentBalancerV2 += multiSwitchCaseHead;
-            switchCaseContentBalancerV2Trigger += `
-                            let pool
-                            // switch-case over poolId to ensure trusted target
-                            switch and(UINT8_MASK, shr(104, slice))
-
-                            `;
-            poolIdsBalancerV2.forEach(({pool, entityName, entityId}) => {
-                constantsDataBalancerV2 += createConstant(pool, entityName);
-                switchCaseContentBalancerV2 += createCase(entityName, entityId);
-                switchCaseContentBalancerV2Trigger += createCaseTriggerBalancerV2(entityName, entityId);
-            });
-            switchCaseContentBalancerV2 += multiSwitchCaseEnd;
-            switchCaseContentBalancerV2Trigger += `default { revert (0,0 )}`;
-        }
-
         /** Write files */
 
         const flashLoanCallbackDir = `./contracts/1delta/composer/chains/${key}/flashLoan/callbacks/`;
@@ -470,11 +412,6 @@ async function main() {
         writeOrDeleteCallback("MorphoCallback.sol", lenderIdsMorphoBlue.length > 0, templateMorphoBlue(constantsDataMorpho, switchCaseContentMorpho));
         writeOrDeleteCallback("MoolahCallback.sol", lenderIdsLista.length > 0, templateMoolah(constantsDataLista, switchCaseContentLista));
         writeOrDeleteCallback(
-            "BalancerV2Callback.sol",
-            poolIdsBalancerV2.length > 0,
-            templateBalancerV2(constantsDataBalancerV2, switchCaseContentBalancerV2, isCancun)
-        );
-        writeOrDeleteCallback(
             "BalancerV3Callback.sol",
             poolIdsBalancerV3.length > 0,
             templateBalancerV3(constantsDataBalancerV3, switchCaseContentBalancerV3, poolIdsBalancerV3.length > 1)
@@ -487,7 +424,6 @@ async function main() {
                 lenderIdsAaveV2.length > 0,
                 lenderIdsAaveV3.length > 0,
                 lenderIdsMorphoBlue.length > 0,
-                poolIdsBalancerV2.length > 0,
                 poolIdsBalancerV3.length > 0,
                 lenderIdsLista.length > 0
             )
@@ -499,18 +435,9 @@ async function main() {
             templateUniversalFlashLoan(
                 lenderIdsMorphoBlue.length > 0,
                 lenderIdsAaveV2.length > 0,
-                lenderIdsAaveV3.length > 0,
-                poolIdsBalancerV2.length > 0
+                lenderIdsAaveV3.length > 0
             )
         );
-
-        if (poolIdsBalancerV2.length > 0) {
-            const filePathBalancerV2FlashLoanTrigger = `./contracts/1delta/composer/chains/${key}/flashLoan/BalancerV2.sol`;
-            fs.writeFileSync(
-                filePathBalancerV2FlashLoanTrigger,
-                templateBalancerV2Trigger(constantsDataBalancerV2, switchCaseContentBalancerV2Trigger, isCancun)
-            );
-        }
 
         const filePathComposer = `./contracts/1delta/composer/chains/${key}/Composer.sol`;
         fs.writeFileSync(filePathComposer, templateComposer(toCamelCaseWithFirstUpper(key), hasUniV4));

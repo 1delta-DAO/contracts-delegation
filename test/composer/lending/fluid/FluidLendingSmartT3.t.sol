@@ -86,14 +86,15 @@ contract FluidLendingSmartT3Test is BaseTest {
         deal(WSTETH, owner_, COL_AMOUNT);
         vm.startPrank(owner_);
         IERC20All(WSTETH).approve(VAULT, type(uint256).max);
-        (nftId,,) = IFluidVaultT3(VAULT).operate(
-            0,
-            int256(COL_AMOUNT),
-            int256(DEBT_USDC),
-            int256(DEBT_USDT),
-            int256(type(int128).max), // max debt shares cap — loose
-            owner_
-        );
+        (nftId,,) = IFluidVaultT3(VAULT)
+            .operate(
+                0,
+                int256(COL_AMOUNT),
+                int256(DEBT_USDC),
+                int256(DEBT_USDT),
+                int256(type(int128).max), // max debt shares cap — loose
+                owner_
+            );
         vm.stopPrank();
         require(nftId != 0, "open T3 failed");
     }
@@ -254,11 +255,7 @@ contract FluidLendingSmartT3Test is BaseTest {
         return CalldataLib.encodeFluidSmartOperatePerfectT3(0, nftId, user, address(0), VAULT, tokens, amounts);
     }
 
-    function _buildT3TwoPhaseClose(uint256 nftId, uint256 usdcBuffer, uint256 usdtBuffer)
-        internal
-        view
-        returns (bytes memory)
-    {
+    function _buildT3TwoPhaseClose(uint256 nftId, uint256 usdcBuffer, uint256 usdtBuffer) internal view returns (bytes memory) {
         bytes memory pulls = abi.encodePacked(
             CalldataLib.encodeTransferIn(USDC, address(composer), usdcBuffer),
             CalldataLib.encodeTransferIn(USDT, address(composer), usdtBuffer),

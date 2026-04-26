@@ -90,14 +90,7 @@ contract FluidLendingTest is BaseTest {
         uint256 topUp = 0.5 ether;
         // Native col deposit, debt axis skipped, existing nftId so no mint-sweep.
         bytes memory data = CalldataLib.encodeFluidT1Operate(
-            address(0),
-            address(0),
-            int128(uint128(topUp)),
-            0,
-            nftId,
-            address(0),
-            address(0),
-            VAULT
+            address(0), address(0), int128(uint128(topUp)), 0, nftId, address(0), address(0), VAULT
         );
 
         vm.prank(user);
@@ -118,16 +111,8 @@ contract FluidLendingTest is BaseTest {
 
         bytes memory pull = CalldataLib.encodeTransferIn(USDC, address(composer), repayAmount);
         // Debt-side literal repay; encoder auto-prepends APPROVE(USDC, VAULT).
-        bytes memory repay = CalldataLib.encodeFluidT1Operate(
-            address(0),
-            USDC,
-            0,
-            -int128(uint128(repayAmount)),
-            nftId,
-            user,
-            address(0),
-            VAULT
-        );
+        bytes memory repay =
+            CalldataLib.encodeFluidT1Operate(address(0), USDC, 0, -int128(uint128(repayAmount)), nftId, user, address(0), VAULT);
 
         uint256 usdcBefore = IERC20All(USDC).balanceOf(user);
 
@@ -175,14 +160,7 @@ contract FluidLendingTest is BaseTest {
         // Second half: borrow against the fresh position via custody. Inner op is just the borrow —
         // the callback auto-returns the NFT to user after the dispatch, no explicit sweep needed.
         bytes memory innerBorrow = CalldataLib.encodeFluidT1Operate(
-            address(0),
-            USDC,
-            0,
-            int128(uint128(borrowAmount)),
-            newNftId,
-            user,
-            address(0),
-            VAULT
+            address(0), USDC, 0, int128(uint128(borrowAmount)), newNftId, user, address(0), VAULT
         );
         uint256 usdcBefore = IERC20All(USDC).balanceOf(user);
         vm.prank(user);
@@ -200,16 +178,8 @@ contract FluidLendingTest is BaseTest {
 
         uint256 borrowAmount = 200e6;
         // Inner ops: a single borrow. Callback's hard-coded post-step ships the NFT back.
-        bytes memory innerOps = CalldataLib.encodeFluidT1Operate(
-            address(0),
-            USDC,
-            0,
-            int128(uint128(borrowAmount)),
-            nftId,
-            user,
-            address(0),
-            VAULT
-        );
+        bytes memory innerOps =
+            CalldataLib.encodeFluidT1Operate(address(0), USDC, 0, int128(uint128(borrowAmount)), nftId, user, address(0), VAULT);
 
         uint256 usdcBefore = IERC20All(USDC).balanceOf(user);
 
@@ -227,14 +197,7 @@ contract FluidLendingTest is BaseTest {
         uint256 withdrawAmount = 0.1 ether;
         // Withdraw native ETH straight to user via vault.operate's `to_`. Callback auto-returns the NFT.
         bytes memory innerOps = CalldataLib.encodeFluidT1Operate(
-            address(0),
-            address(0),
-            -int128(uint128(withdrawAmount)),
-            0,
-            nftId,
-            user,
-            address(0),
-            VAULT
+            address(0), address(0), -int128(uint128(withdrawAmount)), 0, nftId, user, address(0), VAULT
         );
 
         uint256 ethBefore = user.balance;
@@ -293,16 +256,7 @@ contract FluidLendingTest is BaseTest {
     // ─────────────────────────────────────────────────────────────────────────
 
     function test_fluid_nft_custody_reverts_when_caller_is_not_factory() public {
-        bytes memory innerOps = CalldataLib.encodeFluidT1Operate(
-            address(0),
-            USDC,
-            0,
-            int128(100e6),
-            1,
-            user,
-            address(0),
-            VAULT
-        );
+        bytes memory innerOps = CalldataLib.encodeFluidT1Operate(address(0), USDC, 0, int128(100e6), 1, user, address(0), VAULT);
 
         // Direct call to onERC721Received from a non-factory address must revert (InvalidCaller).
         vm.prank(user);
@@ -320,16 +274,8 @@ contract FluidLendingTest is BaseTest {
         (bool ok,) = VAULT_FACTORY.call(abi.encodeWithSignature("setApprovalForAll(address,bool)", attacker, true));
         require(ok, "approve-for-all failed");
 
-        bytes memory maliciousOps = CalldataLib.encodeFluidT1Operate(
-            address(0),
-            USDC,
-            0,
-            int128(999e6),
-            nftId,
-            attacker,
-            address(0),
-            VAULT
-        );
+        bytes memory maliciousOps =
+            CalldataLib.encodeFluidT1Operate(address(0), USDC, 0, int128(999e6), nftId, attacker, address(0), VAULT);
         vm.prank(attacker);
         vm.expectRevert();
         IFluidVaultFactory(VAULT_FACTORY).safeTransferFrom(user, address(composer), nftId, maliciousOps);

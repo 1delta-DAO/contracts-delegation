@@ -2,7 +2,6 @@ export const templateFlashLoan = (
     hasAaveV2: boolean,
     hasAaveV3: boolean,
     hasMorpho: boolean,
-    hasBalancerV2: boolean,
     hasBalancerV3: boolean,
     hasLista = false
 ) => {
@@ -33,13 +32,6 @@ export const templateFlashLoan = (
         cbs.push({
             imports: `import {MorphoFlashLoanCallback} from "./callbacks/MorphoCallback.sol";`,
             name: "MorphoFlashLoanCallback",
-        });
-    }
-
-    if (hasBalancerV2) {
-        cbs.push({
-            imports: `import {BalancerV2FlashLoanCallback} from "./callbacks/BalancerV2Callback.sol";`,
-            name: "BalancerV2FlashLoanCallback",
         });
     }
 

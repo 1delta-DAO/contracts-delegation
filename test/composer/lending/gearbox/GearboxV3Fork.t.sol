@@ -27,7 +27,11 @@ interface ICreditManagerV3 {
 
 interface ICreditFacadeV3 {
     function multicall(address creditAccount, MultiCall[] calldata calls) external payable;
-    function openCreditAccount(address onBehalfOf, MultiCall[] calldata calls, uint256 referralCode)
+    function openCreditAccount(
+        address onBehalfOf,
+        MultiCall[] calldata calls,
+        uint256 referralCode
+    )
         external
         payable
         returns (address);
@@ -90,10 +94,7 @@ struct CollateralDebtData {
 }
 
 interface ICM_V3Calc {
-    function calcDebtAndCollateral(address creditAccount, uint8 task)
-        external
-        view
-        returns (CollateralDebtData memory);
+    function calcDebtAndCollateral(address creditAccount, uint8 task) external view returns (CollateralDebtData memory);
 }
 
 /**
@@ -124,8 +125,7 @@ contract GearboxV3ForkTest is BaseTest {
 
     /// @dev Must match `GearboxV3Lending.requiredPermissions()` exactly — Gearbox's BotListV3
     ///      rejects any other value with `IncorrectBotPermissionsException`.
-    uint192 internal constant PERM_COMPOSER_EXACT =
-        uint192((1 << 0) | (1 << 1) | (1 << 2) | (1 << 5) | (1 << 6));
+    uint192 internal constant PERM_COMPOSER_EXACT = uint192((1 << 0) | (1 << 1) | (1 << 2) | (1 << 5) | (1 << 6));
 
     function setUp() public {
         _init(Chains.ETHEREUM_MAINNET, 0, true);
@@ -150,10 +150,7 @@ contract GearboxV3ForkTest is BaseTest {
 
     /// @dev Open a fresh CA with `user` as borrower, an initial collateral deposit, a minimum
     ///      debt draw, and bot permissions granted inline to the composer.
-    function _openCaWithComposerBot(uint256 collatAmt, uint256 debtAmt, uint192 permissions)
-        internal
-        returns (address ca)
-    {
+    function _openCaWithComposerBot(uint256 collatAmt, uint256 debtAmt, uint192 permissions) internal returns (address ca) {
         deal(ETHPLUS, user, collatAmt);
         vm.prank(user);
         IERC20All(ETHPLUS).approve(CREDIT_MANAGER, type(uint256).max);
@@ -171,16 +168,11 @@ contract GearboxV3ForkTest is BaseTest {
         //   5. setFullCheckParams    — final HF check with collateral now counted
         MultiCall[] memory calls = new MultiCall[](5);
         calls[0] = MultiCall({
-            target: creditFacade,
-            callData: abi.encodeCall(ICreditFacadeV3Multicall.addCollateral, (ETHPLUS, collatAmt))
+            target: creditFacade, callData: abi.encodeCall(ICreditFacadeV3Multicall.addCollateral, (ETHPLUS, collatAmt))
         });
-        calls[1] = MultiCall({
-            target: creditFacade,
-            callData: abi.encodeCall(ICreditFacadeV3Multicall.increaseDebt, (debtAmt))
-        });
+        calls[1] = MultiCall({target: creditFacade, callData: abi.encodeCall(ICreditFacadeV3Multicall.increaseDebt, (debtAmt))});
         calls[2] = MultiCall({
-            target: creditFacade,
-            callData: abi.encodeCall(ICreditFacadeV3Multicall.updateQuota, (ETHPLUS, quota, uint96(0)))
+            target: creditFacade, callData: abi.encodeCall(ICreditFacadeV3Multicall.updateQuota, (ETHPLUS, quota, uint96(0)))
         });
         calls[3] = MultiCall({
             target: creditFacade,
@@ -316,18 +308,12 @@ contract GearboxV3ForkTest is BaseTest {
         uint256 userBalBefore = IERC20All(underlying).balanceOf(user);
         uint256 extraBorrow = uint256(minDebt); // borrow one more min-debt unit
 
-        bytes memory data = CalldataLib.encodeGearboxV3Borrow(
-            underlying, uint128(extraBorrow), user, ca
-        );
+        bytes memory data = CalldataLib.encodeGearboxV3Borrow(underlying, uint128(extraBorrow), user, ca);
 
         vm.prank(user);
         composer.deltaCompose(data);
 
-        assertEq(
-            IERC20All(underlying).balanceOf(user) - userBalBefore,
-            extraBorrow,
-            "user received additional borrow"
-        );
+        assertEq(IERC20All(underlying).balanceOf(user) - userBalBefore, extraBorrow, "user received additional borrow");
         assertEq(IERC20All(underlying).balanceOf(address(composer)), 0, "composer holds no residue");
     }
 
@@ -368,9 +354,7 @@ contract GearboxV3ForkTest is BaseTest {
         uint256 pullOut = 1e18;
         uint256 balBefore = IERC20All(ETHPLUS).balanceOf(user);
 
-        bytes memory data = CalldataLib.encodeGearboxV3Withdraw(
-            ETHPLUS, uint128(pullOut), user, ca
-        );
+        bytes memory data = CalldataLib.encodeGearboxV3Withdraw(ETHPLUS, uint128(pullOut), user, ca);
 
         vm.prank(user);
         composer.deltaCompose(data);
@@ -403,8 +387,7 @@ contract GearboxV3ForkTest is BaseTest {
         bytes memory inner0 = abi.encodeCall(ICreditFacadeV3Multicall.addCollateral, (ETHPLUS, seed));
         bytes memory inner1 = abi.encodeCall(ICreditFacadeV3Multicall.increaseDebt, (borrowAmt));
         bytes memory inner2 = abi.encodeCall(ICreditFacadeV3Multicall.updateQuota, (ETHPLUS, quota, uint96(0)));
-        bytes memory inner3 =
-            abi.encodeCall(ICreditFacadeV3Multicall.setFullCheckParams, (new uint256[](0), uint16(10000)));
+        bytes memory inner3 = abi.encodeCall(ICreditFacadeV3Multicall.setFullCheckParams, (new uint256[](0), uint16(10000)));
 
         bytes memory packed = abi.encodePacked(
             CalldataLib.encodeGearboxV3FacadeCall(inner0),
@@ -642,9 +625,7 @@ contract GearboxV3ForkTest is BaseTest {
 
         // Simulate "borrow deployed out of the CA": withdraw the borrowed wstETH to a sink.
         address sink = address(0xDEAD);
-        bytes memory drain = CalldataLib.encodeGearboxV3Withdraw(
-            underlying, uint128(debtAmt), sink, ca
-        );
+        bytes memory drain = CalldataLib.encodeGearboxV3Withdraw(underlying, uint128(debtAmt), sink, ca);
         vm.prank(user);
         composer.deltaCompose(drain);
         assertEq(IERC20All(underlying).balanceOf(ca), 0, "CA drained pre-close");
@@ -686,9 +667,7 @@ contract GearboxV3ForkTest is BaseTest {
 
         // Drain the CA to emulate a realistic leverage-close starting state.
         address sink = address(0xD1D1);
-        bytes memory drain = CalldataLib.encodeGearboxV3Withdraw(
-            underlying, uint128(debtAmt), sink, ca
-        );
+        bytes memory drain = CalldataLib.encodeGearboxV3Withdraw(underlying, uint128(debtAmt), sink, ca);
         vm.prank(user);
         composer.deltaCompose(drain);
 

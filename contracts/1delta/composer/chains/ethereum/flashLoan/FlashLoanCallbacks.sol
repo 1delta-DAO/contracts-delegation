@@ -6,7 +6,6 @@ import {AaveV2FlashLoanCallback} from "./callbacks/AaveV2Callback.sol";
 import {AaveV3FlashLoanCallback} from "./callbacks/AaveV3Callback.sol";
 import {MoolahFlashLoanCallback} from "./callbacks/MoolahCallback.sol";
 import {MorphoFlashLoanCallback} from "./callbacks/MorphoCallback.sol";
-import {BalancerV2FlashLoanCallback} from "./callbacks/BalancerV2Callback.sol";
 import {BalancerV3FlashLoanCallback} from "./callbacks/BalancerV3Callback.sol";
 
 /**
@@ -18,7 +17,6 @@ contract FlashLoanCallbacks is
     AaveV3FlashLoanCallback,
     MoolahFlashLoanCallback,
     MorphoFlashLoanCallback,
-    BalancerV2FlashLoanCallback,
     BalancerV3FlashLoanCallback //
 {
     /**
@@ -40,7 +38,6 @@ contract FlashLoanCallbacks is
             AaveV3FlashLoanCallback,
             MoolahFlashLoanCallback,
             MorphoFlashLoanCallback,
-            BalancerV2FlashLoanCallback,
             BalancerV3FlashLoanCallback //
         )
     {}

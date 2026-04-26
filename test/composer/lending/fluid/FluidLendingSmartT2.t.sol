@@ -84,14 +84,15 @@ contract FluidLendingSmartT2Test is BaseTest {
         vm.startPrank(owner_);
         IERC20All(cbBTC).approve(VAULT, type(uint256).max);
         IERC20All(WBTC).approve(VAULT, type(uint256).max);
-        (nftId,,) = IFluidVaultT2(VAULT).operate(
-            0,
-            int256(COL0_AMOUNT),
-            int256(COL1_AMOUNT),
-            int256(1), // min shares — loose for testing
-            int256(DEBT_AMOUNT),
-            owner_
-        );
+        (nftId,,) = IFluidVaultT2(VAULT)
+            .operate(
+                0,
+                int256(COL0_AMOUNT),
+                int256(COL1_AMOUNT),
+                int256(1), // min shares — loose for testing
+                int256(DEBT_AMOUNT),
+                owner_
+            );
         vm.stopPrank();
         require(nftId != 0, "open T2 failed");
     }
