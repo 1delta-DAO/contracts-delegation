@@ -1,0 +1,49 @@
+// SPDX-License-Identifier: BUSL-1.1
+
+pragma solidity 0.8.34;
+
+import {MorphoFlashLoans} from "../../../flashLoan/Morpho.sol";
+import {AaveV3FlashLoans} from "../../../flashLoan/AaveV3.sol";
+
+import {FlashLoanCallbacks} from "./FlashLoanCallbacks.sol";
+import {FlashLoanIds} from "../../../enums/DeltaEnums.sol";
+import {DeltaErrors} from "../../../../shared/errors/Errors.sol";
+
+/**
+ * @title Flash loan aggregator
+ * @author 1delta Labs AG
+ */
+contract UniversalFlashLoan is
+    MorphoFlashLoans,
+    AaveV3FlashLoans,
+    FlashLoanCallbacks //
+{
+    /**
+     * @notice Executes flash loan operations for all supported providers
+     * @dev Routes to appropriate flash loan provider based on flash loan type
+     * @param currentOffset Current position in the calldata
+     * @param callerAddress Address of the original caller
+     * @return Updated calldata offset after processing
+     * @custom:calldata-offset-table
+     * | Offset | Length (bytes) | Description                  |
+     * |--------|----------------|------------------------------|
+     * | 0      | 1              | flashLoanType                |
+     * | 1      | Variable       | flashLoanParams              |
+     */
+    function _universalFlashLoan(uint256 currentOffset, address callerAddress) internal virtual returns (uint256) {
+        uint256 flashLoanType; // architecture type
+        assembly {
+            flashLoanType := shr(248, calldataload(currentOffset)) // already masks uint8 as last byte
+            currentOffset := add(currentOffset, 1)
+        }
+
+        if (flashLoanType == FlashLoanIds.MORPHO) {
+            return morphoFlashLoan(currentOffset, callerAddress);
+        } else if (flashLoanType == FlashLoanIds.AAVE_V3) {
+            return aaveV3FlashLoan(currentOffset, callerAddress);
+        } else {
+            _invalidOperation();
+        }
+    }
+}
+

@@ -37,10 +37,10 @@ async function main() {
 
     const deployFactory = await new DeployFactory__factory(operator).attach(DEPLOY_FACTORY);
     const address = await deployFactory.computeAddress(salt, initCode);
-    // console.log("address", address);
+    console.log("address", address);
     const estimate = await deployFactory.estimateGas.deploy(salt, bytecode);
     console.log("estimate", estimate);
-    const tx = await deployFactory.deploy(salt, bytecode, {gasLimit: estimate.add(100), gasPrice: gp.mul(100)});
+    const tx = await deployFactory.deploy(salt, bytecode, {gasLimit: estimate.add(100)});
     await tx.wait();
 
     console.log("deployed expected to", address);

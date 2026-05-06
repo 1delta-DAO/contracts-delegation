@@ -38,6 +38,18 @@ export const CREATE_CHAIN_IDS = [
     Chain.MOONBEAM,
     Chain.SEI_NETWORK,
     Chain.MONAD_MAINNET,
+    Chain.ETHERLINK_MAINNET,
+    Chain.LISK,
+    Chain.BOB,
+    Chain.CORN,
+    Chain.STABLE_MAINNET,
+    Chain.PLUME_MAINNET,
+    Chain.GOAT_NETWORK,
+    Chain.ABSTRACT,
+    Chain.MEGAETH_MAINNET,
+    Chain.INK,
+    Chain.FLARE_MAINNET,
+    Chain.X_LAYER_MAINNET,
 ];
 
 export function sortForks<T>(arr: T[], field: keyof T) {

@@ -35,6 +35,17 @@ import {DeployFactory__factory} from "../../types";
 // moonbeam
 // sei
 // monad
+// flare
+// abstract
+// ink
+// corn
+// stable
+// megaeth
+// plume
+// bob
+// lisk
+// pulse
+// x-layer
 
 async function main() {
     const accounts = await ethers.getSigners();

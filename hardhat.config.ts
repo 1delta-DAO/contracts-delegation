@@ -183,6 +183,14 @@ const config: HardhatUserConfig = {
                 },
             },
             {
+                network: "xlayer",
+                chainId: 196,
+                urls: {
+                    browserURL: "https://www.oklink.com/xlayer",
+                    apiURL: "https://api.etherscan.io/v2/api?chainid=196",
+                },
+            },
+            {
                 network: "bnb",
                 chainId: 56,
                 urls: {
@@ -254,6 +262,110 @@ const config: HardhatUserConfig = {
                     browserURL: "https://katanascan.com/",
                 },
             },
+            {
+                network: "pulsechain",
+                chainId: 369,
+                urls: {
+                    apiURL: "https://api.scan.pulsechain.com/api",
+                    browserURL: "https://scan.pulsechain.com",
+                },
+            },
+            {
+                network: "stable",
+                chainId: 988,
+                urls: {
+                    apiURL: "https://api.etherscan.io/v2/api?chainid=988",
+                    browserURL: "https://stablescan.io",
+                },
+            },
+            {
+                network: "megaeth",
+                chainId: 6343,
+                urls: {
+                    apiURL: "https://www.megaexplorer.xyz/api",
+                    browserURL: "https://www.megaexplorer.xyz",
+                },
+            },
+            {
+                network: "pharos",
+                chainId: 688688,
+                urls: {
+                    apiURL: "https://testnet.pharosscan.xyz/api",
+                    browserURL: "https://testnet.pharosscan.xyz",
+                },
+            },
+            {
+                network: "etherlink",
+                chainId: 42793,
+                urls: {
+                    apiURL: "https://explorer.etherlink.com/api",
+                    browserURL: "https://explorer.etherlink.com",
+                },
+            },
+            {
+                network: "corn",
+                chainId: 21000000,
+                urls: {
+                    apiURL: "https://api.routescan.io/v2/network/mainnet/evm/21000000/etherscan",
+                    browserURL: "https://maizenet-explorer.usecorn.com",
+                },
+            },
+            {
+                network: "lisk",
+                chainId: 1135,
+                urls: {
+                    apiURL: "https://blockscout.lisk.com/api",
+                    browserURL: "https://blockscout.lisk.com",
+                },
+            },
+            {
+                network: "goat",
+                chainId: 2345,
+                urls: {
+                    apiURL: "https://explorer.goat.network/api",
+                    browserURL: "https://explorer.goat.network",
+                },
+            },
+            {
+                network: "plume",
+                chainId: 98866,
+                urls: {
+                    apiURL: "https://explorer.plume.org/api",
+                    browserURL: "https://explorer.plume.org",
+                },
+            },
+            {
+                network: "bob",
+                chainId: 60808,
+                urls: {
+                    apiURL: "https://explorer.gobob.xyz/api",
+                    browserURL: "https://explorer.gobob.xyz",
+                },
+            },
+            {
+                network: "abstract",
+                chainId: 2741,
+                urls: {
+                    apiURL: "https://api.abscan.org/api",
+                    browserURL: "https://abscan.org",
+                },
+            },
+            {
+                network: "zksync_era",
+                chainId: 324,
+                urls: {
+                    apiURL: "https://block-explorer-api.mainnet.zksync.io/api",
+                    browserURL: "https://explorer.zksync.io",
+                },
+            },
+            {
+                network: "flare",
+                chainId: 14,
+                urls: {
+                    apiURL: "https://flare-explorer.flare.network/api",
+                    browserURL: "https://flare-explorer.flare.network",
+                },
+            },
         ],
         apiKey: process.env.ETHERSCAN_API_KEY ?? "",
         // apiKey: {
@@ -292,6 +404,19 @@ const config: HardhatUserConfig = {
         //     fantom: process.env.FANTOMSCAN_API_KEY ?? "",
         // },
     },
+    blockscout: {
+        enabled: true,
+        customChains: [
+            {
+                network: "ink",
+                chainId: 57073,
+                urls: {
+                    apiURL: "https://explorer.inkonchain.com/api",
+                    browserURL: "https://explorer.inkonchain.com",
+                },
+            },
+        ],
+    },
     gasReporter: {
         coinmarketcap: process.env.COINMARKETCAP_API_KEY,
         currency: "USD",
@@ -323,7 +448,7 @@ const config: HardhatUserConfig = {
             chainId: 1284,
         },
         fantom: {
-            url: "https://fantom.drpc.org",
+            url: "https://rpc.fantom.network",
             accounts,
             chainId: 250,
             live: true,
@@ -335,7 +460,7 @@ const config: HardhatUserConfig = {
             live: true,
         },
         soneium: {
-            url: "https://soneium.drpc.org",
+            url: "https://rpc.sentio.xyz/soneium-mainnet",
             accounts,
             chainId: 1868,
             live: true,
@@ -375,10 +500,89 @@ const config: HardhatUserConfig = {
             accounts,
             chainId: 137,
         },
-        pulse: {
+        pulsechain: {
             url: "https://rpc.pulsechain.com",
             accounts,
             chainId: 369,
+            live: true,
+        },
+        stable: {
+            url: "https://rpc.stable.xyz",
+            accounts,
+            chainId: 988,
+            live: true,
+        },
+        megaeth: {
+            url: "https://mainnet.megaeth.com/rpc",
+            accounts,
+            chainId: 4326,
+            live: true,
+        },
+        pharos: {
+            url: "https://testnet.dplabs-internal.com",
+            accounts,
+            chainId: 688688,
+            live: true,
+        },
+        etherlink: {
+            url: "https://node.mainnet.etherlink.com",
+            accounts,
+            chainId: 42793,
+            live: true,
+        },
+        corn: {
+            url: "https://maizenet-rpc.usecorn.com",
+            accounts,
+            chainId: 21000000,
+            live: true,
+        },
+        lisk: {
+            url: "https://rpc.api.lisk.com",
+            accounts,
+            chainId: 1135,
+            live: true,
+        },
+        goat: {
+            url: "https://rpc.goat.network",
+            accounts,
+            chainId: 2345,
+            live: true,
+        },
+        plume: {
+            url: "https://rpc.plume.org",
+            accounts,
+            chainId: 98866,
+            live: true,
+        },
+        bob: {
+            url: "https://rpc.gobob.xyz",
+            accounts,
+            chainId: 60808,
+            live: true,
+        },
+        abstract: {
+            url: "https://api.mainnet.abs.xyz",
+            accounts,
+            chainId: 2741,
+            live: true,
+        },
+        zksync_era: {
+            url: "https://mainnet.era.zksync.io",
+            accounts,
+            chainId: 324,
+            live: true,
+        },
+        flare: {
+            url: "https://flare-api.flare.network/ext/C/rpc",
+            accounts,
+            chainId: 14,
+            live: true,
+        },
+        ink: {
+            url: "https://rpc-gel.inkonchain.com",
+            accounts,
+            chainId: 57073,
+            live: true,
         },
         base: {
             url: "https://mainnet.base.org",
@@ -456,7 +660,7 @@ const config: HardhatUserConfig = {
             live: true,
         },
         arbitrum: {
-            url: "https://arbitrum.drpc.org",
+            url: "https://1rpc.io/arb",
             chainId: 42161,
             live: true,
             blockGasLimit: 700000,
@@ -477,6 +681,12 @@ const config: HardhatUserConfig = {
             url: "https://rpc.sentio.xyz/cronos",
             accounts,
             chainId: 25,
+            live: true,
+        },
+        xlayer: {
+            url: "https://rpc.xlayer.tech",
+            accounts,
+            chainId: 196,
             live: true,
         },
         berachain: {
@@ -687,7 +897,7 @@ const config: HardhatUserConfig = {
                 },
             },
             "contracts/external-protocols/misc/BalanceFetcher.sol": {
-                version: "0.8.34",
+                version: "0.8.28",
                 settings: {
                     optimizer: {
                         enabled: true,
@@ -719,6 +929,36 @@ const config: HardhatUserConfig = {
             },
             // composers
             "contracts/1delta/composer/chains/arbitrum-one/Composer.sol": {
+                version: "0.8.34",
+                settings: {
+                    optimizer: {
+                        enabled: true,
+                        runs: 5_500,
+                    },
+                    evmVersion: "cancun",
+                },
+            },
+            "contracts/1delta/composer/chains/abstract/Composer.sol": {
+                version: "0.8.34",
+                settings: {
+                    optimizer: {
+                        enabled: true,
+                        runs: 5_500,
+                    },
+                    evmVersion: "paris",
+                },
+            },
+            "contracts/1delta/composer/chains/zksync/Composer.sol": {
+                version: "0.8.34",
+                settings: {
+                    optimizer: {
+                        enabled: true,
+                        runs: 5_500,
+                    },
+                    evmVersion: "paris",
+                },
+            },
+            "contracts/1delta/composer/chains/x-layer/Composer.sol": {
                 version: "0.8.34",
                 settings: {
                     optimizer: {

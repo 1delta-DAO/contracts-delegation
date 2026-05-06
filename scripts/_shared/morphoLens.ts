@@ -12,7 +12,11 @@ async function main() {
     console.log("gasPrice", gp.toNumber() / 1e9);
 
     console.log("Morpho lens");
-    const cometLens = await new MorphoLens__factory(operator).deploy({gasPrice: gp});
+    const dt = new MorphoLens__factory(operator).getDeployTransaction();
+    const gl = await operator.estimateGas(dt);
+    console.log("gasLimit", gl.toString());
+
+    const cometLens = await new MorphoLens__factory(operator).deploy({gasPrice: gp, gasLimit: gl});
 
     console.log("lens:", cometLens.address);
 }

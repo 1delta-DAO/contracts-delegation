@@ -1,11 +1,13 @@
 node_modules
 artifacts
+artifacts-zk
 cache
 /types
 abi
 .env
 yarn-error.log
 .tmp
+.claude
 
 # Compiler files
 cache/

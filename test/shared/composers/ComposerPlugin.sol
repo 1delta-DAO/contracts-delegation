@@ -38,6 +38,18 @@ import {OneDeltaComposerPlasma} from "../../../contracts/1delta/composer//chains
 import {OneDeltaComposerMoonbeam} from "../../../contracts/1delta/composer//chains/moonbeam/Composer.sol";
 import {OneDeltaComposerSei} from "../../../contracts/1delta/composer//chains/sei/Composer.sol";
 import {OneDeltaComposerMonad} from "../../../contracts/1delta/composer//chains/monad/Composer.sol";
+import {OneDeltaComposerEtherlink} from "../../../contracts/1delta/composer//chains/etherlink/Composer.sol";
+import {OneDeltaComposerLisk} from "../../../contracts/1delta/composer//chains/lisk/Composer.sol";
+import {OneDeltaComposerBob} from "../../../contracts/1delta/composer//chains/bob/Composer.sol";
+import {OneDeltaComposerCorn} from "../../../contracts/1delta/composer//chains/corn/Composer.sol";
+import {OneDeltaComposerStable} from "../../../contracts/1delta/composer//chains/stable/Composer.sol";
+import {OneDeltaComposerPlume} from "../../../contracts/1delta/composer//chains/plume/Composer.sol";
+import {OneDeltaComposerGoat} from "../../../contracts/1delta/composer//chains/goat/Composer.sol";
+import {OneDeltaComposerAbstract} from "../../../contracts/1delta/composer//chains/abstract/Composer.sol";
+import {OneDeltaComposerMegaeth} from "../../../contracts/1delta/composer//chains/megaeth/Composer.sol";
+import {OneDeltaComposerInk} from "../../../contracts/1delta/composer//chains/ink/Composer.sol";
+import {OneDeltaComposerFlare} from "../../../contracts/1delta/composer//chains/flare/Composer.sol";
+import {OneDeltaComposerXLayer} from "../../../contracts/1delta/composer//chains/x-layer/Composer.sol";
 
 library ComposerPlugin {
     function getComposer(string memory chainName) public returns (IComposerLike) {
@@ -148,6 +160,42 @@ library ComposerPlugin {
         }
         if (keccak256(bytes(chainName)) == keccak256(bytes(Chains.MONAD_MAINNET))) {
             return IComposerLike(address(new OneDeltaComposerMonad()));
+        }
+        if (keccak256(bytes(chainName)) == keccak256(bytes(Chains.ETHERLINK_MAINNET))) {
+            return IComposerLike(address(new OneDeltaComposerEtherlink()));
+        }
+        if (keccak256(bytes(chainName)) == keccak256(bytes(Chains.LISK))) {
+            return IComposerLike(address(new OneDeltaComposerLisk()));
+        }
+        if (keccak256(bytes(chainName)) == keccak256(bytes(Chains.BOB))) {
+            return IComposerLike(address(new OneDeltaComposerBob()));
+        }
+        if (keccak256(bytes(chainName)) == keccak256(bytes(Chains.CORN))) {
+            return IComposerLike(address(new OneDeltaComposerCorn()));
+        }
+        if (keccak256(bytes(chainName)) == keccak256(bytes(Chains.STABLE_MAINNET))) {
+            return IComposerLike(address(new OneDeltaComposerStable()));
+        }
+        if (keccak256(bytes(chainName)) == keccak256(bytes(Chains.PLUME_MAINNET))) {
+            return IComposerLike(address(new OneDeltaComposerPlume()));
+        }
+        if (keccak256(bytes(chainName)) == keccak256(bytes(Chains.GOAT_NETWORK))) {
+            return IComposerLike(address(new OneDeltaComposerGoat()));
+        }
+        if (keccak256(bytes(chainName)) == keccak256(bytes(Chains.ABSTRACT))) {
+            return IComposerLike(address(new OneDeltaComposerAbstract()));
+        }
+        if (keccak256(bytes(chainName)) == keccak256(bytes(Chains.MEGAETH_MAINNET))) {
+            return IComposerLike(address(new OneDeltaComposerMegaeth()));
+        }
+        if (keccak256(bytes(chainName)) == keccak256(bytes(Chains.INK))) {
+            return IComposerLike(address(new OneDeltaComposerInk()));
+        }
+        if (keccak256(bytes(chainName)) == keccak256(bytes(Chains.FLARE_MAINNET))) {
+            return IComposerLike(address(new OneDeltaComposerFlare()));
+        }
+        if (keccak256(bytes(chainName)) == keccak256(bytes(Chains.X_LAYER_MAINNET))) {
+            return IComposerLike(address(new OneDeltaComposerXLayer()));
         }
 
         revert("No composer for chain");

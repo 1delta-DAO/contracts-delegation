@@ -17,6 +17,10 @@
         "solidity"
     ],
     "devDependencies": {
+        "@matterlabs/hardhat-zksync-deploy": "^1.5.0",
+        "@matterlabs/hardhat-zksync-ethers": "^1.2.1",
+        "@matterlabs/hardhat-zksync-solc": "^1.2.5",
+        "@matterlabs/hardhat-zksync-verify": "^1.7.1",
         "@nomicfoundation/hardhat-verify": "^2.0.13",
         "@nomiclabs/hardhat-ethers": "^2.0.2",
         "@nomiclabs/hardhat-waffle": "^2.0.1",
@@ -83,11 +87,11 @@
         "verify-bytecode": "tsx scripts/verify-bytecode.ts"
     },
     "dependencies": {
-        "@1delta/chain-registry": "^0.0.3",
-        "@1delta/data-sdk": "^0.0.10",
-        "@1delta/dex-registry": "^0.0.98",
-        "@1delta/lender-registry": "^0.0.16",
-        "@1delta/margin-fetcher": "^0.0.137",
+        "@1delta/chain-registry": "^0.0.5",
+        "@1delta/data-sdk": "^0.0.25",
+        "@1delta/dex-registry": "^0.0.100",
+        "@1delta/lender-registry": "^0.0.25",
+        "@1delta/margin-fetcher": "^0.0.252",
         "@chainlink/contracts": "^0.6.1",
         "@nomicfoundation/hardhat-network-helpers": "^1.0.8",
         "@nomiclabs/hardhat-solhint": "^2.0.0",
@@ -107,6 +111,13 @@
         "install": "^0.13.0",
         "is-svg": "^4.3.1",
         "lodash": "^4.17.21",
-        "npm": "^7.20.6"
+        "npm": "^7.20.6",
+        "zksync-ethers": "^5.10.0"
+    },
+    "pnpm": {
+        "overrides": {
+            "@1delta/chain-registry": "^0.0.5",
+            "@1delta/data-sdk": "^0.0.25"
+        }
     }
 }
