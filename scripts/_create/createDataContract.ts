@@ -69,16 +69,20 @@ const isCompoundV2 = (arr: string[]) => {
   }`;
 };
 
+function isKnownChain(s: any) {
+    return Boolean(chains()[s]);
+}
+
 function getChainString(s: any) {
-    return chains()[s].enum;
+    return chains()[s]?.enum;
 }
 
 function getChainId(s: any) {
-    return chains()[s].chainId;
+    return chains()[s]?.chainId;
 }
 
 function getChainRpc(s: any) {
-    return chains()[s].rpc?.filter((rpc) => !rpc.includes("$"))[0] || ""; // filter out the ones with env vars
+    return chains()[s]?.rpc?.filter((rpc: string) => !rpc.includes("$"))[0] || ""; // filter out the ones with env vars
 }
 
 const chainLibHeader = () => `
@@ -143,6 +147,12 @@ async function main() {
         });
     });
 
+    const allChainIds = uniq(chainIdsCovered);
+    const unknownChainIds = allChainIds.filter((c) => !isKnownChain(c));
+    if (unknownChainIds.length > 0) {
+        console.warn(`Skipping ${unknownChainIds.length} chain(s) not present in chain registry: ${unknownChainIds.join(", ")}`);
+    }
+    chainIdsCovered = chainIdsCovered.filter(isKnownChain);
     const uniqueChainIds = uniq(chainIdsCovered);
     console.log(`Fetching token lists for ${uniqueChainIds.length} chains...`);
     await loadTokenLists(uniqueChainIds);
@@ -166,22 +176,31 @@ async function main() {
     // AAVE tokens
     Object.entries(aaveTokens()).forEach(([lender, chainTokens]) => {
         Object.entries(chainTokens).forEach(([chainId, _]) => {
+            if (!isKnownChain(chainId)) return;
+            const reserves = aaveReserves()[lender]?.[chainId];
+            if (!reserves) return;
             if (!chainToToken[chainId]) chainToToken[chainId] = [];
-            chainToToken[chainId] = [...chainToToken[chainId], ...aaveReserves()[lender][chainId]];
+            chainToToken[chainId] = [...chainToToken[chainId], ...reserves];
         });
     });
     // COMPOUND V3 tokens
     Object.entries(compoundV3Pools()).forEach(([chain, lenderToComet]) => {
+        if (!isKnownChain(chain)) return;
         Object.entries(lenderToComet).forEach(([lender, _]) => {
+            const reserves = compoundV3Reserves()[lender]?.[chain];
+            if (!reserves) return;
             if (!chainToToken[chain]) chainToToken[chain] = [];
-            chainToToken[chain] = [...chainToToken[chain], ...compoundV3Reserves()[lender][chain]];
+            chainToToken[chain] = [...chainToToken[chain], ...reserves];
         });
     });
     // COMPOUND V2 tokens
     Object.entries(compoundV2Tokens()).forEach(([lender, chainTokens]) => {
         Object.entries(chainTokens).forEach(([chainId, _]) => {
+            if (!isKnownChain(chainId)) return;
+            const reserves = compoundV2Reserves()[lender]?.[chainId];
+            if (!reserves) return;
             if (!chainToToken[chainId]) chainToToken[chainId] = [];
-            chainToToken[chainId] = [...chainToToken[chainId], ...compoundV2Reserves()[lender][chainId]];
+            chainToToken[chainId] = [...chainToToken[chainId], ...reserves];
         });
     });
 
@@ -190,6 +209,7 @@ async function main() {
     ///////////////////////////////////////////////////////////////
     let tokenSymbols: string[] = [];
     Object.entries(chainToToken ?? {}).forEach(([chain, tokenList]) => {
+        if (!isKnownChain(chain)) return;
         const _tokenListClean = uniq(tokenList);
         _tokenListClean.forEach((token) => {
             const meta = getTokenFromCache(chain, token);
@@ -245,6 +265,7 @@ async function main() {
 
         // add aave tokens
         Object.entries(tokens ?? {}).forEach(([chainId, tokens]) => {
+            if (!isKnownChain(chainId)) return;
             const chainConstant = `Chains.${getChainString(chainId)}`;
             const lenderConstant = `Lenders.${lender}`;
 
@@ -260,6 +281,7 @@ async function main() {
 
         // add pools
         Object.entries(maps).forEach(([chain, aaveInfoData]) => {
+            if (!isKnownChain(chain)) return;
             const chainConstant = `Chains.${getChainString(chain)}`;
             const lenderConstant = `Lenders.${lender}`;
             data += `    lendingControllers[${chainConstant}][${lenderConstant}] = ${getAddress(aaveInfoData.pool)};\n`;
@@ -270,6 +292,7 @@ async function main() {
     // COMPOUND V3 DATA
     data += `    // Initialize Compound V3 protocol data\n`;
     Object.entries(compoundV3Pools()).forEach(([chain, lenderToComet]) => {
+        if (!isKnownChain(chain)) return;
         const chainConstant = `Chains.${getChainString(chain)}`;
 
         // add comets and controllers
@@ -284,6 +307,7 @@ async function main() {
         const lenderConstant = `Lenders.${lender}`;
 
         Object.entries(chainIdToBase).forEach(([chainId, baseData]) => {
+            if (!isKnownChain(chainId)) return;
             const chainConstant = `Chains.${getChainString(chainId)}`;
             data += `    cometToBase[${chainConstant}][${lenderConstant}] = ${getAddress(baseData.baseAsset)};\n`;
         });
@@ -298,6 +322,7 @@ async function main() {
 
         // add compound v2 tokens
         Object.entries(tokens).forEach(([chainId, tokens]) => {
+            if (!isKnownChain(chainId)) return;
             const chainConstant = `Chains.${getChainString(chainId)}`;
 
             Object.entries(tokens).forEach(([reserve, lenderTokens]) => {
@@ -312,6 +337,7 @@ async function main() {
 
         // add pools
         Object.entries(maps).forEach(([chain, comptroller]) => {
+            if (!isKnownChain(chain)) return;
             const chainConstant = `Chains.${getChainString(chain)}`;
             data += `    lendingControllers[${chainConstant}][${lenderConstant}] = ${getAddress(comptroller)};\n`;
         });
@@ -321,6 +347,7 @@ async function main() {
     // add token addresses
     data += `    // Initialize token addresses\n`;
     Object.entries(chainToToken).forEach(([chain, tokenList]) => {
+        if (!isKnownChain(chain)) return;
         const chainConstant = `Chains.${getChainString(chain)}`;
         const _tokenListClean = uniq(tokenList);
 

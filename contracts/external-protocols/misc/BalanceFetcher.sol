@@ -29,8 +29,10 @@ contract BalanceFetcher {
             // read balance function with the in-place selector
             function readBalance(token, user) -> bal {
                 mstore(0x4, user)
-                // only return something when call is successful
-                if staticcall(gas(), token, 0x0, 0x24, 0x4, 0x20) { bal := mload(0x4) }
+                // only return something when the call succeeds AND it returned a full 32-byte word.
+                // Without the size check, an EOA / no-code address would succeed with 0 returndata and
+                // mload(0x4) would yield the user address (just written above) as a fake balance.
+                if and(staticcall(gas(), token, 0x0, 0x24, 0x4, 0x20), gt(returndatasize(), 0x1f)) { bal := mload(0x4) }
             }
 
             // encode index and balance function (2 bytes index + 14 bytes balance = 16 bytes total)

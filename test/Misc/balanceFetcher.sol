@@ -16,6 +16,23 @@ contract RevertingToken {
     }
 }
 
+// Contract whose fallback succeeds with empty returndata for any call.
+// Mimics a non-token contract: staticcall returns success(true) with returndatasize == 0.
+contract EmptyReturnContract {
+    fallback() external {}
+}
+
+// Contract that returns fewer than 32 bytes for balanceOf (e.g. 4 bytes).
+// Without a returndatasize check, the trailing bytes of the output area are stale.
+contract ShortReturnToken {
+    fallback() external {
+        assembly {
+            mstore(0x0, 0xdeadbeef)
+            return(0x0, 0x4)
+        }
+    }
+}
+
 contract BalanceFetcherTest is Test {
     IBal public fetcher;
 
@@ -303,6 +320,120 @@ contract BalanceFetcherTest is Test {
             console.log("Token index:", tokenIndex, "Balance:", tokenBalance);
             offset += 16;
         }
+    }
+
+    function test_balance_fetcher_eoa_token_skipped() public {
+        // An address with no code: staticcall succeeds with 0 returndata.
+        // Pre-fix, the contract returned the user address (written into 0x4 just before the call)
+        // as a fake balance, which would be reported as non-zero.
+        address eoaToken = address(0x1234567890AbcdEF1234567890aBcdef12345678);
+        assertEq(eoaToken.code.length, 0, "precondition: token must have no code");
+
+        bytes memory input = abi.encodePacked(
+            uint16(1), // numTokens
+            uint16(1), // numAddresses
+            abi.encodePacked(users[0]),
+            abi.encodePacked(eoaToken)
+        );
+
+        bytes memory data = fetcher.bal(input);
+
+        uint256 offset = 8; // skip block number
+        uint16 count;
+        assembly {
+            let userData := mload(add(data, add(32, offset)))
+            count := and(shr(224, userData), 0xffff)
+        }
+        assertEq(count, 0, "EOA token must not produce a balance entry");
+    }
+
+    function test_balance_fetcher_empty_return_token_skipped() public {
+        // Contract that exists but its fallback returns 0 bytes — same returndatasize-0 trap as the EOA case.
+        address emptyToken = address(new EmptyReturnContract());
+
+        bytes memory input = abi.encodePacked(
+            uint16(1), // numTokens
+            uint16(1), // numAddresses
+            abi.encodePacked(users[0]),
+            abi.encodePacked(emptyToken)
+        );
+
+        bytes memory data = fetcher.bal(input);
+
+        uint256 offset = 8; // skip block number
+        uint16 count;
+        assembly {
+            let userData := mload(add(data, add(32, offset)))
+            count := and(shr(224, userData), 0xffff)
+        }
+        assertEq(count, 0, "Token returning empty data must not produce a balance entry");
+    }
+
+    function test_balance_fetcher_short_return_token_skipped() public {
+        // Contract that returns fewer than 32 bytes — without the size check the high bits of the
+        // output word are stale (the user address) and a bogus balance leaks through.
+        address shortToken = address(new ShortReturnToken());
+
+        bytes memory input = abi.encodePacked(
+            uint16(1), // numTokens
+            uint16(1), // numAddresses
+            abi.encodePacked(users[0]),
+            abi.encodePacked(shortToken)
+        );
+
+        bytes memory data = fetcher.bal(input);
+
+        uint256 offset = 8; // skip block number
+        uint16 count;
+        assembly {
+            let userData := mload(add(data, add(32, offset)))
+            count := and(shr(224, userData), 0xffff)
+        }
+        assertEq(count, 0, "Token returning short data must not produce a balance entry");
+    }
+
+    function test_balance_fetcher_bad_tokens_mixed_with_good() public {
+        // Bad tokens at various positions must be skipped without affecting the good ones.
+        vm.deal(users[0], 1 ether);
+
+        address eoaToken = address(0x000000000000000000000000000000000000dEaD);
+        address emptyToken = address(new EmptyReturnContract());
+        address shortToken = address(new ShortReturnToken());
+        address revertToken = address(new RevertingToken());
+
+        bytes memory input = abi.encodePacked(
+            uint16(5), // numTokens
+            uint16(1), // numAddresses
+            abi.encodePacked(users[0]),
+            abi.encodePacked(
+                eoaToken, // index 0 - bad
+                emptyToken, // index 1 - bad
+                shortToken, // index 2 - bad
+                revertToken, // index 3 - bad
+                address(0) // index 4 - native ETH (good)
+            )
+        );
+
+        bytes memory data = fetcher.bal(input);
+
+        uint256 offset = 8;
+        uint16 count;
+        assembly {
+            let userData := mload(add(data, add(32, offset)))
+            count := and(shr(224, userData), 0xffff)
+        }
+        assertEq(count, 1, "Only the native ETH entry should appear");
+
+        offset += 4;
+        uint16 tokenIndex;
+        uint112 tokenBalance;
+        assembly {
+            let balanceData := mload(add(data, add(32, offset)))
+            tokenIndex := shr(240, balanceData)
+            tokenBalance := and(shr(128, balanceData), 0xffffffffffffffffffffffffffff)
+        }
+        assertEq(tokenIndex, 4, "Native ETH must be at index 4");
+        assertEq(tokenBalance, 1 ether, "Native ETH balance mismatch");
     }
 
     function test_balance_fetcher_revert_zero_tokens() public {
