@@ -60,7 +60,7 @@ async function main() {
 
     const portal = new ethers.Contract(PORTAL, ["function depositTransaction(address,uint256,uint64,bool,bytes) payable"], l1Signer);
 
-    const boostedGasPrice = gasPrice.mul(150).div(100);
+    const boostedGasPrice = gasPrice.mul(105).div(100);
 
     const l1GasEstimate = await portal.estimateGas.depositTransaction(ethers.constants.AddressZero, 0, l2GasLimit, true, deployTx.data, {value: 0});
     console.log("L1 gas estimate:", l1GasEstimate.toString());

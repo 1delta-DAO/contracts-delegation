@@ -29,10 +29,15 @@ contract BalanceFetcher {
             // read balance function with the in-place selector
             function readBalance(token, user) -> bal {
                 mstore(0x4, user)
-                // only return something when the call succeeds AND it returned a full 32-byte word.
-                // Without the size check, an EOA / no-code address would succeed with 0 returndata and
-                // mload(0x4) would yield the user address (just written above) as a fake balance.
-                if and(staticcall(gas(), token, 0x0, 0x24, 0x4, 0x20), gt(returndatasize(), 0x1f)) { bal := mload(0x4) }
+                // Nested ifs (rather than an `and(staticcall(...), gt(returndatasize(), 0x1f))`)
+                // are required so the Yul optimizer cannot hoist returndatasize() above the
+                // staticcall. With the flat form the optimizer reorders RDS before the call,
+                // making the size check read the PREVIOUS call's returndatasize — which leaks
+                // the user address (mstore'd at 0x4) as a fake balance for EOA "tokens" whenever
+                // a prior balanceOf returned >= 32 bytes.
+                if staticcall(gas(), token, 0x0, 0x24, 0x4, 0x20) {
+                    if gt(returndatasize(), 0x1f) { bal := mload(0x4) }
+                }
             }
 
             // encode index and balance function (2 bytes index + 14 bytes balance = 16 bytes total)
