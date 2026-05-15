@@ -19,14 +19,14 @@ importers:
         specifier: ^0.0.26
         version: 0.0.26
       '@1delta/dex-registry':
-        specifier: ^0.0.100
-        version: 0.0.100
+        specifier: ^0.0.101
+        version: 0.0.101
       '@1delta/lender-registry':
-        specifier: ^0.0.29
-        version: 0.0.29
+        specifier: ^0.0.30
+        version: 0.0.30
       '@1delta/margin-fetcher':
-        specifier: ^0.0.257
-        version: 0.0.257(@opentelemetry/api@1.9.1)(@types/node@15.14.9)(bufferutil@4.0.9)(typescript@4.9.5)(utf-8-validate@5.0.10)(vite@8.0.10(@types/node@15.14.9)(tsx@4.20.6))
+        specifier: ^0.0.259
+        version: 0.0.259(@opentelemetry/api@1.9.1)(@types/node@15.14.9)(bufferutil@4.0.9)(typescript@4.9.5)(utf-8-validate@5.0.10)(vite@8.0.10(@types/node@15.14.9)(tsx@4.20.6))
       '@chainlink/contracts':
         specifier: ^0.6.1
         version: 0.6.1(bufferutil@4.0.9)(ethers@5.8.0(bufferutil@4.0.9)(utf-8-validate@5.0.10))(utf-8-validate@5.0.10)
@@ -250,20 +250,24 @@ packages:
     resolution: {integrity: sha512-VvpT2DQOJfnSWJzwGcFNZRopV6twWcHqlZtL5O1ikB7q82JLMJVg6Wxcx9gkBQBB75wVq8gSBFVy4QaWmrvzHA==}
     engines: {node: '>=20'}
 
-  '@1delta/lender-registry@0.0.26':
-    resolution: {integrity: sha512-eWdQxQVHF8YtEde5u7zXJH/9nVcP/UX7CTBm0DvGLMqHR49038lFvR8z3yGXdVNfomyA1wfjpPCVwhB7WgPOXg==}
+  '@1delta/dex-registry@0.0.101':
+    resolution: {integrity: sha512-gI6XlufEfcPk1W+8VqGUdwe99d4db9J3U5WYkO1Zkc82AbT3qgt8H8GFejgzQjkFrCJDCEYfzoW7l5xETbxfvQ==}
     engines: {node: '>=20'}
 
-  '@1delta/lender-registry@0.0.27':
-    resolution: {integrity: sha512-l3eev/LjwVY7hcdQsEfYoTwKzx6eQ1gozJn6NjT5xz7PWLKuQtfWGFQwSqG6FZg5AHjtHmtGFnfGR/qzrAWQKw==}
+  '@1delta/lender-registry@0.0.26':
+    resolution: {integrity: sha512-eWdQxQVHF8YtEde5u7zXJH/9nVcP/UX7CTBm0DvGLMqHR49038lFvR8z3yGXdVNfomyA1wfjpPCVwhB7WgPOXg==}
     engines: {node: '>=20'}
 
   '@1delta/lender-registry@0.0.29':
     resolution: {integrity: sha512-9BclKZP5UjFraQFUT7CEC11vVh/ocu92M0Zke9fFqSsRzo0OT8+BT95kSLClepLtyci3Dqi+rhNJ2/OCR7HOlQ==}
     engines: {node: '>=20'}
 
-  '@1delta/margin-fetcher@0.0.257':
-    resolution: {integrity: sha512-atq22ZqubWoCvO6OkIsOjVb7kVvTQ/O9bW4uBIr4hypxupM5/nveQ9/qFgJn6AR7L3AudlNRC84d+bZ+DLffPg==}
+  '@1delta/lender-registry@0.0.30':
+    resolution: {integrity: sha512-JBksS+sHxi6krp0L7L6E1VvXvjWexIg8F9WZrTH5PHIVUONye3/BCHlVtLay0/1SIcnvfYERHJw00bM9d1rMZQ==}
+    engines: {node: '>=20'}
+
+  '@1delta/margin-fetcher@0.0.259':
+    resolution: {integrity: sha512-5qP6Cd5RLfQ28ODYpyw+wOWF7KpEjhMsgmUgTQGo4DrsoDAPdlf1OpHYWUSE6E4DPw9T5eoLgJXf9rpnT1ksaQ==}
 
   '@1delta/providers@0.0.59':
     resolution: {integrity: sha512-jMeIh8a6FI+GCh6UQwAnWf0RzN9c4aCCpE6LXUhF6xEyNPCOV0POaC+kK2LoAERRRYOL1Yw0NA5HRPOiDY+cBA==}
@@ -1508,42 +1512,36 @@ packages:
     engines: {node: ^20.19.0 || >=22.12.0}
     cpu: [arm64]
     os: [linux]
-    libc: [glibc]
 
   '@rolldown/binding-linux-arm64-musl@1.0.0-rc.17':
     resolution: {integrity: sha512-b/CgbwAJpmrRLp02RPfhbudf5tZnN9nsPWK82znefso832etkem8H7FSZwxrOI9djcdTP7U6YfNhbRnh7djErg==}
     engines: {node: ^20.19.0 || >=22.12.0}
     cpu: [arm64]
     os: [linux]
-    libc: [musl]
 
   '@rolldown/binding-linux-ppc64-gnu@1.0.0-rc.17':
     resolution: {integrity: sha512-4EII1iNGRUN5WwGbF/kOh/EIkoDN9HsupgLQoXfY+D1oyJm7/F4t5PYU5n8SWZgG0FEwakyM8pGgwcBYruGTlA==}
     engines: {node: ^20.19.0 || >=22.12.0}
     cpu: [ppc64]
     os: [linux]
-    libc: [glibc]
 
   '@rolldown/binding-linux-s390x-gnu@1.0.0-rc.17':
     resolution: {integrity: sha512-AH8oq3XqQo4IibpVXvPeLDI5pzkpYn0WiZAfT05kFzoJ6tQNzwRdDYQ45M8I/gslbodRZwW8uxLhbSBbkv96rA==}
     engines: {node: ^20.19.0 || >=22.12.0}
     cpu: [s390x]
     os: [linux]
-    libc: [glibc]
 
   '@rolldown/binding-linux-x64-gnu@1.0.0-rc.17':
     resolution: {integrity: sha512-cLnjV3xfo7KslbU41Z7z8BH/E1y5mzUYzAqih1d1MDaIGZRCMqTijqLv76/P7fyHuvUcfGsIpqCdddbxLLK9rA==}
     engines: {node: ^20.19.0 || >=22.12.0}
     cpu: [x64]
     os: [linux]
-    libc: [glibc]
 
   '@rolldown/binding-linux-x64-musl@1.0.0-rc.17':
     resolution: {integrity: sha512-0phclDw1spsL7dUB37sIARuis2tAgomCJXAHZlpt8PXZ4Ba0dRP1e+66lsRqrfhISeN9bEGNjQs+T/Fbd7oYGw==}
     engines: {node: ^20.19.0 || >=22.12.0}
     cpu: [x64]
     os: [linux]
-    libc: [musl]
 
   '@rolldown/binding-openharmony-arm64@1.0.0-rc.17':
     resolution: {integrity: sha512-0ag/hEgXOwgw4t8QyQvUCxvEg+V0KBcA6YuOx9g0r02MprutRF5dyljgm3EmR02O292UX7UeS6HzWHAl6KgyhA==}
@@ -5095,28 +5093,24 @@ packages:
     engines: {node: '>= 12.0.0'}
     cpu: [arm64]
     os: [linux]
-    libc: [glibc]
 
   lightningcss-linux-arm64-musl@1.32.0:
     resolution: {integrity: sha512-UpQkoenr4UJEzgVIYpI80lDFvRmPVg6oqboNHfoH4CQIfNA+HOrZ7Mo7KZP02dC6LjghPQJeBsvXhJod/wnIBg==}
     engines: {node: '>= 12.0.0'}
     cpu: [arm64]
     os: [linux]
-    libc: [musl]
 
   lightningcss-linux-x64-gnu@1.32.0:
     resolution: {integrity: sha512-V7Qr52IhZmdKPVr+Vtw8o+WLsQJYCTd8loIfpDaMRWGUZfBOYEJeyJIkqGIDMZPwPx24pUMfwSxxI8phr/MbOA==}
     engines: {node: '>= 12.0.0'}
     cpu: [x64]
     os: [linux]
-    libc: [glibc]
 
   lightningcss-linux-x64-musl@1.32.0:
     resolution: {integrity: sha512-bYcLp+Vb0awsiXg/80uCRezCYHNg1/l3mt0gzHnWV9XP1W5sKa5/TCdGWaR/zBM2PeF/HbsQv/j2URNOiVuxWg==}
     engines: {node: '>= 12.0.0'}
     cpu: [x64]
     os: [linux]
-    libc: [musl]
 
   lightningcss-win32-arm64-msvc@1.32.0:
     resolution: {integrity: sha512-8SbC8BR40pS6baCM8sbtYDSwEVQd4JlFTOlaD3gWGHfThTcABnNDBda6eTZeqbofalIJhFx0qKzgHJmcPTnGdw==}
@@ -7429,16 +7423,16 @@ packages:
 
   uuid@2.0.1:
     resolution: {integrity: sha512-nWg9+Oa3qD2CQzHIP4qKUqwNfzKn8P0LtFhotaCTFchsV7ZfDhAybeip/HZVeMIpZi9JgY1E3nUlwaCmZT1sEg==}
-    deprecated: Please upgrade  to version 7 or higher.  Older versions may use Math.random() in certain circumstances, which is known to be problematic.  See https://v8.dev/blog/math-random for details.
+    deprecated: uuid@10 and below is no longer supported.  For ESM codebases, update to uuid@latest.  For CommonJS codebases, use uuid@11 (but be aware this version will likely be deprecated in 2028).
 
   uuid@3.3.2:
     resolution: {integrity: sha512-yXJmeNaw3DnnKAOKJE51sL/ZaYfWJRl1pK9dr19YFCu0ObS231AB1/LbqTKRAQ5kw8A90rA6fr4riOUpTZvQZA==}
-    deprecated: Please upgrade  to version 7 or higher.  Older versions may use Math.random() in certain circumstances, which is known to be problematic.  See https://v8.dev/blog/math-random for details.
+    deprecated: uuid@10 and below is no longer supported.  For ESM codebases, update to uuid@latest.  For CommonJS codebases, use uuid@11 (but be aware this version will likely be deprecated in 2028).
     hasBin: true
 
   uuid@3.4.0:
     resolution: {integrity: sha512-HjSDRw6gZE5JMggctHBcjVak08+KEVhSIiDzFnT9S9aegmp85S/bReBVTb4QTFaRNptJ9kuYaNhnbNEOkbKb/A==}
-    deprecated: Please upgrade  to version 7 or higher.  Older versions may use Math.random() in certain circumstances, which is known to be problematic.  See https://v8.dev/blog/math-random for details.
+    deprecated: uuid@10 and below is no longer supported.  For ESM codebases, update to uuid@latest.  For CommonJS codebases, use uuid@11 (but be aware this version will likely be deprecated in 2028).
     hasBin: true
 
   uuid@8.3.2:
@@ -8128,18 +8122,23 @@ snapshots:
       '@1delta/chain-registry': 0.0.5
       '@1delta/lender-registry': 0.0.26
 
-  '@1delta/lender-registry@0.0.26': {}
+  '@1delta/dex-registry@0.0.101':
+    dependencies:
+      '@1delta/chain-registry': 0.0.5
+      '@1delta/lender-registry': 0.0.30
 
-  '@1delta/lender-registry@0.0.27': {}
+  '@1delta/lender-registry@0.0.26': {}
 
   '@1delta/lender-registry@0.0.29': {}
 
-  '@1delta/margin-fetcher@0.0.257(@opentelemetry/api@1.9.1)(@types/node@15.14.9)(bufferutil@4.0.9)(typescript@4.9.5)(utf-8-validate@5.0.10)(vite@8.0.10(@types/node@15.14.9)(tsx@4.20.6))':
+  '@1delta/lender-registry@0.0.30': {}
+
+  '@1delta/margin-fetcher@0.0.259(@opentelemetry/api@1.9.1)(@types/node@15.14.9)(bufferutil@4.0.9)(typescript@4.9.5)(utf-8-validate@5.0.10)(vite@8.0.10(@types/node@15.14.9)(tsx@4.20.6))':
     dependencies:
       '@1delta/abis': 0.0.16
       '@1delta/calldata-sdk': 0.0.147(bufferutil@4.0.9)(typescript@4.9.5)(utf-8-validate@5.0.10)
       '@1delta/dex-registry': 0.0.100
-      '@1delta/lender-registry': 0.0.27
+      '@1delta/lender-registry': 0.0.29
       '@1delta/providers': 0.0.59(@opentelemetry/api@1.9.1)(@types/node@15.14.9)(vite@8.0.10(@types/node@15.14.9)(tsx@4.20.6))
       '@1delta/proxy-fetch': 0.0.1
       async-retry: 1.3.3
@@ -9432,7 +9431,7 @@ snapshots:
       debug: 4.4.3(supports-color@8.1.1)
       fs-extra: 7.0.1
       hardhat: 2.27.0(bufferutil@4.0.9)(ts-node@10.9.2(@types/node@15.14.9)(typescript@4.9.5))(typescript@4.9.5)(utf-8-validate@5.0.10)
-      lodash: 4.17.21
+      lodash: 4.18.1
       semver: 6.3.1
       table: 6.9.0
       undici: 5.29.0

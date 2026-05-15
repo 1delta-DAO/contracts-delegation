@@ -26,7 +26,7 @@ export const CREATE_CHAIN_IDS = [
     Chain.HYPEREVM,
     Chain.UNICHAIN,
     Chain.KATANA,
-    Chain.PULSECHAIN,
+    // Chain.PULSECHAIN,
     Chain.ETHEREUM_MAINNET,
     Chain.BERACHAIN,
     Chain.CRONOS_MAINNET,

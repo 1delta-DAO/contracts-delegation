@@ -89,9 +89,9 @@
     "dependencies": {
         "@1delta/chain-registry": "^0.0.5",
         "@1delta/data-sdk": "^0.0.26",
-        "@1delta/dex-registry": "^0.0.100",
-        "@1delta/lender-registry": "^0.0.29",
-        "@1delta/margin-fetcher": "^0.0.257",
+        "@1delta/dex-registry": "^0.0.101",
+        "@1delta/lender-registry": "^0.0.30",
+        "@1delta/margin-fetcher": "^0.0.259",
         "@chainlink/contracts": "^0.6.1",
         "@nomicfoundation/hardhat-network-helpers": "^1.0.8",
         "@nomiclabs/hardhat-solhint": "^2.0.0",

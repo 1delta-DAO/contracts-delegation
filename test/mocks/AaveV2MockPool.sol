@@ -13,7 +13,30 @@ contract AaveV2MockPool {
     )
         external
     {
-        // Simple mock implementation that just calls the callback
+        _invokeCallback(receiverAddress, assets, amounts, params);
+    }
+
+    /// @notice Phiat-style slimmer signature: no modes / onBehalfOf
+    function flashLoan(
+        address receiverAddress,
+        address[] calldata assets,
+        uint256[] calldata amounts,
+        bytes calldata params,
+        uint16 referralCode
+    )
+        external
+    {
+        _invokeCallback(receiverAddress, assets, amounts, params);
+    }
+
+    function _invokeCallback(
+        address receiverAddress,
+        address[] calldata assets,
+        uint256[] calldata amounts,
+        bytes calldata params
+    )
+        private
+    {
         address[] memory tempAssets = new address[](assets.length);
         uint256[] memory tempAmounts = new uint256[](assets.length);
         uint256[] memory tempFees = new uint256[](assets.length);
@@ -21,7 +44,7 @@ contract AaveV2MockPool {
         for (uint256 i = 0; i < assets.length; i++) {
             tempAssets[i] = assets[i];
             tempAmounts[i] = amounts[i];
-            tempFees[i] = amounts[i] * 9 / 10000; // 0.09% fee for Aave V2
+            tempFees[i] = amounts[i] * 9 / 10000; // 0.09% fee
         }
 
         bool success =

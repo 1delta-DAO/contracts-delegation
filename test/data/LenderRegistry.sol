@@ -5604,6 +5604,7 @@ contract LenderRegistry {
             0x91A91C9A4B58f3B358480E889be669Cb32F3A1B4
         );
         lendingControllers[Chains.PULSECHAIN][Lenders.BETTER_BANK] = 0xEC521218747d6ac1b3a9BD72a6F81Cb130309889;
+        lendingControllers[Chains.PULSECHAIN][Lenders.BETTER_BANK_ATROPA] = 0x000dEdABed8122422FfBA497458C4bd6cC4F69f7;
         lendingTokens[Chains.POLYGON_MAINNET][Lenders.PLOUTOS][0x03b54A6e9a984069379fae1a4fC4dBAE93B3bCCD] = LenderTokens(
             0x35830718Fa70E6e94A55c64EB566fA14FC0fA194,
             0x074bfeD0727C51C01Be8AEcF632592E865472DCf,
@@ -11975,6 +11976,7 @@ library Lenders {
     string internal constant PAC = "PAC";
     string internal constant PHIAT = "PHIAT";
     string internal constant BETTER_BANK = "BETTER_BANK";
+    string internal constant BETTER_BANK_ATROPA = "BETTER_BANK_ATROPA";
     string internal constant PLOUTOS = "PLOUTOS";
     string internal constant POLTER = "POLTER";
     string internal constant PRIME_FI = "PRIME_FI";
