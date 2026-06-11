@@ -58,6 +58,10 @@ library LenderOps {
     uint256 internal constant DEPOSIT_LENDING_TOKEN = 4;
     uint256 internal constant WITHDRAW_LENDING_TOKEN = 5;
     uint256 internal constant SET_COLLATERAL = 6;
+    /// @dev Lista fixed-term `LendingBroker` borrow (Moolah-backed market) — `borrow(amount,termId,...)`.
+    uint256 internal constant LISTA_BROKER_BORROW = 7;
+    /// @dev Lista fixed-term `LendingBroker` repay (Moolah-backed market) — `repay(amount,posId,...)`.
+    uint256 internal constant LISTA_BROKER_REPAY = 8;
     /// @dev Fluid smart-vault (T2/T3/T4) `operate` — combined col & debt in one call.
     uint256 internal constant FLUID_OPERATE = 10;
     /// @dev Fluid smart-vault (T2/T3/T4) `operatePerfect` — share-precise / full-exit path.

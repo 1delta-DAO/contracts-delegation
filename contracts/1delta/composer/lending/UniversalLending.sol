@@ -7,6 +7,7 @@ import {AaveV4Lending} from "./AaveV4Lending.sol";
 import {CompoundV3Lending} from "./CompoundV3Lending.sol";
 import {CompoundV2Lending} from "./CompoundV2Lending.sol";
 import {MorphoLending} from "./MorphoLending.sol";
+import {ListaBrokerLending} from "./ListaBrokerLending.sol";
 import {SiloV2Lending} from "./SiloV2Lending.sol";
 import {FluidLending} from "./FluidLending.sol";
 import {FluidSmartLending} from "./FluidSmartLending.sol";
@@ -28,6 +29,7 @@ abstract contract UniversalLending is
     CompoundV3Lending,
     CompoundV2Lending,
     MorphoLending,
+    ListaBrokerLending,
     SiloV2Lending,
     FluidLending, // brings in DeltaErrors transitively
     FluidSmartLending,
@@ -181,6 +183,26 @@ abstract contract UniversalLending is
         else if (lendingOperation == LenderOps.SET_COLLATERAL) {
             if (lender < LenderIds.UP_TO_AAVE_V4) {
                 return _setCollateralAaveV4(currentOffset, callerAddress);
+            } else {
+                _invalidOperation();
+            }
+        }
+        /**
+         * Lista fixed-term broker borrow (Moolah-backed market; debt side only).
+         */
+        else if (lendingOperation == LenderOps.LISTA_BROKER_BORROW) {
+            if (lender >= LenderIds.UP_TO_COMPOUND_V2 && lender < LenderIds.UP_TO_MORPHO) {
+                return _listaBrokerBorrow(currentOffset, callerAddress);
+            } else {
+                _invalidOperation();
+            }
+        }
+        /**
+         * Lista fixed-term broker repay (Moolah-backed market; debt side only).
+         */
+        else if (lendingOperation == LenderOps.LISTA_BROKER_REPAY) {
+            if (lender >= LenderIds.UP_TO_COMPOUND_V2 && lender < LenderIds.UP_TO_MORPHO) {
+                return _listaBrokerRepay(currentOffset, callerAddress);
             } else {
                 _invalidOperation();
             }

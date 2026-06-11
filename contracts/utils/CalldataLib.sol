@@ -982,6 +982,68 @@ library CalldataLib {
         );
     }
 
+    /// @dev Sentinel posId selecting the user's dynamic (flexible) broker position on repay
+    uint128 internal constant LISTA_BROKER_DYNAMIC_POS = type(uint128).max;
+
+    /**
+     * @notice Borrow from a Lista fixed-term `LendingBroker` (Moolah-backed market; debt side only).
+     * @dev Lean, broker-specific layout (no `MarketParams`). The position owner is the authenticated
+     *      composer caller — never `receiver` (receiver is only the token sink).
+     */
+    function encodeListaBrokerBorrow(
+        uint256 assets,
+        address broker,
+        address receiver,
+        uint256 termId
+    )
+        internal
+        pure
+        returns (bytes memory)
+    {
+        return abi.encodePacked(
+            uint8(ComposerCommands.LENDING), // 1
+            uint8(LenderOps.LISTA_BROKER_BORROW), // 1
+            uint16(LenderIds.UP_TO_MORPHO - 1), // 2
+            uint128(assets), // 16
+            broker, // 20
+            receiver, // 20
+            uint128(termId) // 16
+        );
+    }
+
+    /**
+     * @notice Repay a Lista fixed-term `LendingBroker` position (Moolah-backed market; debt side only).
+     * @dev Lean, broker-specific layout. `onBehalf` is forced to the authenticated caller on-chain.
+     *      `posId == LISTA_BROKER_DYNAMIC_POS` repays the dynamic position; `assets == 0` repays the
+     *      composer's full balance. ERC20 path approves the broker (it pulls via transferFrom); native
+     *      path uses msg.value.
+     */
+    function encodeListaBrokerRepay(
+        address loanToken,
+        uint256 assets,
+        bool native,
+        address broker,
+        uint256 posId
+    )
+        internal
+        pure
+        returns (bytes memory)
+    {
+        uint128 amountWord = uint128(assets);
+        if (native) amountWord = amountWord | NATIVE_FLAG;
+        return abi.encodePacked(
+            // ERC20 repay: broker pulls the loan token via transferFrom, so approve it.
+            native ? new bytes(0) : encodeApprove(loanToken, broker),
+            uint8(ComposerCommands.LENDING), // 1
+            uint8(LenderOps.LISTA_BROKER_REPAY), // 1
+            uint16(LenderIds.UP_TO_MORPHO - 1), // 2
+            loanToken, // 20
+            amountWord, // 16
+            broker, // 20
+            uint128(posId) // 16
+        );
+    }
+
     function encodeAaveDeposit(
         address token,
         uint256 amount,
