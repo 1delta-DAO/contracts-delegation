@@ -982,8 +982,8 @@ library CalldataLib {
         );
     }
 
-    /// @dev Sentinel posId selecting the user's dynamic (flexible) broker position on repay
-    uint128 internal constant LISTA_BROKER_DYNAMIC_POS = type(uint128).max;
+    /// @dev Sentinel loanId selecting the user's dynamic (flexible) broker position on repay
+    uint128 internal constant LISTA_BROKER_DYNAMIC_LOAN = type(uint128).max;
 
     /**
      * @notice Borrow from a Lista fixed-term `LendingBroker` (Moolah-backed market; debt side only).
@@ -1013,17 +1013,21 @@ library CalldataLib {
 
     /**
      * @notice Repay a Lista fixed-term `LendingBroker` position (Moolah-backed market; debt side only).
-     * @dev Lean, broker-specific layout. `onBehalf` is forced to the authenticated caller on-chain.
-     *      `posId == LISTA_BROKER_DYNAMIC_POS` repays the dynamic position; `assets == 0` repays the
-     *      composer's full balance. ERC20 path approves the broker (it pulls via transferFrom); native
-     *      path uses msg.value.
+     * @dev Lean, broker-specific layout. `onBehalf` is the position owner whose debt is repaid,
+     *      taken straight from calldata like Morpho's repay receiver/onBehalfOf. Repaying on behalf
+     *      of an arbitrary owner is permissionless — it only pays debt down and refunds excess to
+     *      the composer, so it can never extract value.
+     *      `loanId == LISTA_BROKER_DYNAMIC_LOAN` repays the dynamic position; otherwise it is the
+     *      fixed loan's posId. `assets == 0` repays the composer's full balance. ERC20 path approves
+     *      the broker (it pulls via transferFrom); native path uses msg.value.
      */
     function encodeListaBrokerRepay(
         address loanToken,
         uint256 assets,
         bool native,
         address broker,
-        uint256 posId
+        uint256 loanId,
+        address onBehalf
     )
         internal
         pure
@@ -1040,7 +1044,8 @@ library CalldataLib {
             loanToken, // 20
             amountWord, // 16
             broker, // 20
-            uint128(posId) // 16
+            uint128(loanId), // 16
+            onBehalf // 20
         );
     }
 

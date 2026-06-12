@@ -105,11 +105,11 @@ contract ListaBrokerTest is BaseTest {
         oneD.deltaCompose(borrowCall);
 
         IListaBroker.FixedLoanPosition[] memory pos = IListaBroker(BROKER).userFixedPositions(user);
-        uint256 posId = pos[0].posId;
+        uint256 loanId = pos[0].posId;
 
         // repay 0.4 WBNB of the position; composer holds the borrowed WBNB
         uint256 repayAmount = 0.4 ether;
-        bytes memory repayCall = CalldataLib.encodeListaBrokerRepay(WBNB, repayAmount, false, BROKER, posId);
+        bytes memory repayCall = CalldataLib.encodeListaBrokerRepay(WBNB, repayAmount, false, BROKER, loanId, user);
         vm.prank(user);
         oneD.deltaCompose(repayCall);
 
@@ -128,14 +128,14 @@ contract ListaBrokerTest is BaseTest {
         vm.prank(user);
         oneD.deltaCompose(borrowCall);
 
-        uint256 posId = IListaBroker(BROKER).userFixedPositions(user)[0].posId;
+        uint256 loanId = IListaBroker(BROKER).userFixedPositions(user)[0].posId;
 
         // fund the composer well above the debt and repay with amount==0 (use full balance)
         deal(WBNB, address(oneD), 3 ether);
         uint256 composerBalBefore = IERC20All(WBNB).balanceOf(address(oneD));
         assertGt(composerBalBefore, borrowAmount);
 
-        bytes memory repayCall = CalldataLib.encodeListaBrokerRepay(WBNB, 0, false, BROKER, posId);
+        bytes memory repayCall = CalldataLib.encodeListaBrokerRepay(WBNB, 0, false, BROKER, loanId, user);
         vm.prank(user);
         oneD.deltaCompose(repayCall);
 
@@ -147,5 +147,32 @@ contract ListaBrokerTest is BaseTest {
         assertLt(composerBalAfter, composerBalBefore);
         // consumed at least the principal
         assertGe(composerBalBefore - composerBalAfter, borrowAmount);
+    }
+
+    /// @dev Repay-on-behalf: a third party with no Moolah authorization repays `user`'s position.
+    ///      Repaying only pays debt down, so it is permissionless — `onBehalf` is calldata-supplied.
+    function test_lista_broker_repay_on_behalf() external {
+        _depositCollateralAndAuthorize(5 ether);
+
+        uint256 borrowAmount = 1 ether;
+        bytes memory borrowCall = CalldataLib.encodeListaBrokerBorrow(borrowAmount, BROKER, address(oneD), TERM_7D);
+        vm.prank(user);
+        oneD.deltaCompose(borrowCall);
+
+        uint256 loanId = IListaBroker(BROKER).userFixedPositions(user)[0].posId;
+        uint256 debtBefore = IListaBroker(BROKER).getUserTotalDebt(user);
+        assertGt(debtBefore, 0);
+
+        // a stranger (never authorized in Moolah) funds the composer and repays user's debt
+        address stranger = address(0xBEEF);
+        deal(WBNB, address(oneD), 3 ether);
+
+        bytes memory repayCall = CalldataLib.encodeListaBrokerRepay(WBNB, 0, false, BROKER, loanId, user);
+        vm.prank(stranger);
+        oneD.deltaCompose(repayCall);
+
+        // user's position was paid off by the stranger
+        assertEq(IListaBroker(BROKER).userFixedPositions(user).length, 0);
+        assertLt(IListaBroker(BROKER).getUserTotalDebt(user), debtBefore);
     }
 }

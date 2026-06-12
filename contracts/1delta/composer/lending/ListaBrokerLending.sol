@@ -12,8 +12,12 @@ import {Masks} from "../../shared/masks/Masks.sol";
  *      Moolah/Morpho path (`MorphoLending`). The broker call shape carries no `MarketParams`
  *      (the broker resolves its own market), so these ops use a lean, purpose-built layout.
  *
- *      The position owner (`user` on borrow, `onBehalf` on repay) is ALWAYS the authenticated
- *      composer caller — never calldata-injected — so a position can only be acted on by its owner.
+ *      The borrow position owner (`user`) is ALWAYS the authenticated composer caller — never
+ *      calldata-injected — so debt can only be opened against its owner (who must have authorized
+ *      this composer in Moolah). Repay's `onBehalf` is taken straight from calldata (exactly like
+ *      Morpho's repay, where the calldata `receiver` field is used directly as `onBehalfOf`):
+ *      repaying only ever pays debt down and refunds any excess to the composer, so repaying on
+ *      behalf of an arbitrary owner is permissionless — it can never extract value.
  */
 abstract contract ListaBrokerLending is ERC20Selectors, Masks {
     /// @dev `borrow(uint256 amount,uint256 termId,address user,address receiver)`
@@ -25,8 +29,8 @@ abstract contract ListaBrokerLending is ERC20Selectors, Masks {
     /// @dev `repay(uint256 amount,address onBehalf)` (dynamic position)
     bytes32 private constant LISTA_BROKER_REPAY_DYNAMIC = 0xacb7081500000000000000000000000000000000000000000000000000000000;
 
-    /// @dev posId sentinel selecting the user's dynamic (flexible) position on repay
-    uint256 private constant DYNAMIC_POS_ID = 0xffffffffffffffffffffffffffffffff;
+    /// @dev loanId sentinel selecting the user's dynamic (flexible) position on repay
+    uint256 private constant DYNAMIC_LOAN_ID = 0xffffffffffffffffffffffffffffffff;
 
     /**
      * @notice Borrows from a Lista fixed-term `LendingBroker`.
@@ -89,10 +93,9 @@ abstract contract ListaBrokerLending is ERC20Selectors, Masks {
      *      (composer must approve the broker) or accepts native BNB via `msg.value`, repays
      *      interest-first (plus an early-repayment penalty for fixed positions) and refunds any
      *      excess back to the composer. `amount == 0` repays the composer's full balance.
-     *      `posId == type(uint128).max` selects the dynamic position; any other value targets that
-     *      specific fixed position.
+     *      `loanId == type(uint128).max` selects the dynamic position; any other value targets that
+     *      specific fixed position (the loanId == the broker's posId).
      * @param currentOffset Current position in the calldata
-     * @param callerAddress Authenticated caller; the position owner whose debt is repaid (`onBehalf`)
      * @return Updated calldata offset after processing
      * @custom:calldata-offset-table
      * | Offset | Length (bytes) | Description                     |
@@ -100,9 +103,10 @@ abstract contract ListaBrokerLending is ERC20Selectors, Masks {
      * | 0      | 20             | loanToken                       |
      * | 20     | 16             | flags + Amount                  |
      * | 36     | 20             | broker                          |
-     * | 56     | 16             | posId (max == dynamic position) |
+     * | 56     | 16             | loanId (max == dynamic position)|
+     * | 72     | 20             | onBehalf                        |
      */
-    function _listaBrokerRepay(uint256 currentOffset, address callerAddress) internal returns (uint256) {
+    function _listaBrokerRepay(uint256 currentOffset, address) internal returns (uint256) {
         assembly {
             let ptr := mload(0x40)
 
@@ -111,9 +115,10 @@ abstract contract ListaBrokerLending is ERC20Selectors, Masks {
             let repayAm := and(UINT112_MASK, amountWord)
             let isNative := and(NATIVE_FLAG, amountWord)
             let broker := shr(96, calldataload(add(currentOffset, 36)))
-            let posId := shr(128, calldataload(add(currentOffset, 56)))
-            // onBehalf is the authenticated caller, never calldata-injected
-            let onBehalf := and(ADDRESS_MASK, callerAddress)
+            let loanId := shr(128, calldataload(add(currentOffset, 56)))
+            // onBehalf is taken straight from calldata (repay-on-behalf is permissionless),
+            // exactly like Morpho's repay where the calldata field is the onBehalfOf
+            let onBehalf := shr(96, calldataload(add(currentOffset, 72)))
 
             /**
              * if amount is 0 -> repay the composer balance (ERC20 or native).
@@ -136,7 +141,7 @@ abstract contract ListaBrokerLending is ERC20Selectors, Masks {
             let callValue := mul(repayAm, iszero(iszero(isNative)))
 
             let callLength
-            switch eq(posId, DYNAMIC_POS_ID)
+            switch eq(loanId, DYNAMIC_LOAN_ID)
             case 1 {
                 // repay(uint256 amount, address onBehalf) — dynamic position
                 mstore(ptr, LISTA_BROKER_REPAY_DYNAMIC)
@@ -146,14 +151,15 @@ abstract contract ListaBrokerLending is ERC20Selectors, Masks {
             }
             default {
                 // repay(uint256 amount, uint256 posId, address onBehalf) — fixed position
+                // (the broker's posId arg is our loanId)
                 mstore(ptr, LISTA_BROKER_REPAY_FIXED)
                 mstore(add(ptr, 4), repayAm)
-                mstore(add(ptr, 36), posId)
+                mstore(add(ptr, 36), loanId)
                 mstore(add(ptr, 68), onBehalf)
                 callLength := 100 // = 4 + 3 * 32
             }
 
-            currentOffset := add(currentOffset, 72)
+            currentOffset := add(currentOffset, 92)
 
             if iszero(call(gas(), broker, callValue, ptr, callLength, 0x0, 0x0)) {
                 let rdlen := returndatasize()
