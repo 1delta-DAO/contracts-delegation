@@ -114,3 +114,5 @@ npx hardhat verify --network abstract 0xcB6Eb8df68153cebF60E1872273Ef52075a5C297
 npx hardhat verify --network bnb 0x79f4061BF049c5c6CAC6bfe2415c2460815F4ac7 --contract contracts/external-protocols/misc/MorphoLens.sol:MorphoLens
 
 npx hardhat verify --network bnb 0xC000001998943Be579D7F931C04d457F39226e00 --contract contracts/1delta/composer/ComposerLite.sol:ComposerLite
+
+npx hardhat verify --network bnb 0x77291605d431a5BbEf31885744DD4eff1CceB41C --contract contracts/1delta/composer/chains/bnb/Composer.sol:OneDeltaComposerBnb

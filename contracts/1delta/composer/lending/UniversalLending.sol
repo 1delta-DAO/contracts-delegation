@@ -202,7 +202,7 @@ abstract contract UniversalLending is
          */
         else if (lendingOperation == LenderOps.LISTA_BROKER_REPAY) {
             if (lender >= LenderIds.UP_TO_COMPOUND_V2 && lender < LenderIds.UP_TO_MORPHO) {
-                return _listaBrokerRepay(currentOffset, callerAddress);
+                return _listaBrokerRepay(currentOffset);
             } else {
                 _invalidOperation();
             }

@@ -106,7 +106,7 @@ abstract contract ListaBrokerLending is ERC20Selectors, Masks {
      * | 56     | 16             | loanId (max == dynamic position)|
      * | 72     | 20             | onBehalf                        |
      */
-    function _listaBrokerRepay(uint256 currentOffset, address) internal returns (uint256) {
+    function _listaBrokerRepay(uint256 currentOffset) internal returns (uint256) {
         assembly {
             let ptr := mload(0x40)
 
