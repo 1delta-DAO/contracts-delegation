@@ -50,7 +50,7 @@ abstract contract CompoundV2Lending is ERC20Selectors, Masks {
                 revert(0, returndatasize())
             }
             let rdsize := returndatasize()
-            if and(eq(rdsize, 1), xor(mload(0x0), 0)) {
+            if and(gt(rdsize, 31), xor(mload(0x0), 0)) {
                 returndatacopy(0, 0, rdsize)
                 revert(0, rdsize)
             }
@@ -200,7 +200,7 @@ abstract contract CompoundV2Lending is ERC20Selectors, Masks {
                     revert(0, returndatasize())
                 }
                 rdsize := returndatasize()
-                if and(eq(rdsize, 1), xor(mload(0x0), 0)) {
+                if and(gt(rdsize, 31), xor(mload(0x0), 0)) {
                     returndatacopy(0, 0, rdsize)
                     revert(0, rdsize)
                 }
@@ -217,7 +217,7 @@ abstract contract CompoundV2Lending is ERC20Selectors, Masks {
                     revert(0, returndatasize())
                 }
                 let rdsize := returndatasize()
-                if and(eq(rdsize, 1), xor(mload(0), 0)) {
+                if and(gt(rdsize, 31), xor(mload(0), 0)) {
                     returndatacopy(0, 0, rdsize)
                     revert(0, rdsize)
                 }
@@ -419,7 +419,7 @@ abstract contract CompoundV2Lending is ERC20Selectors, Masks {
                         revert(0, returndatasize())
                     }
                     let rdsize := returndatasize()
-                    if and(eq(rdsize, 1), xor(mload(0), 0)) {
+                    if and(gt(rdsize, 31), xor(mload(0), 0)) {
                         returndatacopy(0, 0, rdsize)
                         revert(0, rdsize)
                     }
@@ -434,7 +434,7 @@ abstract contract CompoundV2Lending is ERC20Selectors, Masks {
                         revert(0, returndatasize())
                     }
                     let rdsize := returndatasize()
-                    if and(eq(rdsize, 1), xor(mload(0), 0)) {
+                    if and(gt(rdsize, 31), xor(mload(0), 0)) {
                         returndatacopy(0, 0, rdsize)
                         revert(0, rdsize)
                     }
@@ -632,7 +632,7 @@ abstract contract CompoundV2Lending is ERC20Selectors, Masks {
                     revert(0x0, returndatasize())
                 }
                 let rdsize := returndatasize()
-                if and(eq(rdsize, 1), xor(mload(ptr), 0)) {
+                if and(gt(rdsize, 31), xor(mload(ptr), 0)) {
                     returndatacopy(0, 0, rdsize)
                     revert(0, rdsize)
                 }
