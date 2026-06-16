@@ -206,6 +206,39 @@ contract CompoundV2NativeComposerLightTest is BaseTest {
     function _getCollateralToken(address token) internal view returns (address) {
         return chain.getLendingTokens(token, lender).collateral;
     }
+
+    /// @notice Forces Venus's `borrowBehalf` to return a non-zero uint256 error code
+    ///         and asserts the composer's rdsize guard fires (cleanly reverts) rather
+    ///         than silently treating the failure as success.
+    ///
+    ///         Pre-fix behavior: the guard tested `eq(rdsize, 1)` which never matched
+    ///         a uint256 return (rdsize=32), so a non-zero error code passed silently.
+    ///         Post-fix behavior: the guard tests `gt(rdsize, 31)` and reverts here.
+    function test_unit_compoundV2_borrowBehalf_non_zero_error_code_reverts() external {
+        address borrowToken = USDC;
+        address cToken = _getCollateralToken(borrowToken);
+
+        // Replace the cToken's borrowBehalf with a mock that returns Compound error code 11
+        // (MARKET_NOT_LISTED in Compound V2 enum). 32 bytes of returndata = post-fix guard fires.
+        vm.mockCall(
+            cToken,
+            abi.encodeWithSelector(bytes4(0x856e5bb3)), // borrowBehalf(address,uint256)
+            abi.encode(uint256(11))
+        );
+
+        // Receiver = composer so the post-borrow transfer block is skipped, isolating
+        // the rdsize check as the only revert site under test.
+        bytes memory d = CalldataLib.encodeCompoundV2Borrow(
+            borrowToken,
+            100e18,
+            address(oneDV2),
+            cToken //
+        );
+
+        vm.prank(user);
+        vm.expectRevert();
+        oneDV2.deltaCompose(d);
+    }
 }
 
 interface VenusBorrow {
