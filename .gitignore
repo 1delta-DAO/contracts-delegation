@@ -25,3 +25,8 @@ docs/
 # Reports
 reports/
 
+# Local audit artifacts
+audit-remediation-plan.md
+*-pashov-ai-audit-report-*.md
+.audit-*/
+
