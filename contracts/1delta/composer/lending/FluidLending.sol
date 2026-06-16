@@ -78,6 +78,14 @@ abstract contract FluidLending is ERC20Selectors, Masks, DeltaErrors {
      * @dev Combined col + debt call. After the call, if the input `nftId` was 0 and `nftReceiver`
      *      is non-zero, the composer transfers the freshly-minted position NFT to `nftReceiver`
      *      using the `nftId_` that `operate` returned.
+     *
+     * @dev No caller-vs-nftId binding is enforced here — by design. The supported entry-point for
+     *      operating an existing position is `VaultFactory.safeTransferFrom(user, composer, nftId, data)`,
+     *      which routes through `onERC721Received` below and runs the encoded ops with `from` as
+     *      the authenticated `callerAddress` before auto-sweeping the NFT back. Bare
+     *      `transferFrom(user, composer, nftId)` is unsupported usage and falls outside the
+     *      threat model — markets are not freely deployable so the orphan-position case is
+     *      treated as user error.
      * @param currentOffset Current position in the calldata
      * @return Updated calldata offset after processing
      * @custom:calldata-offset-table

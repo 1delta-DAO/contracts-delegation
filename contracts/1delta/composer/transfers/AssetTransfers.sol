@@ -291,6 +291,15 @@ contract AssetTransfers is BaseUtils {
      * @dev Skips approval if already approved to save gas. Uses a storage mapping to track approvals:
      *      `keccak256(target, keccak256(token, CALL_MANAGEMENT_APPROVALS))` -> boolean (1 if approved, 0 if not).
      *      If the mapping value is 0, the function approves MAX_UINT256 to the target and sets the mapping to 1.
+     *
+     * @dev Threat-model note: `target` is intentionally unconstrained. The composer is a
+     *      stateless router — it MUST be able to grant approvals to any integration target
+     *      (lending pools, vaults, DEX routers) chosen per-tx by the encoder, so a static
+     *      allowlist would break dynamic integration. Because the composer is not expected
+     *      to hold balance between transactions (every batch sweeps its own residue), an
+     *      attacker pre-planting `_approve(token, attacker)` cannot exfiltrate anything —
+     *      there is nothing to exfiltrate. Accidental residue (rebase yield, ERC20 airdrops)
+     *      is out of the threat model.
      * @param currentOffset Current position in the calldata
      * @return Updated calldata offset after processing
      * @custom:calldata-offset-table

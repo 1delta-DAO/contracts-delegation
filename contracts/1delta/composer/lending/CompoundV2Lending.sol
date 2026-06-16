@@ -10,6 +10,16 @@ import {Masks} from "../../shared/masks/Masks.sol";
 /**
  * @notice Lending base contract that wraps multiple Compound V2 lender types.
  * Most effective for Venus
+ *
+ * @dev `pop(call(...))` is used on `exchangeRateCurrent` / `balanceOfUnderlying`
+ *      probes that feed into the max-amount path. Failure on those probes is by
+ *      design absorbed: a reverting cToken leaves the selector word in scratch
+ *      memory, producing a huge garbage rate that is then clamped against the
+ *      caller's actual cToken balance downstream, so the worst case is "user
+ *      withdraws a tiny amount" — bounded user self-harm, never third-party
+ *      extraction. Fork-resilience is preferred over a hard revert because some
+ *      Compound V2 forks silently freeze markets via paused state rather than
+ *      reverting the rate read.
  */
 abstract contract CompoundV2Lending is ERC20Selectors, Masks {
     // NativeTransferFailed()

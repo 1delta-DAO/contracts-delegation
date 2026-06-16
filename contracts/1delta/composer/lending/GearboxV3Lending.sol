@@ -769,6 +769,38 @@ abstract contract GearboxV3Lending is ERC20Selectors, Masks, DeltaErrors {
      *      CA → CM → facade chain — nothing in the auth path comes from calldata.
      *      `kind=1` (`openCreditAccount`) needs no such check — the entrypoint has no caller
      *      constraint on Gearbox's side, and the composer pins `onBehalfOf = callerAddress`.
+     *
+     * @dev `kind=1` threat-model (read carefully — `addr1` is intentionally unconstrained):
+     *
+     *      The dispatch executes `addr1.openCreditAccount(callerAddress, calls, refCode)`
+     *      with `callValue = 0` (see `_gearboxRelayOpen`). Allowlisting `addr1` would
+     *      break dynamic integration as new CreditManagers/facades are deployed, so the
+     *      design instead leans on four structural invariants:
+     *
+     *      (1) Zero value forwarded. The CALL passes `0` as msg.value, so no native asset
+     *          can be siphoned to an attacker `addr1`.
+     *
+     *      (2) No standing approvals to `addr1`. Composer ERC20 approvals are issued by
+     *          `_approve(token, target)` in the same batch and target the CreditManager
+     *          (not the facade). An attacker `addr1` has no allowance to pull tokens.
+     *
+     *      (3) `onBehalfOf` is pinned to `callerAddress` in `_gearboxRelayOpen`'s mstore at
+     *          ptr+0x04. The encoder cannot redirect the owner of the new CA to anyone
+     *          else even for a legitimate facade.
+     *
+     *      (4) Re-entry is callerAddress-scoped. If `addr1` is attacker-controlled and
+     *          calls back into `composer.deltaCompose(...)`, the inner batch runs with
+     *          `callerAddress = attacker` (msg.sender of the inner call), so attacker
+     *          ops can only act against attacker's own allowances/balances.
+     *
+     *      The only residual concern is the encoder embedding a hostile `addr1` alongside
+     *      a `TRANSFER_FROM(user, composer, …)` op earlier in the same batch — then the
+     *      composer holds user funds at dispatch time and a reentrant `_sweep` from the
+     *      attacker could drain them. That requires the encoder to be hostile to the
+     *      signer, which is encoder/UX trust, outside the contract's threat model.
+     *
+     *      Because `kind=1` carries no contract-level damage path under (1)–(4), no
+     *      validation is performed on `addr1` here.
      */
     function _gearboxMulticall(uint256 currentOffset, address callerAddress) internal returns (uint256) {
         uint256 kind;

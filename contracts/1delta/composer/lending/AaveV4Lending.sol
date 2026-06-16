@@ -155,7 +155,9 @@ abstract contract AaveV4Lending is ERC20Selectors, Masks {
             mstore(add(ptr, 0x24), reserveId)
             mstore(add(ptr, 0x44), amount)
             mstore(add(ptr, 0x64), callerAddress)
-            // returns (shares, assets) — we read assets at mem[0x20]
+            // TakerPM `{withdraw|borrow}OnBehalfOf` ABI returns the tuple `(uint256 shares, uint256 assets)`
+            // per Aave V4's ITakerPositionManager. We write to scratch [0x00, 0x40) and read the second
+            // slot (`assets`) at mem[0x20] for the receiver-forward step below.
             if iszero(call(gas(), positionManager, 0x0, ptr, 0x84, 0x0, 0x40)) {
                 returndatacopy(0x0, 0x0, returndatasize())
                 revert(0x0, returndatasize())

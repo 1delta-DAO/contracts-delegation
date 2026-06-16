@@ -17,6 +17,18 @@ abstract contract SharedSingletonActions is Masks {
     /**
      * @notice Unlocks tokens for Uniswap V4 or Balancer V3
      * @dev Here we need to add a selector deterministically as this function is Identical for Balancer V3 and Uniswap V4
+     *
+     * @dev `manager` is intentionally unconstrained. Safety lives in the callback handlers
+     *      (`unlockCallback` / `balancerUnlockCallback`), which gate on
+     *      `caller() == UNISWAP_V4 / BALANCER_V3` against per-chain hard-coded singleton
+     *      addresses. A user-supplied `manager` that isn't one of those either reverts
+     *      (no `unlock(bytes)` selector) or, if it implements the selector, can't reach
+     *      the inner compose dispatch — the callback's `caller()` check rejects it. The
+     *      `callerAddress` embedded at offset 136 is what the callback consumes; an
+     *      attacker-routed manager cannot forge a different caller because the callback
+     *      will never accept the call. The leading byte of user `data` is a poolId routing
+     *      byte that the callbacks switch on — its validation is done inside each callback
+     *      against the matched manager, not here.
      * @param currentOffset Current position in the calldata
      * @param callerAddress Address of the caller
      * @return Updated calldata offset after processing
@@ -41,8 +53,8 @@ abstract contract SharedSingletonActions is Masks {
              * manager.unlock(
              *  abi.encodeWithSelector(
              *      CB_SELECTOR,
-             *      poolId, <- this is for validation purposes, we only allow correct uni V4s or balancer V3s
-             *      data
+             *      callerAddress, <- consumed by the callback's _deltaComposeInternal call
+             *      data           <- starts with a 1-byte poolId that the callbacks switch on
              *   )
              * )
              */

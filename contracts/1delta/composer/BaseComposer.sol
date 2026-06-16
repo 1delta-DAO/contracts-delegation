@@ -33,6 +33,12 @@ abstract contract BaseComposer is
     /**
      * Batch-executes a series of operations
      * The calldata is loaded in assembly and therefore not referred to here
+     *
+     * @dev No `nonReentrant` here — by design. Flash-loan and unlock callbacks
+     *      (Aave V2/V3, Morpho/Moolah, Balancer V3 unlock, Uniswap V4 unlock) re-enter
+     *      `_deltaComposeInternal` after their callback-side validator gates fire
+     *      (`caller() == hardcoded_pool` plus, on Aave, `initiator == address(this)`).
+     *      Use {ComposerLite} when callbacks aren't needed — it carries the guard.
      */
     function deltaCompose(bytes calldata) external payable {
         uint256 length;
