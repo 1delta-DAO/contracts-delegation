@@ -17,6 +17,10 @@ abstract contract SiloV2Lending is ERC20Selectors, Masks {
     bytes32 private constant REDEEM = 0xba08765200000000000000000000000000000000000000000000000000000000;
     bytes32 private constant REDEEM_WITH_COLLATERAL_TYPE = 0xda53766000000000000000000000000000000000000000000000000000000000;
 
+    /// @dev selector for maxRedeem(address,ISilo.CollateralType) — typed variant for non-default
+    ///      collateral; needed because `silo.balanceOf` only reports the default-type share balance.
+    bytes32 private constant MAX_REDEEM_WITH_COLLATERAL_TYPE = 0x071bf3ff00000000000000000000000000000000000000000000000000000000;
+
     /**
      * @notice Withdraws from Silo V2 lending pool
      * @param currentOffset Current position in the calldata
@@ -54,21 +58,19 @@ abstract contract SiloV2Lending is ERC20Selectors, Masks {
             // use shares if maximum toggled
             switch amount
             case 0xffffffffffffffffffffffffffff {
-                // selector for balanceOf(address)
-                mstore(0, ERC20_BALANCE_OF)
-                // add caller address as parameter
-                mstore(0x04, callerAddress)
-                // call to collateral token
-                if iszero(staticcall(gas(), silo, 0x0, 0x24, 0x0, 0x20)) {
-                    returndatacopy(0, 0, returndatasize())
-                    revert(0, returndatasize())
-                }
-                // load the retrieved balance
-                amount := mload(0x0)
-
                 switch cType
                 // 1 is the default non-protected collateral
                 case 1 {
+                    // For default collateral the silo IS the collateral share token (ERC4626),
+                    // so `silo.balanceOf(callerAddress)` is the max redeemable share amount.
+                    mstore(0, ERC20_BALANCE_OF)
+                    mstore(0x04, callerAddress)
+                    if iszero(staticcall(gas(), silo, 0x0, 0x24, 0x0, 0x20)) {
+                        returndatacopy(0, 0, returndatasize())
+                        revert(0, returndatasize())
+                    }
+                    amount := mload(0x0)
+
                     // selector redeem(uint256,address,address)
                     mstore(ptr, REDEEM)
                     mstore(add(ptr, 0x4), amount)
@@ -81,7 +83,19 @@ abstract contract SiloV2Lending is ERC20Selectors, Masks {
                 }
                 // others are id'ed by their enum
                 default {
-                    // selector redeem(uint256,address,address,uint256)
+                    // Non-default (e.g. protected) collateral: `silo.balanceOf` is the WRONG
+                    // share token. Use `maxRedeem(address,uint8)` which routes to the configured
+                    // share token for the requested collateral type.
+                    mstore(0, MAX_REDEEM_WITH_COLLATERAL_TYPE)
+                    mstore(0x04, callerAddress)
+                    mstore(0x24, cType)
+                    if iszero(staticcall(gas(), silo, 0x0, 0x44, 0x0, 0x20)) {
+                        returndatacopy(0, 0, returndatasize())
+                        revert(0, returndatasize())
+                    }
+                    amount := mload(0x0)
+
+                    // selector redeem(uint256,address,address,uint8)
                     mstore(ptr, REDEEM_WITH_COLLATERAL_TYPE)
                     mstore(add(ptr, 0x4), amount)
                     // common parameters here
