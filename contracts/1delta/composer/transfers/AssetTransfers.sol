@@ -350,7 +350,7 @@ contract AssetTransfers is BaseUtils {
             let providedAmount := calldataload(add(currentOffset, 24))
             let transferAmount
 
-            providedAmount := and(UINT112_MASK, providedAmount) // remove the upper 16 bytes (flags space)
+            providedAmount := and(UINT128_MASK, providedAmount) // 16-byte amount field; matches _sweep / _unwrap
             switch providedAmount
             case 0 { transferAmount := selfbalance() }
             default { transferAmount := providedAmount }
@@ -420,7 +420,7 @@ contract AssetTransfers is BaseUtils {
 
             let transferAmount
 
-            providedAmount := and(UINT112_MASK, providedAmount)
+            providedAmount := and(UINT128_MASK, providedAmount) // 16-byte amount field; matches _sweep / _wrap
             // validate if config is zero, otherwise skip
             switch config
             case 0 {
