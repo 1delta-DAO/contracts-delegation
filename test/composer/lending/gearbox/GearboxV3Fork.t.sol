@@ -128,7 +128,11 @@ contract GearboxV3ForkTest is BaseTest {
     uint192 internal constant PERM_COMPOSER_EXACT = uint192((1 << 0) | (1 << 1) | (1 << 2) | (1 << 5) | (1 << 6));
 
     function setUp() public {
-        _init(Chains.ETHEREUM_MAINNET, 0, true);
+        // Pinned: ETH+ phantom-token oracle on the wstETH credit suite drifted some time after
+        // this block. On `latest`, `getPhantomTokenInfo` reverts during HF checks on withdraw /
+        // close paths with `NotEnoughCollateralException` (0x532e7bb6). Block 25_000_000 keeps
+        // the position-valuation math stable. Re-pin if the chosen block ages out of archive.
+        _init(Chains.ETHEREUM_MAINNET, 25_000_000, true);
         composer = ComposerPlugin.getComposer(Chains.ETHEREUM_MAINNET);
 
         creditFacade = ICreditManagerV3(CREDIT_MANAGER).creditFacade();
