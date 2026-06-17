@@ -368,8 +368,12 @@ paths. Captured here for posterity.
 
 - **CallForwarder + residual balance / approvals** - permissionlessly callable; same
   no-residue threat model as #1.
-- **Morpho / Moolah callbacks missing initiator defense-in-depth** - relies on the
-  upstream "callback fires only to flashLoan's msg.sender" semantics.
+- **Morpho / Moolah callbacks missing initiator defense-in-depth** - **Documented as
+  intentional** in `chains/abstract/flashLoan/callbacks/MorphoCallback.sol` and both
+  `MoolahCallback.sol` files. Morpho Blue is immutable and Lista/Moolah follow the same
+  pattern: both invoke the callback only on the `msg.sender` of the originating call, so
+  reaching the handler already implies the composer initiated. The `caller() == pool`
+  check is sufficient and is what makes the embedded `origCaller` authentic.
 - **Compound V2 broken-rate downstream amount inflation** - documented as intentional in #9.
 - **`onMorphoCallback` poolId byte never validated against payload provenance** -
   routing byte, not auth byte; gating happens via `caller()`.

@@ -48,6 +48,13 @@ contract MoolahFlashLoanCallback is Masks, DeltaErrors {
      * @notice Internal callback handler for all Moolah operations
      * @dev Moolah flash loans are callbacks to msg.sender.
      * Since it is universal batching and the same validation for all Moolah callbacks, we can use the same logic everywhere
+     *
+     * @dev No `initiator == address(this)` defense-in-depth check (unlike the Aave V2/V3 callbacks)
+     *      is **intentional**: Lista/Moolah's flash entrypoints, like Morpho Blue, only invoke
+     *      the callback on the `msg.sender` of the originating call. Reaching this handler
+     *      therefore already implies the composer initiated the operation — the
+     *      `caller() == LISTA_DAO` check is sufficient and is what makes the embedded
+     *      `origCaller` authentic.
      * @custom:calldata-offset-table
      * | Offset | Length (bytes) | Description                  |
      * |--------|----------------|------------------------------|
