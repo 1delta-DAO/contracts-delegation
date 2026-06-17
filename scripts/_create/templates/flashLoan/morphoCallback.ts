@@ -45,6 +45,14 @@ contract MorphoFlashLoanCallback is Masks, DeltaErrors {
      * @notice Internal callback handler for all Morpho Blue operations
      * @dev Morpho Blue is immutable and their flash loans are callbacks to msg.sender.
      * Since it is universal batching and the same validation for all Morpho callbacks, we can use the same logic everywhere
+     *
+     * @dev No \`initiator == address(this)\` defense-in-depth check (unlike the Aave V2/V3 callbacks)
+     *      is **intentional**: Morpho Blue's \`flashLoan\` / \`supply\` / \`repay\` / \`supplyCollateral\`
+     *      only invoke the callback on the \`msg.sender\` of the originating call. Reaching this
+     *      handler therefore already implies the composer initiated the operation — the
+     *      \`caller() == MORPHO_BLUE\` check below is sufficient, and the same property is what
+     *      makes the embedded \`origCaller\` authentic. Morpho Blue is immutable, so this property
+     *      is permanent for the canonical contract.
      * @custom:calldata-offset-table
      * | Offset | Length (bytes) | Description                  |
      * |--------|----------------|------------------------------|
