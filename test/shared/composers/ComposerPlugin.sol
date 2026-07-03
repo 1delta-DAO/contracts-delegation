@@ -26,7 +26,6 @@ import {OneDeltaComposerKaia} from "../../../contracts/1delta/composer//chains/k
 import {OneDeltaComposerHyperevm} from "../../../contracts/1delta/composer//chains/hyperevm/Composer.sol";
 import {OneDeltaComposerUnichain} from "../../../contracts/1delta/composer//chains/unichain/Composer.sol";
 import {OneDeltaComposerKatana} from "../../../contracts/1delta/composer//chains/katana/Composer.sol";
-import {OneDeltaComposerPulsechain} from "../../../contracts/1delta/composer//chains/pulsechain/Composer.sol";
 import {OneDeltaComposerEthereum} from "../../../contracts/1delta/composer//chains/ethereum/Composer.sol";
 import {OneDeltaComposerBerachain} from "../../../contracts/1delta/composer//chains/berachain/Composer.sol";
 import {OneDeltaComposerCronos} from "../../../contracts/1delta/composer//chains/cronos/Composer.sol";
@@ -124,9 +123,6 @@ library ComposerPlugin {
         }
         if (keccak256(bytes(chainName)) == keccak256(bytes(Chains.KATANA))) {
             return IComposerLike(address(new OneDeltaComposerKatana()));
-        }
-        if (keccak256(bytes(chainName)) == keccak256(bytes(Chains.PULSECHAIN))) {
-            return IComposerLike(address(new OneDeltaComposerPulsechain()));
         }
         if (keccak256(bytes(chainName)) == keccak256(bytes(Chains.ETHEREUM_MAINNET))) {
             return IComposerLike(address(new OneDeltaComposerEthereum()));

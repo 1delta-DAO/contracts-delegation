@@ -13,6 +13,7 @@ contract AaveV3FlashLoanCallbackTest is BaseTest, DeltaErrors {
     IComposerLike oneDV2;
     AaveMockPool mockPool;
 
+    address private AAVE_V3;
     address private NEVERLAND;
 
     address private USDC;
@@ -39,6 +40,16 @@ contract AaveV3FlashLoanCallbackTest is BaseTest, DeltaErrors {
 
         oneDV2 = ComposerPlugin.getComposer(chainName);
         mockPool = new AaveMockPool();
+    }
+
+    function test_unit_lending_flashloans_aaveV3_callback_aave_v3Pool() public {
+        // mock implementation
+        replaceLendingPoolWithMock(AAVE_V3);
+
+        bytes memory params = CalldataLib.encodeFlashLoan(USDC, 1e6, AAVE_V3, uint8(2), uint8(0), sweepCall());
+
+        vm.prank(user);
+        oneDV2.deltaCompose(params);
     }
 
     function test_unit_lending_flashloans_aaveV3_callback_neverlandPool() public {
@@ -75,12 +86,12 @@ contract AaveV3FlashLoanCallbackTest is BaseTest, DeltaErrors {
     }
 
     function test_unit_lending_flashloans_aaveV3_callback_fuzzInvalidPoolIds(uint8 poolId) public {
-        replaceLendingPoolWithMock(NEVERLAND);
+        replaceLendingPoolWithMock(AAVE_V3);
 
         for (uint256 i = 0; i < validPools.length; i++) {
             if (poolId == validPools[i].poolId) return;
         }
-        bytes memory params = CalldataLib.encodeFlashLoan(USDC, 1e6, NEVERLAND, uint8(2), uint8(poolId), sweepCall());
+        bytes memory params = CalldataLib.encodeFlashLoan(USDC, 1e6, AAVE_V3, uint8(2), uint8(poolId), sweepCall());
         vm.prank(user);
         vm.expectRevert(DeltaErrors.INVALID_FLASH_LOAN);
         oneDV2.deltaCompose(params);
@@ -92,6 +103,7 @@ contract AaveV3FlashLoanCallbackTest is BaseTest, DeltaErrors {
     }
 
     function getAddressFromRegistry() internal {
+        AAVE_V3 = chain.getLendingController(Lenders.AAVE_V3);
         NEVERLAND = chain.getLendingController(Lenders.NEVERLAND);
 
         // Get token addresses
@@ -99,6 +111,7 @@ contract AaveV3FlashLoanCallbackTest is BaseTest, DeltaErrors {
     }
 
     function populateValidPools() internal {
+        validPools.push(PoolCase({poolId: 0, poolAddr: AAVE_V3, asset: USDC}));
         validPools.push(PoolCase({poolId: 81, poolAddr: NEVERLAND, asset: USDC}));
     }
 

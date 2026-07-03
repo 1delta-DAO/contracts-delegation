@@ -53,14 +53,7 @@ contract BetterBankFlashLoanTest is BaseTest {
 
         bytes memory dp = CalldataLib.encodeSweep(address(0), user, sweepAm, SweepType.AMOUNT);
 
-        bytes memory d = CalldataLib.encodeFlashLoan(
-            asset,
-            amount,
-            pool,
-            uint8(FlashLoanIds.AAVE_V3),
-            poolId,
-            dp
-        );
+        bytes memory d = CalldataLib.encodeFlashLoan(asset, amount, pool, uint8(FlashLoanIds.AAVE_V3), poolId, dp);
 
         uint256 gas = gasleft();
         vm.prank(user);

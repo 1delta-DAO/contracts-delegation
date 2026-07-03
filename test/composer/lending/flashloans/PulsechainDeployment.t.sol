@@ -64,31 +64,20 @@ contract PulsechainDeploymentTest is BaseTest {
     }
 
     function test_deployment_PROXIES_betterBank() external {
-        bool ok = _tryCompose(
-            COMPOSER_PROXIES_PULSECHAIN,
-            _betterBankPayload(BETTER_BANK_POOL, 102, WPLS),
-            1.0e18 * 5 / 10000,
-            WPLS
-        );
+        bool ok =
+            _tryCompose(COMPOSER_PROXIES_PULSECHAIN, _betterBankPayload(BETTER_BANK_POOL, 102, WPLS), 1.0e18 * 5 / 10000, WPLS);
         console.log("COMPOSER_PROXIES accepts Better Bank:", ok);
     }
 
     function test_deployment_LOGICS_betterBank() external {
-        bool ok = _tryCompose(
-            COMPOSER_LOGICS_PULSECHAIN,
-            _betterBankPayload(BETTER_BANK_POOL, 102, WPLS),
-            1.0e18 * 5 / 10000,
-            WPLS
-        );
+        bool ok =
+            _tryCompose(COMPOSER_LOGICS_PULSECHAIN, _betterBankPayload(BETTER_BANK_POOL, 102, WPLS), 1.0e18 * 5 / 10000, WPLS);
         console.log("COMPOSER_LOGICS accepts Better Bank:", ok);
     }
 
     function test_deployment_LOGICS_betterBankAtropa() external {
         bool ok = _tryCompose(
-            COMPOSER_LOGICS_PULSECHAIN,
-            _betterBankPayload(BETTER_BANK_ATROPA_POOL, 103, ATROPA),
-            1.0e18 * 5 / 10000,
-            ATROPA
+            COMPOSER_LOGICS_PULSECHAIN, _betterBankPayload(BETTER_BANK_ATROPA_POOL, 103, ATROPA), 1.0e18 * 5 / 10000, ATROPA
         );
         console.log("COMPOSER_LOGICS accepts Better Bank Atropa:", ok);
     }

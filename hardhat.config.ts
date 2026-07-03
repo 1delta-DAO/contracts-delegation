@@ -21,8 +21,8 @@ import * as dotenv from "dotenv";
 
 dotenv.config();
 
-import {HardhatUserConfig} from "hardhat/types";
-import {removeConsoleLog} from "hardhat-preprocessor";
+import { HardhatUserConfig } from "hardhat/types";
+import { removeConsoleLog } from "hardhat-preprocessor";
 
 const pk1: string = process.env.PK_1 || "";
 const pk2: string = process.env.PK_2 || "";
@@ -595,7 +595,7 @@ const config: HardhatUserConfig = {
             chainId: 5000,
         },
         kaia: {
-            url: "https://kaia.blockpi.network/v1/rpc/public",
+            url: "https://rpc.ankr.com/kaia",
             accounts,
             chainId: 8217,
         },

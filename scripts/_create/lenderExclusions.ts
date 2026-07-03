@@ -49,9 +49,19 @@ export const FLASH_LOAN_LENDER_EXCLUSIONS = {
             "AVALON_SWELLBTC",
             "AVALON_PUMPBTC",
             "AVALON_EBTC_LBTC",
+            // Aave V2 fork — restricted; only the canonical Aave V2 flash-loan source is kept on mainnet.
+            "PHIAT",
             // Aave V2 forks — primarily deployed on other chains (Avalanche / Optimism / Arbitrum).
             "GRANARY",
             "RADIANT_V2",
+        ],
+        // Abstract (2741) — Aave V3 fork restricted; keep only the canonical Aave V3 flash-loan source.
+        "2741": [
+            "KONA_LEND",
+        ],
+        // Plume (98866) — Aave V3 fork restricted; keep only the canonical Aave V3 flash-loan source.
+        "98866": [
+            "AVALON",
         ],
     } as Record<string, string[]>,
 };
