@@ -13,7 +13,7 @@ import {DeltaErrors} from "../../../../../shared/errors/Errors.sol";
  */
 abstract contract UniV4Callbacks is Masks, DeltaErrors {
     // v4 pm addresses
-    address private constant UNISWAP_V4 = 0x000000000004444c5dc75cB358380D2e3dE08A90;
+    address private constant UNISWAP_V4 = 0x1F98400000000000000000000000000000000004;
 
     /**
      * Callback from uniswap V4 type singletons

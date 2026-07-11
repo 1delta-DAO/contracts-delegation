@@ -3,6 +3,7 @@
 pragma solidity 0.8.34;
 
 import {BaseComposer} from "../../BaseComposer.sol";
+import {SwapCallbacks} from "./flashSwap/SwapCallbacks.sol";
 import {FlashLoanCallbacks} from "./flashLoan/FlashLoanCallbacks.sol";
 import {UniversalFlashLoan} from "./flashLoan/UniversalFlashLoan.sol";
 
@@ -10,7 +11,7 @@ import {UniversalFlashLoan} from "./flashLoan/UniversalFlashLoan.sol";
  * @title Chain-dependent Universal aggregator contract.
  * @author 1delta Labs AG
  */
-contract OneDeltaComposerXLayer is BaseComposer, UniversalFlashLoan {
+contract OneDeltaComposerXLayer is BaseComposer, UniversalFlashLoan, SwapCallbacks {
     /**
      * @notice Execute a set of packed operations
      * @param callerAddress Address of the original caller
@@ -23,7 +24,7 @@ contract OneDeltaComposerXLayer is BaseComposer, UniversalFlashLoan {
         uint256 calldataLength //
     )
         internal
-        override(BaseComposer, FlashLoanCallbacks)
+        override(BaseComposer, FlashLoanCallbacks, SwapCallbacks)
     {
         return BaseComposer._deltaComposeInternal(
             callerAddress,

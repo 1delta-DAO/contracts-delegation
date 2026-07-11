@@ -1,6 +1,7 @@
 import {AAVE_V2_LENDERS, AAVE_V3_LENDERS} from "@1delta/lender-registry";
 import {isLenderExcluded} from "../lenderExclusions";
 import {FLASH_LOAN_IDS} from "@1delta/dex-registry";
+import {execSync} from "child_process";
 import * as fs from "fs";
 import {CREATE_CHAIN_IDS, getChainEnum} from "../config";
 import path from "path";
@@ -88,6 +89,9 @@ async function main() {
 
         console.log(`Generated test files for chain ${chain}`);
     }
+
+    // Canonicalize formatting so direct runs match `forge fmt` (no formatting-only diffs).
+    execSync("forge fmt", {stdio: "inherit"});
 }
 
 // Helper function to determine a default asset type based on the lender name

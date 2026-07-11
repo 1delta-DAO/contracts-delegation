@@ -1,6 +1,6 @@
-import {ethers} from "hardhat";
-import {TransparentUpgradeableProxy__factory} from "../../types";
-import {COMPOSER_LOGICS} from "./addresses";
+import { ethers } from "hardhat";
+import { TransparentUpgradeableProxy__factory } from "../../types";
+import { COMPOSER_LOGICS } from "./addresses";
 
 /**
  * Universal gen2 deployer
@@ -26,7 +26,7 @@ async function main() {
         COMPOSER_LOGICS[chainId],
         operator.address,
         "0x",
-        {nonce: nonce++, gasPrice: gp}
+        { nonce: nonce++, gasPrice: gp }
     );
     await proxy.deployed();
 

@@ -11223,6 +11223,7 @@ library Chains {
     string internal constant STABLE_MAINNET = "STABLE_MAINNET";
     string internal constant LISK = "LISK";
     string internal constant PHAROS_MAINNET = "PHAROS_MAINNET";
+    string internal constant ROBINHOOD_MAINNET = "ROBINHOOD_MAINNET";
     string internal constant BOTANIX_MAINNET = "BOTANIX_MAINNET";
     string internal constant ETHERLINK_MAINNET = "ETHERLINK_MAINNET";
     string internal constant FLAME = "FLAME";

@@ -1,5 +1,5 @@
-import {ethers} from "hardhat";
-import {MorphoLens__factory} from "../../types";
+import { ethers } from "hardhat";
+import { MorphoLens__factory } from "../../types";
 
 async function main() {
     const accounts = await ethers.getSigners();
@@ -16,7 +16,7 @@ async function main() {
     const gl = await operator.estimateGas(dt);
     console.log("gasLimit", gl.toString());
 
-    const cometLens = await new MorphoLens__factory(operator).deploy({gasPrice: gp, gasLimit: gl});
+    const cometLens = await new MorphoLens__factory(operator).deploy({ gasPrice: gp, gasLimit: gl });
 
     console.log("lens:", cometLens.address);
 }

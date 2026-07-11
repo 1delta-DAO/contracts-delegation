@@ -1,4 +1,5 @@
 import {getAddress} from "ethers/lib/utils";
+import {execSync} from "child_process";
 import * as fs from "fs";
 import {templateSwapCallbacks} from "./templates/flashSwap/swapCallbacks";
 import {templateUniV4} from "./templates/flashSwap/uniV4Callback";
@@ -128,6 +129,9 @@ async function main() {
 
     const composerTestImport = "./test/shared/composers/ComposerPlugin.sol";
     fs.writeFileSync(composerTestImport, composerTestImports(chainsUsed));
+
+    // Canonicalize formatting so direct runs match `forge fmt` (no formatting-only diffs).
+    execSync("forge fmt", {stdio: "inherit"});
 }
 
 main()

@@ -243,7 +243,7 @@ const config: HardhatUserConfig = {
                 chainId: 130,
                 urls: {
                     apiURL: "https://api.etherscan.io/v2/api?chainid=130",
-                    browserURL: "https://katanascan.com/",
+                    browserURL: "https://uniscan.xyz/",
                 },
             },
             {
@@ -288,10 +288,18 @@ const config: HardhatUserConfig = {
             },
             {
                 network: "pharos",
-                chainId: 688688,
+                chainId: 1672,
                 urls: {
-                    apiURL: "https://testnet.pharosscan.xyz/api",
-                    browserURL: "https://testnet.pharosscan.xyz",
+                    apiURL: "https://explorer.pharos.xyz/api",
+                    browserURL: "https://explorer.pharos.xyz",
+                },
+            },
+            {
+                network: "robinhood",
+                chainId: 4663,
+                urls: {
+                    apiURL: "https://robinhoodchain.blockscout.com/api",
+                    browserURL: "https://robinhoodchain.blockscout.com",
                 },
             },
             {
@@ -519,9 +527,15 @@ const config: HardhatUserConfig = {
             live: true,
         },
         pharos: {
-            url: "https://testnet.dplabs-internal.com",
+            url: "https://rpc.pharos.xyz",
             accounts,
-            chainId: 688688,
+            chainId: 1672,
+            live: true,
+        },
+        robinhood: {
+            url: "https://rpc.mainnet.chain.robinhood.com",
+            accounts,
+            chainId: 4663,
             live: true,
         },
         etherlink: {

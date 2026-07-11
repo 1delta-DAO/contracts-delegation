@@ -1,0 +1,4 @@
+# Solidity is formatted exclusively by `forge fmt` (see foundry.toml [fmt]).
+# prettier's Solidity output diverges from forge fmt (different line length,
+# multiline_func_header, etc.), which causes formatting-only churn. Keep them apart.
+*.sol

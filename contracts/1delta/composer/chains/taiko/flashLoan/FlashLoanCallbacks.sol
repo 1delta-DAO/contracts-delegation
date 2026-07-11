@@ -2,17 +2,12 @@
 
 pragma solidity 0.8.34;
 
-import {AaveV2FlashLoanCallback} from "./callbacks/AaveV2Callback.sol";
-import {AaveV3FlashLoanCallback} from "./callbacks/AaveV3Callback.sol";
-
 /**
  * @title Flash loan callbacks - these are chain-specific
  * @author 1delta Labs AG
  */
-contract FlashLoanCallbacks is
-    AaveV2FlashLoanCallback,
-    AaveV3FlashLoanCallback //
-{
+contract FlashLoanCallbacks {
+    //
     /**
      * @notice Internal function to execute compose operations
      * @dev Override point for flash loan callbacks to execute compose operations
@@ -20,17 +15,6 @@ contract FlashLoanCallbacks is
      * @param offset Current calldata offset
      * @param length Length of remaining calldata
      */
-    function _deltaComposeInternal(
-        address callerAddress,
-        uint256 offset,
-        uint256 length
-    )
-        internal
-        virtual
-        override(
-            AaveV2FlashLoanCallback,
-            AaveV3FlashLoanCallback //
-        )
-    {}
+    function _deltaComposeInternal(address callerAddress, uint256 offset, uint256 length) internal virtual {}
 }
 

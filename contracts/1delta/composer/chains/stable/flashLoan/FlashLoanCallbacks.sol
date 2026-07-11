@@ -8,9 +8,7 @@ import {MorphoFlashLoanCallback} from "./callbacks/MorphoCallback.sol";
  * @title Flash loan callbacks - these are chain-specific
  * @author 1delta Labs AG
  */
-contract FlashLoanCallbacks is
-    MorphoFlashLoanCallback //
-{
+contract FlashLoanCallbacks is MorphoFlashLoanCallback {
     /**
      * @notice Internal function to execute compose operations
      * @dev Override point for flash loan callbacks to execute compose operations
@@ -25,9 +23,7 @@ contract FlashLoanCallbacks is
     )
         internal
         virtual
-        override(
-            MorphoFlashLoanCallback //
-        )
+        override(MorphoFlashLoanCallback)
     {}
 }
 

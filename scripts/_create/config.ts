@@ -1,5 +1,5 @@
-import {Chain} from "@1delta/chain-registry";
-import {chains} from "@1delta/data-sdk";
+import { Chain } from "@1delta/chain-registry";
+import { chains } from "@1delta/data-sdk";
 
 export const CREATE_CHAIN_IDS = [
     Chain.ARBITRUM_ONE,
@@ -50,6 +50,8 @@ export const CREATE_CHAIN_IDS = [
     Chain.INK,
     Chain.FLARE_MAINNET,
     Chain.X_LAYER_MAINNET,
+    Chain.PHAROS_MAINNET,
+    Chain.ROBINHOOD_CHAIN
 ];
 
 export function sortForks<T>(arr: T[], field: keyof T) {

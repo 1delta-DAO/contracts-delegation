@@ -56,7 +56,7 @@ ${cbs.map((a) => a.imports + `\n`).join("")}
  * @author 1delta Labs AG
  */
 contract FlashLoanCallbacks ${cbs.length === 0 ? "" : "is"}
-${cbs.map((a) => a.name).join(",\n") + "//"}
+${cbs.map((a) => a.name).join(",\n") + (cbs.length !== 1 ? "//" : "")}
 {
     /**
      * @notice Internal function to execute compose operations
@@ -76,7 +76,7 @@ ${cbs.map((a) => a.name).join(",\n") + "//"}
             cbs.length === 0
                 ? ""
                 : `override(
-            ${cbs.map((a) => a.name).join(",\n") + "//"}
+            ${cbs.map((a) => a.name).join(",\n") + (cbs.length !== 1 ? "//" : "")}
         )`
         }
     {}

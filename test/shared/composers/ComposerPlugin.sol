@@ -49,6 +49,8 @@ import {OneDeltaComposerMegaeth} from "../../../contracts/1delta/composer//chain
 import {OneDeltaComposerInk} from "../../../contracts/1delta/composer//chains/ink/Composer.sol";
 import {OneDeltaComposerFlare} from "../../../contracts/1delta/composer//chains/flare/Composer.sol";
 import {OneDeltaComposerXLayer} from "../../../contracts/1delta/composer//chains/x-layer/Composer.sol";
+import {OneDeltaComposerPharos} from "../../../contracts/1delta/composer//chains/pharos/Composer.sol";
+import {OneDeltaComposerRobinhood} from "../../../contracts/1delta/composer//chains/robinhood/Composer.sol";
 
 library ComposerPlugin {
     function getComposer(string memory chainName) public returns (IComposerLike) {
@@ -192,6 +194,12 @@ library ComposerPlugin {
         }
         if (keccak256(bytes(chainName)) == keccak256(bytes(Chains.X_LAYER_MAINNET))) {
             return IComposerLike(address(new OneDeltaComposerXLayer()));
+        }
+        if (keccak256(bytes(chainName)) == keccak256(bytes(Chains.PHAROS_MAINNET))) {
+            return IComposerLike(address(new OneDeltaComposerPharos()));
+        }
+        if (keccak256(bytes(chainName)) == keccak256(bytes(Chains.ROBINHOOD_MAINNET))) {
+            return IComposerLike(address(new OneDeltaComposerRobinhood()));
         }
 
         revert("No composer for chain");

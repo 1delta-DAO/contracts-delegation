@@ -62,9 +62,9 @@
     "scripts": {
         "lint": "eslint \"**/*.{js,ts}\" && solhint src/**/*.sol",
         "lint:fix": "eslint --fix \"**/*.{js,ts}\" && solhint --fix src/**/*.sol",
-        "format": "prettier --check \"**/*.{ts,js,sol}\"",
-        "auto-format": "npx prettier --config .prettierrc --write contracts/1delta/composer/chains/**/*.sol",
-        "format:fix": "prettier --write \"**/*.{ts,js,sol}\"",
+        "format": "prettier --check \"**/*.{ts,js}\" && forge fmt --check",
+        "auto-format": "forge fmt",
+        "format:fix": "prettier --write \"**/*.{ts,js}\" && forge fmt",
         "compile": "hardhat compile",
         "void:deploy": "hardhat deploy",
         "test": "cross-env HARDHAT_DEPLOY_FIXTURE=true HARDHAT_COMPILE=true mocha --bail --recursive test --timeout 1000000",
@@ -87,11 +87,11 @@
         "verify-bytecode": "tsx scripts/verify-bytecode.ts"
     },
     "dependencies": {
-        "@1delta/chain-registry": "^0.0.5",
-        "@1delta/data-sdk": "^0.0.26",
-        "@1delta/dex-registry": "^0.0.101",
-        "@1delta/lender-registry": "^0.0.30",
-        "@1delta/margin-fetcher": "^0.0.259",
+        "@1delta/chain-registry": "^0.0.6",
+        "@1delta/data-sdk": "^0.0.28",
+        "@1delta/dex-registry": "^0.0.102",
+        "@1delta/lender-registry": "^0.0.33",
+        "@1delta/margin-fetcher": "^0.0.308",
         "@chainlink/contracts": "^0.6.1",
         "@nomicfoundation/hardhat-network-helpers": "^1.0.8",
         "@nomiclabs/hardhat-solhint": "^2.0.0",
@@ -116,8 +116,8 @@
     },
     "pnpm": {
         "overrides": {
-            "@1delta/chain-registry": "^0.0.5",
-            "@1delta/data-sdk": "^0.0.26"
+            "@1delta/chain-registry": "^0.0.6",
+            "@1delta/data-sdk": "^0.0.28"
         }
     }
 }

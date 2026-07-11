@@ -1,6 +1,7 @@
 import {AAVE_V2_LENDERS, AAVE_V3_LENDERS} from "@1delta/lender-registry";
 import {isLenderExcluded} from "./lenderExclusions";
 import {getAddress} from "ethers/lib/utils";
+import {execSync} from "child_process";
 import * as fs from "fs";
 import {templateAaveV2} from "./templates/flashLoan/aaveV2Callback";
 import {templateAaveV3} from "./templates/flashLoan/aaveV3Callback";
@@ -444,6 +445,12 @@ async function main() {
 
         console.log(`Generated flash loan callbacks on ${chain}`);
     }
+
+    // Format generated Solidity so the output is canonical no matter how this script
+    // is invoked (directly via tsx or bundled in `pnpm create-composer`). Without this,
+    // running the generator alone leaves non-idempotent formatting that `forge fmt`
+    // rewrites on the next run, producing formatting-only diffs.
+    execSync("forge fmt", {stdio: "inherit"});
 }
 
 main()

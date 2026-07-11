@@ -1,5 +1,5 @@
-import {ethers} from "hardhat";
-import {DeployFactory__factory} from "../../types";
+import { ethers } from "hardhat";
+import { DeployFactory__factory } from "../../types";
 
 // deployed on
 // avalanche
@@ -46,18 +46,23 @@ import {DeployFactory__factory} from "../../types";
 // lisk
 // pulse
 // x-layer
+// robinhood
+// pharos
 
 async function main() {
     const accounts = await ethers.getSigners();
     const operator = accounts[3];
     const chainId = await operator.getChainId();
     console.log("operator", operator.address, "on", chainId);
-    const gp = await operator.getGasPrice();
+    // Buffer the gas price: on chains with a volatile base fee (e.g. robinhood) the
+    // value returned by getGasPrice() can drop below the block base fee before the tx
+    // is mined, which reverts with "max fee per gas less than block base fee".
+    const gp = (await operator.getGasPrice()).mul(2);
 
     console.log("gasPrice", gp.toNumber() / 1e9);
 
     console.log("Deploy factory");
-    const deployFactory = await new DeployFactory__factory(operator).deploy({gasPrice: gp});
+    const deployFactory = await new DeployFactory__factory(operator).deploy({ gasPrice: gp });
 
     await deployFactory.deployed();
 

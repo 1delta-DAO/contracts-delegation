@@ -1,7 +1,7 @@
-import {ethers} from "hardhat";
-import {BalanceFetcher__factory, DeployFactory__factory} from "../../types";
-import {DEPLOY_FACTORY} from "./addresses";
-import {keccak256} from "ethers/lib/utils";
+import { ethers } from "hardhat";
+import { BalanceFetcher__factory, DeployFactory__factory } from "../../types";
+import { DEPLOY_FACTORY } from "./addresses";
+import { keccak256 } from "ethers/lib/utils";
 
 /**
 export FACTORY="0x16c4Dc0f662E2bEceC91fC5E7aeeC6a25684698A"
@@ -42,7 +42,7 @@ async function main() {
     console.log("address", address);
     const estimate = await deployFactory.estimateGas.deploy(salt, bytecode);
     console.log("estimate", estimate);
-    const tx = await deployFactory.deploy(salt, bytecode, {gasLimit: estimate.add(100), gasPrice: gp});
+    const tx = await deployFactory.deploy(salt, bytecode, { gasLimit: estimate.add(100), gasPrice: gp });
     await tx.wait();
 
     console.log("deployed expected to", address);

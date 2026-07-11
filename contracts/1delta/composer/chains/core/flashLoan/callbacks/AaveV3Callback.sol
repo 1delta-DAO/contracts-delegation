@@ -10,9 +10,6 @@ import {DeltaErrors} from "../../../../../shared/errors/Errors.sol";
  */
 contract AaveV3FlashLoanCallback is Masks, DeltaErrors {
     // Aave V3 style lender pool addresses
-    address private constant AVALON = 0x67197DE79B2a8Fc301bAB591C78aE5430b9704fd;
-    address private constant AVALON_UBTC = 0x7f6f0e50dB09C49027314103aa5a8F6Db862dBd0;
-    address private constant AVALON_OBTC = 0x2f3552CE2F071B642Deeae5c84eD2EEe3Ed08D43;
     address private constant COLEND = 0x0CEa9F0F49F30d376390e480ba32f903B43B19C5;
     address private constant COLEND_LSTBTC = 0x29A462DC59d7e624E1A3295b9d38416908bae1F4;
 
@@ -53,9 +50,6 @@ contract AaveV3FlashLoanCallback is Masks, DeltaErrors {
             // the initiator parameter the caller of flashLoan
             let pool
             switch and(UINT8_MASK, shr(88, firstWord))
-            case 50 { pool := AVALON }
-            case 59 { pool := AVALON_UBTC }
-            case 60 { pool := AVALON_OBTC }
             case 102 { pool := COLEND }
             case 103 { pool := COLEND_LSTBTC }
 

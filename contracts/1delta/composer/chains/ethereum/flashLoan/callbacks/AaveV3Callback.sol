@@ -15,7 +15,6 @@ contract AaveV3FlashLoanCallback is Masks, DeltaErrors {
     address private constant AAVE_V3_ETHER_FI = 0x0AA97c284e98396202b6A04024F5E2c65026F3c0;
     address private constant AAVE_V3_HORIZON = 0xAe05Cd22df81871bc7cC2a04BeCfb516bFe332C8;
     address private constant SPARK = 0xC13e21B648A5Ee794902342038FF3aDAB66BE987;
-    address private constant KINZA = 0xeA14474946C59Dee1F103aD517132B3F19Cef1bE;
 
     /**
      * @notice Handles Aave V3 flash loan callback
@@ -59,7 +58,6 @@ contract AaveV3FlashLoanCallback is Masks, DeltaErrors {
             case 2 { pool := AAVE_V3_ETHER_FI }
             case 3 { pool := AAVE_V3_HORIZON }
             case 10 { pool := SPARK }
-            case 82 { pool := KINZA }
 
             // We revert on any other id
             default {
