@@ -1,7 +1,10 @@
 [profile.default]
 solc_version = "0.8.34"
 evm_version = "prague"
-optimizer_runs = 5_000
+# forge is used for tests only (deployment uses hardhat's per-file overrides). Kept at 1500 so the
+# high-liquidity composers (ethereum/base/arbitrum/…) with the Uniswap V3 flash callback stay under
+# the EIP-170 runtime limit when the test harness deploys them.
+optimizer_runs = 1_500
 src = "contracts/1delta"
 out = "out"
 libs = ["lib"]

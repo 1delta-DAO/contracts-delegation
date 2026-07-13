@@ -947,7 +947,7 @@ const config: HardhatUserConfig = {
                 settings: {
                     optimizer: {
                         enabled: true,
-                        runs: 5_500,
+                        runs: 1_500,
                     },
                     evmVersion: "cancun",
                 },
@@ -1042,6 +1042,54 @@ const config: HardhatUserConfig = {
                     evmVersion: "cancun",
                 },
             },
+            "contracts/1delta/composer/chains/bob/Composer.sol": {
+                version: "0.8.34",
+                settings: {optimizer: {enabled: true, runs: 5_500}, evmVersion: "cancun"},
+            },
+            "contracts/1delta/composer/chains/corn/Composer.sol": {
+                version: "0.8.34",
+                settings: {optimizer: {enabled: true, runs: 5_500}, evmVersion: "cancun"},
+            },
+            "contracts/1delta/composer/chains/etherlink/Composer.sol": {
+                version: "0.8.34",
+                settings: {optimizer: {enabled: true, runs: 5_500}, evmVersion: "cancun"},
+            },
+            "contracts/1delta/composer/chains/flare/Composer.sol": {
+                version: "0.8.34",
+                settings: {optimizer: {enabled: true, runs: 5_500}, evmVersion: "cancun"},
+            },
+            "contracts/1delta/composer/chains/goat/Composer.sol": {
+                version: "0.8.34",
+                settings: {optimizer: {enabled: true, runs: 5_500}, evmVersion: "cancun"},
+            },
+            "contracts/1delta/composer/chains/ink/Composer.sol": {
+                version: "0.8.34",
+                settings: {optimizer: {enabled: true, runs: 5_500}, evmVersion: "cancun"},
+            },
+            "contracts/1delta/composer/chains/lisk/Composer.sol": {
+                version: "0.8.34",
+                settings: {optimizer: {enabled: true, runs: 5_500}, evmVersion: "cancun"},
+            },
+            "contracts/1delta/composer/chains/megaeth/Composer.sol": {
+                version: "0.8.34",
+                settings: {optimizer: {enabled: true, runs: 5_500}, evmVersion: "cancun"},
+            },
+            "contracts/1delta/composer/chains/pharos/Composer.sol": {
+                version: "0.8.34",
+                settings: {optimizer: {enabled: true, runs: 5_500}, evmVersion: "cancun"},
+            },
+            "contracts/1delta/composer/chains/plume/Composer.sol": {
+                version: "0.8.34",
+                settings: {optimizer: {enabled: true, runs: 5_500}, evmVersion: "cancun"},
+            },
+            "contracts/1delta/composer/chains/robinhood/Composer.sol": {
+                version: "0.8.34",
+                settings: {optimizer: {enabled: true, runs: 5_500}, evmVersion: "cancun"},
+            },
+            "contracts/1delta/composer/chains/stable/Composer.sol": {
+                version: "0.8.34",
+                settings: {optimizer: {enabled: true, runs: 5_500}, evmVersion: "cancun"},
+            },
             "contracts/1delta/composer/chains/manta-pacific/Composer.sol": {
                 version: "0.8.34",
                 settings: {
@@ -1077,7 +1125,7 @@ const config: HardhatUserConfig = {
                 settings: {
                     optimizer: {
                         enabled: true,
-                        runs: 5_500,
+                        runs: 1_500,
                     },
                     evmVersion: "cancun",
                 },
@@ -1127,7 +1175,7 @@ const config: HardhatUserConfig = {
                 settings: {
                     optimizer: {
                         enabled: true,
-                        runs: 5_500,
+                        runs: 1_500,
                     },
                     evmVersion: "cancun",
                 },
@@ -1177,7 +1225,7 @@ const config: HardhatUserConfig = {
                 settings: {
                     optimizer: {
                         enabled: true,
-                        runs: 5_500,
+                        runs: 1_500,
                     },
                     evmVersion: "cancun",
                 },
@@ -1187,7 +1235,7 @@ const config: HardhatUserConfig = {
                 settings: {
                     optimizer: {
                         enabled: true,
-                        runs: 5_500,
+                        runs: 1_500,
                     },
                     evmVersion: "london",
                 },
@@ -1247,7 +1295,7 @@ const config: HardhatUserConfig = {
                 settings: {
                     optimizer: {
                         enabled: true,
-                        runs: 5_500,
+                        runs: 1_500,
                     },
                     evmVersion: "cancun",
                 },
@@ -1257,7 +1305,7 @@ const config: HardhatUserConfig = {
                 settings: {
                     optimizer: {
                         enabled: true,
-                        runs: 5_500,
+                        runs: 1_500,
                     },
                     evmVersion: "cancun",
                 },
@@ -1297,7 +1345,7 @@ const config: HardhatUserConfig = {
                 settings: {
                     optimizer: {
                         enabled: true,
-                        runs: 5_500,
+                        runs: 1_500,
                     },
                     evmVersion: "cancun",
                 },
@@ -1317,7 +1365,7 @@ const config: HardhatUserConfig = {
                 settings: {
                     optimizer: {
                         enabled: true,
-                        runs: 5_500,
+                        runs: 1_500,
                     },
                     evmVersion: "cancun",
                 },

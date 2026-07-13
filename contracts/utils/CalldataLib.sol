@@ -709,6 +709,41 @@ library CalldataLib {
         return abi.encodePacked(uint8(poolId), data);
     }
 
+    /**
+     * Uniswap V3-style flash loan (pool.flash()). No approve is needed: the compose ops in `data`
+     * must transfer principal + fee back to the pool. `forkId` selects the factory/codeHash in the
+     * callback; `tokenIn`/`tokenOut` + `fee` let the callback re-derive and validate the pool.
+     * One of amount0/amount1 is the borrow amount, the other is 0 (matching token0/token1 order).
+     */
+    function encodeUniswapV3FlashLoan(
+        uint8 forkId,
+        address pool,
+        address tokenIn,
+        address tokenOut,
+        uint16 fee,
+        uint128 amount0,
+        uint128 amount1,
+        bytes memory data
+    )
+        internal
+        pure
+        returns (bytes memory)
+    {
+        return abi.encodePacked(
+            uint8(ComposerCommands.FLASH_LOAN),
+            uint8(FlashLoanIds.UNISWAP_V3),
+            forkId,
+            pool,
+            tokenIn,
+            tokenOut,
+            fee,
+            amount0,
+            amount1,
+            uint16(data.length),
+            data
+        );
+    }
+
     function encodeMorphoMarket(
         address loanToken,
         address collateralToken,
@@ -1829,11 +1864,7 @@ library CalldataLib {
         );
 
         return abi.encodePacked(
-            approvals,
-            uint8(ComposerCommands.LENDING),
-            uint8(LenderOps.FLUID_OPERATE_T1),
-            uint16(LenderIds.UP_TO_FLUID - 1),
-            body
+            approvals, uint8(ComposerCommands.LENDING), uint8(LenderOps.FLUID_OPERATE_T1), uint16(LenderIds.UP_TO_FLUID - 1), body
         );
     }
 

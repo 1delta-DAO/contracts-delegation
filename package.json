@@ -89,7 +89,7 @@
     "dependencies": {
         "@1delta/chain-registry": "^0.0.6",
         "@1delta/data-sdk": "^0.0.28",
-        "@1delta/dex-registry": "^0.0.102",
+        "@1delta/dex-registry": "^0.0.103",
         "@1delta/lender-registry": "^0.0.33",
         "@1delta/margin-fetcher": "^0.0.308",
         "@chainlink/contracts": "^0.6.1",

@@ -1,4 +1,9 @@
-export const templateUniversalFlashLoan = (hasMorpho: boolean, hasAaveV2: boolean, hasAaveV3: boolean) => {
+export const templateUniversalFlashLoan = (
+    hasMorpho: boolean,
+    hasAaveV2: boolean,
+    hasAaveV3: boolean,
+    hasUniV3 = false
+) => {
     let isFirst = true;
 
     let imports = ``;
@@ -9,6 +14,12 @@ export const templateUniversalFlashLoan = (hasMorpho: boolean, hasAaveV2: boolea
         isFirst = false;
         imports += `import {MorphoFlashLoans} from "../../../flashLoan/Morpho.sol";\n`;
         inherits.push("MorphoFlashLoans");
+    }
+    if (hasUniV3) {
+        data += uniV3Snippet(isFirst);
+        isFirst = false;
+        imports += `import {UniswapV3FlashLoans} from "../../../flashLoan/UniswapV3.sol";\n`;
+        inherits.push("UniswapV3FlashLoans");
     }
     if (hasAaveV3) {
         data += aaveV3Snippet(isFirst);
@@ -128,5 +139,18 @@ function aaveV3Snippet(isFirst: boolean) {
     return `
         else if (flashLoanType == FlashLoanIds.AAVE_V3) {
             return aaveV3FlashLoan(currentOffset, callerAddress);
+        } `;
+}
+
+function uniV3Snippet(isFirst: boolean) {
+    if (isFirst) {
+        return `
+        if (flashLoanType == FlashLoanIds.UNISWAP_V3) {
+            return uniswapV3FlashLoan(currentOffset, callerAddress);
+        } `;
+    }
+    return `
+        else if (flashLoanType == FlashLoanIds.UNISWAP_V3) {
+            return uniswapV3FlashLoan(currentOffset, callerAddress);
         } `;
 }

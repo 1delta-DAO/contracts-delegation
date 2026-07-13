@@ -3,7 +3,8 @@ export const templateFlashLoan = (
     hasAaveV3: boolean,
     hasMorpho: boolean,
     hasBalancerV3: boolean,
-    hasLista = false
+    hasLista = false,
+    hasUniV3 = false
 ) => {
     let cbs: {imports: string; name: string}[] = [];
 
@@ -39,6 +40,13 @@ export const templateFlashLoan = (
         cbs.push({
             imports: `import {BalancerV3FlashLoanCallback} from "./callbacks/BalancerV3Callback.sol";`,
             name: "BalancerV3FlashLoanCallback",
+        });
+    }
+
+    if (hasUniV3) {
+        cbs.push({
+            imports: `import {UniV3FlashLoanCallback} from "./callbacks/UniV3Callback.sol";`,
+            name: "UniV3FlashLoanCallback",
         });
     }
 

@@ -10,7 +10,9 @@ import {templateMorphoBlue} from "./templates/flashLoan/morphoCallback";
 import {templateComposer} from "./templates/composer";
 import {CREATE_CHAIN_IDS, getChainKey, toCamelCaseWithFirstUpper} from "./config";
 import {templateUniversalFlashLoan} from "./templates/flashLoan/universalFlashLoan";
-import {BALANCER_V3_FORKS, FLASH_LOAN_IDS, UNISWAP_V4_FORKS} from "@1delta/dex-registry";
+import {templateUniV3FlashLoan} from "./templates/flashLoan/uniV3Callback";
+import {isImmutableUniV3FlashFork} from "./uniV3FlashForks";
+import {BALANCER_V3_FORKS, FLASH_LOAN_IDS, UNISWAP_V3_FORKS, UNISWAP_V4_FORKS} from "@1delta/dex-registry";
 import {CANCUN_OR_HIGHER} from "./chain/evmVersion";
 import {fetchLenderMetaFromDirAndInitialize} from "./utils";
 import {aavePools, morphoPools} from "@1delta/data-sdk";
@@ -21,6 +23,42 @@ import {DEX_TO_CHAINS_EXCLUSIONS} from "./dex/blacklists";
 /** constant for the head part */
 function createConstant(pool: string, lender: string) {
     return `address private constant ${lender} = ${getAddress(pool)};\n`;
+}
+
+/**
+ * Map a fork's (swap) callbackSelector to its flash-callback family.
+ * We only accept the primary selector per family, which corresponds to the standard flash
+ * callback function; forks with variant selectors are skipped (their flash callback is unknown).
+ * Family ids match the template: Classic=0, Pancake=1, Algebra=2.
+ */
+const V3_FLASH_FAMILY: {[selectorPrefix: string]: {id: number; isAlgebra: boolean}} = {
+    "0xfa461e33": {id: 0, isAlgebra: false}, // Classic  -> uniswapV3FlashCallback
+    "0x23a69e75": {id: 1, isAlgebra: false}, // Pancake  -> pancakeV3FlashCallback
+    "0x2c8958f6": {id: 2, isAlgebra: true}, // Algebra  -> algebraFlashCallback
+};
+
+interface UniV3FlashData {
+    entityName: string;
+    forkId: string;
+    factory: string;
+    codeHash: string;
+    familyId: number;
+    isAlgebra: boolean;
+}
+
+/** ff-factory + init-code-hash constants for a V3 fork (algebra flag lives in the low ff bytes) */
+function createffAddressConstant(factory: string, dexName: string, codeHash: string, isAlgebra: boolean) {
+    const addr = getAddress(factory).slice(2).toLowerCase();
+    const suffix = isAlgebra ? "ffffffffffffffffffffff" : "0000000000000000000000"; // 11 bytes
+    return (
+        `bytes32 private constant ${dexName}_FF_FACTORY = 0xff${addr}${suffix};\n` +
+        `bytes32 private constant ${dexName}_CODE_HASH = ${codeHash};\n`
+    );
+}
+
+/** inner switch arm selecting a fork's factory/codeHash by forkId */
+function createCaseV3(dexName: string, forkId: string) {
+    return `case ${forkId} { ffFactoryAddress := ${dexName}_FF_FACTORY codeHash := ${dexName}_CODE_HASH }\n`;
 }
 
 /** switch-case entry for flash loan that validates a caller */
@@ -247,6 +285,28 @@ async function main() {
             });
         });
 
+        // Uniswap V3-style flash-loan sources (immutable, factory-deployed pools only).
+        // Validated in the callback by CREATE2 re-derivation, not a hardcoded pool address.
+        let dexIdsUniV3: UniV3FlashData[] = [];
+        Object.entries(UNISWAP_V3_FORKS).forEach(([dex, maps]: [string, any]) => {
+            const factory = maps.factories?.[chain];
+            if (!factory) return;
+            if (DEX_TO_CHAINS_EXCLUSIONS[dex]?.includes(chain)) return;
+            const forkType = maps.forkType?.[chain] ?? maps.forkType?.default;
+            const codeHash = maps.codeHash?.[chain] ?? maps.codeHash?.default;
+            if (!isImmutableUniV3FlashFork(dex, forkType, codeHash)) return;
+            const fam = V3_FLASH_FAMILY[(maps.callbackSelector ?? "").slice(0, 10)];
+            if (!fam) return; // only forks whose flash callback selector is standard
+            dexIdsUniV3.push({
+                entityName: dex,
+                forkId: String(maps.forkId),
+                factory,
+                codeHash,
+                familyId: fam.id,
+                isAlgebra: fam.isAlgebra,
+            });
+        });
+
         // Presence of UniV4 determines whether this chain's Composer inherits SwapCallbacks
         let hasUniV4 = false;
         Object.entries(UNISWAP_V4_FORKS).forEach(([dex, maps]) => {
@@ -392,6 +452,34 @@ async function main() {
             `;
         }
 
+        /**
+         * Uniswap V3 flash callback body: outer switch on the family (set by the callback
+         * entrypoint), inner switch on the forkId — so forkIds that collide across families stay
+         * disjoint. Only families present on the chain expose an entrypoint.
+         */
+        let constantsDataUniV3 = ``;
+        let switchCaseContentUniV3 = ``;
+        const familiesUniV3 = {classic: false, pancake: false, algebra: false};
+        if (dexIdsUniV3.length > 0) {
+            const byFamily: {[id: number]: UniV3FlashData[]} = {0: [], 1: [], 2: []};
+            dexIdsUniV3.forEach((d) => byFamily[d.familyId].push(d));
+            switchCaseContentUniV3 += `switch family\n`;
+            ([[0, "classic"], [1, "pancake"], [2, "algebra"]] as [number, "classic" | "pancake" | "algebra"][]).forEach(
+                ([fid, fname]) => {
+                    const group = byFamily[fid].sort((a, b) => (Number(a.forkId) < Number(b.forkId) ? -1 : 1));
+                    if (group.length === 0) return;
+                    familiesUniV3[fname] = true;
+                    switchCaseContentUniV3 += `case ${fid} {\n    switch and(UINT8_MASK, shr(88, calldataload(172)))\n`;
+                    group.forEach((d) => {
+                        constantsDataUniV3 += createffAddressConstant(d.factory, d.entityName, d.codeHash, d.isAlgebra);
+                        switchCaseContentUniV3 += createCaseV3(d.entityName, d.forkId);
+                    });
+                    switchCaseContentUniV3 += `    default { mstore(0, BAD_POOL) revert(0, 0x4) }\n}\n`;
+                }
+            );
+            switchCaseContentUniV3 += `default { mstore(0, BAD_POOL) revert(0, 0x4) }\n`;
+        }
+
         /** Write files */
 
         const flashLoanCallbackDir = `./contracts/1delta/composer/chains/${key}/flashLoan/callbacks/`;
@@ -417,6 +505,11 @@ async function main() {
             poolIdsBalancerV3.length > 0,
             templateBalancerV3(constantsDataBalancerV3, switchCaseContentBalancerV3, poolIdsBalancerV3.length > 1)
         );
+        writeOrDeleteCallback(
+            "UniV3Callback.sol",
+            dexIdsUniV3.length > 0,
+            templateUniV3FlashLoan(constantsDataUniV3, switchCaseContentUniV3, familiesUniV3)
+        );
 
         const filePathFlashCallbacks = `./contracts/1delta/composer/chains/${key}/flashLoan/FlashLoanCallbacks.sol`;
         fs.writeFileSync(
@@ -426,7 +519,8 @@ async function main() {
                 lenderIdsAaveV3.length > 0,
                 lenderIdsMorphoBlue.length > 0,
                 poolIdsBalancerV3.length > 0,
-                lenderIdsLista.length > 0
+                lenderIdsLista.length > 0,
+                dexIdsUniV3.length > 0
             )
         );
 
@@ -436,7 +530,8 @@ async function main() {
             templateUniversalFlashLoan(
                 lenderIdsMorphoBlue.length > 0,
                 lenderIdsAaveV2.length > 0,
-                lenderIdsAaveV3.length > 0
+                lenderIdsAaveV3.length > 0,
+                dexIdsUniV3.length > 0
             )
         );
 

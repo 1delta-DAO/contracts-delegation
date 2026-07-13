@@ -3,12 +3,16 @@
 pragma solidity 0.8.34;
 
 import {MorphoFlashLoanCallback} from "./callbacks/MorphoCallback.sol";
+import {UniV3FlashLoanCallback} from "./callbacks/UniV3Callback.sol";
 
 /**
  * @title Flash loan callbacks - these are chain-specific
  * @author 1delta Labs AG
  */
-contract FlashLoanCallbacks is MorphoFlashLoanCallback {
+contract FlashLoanCallbacks is
+    MorphoFlashLoanCallback,
+    UniV3FlashLoanCallback //
+{
     /**
      * @notice Internal function to execute compose operations
      * @dev Override point for flash loan callbacks to execute compose operations
@@ -23,7 +27,10 @@ contract FlashLoanCallbacks is MorphoFlashLoanCallback {
     )
         internal
         virtual
-        override(MorphoFlashLoanCallback)
+        override(
+            MorphoFlashLoanCallback,
+            UniV3FlashLoanCallback //
+        )
     {}
 }
 

@@ -15,6 +15,10 @@ import {ComposerPlugin, IComposerLike} from "plugins/ComposerPlugin.sol";
 
 // solhint-disable max-line-length
 
+interface IUniV3FactoryLike {
+    function getPool(address tokenA, address tokenB, uint24 fee) external view returns (address);
+}
+
 contract FlashLoanLightTest is BaseTest {
     using MorphoMathLib for uint256;
 
@@ -174,6 +178,47 @@ contract FlashLoanLightTest is BaseTest {
 
         vm.expectRevert(bytes4(keccak256("InvalidCaller()")));
         oneD.balancerUnlockCallback(abi.encodePacked(address(99), uint8(0), dp));
+    }
+
+    function test_unit_lending_flashloans_uniswapV3_basic() external {
+        // Uniswap V3 factory on base; forkId 0 = UNISWAP_V3 (Classic family)
+        address factory = 0x33128a8fC17869897dcE68Ed026d694621f6FDfD;
+        (address token0, address token1) = WETH < USDC ? (WETH, USDC) : (USDC, WETH);
+        address pool = IUniV3FactoryLike(factory).getPool(token0, token1, 500);
+        require(pool != address(0), "no univ3 pool");
+
+        address assetFlash = USDC;
+        uint256 amount = 1_000e6; // borrow 1000 USDC
+        uint256 fee = (amount * 500 + 1e6 - 1) / 1e6; // 0.05% rounded up
+        deal(assetFlash, address(oneD), fee + 10); // pre-fund the fee (principal comes from the flash)
+
+        // compose op executed inside the callback: repay principal + fee back to the pool
+        bytes memory repay = CalldataLib.encodeSweep(assetFlash, pool, amount + fee, SweepType.AMOUNT);
+
+        // borrow USDC -> whichever side USDC is
+        uint128 amount0 = token0 == USDC ? uint128(amount) : 0;
+        uint128 amount1 = token1 == USDC ? uint128(amount) : 0;
+
+        bytes memory d = CalldataLib.encodeUniswapV3FlashLoan(
+            0, // forkId UNISWAP_V3
+            pool,
+            token0,
+            token1,
+            500, // fee tier
+            amount0,
+            amount1,
+            repay
+        );
+
+        uint256 gas = gasleft();
+        vm.prank(user);
+        oneD.deltaCompose(d);
+        gas = gas - gasleft();
+        console.log("univ3 flash gas", gas);
+
+        // a caller that is not the deterministic pool must be rejected
+        vm.expectRevert(bytes4(keccak256("BadPool()")));
+        oneD.uniswapV3FlashCallback(0, 0, repay);
     }
 
     function test_unit_lending_flashloans_uniswapV4_basic() external {

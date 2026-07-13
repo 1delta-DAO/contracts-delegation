@@ -19,8 +19,8 @@ importers:
         specifier: ^0.0.28
         version: 0.0.28
       '@1delta/dex-registry':
-        specifier: ^0.0.102
-        version: 0.0.102
+        specifier: ^0.0.103
+        version: 0.0.103
       '@1delta/lender-registry':
         specifier: ^0.0.33
         version: 0.0.33
@@ -252,6 +252,10 @@ packages:
 
   '@1delta/dex-registry@0.0.102':
     resolution: {integrity: sha512-UAtapvr+DU+Q+/5NQYe7O50ufKUdpeVmnJW/8B2CYYiIdf/hXrrmkeNqK0FY3VfWFmJuxcqJb6ozZVbqKV1gBQ==}
+    engines: {node: '>=20'}
+
+  '@1delta/dex-registry@0.0.103':
+    resolution: {integrity: sha512-txps1ZbjHUMDfs2drJMU7+O9u5/iVlF9fA+JamReYlUVKtC7+1YZK7TWI6/+w/Ky2wzEFqK41DIA7IiSWecuyw==}
     engines: {node: '>=20'}
 
   '@1delta/lender-registry@0.0.30':
@@ -8124,6 +8128,11 @@ snapshots:
       '@1delta/chain-registry': 0.0.6
       '@1delta/lender-registry': 0.0.33
 
+  '@1delta/dex-registry@0.0.103':
+    dependencies:
+      '@1delta/chain-registry': 0.0.6
+      '@1delta/lender-registry': 0.0.33
+
   '@1delta/lender-registry@0.0.30': {}
 
   '@1delta/lender-registry@0.0.32': {}
@@ -9127,7 +9136,7 @@ snapshots:
     dependencies:
       '@ledgerhq/cryptoassets': 5.53.0
       '@ledgerhq/errors': 5.50.0
-      '@ledgerhq/hw-transport': 5.26.0
+      '@ledgerhq/hw-transport': 5.51.1
       bignumber.js: 9.3.1
       rlp: 2.2.7
 
@@ -9144,7 +9153,7 @@ snapshots:
     dependencies:
       '@ledgerhq/devices': 5.51.1
       '@ledgerhq/errors': 5.50.0
-      '@ledgerhq/hw-transport': 5.26.0
+      '@ledgerhq/hw-transport': 5.51.1
       '@ledgerhq/hw-transport-node-hid-noevents': 5.51.1
       '@ledgerhq/logs': 5.50.0
       lodash: 4.18.1
@@ -9155,7 +9164,7 @@ snapshots:
   '@ledgerhq/hw-transport-u2f@5.26.0':
     dependencies:
       '@ledgerhq/errors': 5.50.0
-      '@ledgerhq/hw-transport': 5.26.0
+      '@ledgerhq/hw-transport': 5.51.1
       '@ledgerhq/logs': 5.50.0
       u2f-api: 0.2.7
 
@@ -9170,7 +9179,6 @@ snapshots:
       '@ledgerhq/devices': 5.51.1
       '@ledgerhq/errors': 5.50.0
       events: 3.3.0
-    optional: true
 
   '@ledgerhq/logs@5.50.0': {}
 
@@ -18263,7 +18271,7 @@ snapshots:
 
   wide-align@1.1.5:
     dependencies:
-      string-width: 1.0.2
+      string-width: 4.2.3
     optional: true
 
   widest-line@3.1.0:

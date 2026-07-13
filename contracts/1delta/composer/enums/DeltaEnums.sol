@@ -77,6 +77,7 @@ library LenderOps {
  */
 library FlashLoanIds {
     uint256 internal constant MORPHO = 0;
+    uint256 internal constant UNISWAP_V3 = 1;
     uint256 internal constant AAVE_V3 = 2;
     uint256 internal constant AAVE_V2 = 3;
 }

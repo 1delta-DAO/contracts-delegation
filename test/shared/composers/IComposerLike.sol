@@ -16,6 +16,12 @@ interface IComposerLike {
 
     function unlockCallback(bytes calldata) external;
 
+    function uniswapV3FlashCallback(uint256, uint256, bytes calldata) external;
+
+    function pancakeV3FlashCallback(uint256, uint256, bytes calldata) external;
+
+    function algebraFlashCallback(uint256, uint256, bytes calldata) external;
+
     function executeOperation(
         address[] calldata,
         uint256[] calldata,

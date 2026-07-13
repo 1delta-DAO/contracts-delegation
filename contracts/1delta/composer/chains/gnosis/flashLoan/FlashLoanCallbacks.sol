@@ -5,6 +5,7 @@ pragma solidity 0.8.34;
 import {AaveV2FlashLoanCallback} from "./callbacks/AaveV2Callback.sol";
 import {AaveV3FlashLoanCallback} from "./callbacks/AaveV3Callback.sol";
 import {BalancerV3FlashLoanCallback} from "./callbacks/BalancerV3Callback.sol";
+import {UniV3FlashLoanCallback} from "./callbacks/UniV3Callback.sol";
 
 /**
  * @title Flash loan callbacks - these are chain-specific
@@ -13,7 +14,8 @@ import {BalancerV3FlashLoanCallback} from "./callbacks/BalancerV3Callback.sol";
 contract FlashLoanCallbacks is
     AaveV2FlashLoanCallback,
     AaveV3FlashLoanCallback,
-    BalancerV3FlashLoanCallback //
+    BalancerV3FlashLoanCallback,
+    UniV3FlashLoanCallback //
 {
     /**
      * @notice Internal function to execute compose operations
@@ -32,7 +34,8 @@ contract FlashLoanCallbacks is
         override(
             AaveV2FlashLoanCallback,
             AaveV3FlashLoanCallback,
-            BalancerV3FlashLoanCallback //
+            BalancerV3FlashLoanCallback,
+            UniV3FlashLoanCallback //
         )
     {}
 }

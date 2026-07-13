@@ -2,12 +2,13 @@
 
 pragma solidity 0.8.34;
 
+import {UniV3FlashLoanCallback} from "./callbacks/UniV3Callback.sol";
+
 /**
  * @title Flash loan callbacks - these are chain-specific
  * @author 1delta Labs AG
  */
-contract FlashLoanCallbacks {
-    //
+contract FlashLoanCallbacks is UniV3FlashLoanCallback {
     /**
      * @notice Internal function to execute compose operations
      * @dev Override point for flash loan callbacks to execute compose operations
@@ -15,6 +16,14 @@ contract FlashLoanCallbacks {
      * @param offset Current calldata offset
      * @param length Length of remaining calldata
      */
-    function _deltaComposeInternal(address callerAddress, uint256 offset, uint256 length) internal virtual {}
+    function _deltaComposeInternal(
+        address callerAddress,
+        uint256 offset,
+        uint256 length
+    )
+        internal
+        virtual
+        override(UniV3FlashLoanCallback)
+    {}
 }
 

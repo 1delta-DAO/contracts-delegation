@@ -2,6 +2,7 @@
 
 pragma solidity 0.8.34;
 
+import {UniswapV3FlashLoans} from "../../../flashLoan/UniswapV3.sol";
 import {AaveV2FlashLoans} from "../../../flashLoan/AaveV2.sol";
 
 import {FlashLoanCallbacks} from "./FlashLoanCallbacks.sol";
@@ -13,6 +14,7 @@ import {DeltaErrors} from "../../../../shared/errors/Errors.sol";
  * @author 1delta Labs AG
  */
 contract UniversalFlashLoan is
+    UniswapV3FlashLoans,
     AaveV2FlashLoans,
     FlashLoanCallbacks //
 {
@@ -35,7 +37,9 @@ contract UniversalFlashLoan is
             currentOffset := add(currentOffset, 1)
         }
 
-        if (flashLoanType == FlashLoanIds.AAVE_V2) {
+        if (flashLoanType == FlashLoanIds.UNISWAP_V3) {
+            return uniswapV3FlashLoan(currentOffset, callerAddress);
+        } else if (flashLoanType == FlashLoanIds.AAVE_V2) {
             return aaveV2FlashLoan(currentOffset, callerAddress);
         } else {
             _invalidOperation();
