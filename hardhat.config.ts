@@ -1205,7 +1205,7 @@ const config: HardhatUserConfig = {
                 settings: {
                     optimizer: {
                         enabled: true,
-                        runs: 5_500,
+                        runs: 3_500,
                     },
                     evmVersion: "cancun",
                 },
@@ -1245,7 +1245,7 @@ const config: HardhatUserConfig = {
                 settings: {
                     optimizer: {
                         enabled: true,
-                        runs: 5_500,
+                        runs: 3_500,
                     },
                     evmVersion: "london",
                 },
@@ -1255,7 +1255,7 @@ const config: HardhatUserConfig = {
                 settings: {
                     optimizer: {
                         enabled: true,
-                        runs: 5_500,
+                        runs: 3_500,
                     },
                     evmVersion: "cancun",
                 },
@@ -1345,7 +1345,7 @@ const config: HardhatUserConfig = {
                 settings: {
                     optimizer: {
                         enabled: true,
-                        runs: 1_500,
+                        runs: 800,
                     },
                     evmVersion: "cancun",
                 },
