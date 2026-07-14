@@ -4,7 +4,8 @@ export const templateFlashLoan = (
     hasMorpho: boolean,
     hasBalancerV3: boolean,
     hasLista = false,
-    hasUniV3 = false
+    hasUniV3 = false,
+    hasMidnight = false
 ) => {
     let cbs: {imports: string; name: string}[] = [];
 
@@ -33,6 +34,13 @@ export const templateFlashLoan = (
         cbs.push({
             imports: `import {MorphoFlashLoanCallback} from "./callbacks/MorphoCallback.sol";`,
             name: "MorphoFlashLoanCallback",
+        });
+    }
+
+    if (hasMidnight) {
+        cbs.push({
+            imports: `import {MidnightFlashLoanCallback} from "./callbacks/MidnightCallback.sol";`,
+            name: "MidnightFlashLoanCallback",
         });
     }
 

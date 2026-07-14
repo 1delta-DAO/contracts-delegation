@@ -48,6 +48,21 @@ import {DeltaErrors} from "../../shared/errors/Errors.sol";
  *      position NFT to the composer for a one-shot custody window. The callback runs the encoded
  *      inner ops and, as a hard-coded post-step, transfers the NFT back to `from` if the composer
  *      still owns it. Users don't need to encode any sweep — it's unconditional.
+ *
+ * @dev SECURITY — the composer must never own a Fluid position at the END of a transaction, and
+ *      must never be granted a persistent approval. `operate` is authorized solely by Fluid's
+ *      `ownerOf(nftId) == composer` check — there is NO `callerAddress` owner-gate — so ANY caller
+ *      can operate on (drain) a position the composer is left holding across transactions. Keep
+ *      custody transient:
+ *        - existing positions: the `onERC721Received` flow sweeps the NFT back unconditionally;
+ *        - fresh mints (`nftId == 0`): set `nftReceiver` to auto-sweep the minted NFT to its owner
+ *          in the same op, OR — for intra-batch flows that must retain the position across several
+ *          `operate` legs (e.g. a leverage loop, whose borrow legs need `ownerOf == composer`) —
+ *          leave `nftReceiver == 0` AND encode an explicit sweep of the minted NFT before the batch
+ *          ends. A fresh mint left in the composer with no same-batch sweep is drainable by anyone.
+ *      This end-of-batch invariant is deliberately NOT enforced on-chain (enforcing it would break
+ *      the intra-batch retention loops rely on) — the encoder is responsible for it. Never call
+ *      `VaultFactory.setApprovalForAll(composer, true)`.
  */
 abstract contract FluidLending is ERC20Selectors, Masks, DeltaErrors {
     /// @dev selector for Fluid VaultT1.operate(uint256,int256,int256,address)
@@ -89,7 +104,7 @@ abstract contract FluidLending is ERC20Selectors, Masks, DeltaErrors {
      * | 56     | 16     | debtAmount (int128)                                            |
      * | 72     | 32     | nftId (0 = open new position, minted to composer)              |
      * | 104    | 20     | receiver (vault's `to_` — recipient of out-flows)              |
-     * | 124    | 20     | nftReceiver (0 = keep NFT in composer, non-zero = auto-sweep)  |
+     * | 124    | 20     | nftReceiver (0 = keep NFT in composer, non-zero = auto-sweep — see SECURITY note) |
      * | 144    | 20     | vault                                                          |
      */
     function _callFluidOperate(uint256 currentOffset) internal returns (uint256) {

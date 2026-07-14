@@ -50,6 +50,15 @@ import {Masks} from "../../shared/masks/Masks.sol";
  *
  * @dev Ownership caveats per FLUID.md still apply: BORROW/WITHDRAW operations (negative debt /
  *      negative col) require the composer to be ownerOf(nftId).
+ *
+ * @dev SECURITY — the composer must never own a Fluid position at the END of a transaction, and
+ *      must never be granted a persistent approval. `operate` is gated only by Fluid's
+ *      `ownerOf(nftId) == composer` check (no `callerAddress` owner-gate), so a position the composer
+ *      is left holding is drainable by any caller. Fresh mints (`nftId == 0`) either set `nftReceiver`
+ *      to auto-sweep, or leave it `0` for intra-batch retention (e.g. leverage loops) AND encode an
+ *      explicit sweep before the batch ends. This is deliberately NOT enforced on-chain (enforcement
+ *      would break retention) — the encoder is responsible. See FluidLending for the full rationale.
+ *      Never call `VaultFactory.setApprovalForAll(composer, true)`.
  */
 abstract contract FluidSmartLending is ERC20Selectors, Masks {
     /// @dev selector for VaultT2.operate(uint256,int256,int256,int256,int256,address)
@@ -127,7 +136,7 @@ abstract contract FluidSmartLending is ERC20Selectors, Masks {
      * | 1      | 16     | callValue                                                    |
      * | 17     | 32     | nftId (0 = open new)                                         |
      * | 49     | 20     | receiver (vault `to_`)                                       |
-     * | 69     | 20     | nftReceiver (0 = keep; non-zero = auto-sweep minted NFT)     |
+     * | 69     | 20     | nftReceiver (0 = keep; non-zero = auto-sweep minted NFT — see SECURITY note) |
      * | 89     | 20     | vault                                                        |
      * | 109    | n × 20 | tokens[i] (parallel to int256 slots)                         |
      * | next   | n × 32 | int256 params (see variant)                                  |

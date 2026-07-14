@@ -2,7 +2,8 @@ export const templateUniversalFlashLoan = (
     hasMorpho: boolean,
     hasAaveV2: boolean,
     hasAaveV3: boolean,
-    hasUniV3 = false
+    hasUniV3 = false,
+    hasMidnight = false
 ) => {
     let isFirst = true;
 
@@ -14,6 +15,12 @@ export const templateUniversalFlashLoan = (
         isFirst = false;
         imports += `import {MorphoFlashLoans} from "../../../flashLoan/Morpho.sol";\n`;
         inherits.push("MorphoFlashLoans");
+    }
+    if (hasMidnight) {
+        data += midnightSnippet(isFirst);
+        isFirst = false;
+        imports += `import {MidnightFlashLoans} from "../../../flashLoan/Midnight.sol";\n`;
+        inherits.push("MidnightFlashLoans");
     }
     if (hasUniV3) {
         data += uniV3Snippet(isFirst);
@@ -127,6 +134,19 @@ function morphoSnippet(isFirst: boolean) {
          else if (flashLoanType == FlashLoanIds.MORPHO) {
             return morphoFlashLoan(currentOffset, callerAddress);
         }`;
+}
+
+function midnightSnippet(isFirst: boolean) {
+    if (isFirst) {
+        return `
+        if (flashLoanType == FlashLoanIds.MORPHO_MIDNIGHT) {
+            return midnightFlashLoan(currentOffset, callerAddress);
+        } `;
+    }
+    return `
+        else if (flashLoanType == FlashLoanIds.MORPHO_MIDNIGHT) {
+            return midnightFlashLoan(currentOffset, callerAddress);
+        } `;
 }
 
 function aaveV3Snippet(isFirst: boolean) {

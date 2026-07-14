@@ -33,11 +33,11 @@ runs = 10000
 [rpc_endpoints]
 RPC_ETHEREUM_MAINNET = "https://eth.meowrpc.com"
 RPC_BNB_SMART_CHAIN_MAINNET = "https://public-bsc-mainnet.fastnode.io"
-RPC_BASE = "https://base.llamarpc.com"
+RPC_BASE = "https://base.drpc.org"
 RPC_PLASMA_MAINNET = "https://rpc.plasma.to"
 RPC_ARBITRUM_ONE = "https://arb1.lava.build"
 RPC_AVALANCHE_C_CHAIN = "https://avalanche-c-chain-rpc.publicnode.com"
-RPC_POLYGON_MAINNET = "https://polygon-rpc.com/"
+RPC_POLYGON_MAINNET = "https://polygon.drpc.org"
 RPC_KATANA = "https://rpc.katana.network"
 RPC_BERACHAIN = "https://rpc.berachain.com"
 RPC_CRONOS_MAINNET = "https://cronos.drpc.org"

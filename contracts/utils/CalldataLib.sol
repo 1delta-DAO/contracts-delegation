@@ -1017,6 +1017,188 @@ library CalldataLib {
         );
     }
 
+    // -------------------------------------------------------------------------
+    // Morpho Midnight (fixed-rate, fixed-maturity order-book primitive).
+    //
+    // Every Midnight entry point takes the full ABI-encoded argument tuple, which
+    // embeds the dynamic `Market` struct - so callers pass an opaque `args` blob
+    // built off-chain with the real Midnight structs (e.g.
+    // `abi.encode(market, collateralIndex, assets, onBehalf)`). The composer writes
+    // the selector itself and pins the authorization field (`onBehalf` / `taker`)
+    // to the authenticated caller, so placeholder values for those fields (and for
+    // any injected amount) inside `args` are overwritten on-chain.
+    // -------------------------------------------------------------------------
+
+    /// @dev Midnight lender id (upper edge of the [UP_TO_GEARBOX_V3, UP_TO_MORPHO_MIDNIGHT) bucket).
+    uint16 internal constant MIDNIGHT_ID = uint16(LenderIds.UP_TO_MORPHO_MIDNIGHT - 1);
+
+    /// @notice supplyCollateral. `args` = abi.encode(Market, collateralIndex, assets, onBehalf).
+    /// @dev `amount` is injected into the `assets` field on-chain; 0 => full composer balance of `collateralToken`.
+    function encodeMidnightSupplyCollateral(
+        address midnight,
+        address collateralToken,
+        uint256 amount,
+        bytes memory args
+    )
+        internal
+        pure
+        returns (bytes memory)
+    {
+        return abi.encodePacked(
+            encodeApprove(collateralToken, midnight), // always approve
+            uint8(ComposerCommands.LENDING),
+            uint8(LenderOps.DEPOSIT),
+            MIDNIGHT_ID,
+            midnight,
+            collateralToken,
+            uint128(amount),
+            uint16(args.length),
+            args
+        );
+    }
+
+    /// @notice withdrawCollateral. `args` = abi.encode(Market, collateralIndex, assets, onBehalf, receiver).
+    function encodeMidnightWithdrawCollateral(address midnight, bytes memory args) internal pure returns (bytes memory) {
+        return abi.encodePacked(
+            uint8(ComposerCommands.LENDING), //
+            uint8(LenderOps.WITHDRAW),
+            MIDNIGHT_ID,
+            midnight,
+            uint16(args.length),
+            args
+        );
+    }
+
+    /// @notice repay. `args` = abi.encode(Market, units, onBehalf, callback, data).
+    /// @dev `amount` is injected into the `units` field on-chain (1 unit == 1 loan token); 0 => full composer
+    ///      balance of `loanToken`. `callback` is forced to 0, so the composer is the payer. `onBehalf` is
+    ///      caller-specified (the debtor whose debt is repaid) - not pinned, since repaying is benign.
+    function encodeMidnightRepay(
+        address midnight,
+        address loanToken,
+        uint256 amount,
+        bytes memory args
+    )
+        internal
+        pure
+        returns (bytes memory)
+    {
+        return abi.encodePacked(
+            encodeApprove(loanToken, midnight), // always approve
+            uint8(ComposerCommands.LENDING),
+            uint8(LenderOps.REPAY),
+            MIDNIGHT_ID,
+            midnight,
+            loanToken,
+            uint128(amount),
+            uint16(args.length),
+            args
+        );
+    }
+
+    /// @notice withdraw (redeem credit units for the loan token). `args` = abi.encode(Market, units, onBehalf, receiver).
+    function encodeMidnightWithdraw(address midnight, bytes memory args) internal pure returns (bytes memory) {
+        return abi.encodePacked(
+            uint8(ComposerCommands.LENDING), //
+            uint8(LenderOps.WITHDRAW_LENDING_TOKEN),
+            MIDNIGHT_ID,
+            midnight,
+            uint16(args.length),
+            args
+        );
+    }
+
+    /// @notice take - the lend/borrow primitive (lend = buy units, borrow = sell units).
+    /// @dev `args` = abi.encode(Offer, ratifierData, units, taker, receiverIfTakerIsSeller, takerCallback, takerCallbackData).
+    ///      `taker` is pinned to the caller and `takerCallback` forced 0 on-chain. For the lending side prepend an
+    ///      `encodeApprove(loanToken, midnight)` op so the composer can pay `buyerAssets`.
+    function encodeMidnightTake(address midnight, bytes memory args) internal pure returns (bytes memory) {
+        return abi.encodePacked(
+            uint8(ComposerCommands.LENDING), //
+            uint8(LenderOps.MIDNIGHT_TAKE),
+            MIDNIGHT_ID,
+            midnight,
+            uint16(args.length),
+            args
+        );
+    }
+
+    /// @notice Single-asset Morpho Midnight flash loan — convenience variant mirroring the
+    ///         `encodeFlashLoan` (Morpho/Aave) call shape for the common one-token case.
+    /// @dev Wraps `asset`/`amount` into the multi-token form (one interleaved entry + one repayment
+    ///      approval). Equivalent to `encodeMidnightFlashLoan(pool, [asset], [amount], poolId, data)`.
+    function encodeMidnightFlashLoan(
+        address asset,
+        uint256 amount,
+        address pool,
+        uint8 poolId,
+        bytes memory data
+    )
+        internal
+        pure
+        returns (bytes memory)
+    {
+        address[] memory tokens = new address[](1);
+        uint256[] memory amounts = new uint256[](1);
+        tokens[0] = asset;
+        amounts[0] = amount;
+        return encodeMidnightFlashLoan(pool, tokens, amounts, poolId, data);
+    }
+
+    /// @notice Morpho Midnight multi-token flash loan.
+    /// @dev The compose ops in `data` run inside the callback and must repay + approve each borrowed token
+    ///      (approvals for repayment are prepended here). `poolId` (0 = canonical instance) leads the params.
+    function encodeMidnightFlashLoan(
+        address pool,
+        address[] memory tokens,
+        uint256[] memory amounts,
+        uint8 poolId,
+        bytes memory data
+    )
+        internal
+        pure
+        returns (bytes memory)
+    {
+        return abi.encodePacked(
+            encodeMidnightFlashLoanApprovals(pool, tokens), // approve each token for the repayment pull-back
+            uint8(ComposerCommands.FLASH_LOAN),
+            uint8(FlashLoanIds.MORPHO_MIDNIGHT),
+            pool,
+            uint8(tokens.length),
+            encodeMidnightFlashLoanTokens(tokens, amounts),
+            uint16(data.length + 1),
+            encodeUint8AndBytes(poolId, data)
+        );
+    }
+
+    /// @dev Interleaved `token (20) | amount (16)` entries consumed by the Midnight flash-loan initiator.
+    function encodeMidnightFlashLoanTokens(
+        address[] memory tokens,
+        uint256[] memory amounts
+    )
+        internal
+        pure
+        returns (bytes memory result)
+    {
+        for (uint256 i; i < tokens.length; i++) {
+            result = abi.encodePacked(result, tokens[i], uint128(amounts[i]));
+        }
+    }
+
+    /// @dev Concatenated `encodeApprove` ops, one per flash-loaned token, so Midnight can pull repayment.
+    function encodeMidnightFlashLoanApprovals(
+        address pool,
+        address[] memory tokens
+    )
+        internal
+        pure
+        returns (bytes memory result)
+    {
+        for (uint256 i; i < tokens.length; i++) {
+            result = abi.encodePacked(result, encodeApprove(tokens[i], pool));
+        }
+    }
+
     /// @dev Sentinel loanId selecting the user's dynamic (flexible) broker position on repay
     uint128 internal constant LISTA_BROKER_DYNAMIC_LOAN = type(uint128).max;
 

@@ -32,3 +32,29 @@ jobs:
         run: |
           forge test -vvv
         id: test
+
+  verify-generated:
+    name: Verify generated constants
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      # Pin every chain's generated Uniswap-V3 flash-loan factory/init-code-hash constants to
+      # @1delta/dex-registry — catches stale files, hand-edits, and copy-paste errors before merge.
+      - name: Verify UniV3 flash constants
+        run: pnpm verify-univ3-flash-constants
+

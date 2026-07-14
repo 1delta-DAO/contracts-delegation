@@ -7,6 +7,7 @@ import {AaveV4Lending} from "./AaveV4Lending.sol";
 import {CompoundV3Lending} from "./CompoundV3Lending.sol";
 import {CompoundV2Lending} from "./CompoundV2Lending.sol";
 import {MorphoLending} from "./MorphoLending.sol";
+import {MidnightLending} from "./MidnightLending.sol";
 import {ListaBrokerLending} from "./ListaBrokerLending.sol";
 import {SiloV2Lending} from "./SiloV2Lending.sol";
 import {FluidLending} from "./FluidLending.sol";
@@ -29,6 +30,7 @@ abstract contract UniversalLending is
     CompoundV3Lending,
     CompoundV2Lending,
     MorphoLending,
+    MidnightLending,
     ListaBrokerLending,
     SiloV2Lending,
     FluidLending, // brings in DeltaErrors transitively
@@ -83,6 +85,8 @@ abstract contract UniversalLending is
                 return _depositToAaveV4(currentOffset);
             } else if (lender >= LenderIds.UP_TO_FLUID_SMART && lender < LenderIds.UP_TO_GEARBOX_V3) {
                 return _depositToGearboxV3(currentOffset, callerAddress);
+            } else if (lender >= LenderIds.UP_TO_GEARBOX_V3 && lender < LenderIds.UP_TO_MORPHO_MIDNIGHT) {
+                return _midnightSupplyCollateral(currentOffset);
             } else {
                 _invalidOperation();
             }
@@ -127,6 +131,8 @@ abstract contract UniversalLending is
                 return _repayToAaveV4(currentOffset);
             } else if (lender >= LenderIds.UP_TO_FLUID_SMART && lender < LenderIds.UP_TO_GEARBOX_V3) {
                 return _repayToGearboxV3(currentOffset, callerAddress);
+            } else if (lender >= LenderIds.UP_TO_GEARBOX_V3 && lender < LenderIds.UP_TO_MORPHO_MIDNIGHT) {
+                return _midnightRepay(currentOffset);
             } else {
                 _invalidOperation();
             }
@@ -149,6 +155,8 @@ abstract contract UniversalLending is
                 return _withdrawFromAaveV4(currentOffset, callerAddress);
             } else if (lender >= LenderIds.UP_TO_FLUID_SMART && lender < LenderIds.UP_TO_GEARBOX_V3) {
                 return _withdrawFromGearboxV3(currentOffset, callerAddress);
+            } else if (lender >= LenderIds.UP_TO_GEARBOX_V3 && lender < LenderIds.UP_TO_MORPHO_MIDNIGHT) {
+                return _midnightWithdrawCollateral(currentOffset, callerAddress);
             } else {
                 _invalidOperation();
             }
@@ -173,6 +181,8 @@ abstract contract UniversalLending is
                 return _encodeMorphoWithdraw(currentOffset, callerAddress);
             } else if (lender >= LenderIds.UP_TO_AAVE_V4 && lender < LenderIds.UP_TO_FLUID) {
                 return _withdrawFromFluidFToken(currentOffset, callerAddress);
+            } else if (lender >= LenderIds.UP_TO_GEARBOX_V3 && lender < LenderIds.UP_TO_MORPHO_MIDNIGHT) {
+                return _midnightWithdraw(currentOffset, callerAddress);
             } else {
                 _invalidOperation();
             }
@@ -244,6 +254,16 @@ abstract contract UniversalLending is
         else if (lendingOperation == LenderOps.GEARBOX_MULTICALL) {
             if (lender >= LenderIds.UP_TO_FLUID_SMART && lender < LenderIds.UP_TO_GEARBOX_V3) {
                 return _gearboxMulticall(currentOffset, callerAddress);
+            } else {
+                _invalidOperation();
+            }
+        }
+        /**
+         * Morpho Midnight order-book `take` (lend = buy units / borrow = sell units).
+         */
+        else if (lendingOperation == LenderOps.MIDNIGHT_TAKE) {
+            if (lender >= LenderIds.UP_TO_GEARBOX_V3 && lender < LenderIds.UP_TO_MORPHO_MIDNIGHT) {
+                return _midnightTake(currentOffset, callerAddress);
             } else {
                 _invalidOperation();
             }

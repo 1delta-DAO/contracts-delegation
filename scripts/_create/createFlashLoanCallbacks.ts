@@ -7,12 +7,14 @@ import {templateAaveV2} from "./templates/flashLoan/aaveV2Callback";
 import {templateAaveV3} from "./templates/flashLoan/aaveV3Callback";
 import {templateFlashLoan} from "./templates/flashLoan/flashLoanCallbacks.ts";
 import {templateMorphoBlue} from "./templates/flashLoan/morphoCallback";
+import {templateMidnight} from "./templates/flashLoan/midnightCallback";
+import {MIDNIGHT_INSTANCES} from "./midnightInstances";
 import {templateComposer} from "./templates/composer";
 import {CREATE_CHAIN_IDS, getChainKey, toCamelCaseWithFirstUpper} from "./config";
 import {templateUniversalFlashLoan} from "./templates/flashLoan/universalFlashLoan";
 import {templateUniV3FlashLoan} from "./templates/flashLoan/uniV3Callback";
-import {isImmutableUniV3FlashFork} from "./uniV3FlashForks";
-import {BALANCER_V3_FORKS, FLASH_LOAN_IDS, UNISWAP_V3_FORKS, UNISWAP_V4_FORKS} from "@1delta/dex-registry";
+import {collectUniV3FlashForks, ffFactoryConstantValue, UniV3FlashData} from "./uniV3FlashForks";
+import {BALANCER_V3_FORKS, FLASH_LOAN_IDS, UNISWAP_V4_FORKS} from "@1delta/dex-registry";
 import {CANCUN_OR_HIGHER} from "./chain/evmVersion";
 import {fetchLenderMetaFromDirAndInitialize} from "./utils";
 import {aavePools, morphoPools} from "@1delta/data-sdk";
@@ -25,33 +27,10 @@ function createConstant(pool: string, lender: string) {
     return `address private constant ${lender} = ${getAddress(pool)};\n`;
 }
 
-/**
- * Map a fork's (swap) callbackSelector to its flash-callback family.
- * We only accept the primary selector per family, which corresponds to the standard flash
- * callback function; forks with variant selectors are skipped (their flash callback is unknown).
- * Family ids match the template: Classic=0, Pancake=1, Algebra=2.
- */
-const V3_FLASH_FAMILY: {[selectorPrefix: string]: {id: number; isAlgebra: boolean}} = {
-    "0xfa461e33": {id: 0, isAlgebra: false}, // Classic  -> uniswapV3FlashCallback
-    "0x23a69e75": {id: 1, isAlgebra: false}, // Pancake  -> pancakeV3FlashCallback
-    "0x2c8958f6": {id: 2, isAlgebra: true}, // Algebra  -> algebraFlashCallback
-};
-
-interface UniV3FlashData {
-    entityName: string;
-    forkId: string;
-    factory: string;
-    codeHash: string;
-    familyId: number;
-    isAlgebra: boolean;
-}
-
 /** ff-factory + init-code-hash constants for a V3 fork (algebra flag lives in the low ff bytes) */
 function createffAddressConstant(factory: string, dexName: string, codeHash: string, isAlgebra: boolean) {
-    const addr = getAddress(factory).slice(2).toLowerCase();
-    const suffix = isAlgebra ? "ffffffffffffffffffffff" : "0000000000000000000000"; // 11 bytes
     return (
-        `bytes32 private constant ${dexName}_FF_FACTORY = 0xff${addr}${suffix};\n` +
+        `bytes32 private constant ${dexName}_FF_FACTORY = ${ffFactoryConstantValue(factory, isAlgebra)};\n` +
         `bytes32 private constant ${dexName}_CODE_HASH = ${codeHash};\n`
     );
 }
@@ -271,6 +250,17 @@ async function main() {
             });
         });
 
+        // Morpho Midnight — single canonical instance per chain, sourced locally (not in data-sdk yet).
+        // poolId 0 selects the canonical instance in the callback validation.
+        let lenderIdsMidnight: FlashLoanIdData[] = [];
+        if (MIDNIGHT_INSTANCES[chain] !== undefined) {
+            lenderIdsMidnight.push({
+                entityName: "MIDNIGHT",
+                entityId: "0",
+                pool: MIDNIGHT_INSTANCES[chain],
+            });
+        }
+
         let poolIdsBalancerV3: FlashLoanIdData[] = [];
         Object.entries(BALANCER_V3_FORKS).forEach(([dex, maps]) => {
             Object.entries(maps.vault).forEach(([chains, address]) => {
@@ -287,25 +277,8 @@ async function main() {
 
         // Uniswap V3-style flash-loan sources (immutable, factory-deployed pools only).
         // Validated in the callback by CREATE2 re-derivation, not a hardcoded pool address.
-        let dexIdsUniV3: UniV3FlashData[] = [];
-        Object.entries(UNISWAP_V3_FORKS).forEach(([dex, maps]: [string, any]) => {
-            const factory = maps.factories?.[chain];
-            if (!factory) return;
-            if (DEX_TO_CHAINS_EXCLUSIONS[dex]?.includes(chain)) return;
-            const forkType = maps.forkType?.[chain] ?? maps.forkType?.default;
-            const codeHash = maps.codeHash?.[chain] ?? maps.codeHash?.default;
-            if (!isImmutableUniV3FlashFork(dex, forkType, codeHash)) return;
-            const fam = V3_FLASH_FAMILY[(maps.callbackSelector ?? "").slice(0, 10)];
-            if (!fam) return; // only forks whose flash callback selector is standard
-            dexIdsUniV3.push({
-                entityName: dex,
-                forkId: String(maps.forkId),
-                factory,
-                codeHash,
-                familyId: fam.id,
-                isAlgebra: fam.isAlgebra,
-            });
-        });
+        // Collection lives in `uniV3FlashForks.ts` so the verifier can pin the emitted constants.
+        const dexIdsUniV3: UniV3FlashData[] = collectUniV3FlashForks(chain);
 
         // Presence of UniV4 determines whether this chain's Composer inherits SwapCallbacks
         let hasUniV4 = false;
@@ -400,6 +373,17 @@ async function main() {
         }
 
         /**
+         * Morpho Midnight (single canonical instance -> solo validation, poolId 0)
+         */
+        let constantsDataMidnight = ``;
+        let switchCaseContentMidnight = ``;
+        if (lenderIdsMidnight.length === 1) {
+            const {pool, entityName, entityId} = lenderIdsMidnight[0];
+            constantsDataMidnight += createConstant(pool, entityName);
+            switchCaseContentMidnight += createCaseSolo(entityName, entityId);
+        }
+
+        /**
          * Lista D
          */
         let constantsDataLista = ``;
@@ -464,19 +448,23 @@ async function main() {
             const byFamily: {[id: number]: UniV3FlashData[]} = {0: [], 1: [], 2: []};
             dexIdsUniV3.forEach((d) => byFamily[d.familyId].push(d));
             switchCaseContentUniV3 += `switch family\n`;
-            ([[0, "classic"], [1, "pancake"], [2, "algebra"]] as [number, "classic" | "pancake" | "algebra"][]).forEach(
-                ([fid, fname]) => {
-                    const group = byFamily[fid].sort((a, b) => (Number(a.forkId) < Number(b.forkId) ? -1 : 1));
-                    if (group.length === 0) return;
-                    familiesUniV3[fname] = true;
-                    switchCaseContentUniV3 += `case ${fid} {\n    switch and(UINT8_MASK, shr(88, calldataload(172)))\n`;
-                    group.forEach((d) => {
-                        constantsDataUniV3 += createffAddressConstant(d.factory, d.entityName, d.codeHash, d.isAlgebra);
-                        switchCaseContentUniV3 += createCaseV3(d.entityName, d.forkId);
-                    });
-                    switchCaseContentUniV3 += `    default { mstore(0, BAD_POOL) revert(0, 0x4) }\n}\n`;
-                }
-            );
+            (
+                [
+                    [0, "classic"],
+                    [1, "pancake"],
+                    [2, "algebra"],
+                ] as [number, "classic" | "pancake" | "algebra"][]
+            ).forEach(([fid, fname]) => {
+                const group = byFamily[fid].sort((a, b) => (Number(a.forkId) < Number(b.forkId) ? -1 : 1));
+                if (group.length === 0) return;
+                familiesUniV3[fname] = true;
+                switchCaseContentUniV3 += `case ${fid} {\n    switch and(UINT8_MASK, shr(88, calldataload(172)))\n`;
+                group.forEach((d) => {
+                    constantsDataUniV3 += createffAddressConstant(d.factory, d.entityName, d.codeHash, d.isAlgebra);
+                    switchCaseContentUniV3 += createCaseV3(d.entityName, d.forkId);
+                });
+                switchCaseContentUniV3 += `    default { mstore(0, BAD_POOL) revert(0, 0x4) }\n}\n`;
+            });
             switchCaseContentUniV3 += `default { mstore(0, BAD_POOL) revert(0, 0x4) }\n`;
         }
 
@@ -499,6 +487,11 @@ async function main() {
         writeOrDeleteCallback("AaveV2Callback.sol", lenderIdsAaveV2.length > 0, templateAaveV2(constantsDataV2, switchCaseContentV2));
         writeOrDeleteCallback("AaveV3Callback.sol", lenderIdsAaveV3.length > 0, templateAaveV3(constantsDataV3, switchCaseContentV3));
         writeOrDeleteCallback("MorphoCallback.sol", lenderIdsMorphoBlue.length > 0, templateMorphoBlue(constantsDataMorpho, switchCaseContentMorpho));
+        writeOrDeleteCallback(
+            "MidnightCallback.sol",
+            lenderIdsMidnight.length > 0,
+            templateMidnight(constantsDataMidnight, switchCaseContentMidnight)
+        );
         writeOrDeleteCallback("MoolahCallback.sol", lenderIdsLista.length > 0, templateMoolah(constantsDataLista, switchCaseContentLista));
         writeOrDeleteCallback(
             "BalancerV3Callback.sol",
@@ -520,7 +513,8 @@ async function main() {
                 lenderIdsMorphoBlue.length > 0,
                 poolIdsBalancerV3.length > 0,
                 lenderIdsLista.length > 0,
-                dexIdsUniV3.length > 0
+                dexIdsUniV3.length > 0,
+                lenderIdsMidnight.length > 0
             )
         );
 
@@ -531,7 +525,8 @@ async function main() {
                 lenderIdsMorphoBlue.length > 0,
                 lenderIdsAaveV2.length > 0,
                 lenderIdsAaveV3.length > 0,
-                dexIdsUniV3.length > 0
+                dexIdsUniV3.length > 0,
+                lenderIdsMidnight.length > 0
             )
         );
 

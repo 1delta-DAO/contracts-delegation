@@ -45,6 +45,7 @@ library LenderIds {
     uint256 internal constant UP_TO_FLUID = 8000;
     uint256 internal constant UP_TO_FLUID_SMART = 9000;
     uint256 internal constant UP_TO_GEARBOX_V3 = 10000;
+    uint256 internal constant UP_TO_MORPHO_MIDNIGHT = 11000;
 }
 
 /**
@@ -70,6 +71,8 @@ library LenderOps {
     uint256 internal constant FLUID_OPERATE_T1 = 12;
     /// @dev Gearbox V3 generic `MultiCall[]` relay — `botMulticall` / `openCreditAccount` entrypoints.
     uint256 internal constant GEARBOX_MULTICALL = 13;
+    /// @dev Morpho Midnight order-book `take` relay — consumes an off-chain-signed `Offer` (lend = buy units, borrow = sell units).
+    uint256 internal constant MIDNIGHT_TAKE = 14;
 }
 
 /**
@@ -80,6 +83,8 @@ library FlashLoanIds {
     uint256 internal constant UNISWAP_V3 = 1;
     uint256 internal constant AAVE_V3 = 2;
     uint256 internal constant AAVE_V2 = 3;
+    /// @dev Morpho Midnight multi-token `flashLoan(address[],uint256[],callback,data)`.
+    uint256 internal constant MORPHO_MIDNIGHT = 4;
 }
 
 /**
