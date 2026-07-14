@@ -10,6 +10,9 @@ import {Masks} from "../../shared/masks/Masks.sol";
 /**
  * @notice Lending base contract that wraps Morpho Midnight.
  *
+ * @dev Full reference, calldata layouts, and security assumptions: MIDNIGHT.md (this directory).
+ *      Flash-loan trust model: ../flashLoan/README.md.
+ *
  * @dev Midnight is a fixed-rate, fixed-maturity, order-book lending primitive - NOT a Morpho Blue
  * fork. There is no pool `supply`/`borrow`: lending and borrowing both happen through `take`, which
  * consumes an off-chain-signed maker `Offer` (lend = buy zero-coupon credit units, borrow = sell debt
