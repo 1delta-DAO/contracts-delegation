@@ -25,3 +25,6 @@ docs/
 # Reports
 reports/
 
+
+# local contract-verification standard-json inputs (reproducible via hardhat compile)
+verification/

@@ -1,6 +1,6 @@
-import {ethers} from "hardhat";
-import {OneDeltaComposerRobinhood__factory} from "../../../types";
-import {Chain} from "@1delta/chain-registry";
+import { ethers } from "hardhat";
+import { OneDeltaComposerRobinhood__factory } from "../../../types";
+import { Chain } from "@1delta/chain-registry";
 
 async function main() {
     const accounts = await ethers.getSigners();
@@ -11,7 +11,7 @@ async function main() {
 
     // Buffer the gas price: robinhood's base fee moves and a bare getGasPrice()
     // can land below the block base fee ("max fee per gas less than block base fee").
-    const gp = (await operator.getGasPrice()).mul(2);
+    const gp = (await operator.getGasPrice()).mul(11).div(10);
 
     console.log("gasPrice", gp.toNumber() / 1e9);
 
@@ -23,7 +23,7 @@ async function main() {
     const gasLimit = (await operator.estimateGas(deployTx)).mul(13).div(10);
     console.log("gasLimit", gasLimit.toString());
 
-    const composer = await new OneDeltaComposerRobinhood__factory(operator).deploy({gasPrice: gp, gasLimit});
+    const composer = await new OneDeltaComposerRobinhood__factory(operator).deploy({ gasPrice: gp, gasLimit });
     await composer.deployed();
 
     console.log("deployed expected to", composer.address);
