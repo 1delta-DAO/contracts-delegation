@@ -39,11 +39,14 @@ Governed by Aave Governance (DAO + cross-chain executor + timelock). Highest tru
 | Lender | Chains | Governance (on-chain verified) | Tier | Reason accepted |
 |---|---|---|---|---|
 | `SPARK` | ethereum, gnosis | Sky/MakerDAO SubDAO, timelock-gated, multi-audit, multi-B TVL | **Strong** | Reputable DAO (Sky), not single-EOA |
-| `XLEND` (Extra Finance) | base, op | **24h TimelockController + 3-of-6 Gnosis Safe** executor (both chains); BlockSec/PeckShield/Sherlock audits | **Strong** | Timelock + multisig; single EOA cannot upgrade |
 | `HYPERLEND` | hyperevm | Aave-recognized "friendly fork"; team multisig; Ackee/Cantina/Pashov audits; ~$540M | **Strong (fork)** | Well-audited, multisig-governed |
-| `KINZA` | bnb | **4h timelock + 2-of-3 Safe** proposer; Binance-Labs-backed | **Adequate** | Timelock + multisig (short delay, low threshold; TVL now small) |
 | `YEI` (main market only) | sei | **24h timelock + 4-of-10 Safe** | **Adequate** | Timelock + multisig. **YEI_SOLV market rejected** (no timelock) |
-| `FATHOM` | xdc | **3-of-5 Gnosis Safe, NO timelock**; Halborn-audited, doxxed team | **Borderline** | Multisig (not EOA), but no timelock; tiny TVL |
+
+> Removed since the first cut (still governance-safe, but dropped): **`XLEND`** (base/op, 24h + 3/6)
+> and **`KINZA`** (bnb, 4h + 2/3) — removed for **coverage** (assets already served by Aave V3 on
+> those chains). **`FATHOM`** (xdc, 3/5 no-timelock) — removed with flash loans frozen at the protocol.
+> After these, the only non-vanilla/non-Spark Aave forks are **HYPERLEND**, **YEI**, and the Pulse
+> exception **PHIAT**.
 
 ## 3. Aave forks — ACCEPTED as EXCEPTIONS (below strong-gov bar; kept for chain coverage)
 

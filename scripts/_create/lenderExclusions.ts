@@ -129,6 +129,11 @@ export const FLASH_LOAN_LENDER_EXCLUSIONS = {
         "COLEND", // Core — flash loans frozen
         "COLEND_LSTBTC", // Core — flash loans frozen
         "FATHOM", // XDC — flash loans frozen/disabled
+        // Removed for COVERAGE, not governance — these are safely governed, but their assets
+        // are already supported by other lenders on the same chains, so they add no unique
+        // flash-loan coverage. Dropped to shrink the trusted set before freeze (2026-07).
+        "KINZA", // BNB — 4h timelock + 2/3 Safe, but assets covered by Aave V3 on BNB
+        "XLEND", // Base + Optimism (Extra Finance) — assets covered by Aave V3
     ] as string[],
     BY_CHAIN: {
         // Ethereum mainnet — drop niche Aave V2/V3 forks that are rarely flash-loaned from the composer.
@@ -137,14 +142,8 @@ export const FLASH_LOAN_LENDER_EXCLUSIONS = {
             // Aave V2 fork — restricted; only the canonical Aave V2 flash-loan source is kept on mainnet.
             // (PHIAT is kept on PulseChain — its main deployment — but not on Ethereum.)
             "PHIAT",
-            // Kinza is EOA-governed on mainnet (timelocked only on BNB, which is kept).
-            "KINZA",
         ],
-        // Mantle — Kinza is EOA-governed here (kept on BNB where it is timelocked).
-        "5000": [
-            "KINZA",
-        ],
-        // (PRIME_FI is now removed on every chain via ALWAYS — see above.)
+        // (KINZA and PRIME_FI are now removed on every chain via ALWAYS — see above.)
         // Abstract (2741) — Aave V3 fork restricted; keep only the canonical Aave V3 flash-loan source.
         "2741": [
             "KONA_LEND",

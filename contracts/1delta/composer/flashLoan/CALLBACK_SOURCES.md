@@ -54,15 +54,24 @@ only zkStack deployment is **Abstract**, already integrated).
 Weak/EOA-governed forks were blacklisted in earlier rounds (see ACCEPTED_LENDERS.md §5). Remaining
 accepted set:
 
-- **STRONG_GOV:** Aave official (`AAVE_V3`, Prime, EtherFi, Horizon, zkSync, `AAVE_V2`), Spark,
-  HyperLend, Kinza (4h timelock + 2/3), Yei-main (24h + 4/10), XLend (24h + 3/6).
+- **Vanilla Aave (official Aave DAO):** `AAVE_V3` (canonical, ~20 chains), `AAVE_V3_PRIME`,
+  `AAVE_V3_ETHER_FI`, `AAVE_V3_HORIZON`, `AAVE_V3_POOL` (zkSync), `AAVE_V2` (eth/polygon/avax).
+- **Spark:** `SPARK` (eth, gnosis) — Sky/Maker licensed fork, strong governance.
+- **Other forks (STRONG_GOV):** `HYPERLEND` (HyperEVM), `YEI`-main (Sei, 24h timelock + 4/10).
 - **MANUAL ACCEPT (dominant-lender):** `PHIAT` (PulseChain — kept on Pulse, excluded on Ethereum).
 
-**Removed in this round (frozen/disabled flash loans):** `COLEND`, `COLEND_LSTBTC` (Core) and
-`FATHOM` (XDC). Their flash loans are frozen at the protocol, so there is no reason to carry them into
-the immutable trusted set; both were 2-of-3 / 3-of-5 no-timelock multisigs (below the strong-gov bar).
-Blacklisted in `scripts/_create/lenderExclusions.ts` (+ SDK `flashLoanExclusions.ts`). This deletes the
-Core and XDC `AaveV3Callback.sol` entirely.
+After the removals below, the ONLY non-vanilla / non-Spark Aave forks remaining are **HYPERLEND**,
+**YEI**, and **PHIAT** (the Pulse exception).
+
+**Removed:**
+- `COLEND`, `COLEND_LSTBTC` (Core), `FATHOM` (XDC) — flash loans frozen/disabled at the protocol
+  (below the strong-gov bar anyway). Deletes the Core and XDC `AaveV3Callback.sol`.
+- `KINZA` (BNB), `XLEND` (Base/Optimism) — removed for **coverage, not governance**: both are safely
+  governed (Kinza 4h timelock + 2/3; XLend 24h + 3/6), but their assets are already supported by
+  Aave V3 on the same chains, so they add no unique flash-loan coverage. BNB/Base/Optimism keep
+  vanilla Aave V3.
+
+All in `scripts/_create/lenderExclusions.ts` (+ SDK `flashLoanExclusions.ts`).
 
 ## 3. Uniswap-V3-style forks (flash callbacks)
 
