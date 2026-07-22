@@ -12,7 +12,7 @@ import {Masks} from "../../shared/masks/Masks.sol";
  *         re-enters our callback when WE initiated the flash — self-initiation is inherent.
  *         The callback additionally recomputes the pool's CREATE2 address from
  *         (factory, token0, token1, fee) and rejects any caller that is not the deterministic pool.
- * @author 1delta Labs AG
+ * @author 1delta
  * @custom:calldata-offset-table
  * | Offset | Length (bytes) | Description                                              |
  * |--------|----------------|----------------------------------------------------------|

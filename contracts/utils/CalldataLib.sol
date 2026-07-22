@@ -1058,12 +1058,38 @@ library CalldataLib {
     }
 
     /// @notice withdrawCollateral. `args` = abi.encode(Market, collateralIndex, assets, onBehalf, receiver).
-    function encodeMidnightWithdrawCollateral(address midnight, bytes memory args) internal pure returns (bytes memory) {
+    /// @dev `args` = abi.encode(Market, collateralIndex, assets, onBehalf, receiver); the `assets` inside
+    ///      `args` is a placeholder — the header `amount` is injected on-chain.
+    function encodeMidnightWithdrawCollateral(address midnight, uint128 amount, bytes memory args)
+        internal
+        pure
+        returns (bytes memory)
+    {
         return abi.encodePacked(
             uint8(ComposerCommands.LENDING), //
             uint8(LenderOps.WITHDRAW),
             MIDNIGHT_ID,
             midnight,
+            amount,
+            uint16(args.length),
+            args
+        );
+    }
+
+    /// @notice Withdraw the FULL collateral of `collateralIndex`: the composer reads
+    ///         `collateral(id, caller, collateralIndex)` on-chain (exact). `id` = IdLib.toId(market).
+    function encodeMidnightWithdrawCollateralMax(address midnight, bytes32 id, bytes memory args)
+        internal
+        pure
+        returns (bytes memory)
+    {
+        return abi.encodePacked(
+            uint8(ComposerCommands.LENDING), //
+            uint8(LenderOps.WITHDRAW),
+            MIDNIGHT_ID,
+            midnight,
+            uint128(type(uint112).max),
+            id,
             uint16(args.length),
             args
         );
@@ -1096,13 +1122,61 @@ library CalldataLib {
         );
     }
 
+    /// @notice Repay a borrower's EXACT current debt on Midnight: the composer reads `debt(id, onBehalf)`
+    ///         on-chain and repays min(router loan-token balance, debt units) — no over-repay revert, no dust.
+    /// @dev Mirrors Aave's max-repay (which passes the debt token so the composer can read the live debt).
+    ///      The units header is the max-uint112 sentinel; a 32-byte market `id` (== IdLib.toId(market)) is
+    ///      inserted before `args`. `args` = abi.encode(Market, units, onBehalf, callback, data) as for a
+    ///      normal repay (the `units` field inside `args` is overwritten on-chain, so it may be a placeholder).
+    function encodeMidnightRepayExactDebt(
+        address midnight,
+        address loanToken,
+        bytes32 id,
+        bytes memory args
+    )
+        internal
+        pure
+        returns (bytes memory)
+    {
+        return abi.encodePacked(
+            encodeApprove(loanToken, midnight), // always approve
+            uint8(ComposerCommands.LENDING),
+            uint8(LenderOps.REPAY),
+            MIDNIGHT_ID,
+            midnight,
+            loanToken,
+            uint128(type(uint112).max), // exact-debt sentinel
+            id, // 32-byte market id (present only in exact-debt mode)
+            uint16(args.length),
+            args
+        );
+    }
+
     /// @notice withdraw (redeem credit units for the loan token). `args` = abi.encode(Market, units, onBehalf, receiver).
-    function encodeMidnightWithdraw(address midnight, bytes memory args) internal pure returns (bytes memory) {
+    /// @dev `args` = abi.encode(Market, units, onBehalf, receiver); the `units` inside `args` is a
+    ///      placeholder — the header `amount` is injected on-chain.
+    function encodeMidnightWithdraw(address midnight, uint128 amount, bytes memory args) internal pure returns (bytes memory) {
         return abi.encodePacked(
             uint8(ComposerCommands.LENDING), //
             uint8(LenderOps.WITHDRAW_LENDING_TOKEN),
             MIDNIGHT_ID,
             midnight,
+            amount,
+            uint16(args.length),
+            args
+        );
+    }
+
+    /// @notice Redeem ALL redeemable credit: the composer reads `updatePositionView(market, id, caller)`'s
+    ///         `newCredit` on-chain (accrual-aware). `id` = IdLib.toId(market).
+    function encodeMidnightWithdrawMax(address midnight, bytes32 id, bytes memory args) internal pure returns (bytes memory) {
+        return abi.encodePacked(
+            uint8(ComposerCommands.LENDING), //
+            uint8(LenderOps.WITHDRAW_LENDING_TOKEN),
+            MIDNIGHT_ID,
+            midnight,
+            uint128(type(uint112).max),
+            id,
             uint16(args.length),
             args
         );

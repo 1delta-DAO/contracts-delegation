@@ -7,7 +7,8 @@ import {DeltaErrors} from "../../../../../shared/errors/Errors.sol";
 
 /**
  * @title Aave V3 flash loan callback (zkSync Era)
- * @dev Pool address is a placeholder — update with the actual zkSync Era Aave V3 Pool before deploy.
+ * @dev Pool address is the canonical zkSync Era Aave V3 Pool proxy
+ *      (verified against bgd-labs/aave-address-book and the ZKsync Era explorer).
  */
 contract AaveV3FlashLoanCallback is Masks, DeltaErrors {
     address private constant AAVE_V3_POOL = 0x78e30497a3c7527d953c6B1E3541b021A98Ac43c;

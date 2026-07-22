@@ -2,7 +2,6 @@
 
 pragma solidity 0.8.34;
 
-import {AaveV2FlashLoanCallback} from "./callbacks/AaveV2Callback.sol";
 import {AaveV3FlashLoanCallback} from "./callbacks/AaveV3Callback.sol";
 import {MoolahFlashLoanCallback} from "./callbacks/MoolahCallback.sol";
 import {MorphoFlashLoanCallback} from "./callbacks/MorphoCallback.sol";
@@ -10,10 +9,9 @@ import {UniV3FlashLoanCallback} from "./callbacks/UniV3Callback.sol";
 
 /**
  * @title Flash loan callbacks - these are chain-specific
- * @author 1delta Labs AG
+ * @author 1delta
  */
 contract FlashLoanCallbacks is
-    AaveV2FlashLoanCallback,
     AaveV3FlashLoanCallback,
     MoolahFlashLoanCallback,
     MorphoFlashLoanCallback,
@@ -34,7 +32,6 @@ contract FlashLoanCallbacks is
         internal
         virtual
         override(
-            AaveV2FlashLoanCallback,
             AaveV3FlashLoanCallback,
             MoolahFlashLoanCallback,
             MorphoFlashLoanCallback,

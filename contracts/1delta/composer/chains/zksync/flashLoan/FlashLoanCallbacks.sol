@@ -6,7 +6,7 @@ import {AaveV3FlashLoanCallback} from "./callbacks/AaveV3Callback.sol";
 
 /**
  * @title Flash loan callbacks - chain-specific
- * @author 1delta Labs AG
+ * @author 1delta
  */
 contract FlashLoanCallbacks is AaveV3FlashLoanCallback {
     function _deltaComposeInternal(

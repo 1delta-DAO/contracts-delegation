@@ -6,7 +6,7 @@ import {Masks} from "../../shared/masks/Masks.sol";
 
 /**
  * @title Morpho flash loans
- * @author 1delta Labs AG
+ * @author 1delta
  */
 contract MorphoFlashLoans is Masks {
     /**

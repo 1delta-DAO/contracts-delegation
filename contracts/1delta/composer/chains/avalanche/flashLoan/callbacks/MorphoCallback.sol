@@ -6,46 +6,66 @@ import {Masks} from "../../../../../shared/masks/Masks.sol";
 import {DeltaErrors} from "../../../../../shared/errors/Errors.sol";
 
 /**
- * @title Take an Aave v3 flash loan callback
+ * @title All Morpho Blue flash callbacks
  */
-contract AaveV3FlashLoanCallback is Masks, DeltaErrors {
-    // Aave V3 style lender pool addresses
-    address private constant FATHOM = 0x70d8005E3c8C7e383FE35Fa40156042F3393449F;
+contract MorphoFlashLoanCallback is Masks, DeltaErrors {
+    /// @dev Constant MorphoB address
+    address private constant MORPHO_BLUE = 0x895383274303AA19fe978AFB4Ac55C7f094f982C;
 
     /**
-     * @notice Handles Aave V3 flash loan callback
-     * @dev Validates caller, extracts original caller from params, and executes compose operations
-     * @param initiator The address that initiated the flash loan
-     * @return Always returns true on success
+     * Morpho blue callbacks
+     */
+
+    /**
+     * @notice Handles Morpho Blue flash loan callback
+     */
+    function onMorphoFlashLoan(uint256, bytes calldata) external {
+        _onMorphoCallback();
+    }
+
+    /**
+     * @notice Handles Morpho Blue supply callback
+     */
+    function onMorphoSupply(uint256, bytes calldata) external {
+        _onMorphoCallback();
+    }
+
+    /**
+     * @notice Handles Morpho Blue repay callback
+     */
+    function onMorphoRepay(uint256, bytes calldata) external {
+        _onMorphoCallback();
+    }
+
+    /**
+     * @notice Handles Morpho Blue supply collateral callback
+     */
+    function onMorphoSupplyCollateral(uint256, bytes calldata) external {
+        _onMorphoCallback();
+    }
+
+    /**
+     * @notice Internal callback handler for all Morpho Blue operations
+     * @dev Morpho Blue is immutable and their flash loans are callbacks to msg.sender.
+     * Since it is universal batching and the same validation for all Morpho callbacks, we can use the same logic everywhere
      * @custom:calldata-offset-table
      * | Offset | Length (bytes) | Description                  |
      * |--------|----------------|------------------------------|
      * | 0      | 20             | origCaller                   |
      * | 20     | 1              | poolId                       |
-     * | 21     | Variable       | composeOperations           |
+     * | 21     | Variable       | composeOperations            |
      */
-    function executeOperation(
-        address,
-        uint256,
-        uint256,
-        address initiator,
-        bytes calldata params // user params
-    )
-        external
-        returns (bool)
-    {
+    function _onMorphoCallback() internal {
         address origCaller;
         uint256 calldataLength;
         assembly {
-            calldataLength := params.length
-
             // validate caller
             // - extract id from params
-            let firstWord := calldataload(196)
+            let firstWord := calldataload(100)
 
             switch and(UINT8_MASK, shr(88, firstWord))
-            case 15 {
-                if xor(caller(), FATHOM) {
+            case 0 {
+                if xor(caller(), MORPHO_BLUE) {
                     mstore(0, INVALID_CALLER)
                     revert(0, 0x4)
                 }
@@ -54,30 +74,21 @@ contract AaveV3FlashLoanCallback is Masks, DeltaErrors {
                 mstore(0, INVALID_FLASH_LOAN)
                 revert(0, 0x4)
             }
-            // We require to self-initiate
-            // this prevents caller impersonation,
-            // but ONLY if the caller address is
-            // an Aave V3 type lending pool
-            if xor(address(), initiator) {
-                mstore(0, INVALID_INITIATOR)
-                revert(0, 0x4)
-            }
             // Slice the original caller off the beginning of the calldata
             // From here on we have validated that the origCaller
             // was attached in the deltaCompose function
             // Otherwise, this would be a vulnerability
             origCaller := shr(96, firstWord)
             // shift / slice params
-            calldataLength := sub(calldataLength, 21)
+            calldataLength := sub(calldataload(68), 21)
         }
         // within the flash loan, any compose operation
         // can be executed
         _deltaComposeInternal(
             origCaller,
-            217, // 196 +21 as constant offset
+            121, // offset is constant (100 native + 21)
             calldataLength
         );
-        return true;
     }
 
     /**
@@ -89,4 +100,3 @@ contract AaveV3FlashLoanCallback is Masks, DeltaErrors {
      */
     function _deltaComposeInternal(address callerAddress, uint256 offset, uint256 length) internal virtual {}
 }
-

@@ -15,7 +15,7 @@ import {DeadLogger} from "../shared/logs/DeadLogger.sol";
  * @title Base aggregator contract that needs overrides for explicit chains.
  *        Efficient batching through compact calldata usage.
  *        Needs to inherit callback implementations
- * @author 1delta Labs AG
+ * @author 1delta
  */
 abstract contract BaseComposer is
     DeadLogger,

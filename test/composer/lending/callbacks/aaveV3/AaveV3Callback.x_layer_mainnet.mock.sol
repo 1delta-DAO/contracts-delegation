@@ -14,7 +14,6 @@ contract AaveV3FlashLoanCallbackTest is BaseTest, DeltaErrors {
     AaveMockPool mockPool;
 
     address private AAVE_V3;
-    address private ZEROLEND;
 
     address private USDC;
 
@@ -47,16 +46,6 @@ contract AaveV3FlashLoanCallbackTest is BaseTest, DeltaErrors {
         replaceLendingPoolWithMock(AAVE_V3);
 
         bytes memory params = CalldataLib.encodeFlashLoan(USDC, 1e6, AAVE_V3, uint8(2), uint8(0), sweepCall());
-
-        vm.prank(user);
-        oneDV2.deltaCompose(params);
-    }
-
-    function test_unit_lending_flashloans_aaveV3_callback_zerolendPool() public {
-        // mock implementation
-        replaceLendingPoolWithMock(ZEROLEND);
-
-        bytes memory params = CalldataLib.encodeFlashLoan(USDC, 1e6, ZEROLEND, uint8(2), uint8(20), sweepCall());
 
         vm.prank(user);
         oneDV2.deltaCompose(params);
@@ -104,7 +93,6 @@ contract AaveV3FlashLoanCallbackTest is BaseTest, DeltaErrors {
 
     function getAddressFromRegistry() internal {
         AAVE_V3 = chain.getLendingController(Lenders.AAVE_V3);
-        ZEROLEND = chain.getLendingController(Lenders.ZEROLEND);
 
         // Get token addresses
         USDC = chain.getTokenAddress(Tokens.USDC);
@@ -112,7 +100,6 @@ contract AaveV3FlashLoanCallbackTest is BaseTest, DeltaErrors {
 
     function populateValidPools() internal {
         validPools.push(PoolCase({poolId: 0, poolAddr: AAVE_V3, asset: USDC}));
-        validPools.push(PoolCase({poolId: 20, poolAddr: ZEROLEND, asset: USDC}));
     }
 
     function mockERC20FunctionsForAllTokens() internal {

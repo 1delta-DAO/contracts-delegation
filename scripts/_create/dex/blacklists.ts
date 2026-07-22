@@ -3,9 +3,16 @@ import {DexProtocol} from "@1delta/dex-registry";
 
 /**
  * do not include DEXs on these chains for the hard-coded part
- * due to insufficient liquidity
+ * due to insufficient liquidity, OR — for the security exclusions below —
+ * because the fork's pool bytecode is not a confirmed immutable standard
+ * UniV3/Algebra pool (freeze-forever trust audit, 2026-07).
  */
 export const DEX_TO_CHAINS_EXCLUSIONS: {[dex: string]: string[]} = {
+    // ── Security exclusions: pool bytecode not confirmed immutable/standard, removed
+    //    before making the composers immutable (see CALLBACK_SOURCES.md). ──
+    [DexProtocol.METHLAB]: [Chain.MANTLE], // modified UniV3 (admin Whitelister + non-standard pool bytecode)
+    [DexProtocol.CRUST]: [Chain.MANTLE], // unverifiable pool bytecode — no public source/docs
+    [DexProtocol.UNAGI_V3]: [Chain.TAIKO_ALETHIA], // abandoned DODO white-label; pool swap/flash callback not source-verified
     [DexProtocol.SQUADSWAP_V3]: [Chain.ARBITRUM_ONE, Chain.BASE, Chain.BLAST, Chain.POLYGON_MAINNET, Chain.OP_MAINNET],
     [DexProtocol.SQUADSWAP_V2]: [Chain.ARBITRUM_ONE, Chain.BASE, Chain.BLAST, Chain.POLYGON_MAINNET, Chain.OP_MAINNET],
     [DexProtocol.WAGMI]: [

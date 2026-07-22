@@ -26,7 +26,7 @@ contract UniV3FlashLoanCallback is Masks, DeltaErrors {
     bytes32 private constant SUSHISWAP_V3_CODE_HASH = 0xe34f199b19b2b4f47f68442619d555527d244f78a3297ea89325f843f87b8b54;
     bytes32 private constant COREX_FF_FACTORY = 0xff526190295afb6b8736b14e4b42744fbd95203a3a0000000000000000000000;
     bytes32 private constant COREX_CODE_HASH = 0xe34f199b19b2b4f47f68442619d555527d244f78a3297ea89325f843f87b8b54;
-    bytes32 private constant ICECREAM_V3_FF_FACTORY = 0xffa8a3aad4f592b7f30d6514ee9a863a4ceff6531d0000000000000000000000;
+    bytes32 private constant ICECREAM_V3_FF_FACTORY = 0xfff9f83b79ca3a623da98ad431a52aa42ed0f3d5ef0000000000000000000000;
     bytes32 private constant ICECREAM_V3_CODE_HASH = 0x0c6b99bf88dc3398a8573e3192de0eb19c858afd9ac36e33030e16c4f569e598;
     bytes32 private constant MOLTEN_FF_FACTORY = 0xff24196b3f35e1b8313016b9f6641d605dcf48a76affffffffffffffffffffff;
     bytes32 private constant MOLTEN_CODE_HASH = 0xf96d2474815c32e070cd63233f06af5413efc5dcb430aee4ff18cc29007c562d;

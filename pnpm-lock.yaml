@@ -6,7 +6,7 @@ settings:
 
 overrides:
   '@1delta/chain-registry': ^0.0.6
-  '@1delta/data-sdk': ^0.0.28
+  '@1delta/data-sdk': ^0.0.31
 
 importers:
 
@@ -16,11 +16,11 @@ importers:
         specifier: ^0.0.6
         version: 0.0.6
       '@1delta/data-sdk':
-        specifier: ^0.0.28
-        version: 0.0.28
+        specifier: ^0.0.31
+        version: 0.0.31
       '@1delta/dex-registry':
-        specifier: ^0.0.103
-        version: 0.0.103
+        specifier: ^0.0.104
+        version: 0.0.104
       '@1delta/lender-registry':
         specifier: ^0.0.33
         version: 0.0.33
@@ -242,8 +242,8 @@ packages:
     resolution: {integrity: sha512-jtw7tm+k52BDN0DA9oGxClZrX39+kViwwdOlWiyjH+mgkHN0e5O6MCbQLf2q2dl8sW8On9Lr6V2QHZmiIx3Wbg==}
     engines: {node: '>=20'}
 
-  '@1delta/data-sdk@0.0.28':
-    resolution: {integrity: sha512-yYsKACeQ+SKslW7ip5bZ07MiVu7oOUOgbQbadECptkhQ+V7I0PzumwCMSqp3xk25xoVxYcQBjsvWvAHa9WViig==}
+  '@1delta/data-sdk@0.0.31':
+    resolution: {integrity: sha512-xFDmMfVHEiAmrJxpt731Mw9JkfoJXP/rDeBgO5wnLClz6rzViWFowQ0IlymYGjCjgSfpAIVYFXY1plKikea7cw==}
     engines: {node: '>=20'}
 
   '@1delta/dex-registry@0.0.101':
@@ -254,8 +254,8 @@ packages:
     resolution: {integrity: sha512-UAtapvr+DU+Q+/5NQYe7O50ufKUdpeVmnJW/8B2CYYiIdf/hXrrmkeNqK0FY3VfWFmJuxcqJb6ozZVbqKV1gBQ==}
     engines: {node: '>=20'}
 
-  '@1delta/dex-registry@0.0.103':
-    resolution: {integrity: sha512-txps1ZbjHUMDfs2drJMU7+O9u5/iVlF9fA+JamReYlUVKtC7+1YZK7TWI6/+w/Ky2wzEFqK41DIA7IiSWecuyw==}
+  '@1delta/dex-registry@0.0.104':
+    resolution: {integrity: sha512-UeSGi0/42UYVWNbQduA5I81S/MZpHF9BnqmcV2LJGIkIuYLGBHXiVK/TNx1nblfc9R/bNpDkpjKojo3UI0wQvg==}
     engines: {node: '>=20'}
 
   '@1delta/lender-registry@0.0.30':
@@ -268,6 +268,10 @@ packages:
 
   '@1delta/lender-registry@0.0.33':
     resolution: {integrity: sha512-+V3akyd4KtSONuicV2Sod3J7hc1Jzh2Ykd/bd6B6fUAi0tekcgAOjtExQkMv4nBC9eqsowa9ArT5rCEyvUndtg==}
+    engines: {node: '>=20'}
+
+  '@1delta/lender-registry@0.0.34':
+    resolution: {integrity: sha512-EVBB2UGGKjVGo0H1Sv+mnL7T1WmyEHKCY41sxgDfMhfgSayt+tXgCnrpana8nn62dkKWyThP60CRMuZTyqO4dg==}
     engines: {node: '>=20'}
 
   '@1delta/margin-fetcher@0.0.308':
@@ -8096,7 +8100,7 @@ snapshots:
     dependencies:
       '@1delta/abis': 0.0.21
       '@1delta/calldatalib': 0.0.54(viem@2.54.6(bufferutil@4.1.0)(typescript@4.9.5)(utf-8-validate@5.0.10))
-      '@1delta/data-sdk': 0.0.28
+      '@1delta/data-sdk': 0.0.31
       '@1delta/dex-registry': 0.0.101
       '@1delta/lender-registry': 0.0.32
       '@1delta/wnative': 0.0.8
@@ -8116,7 +8120,7 @@ snapshots:
 
   '@1delta/chain-registry@0.0.6': {}
 
-  '@1delta/data-sdk@0.0.28': {}
+  '@1delta/data-sdk@0.0.31': {}
 
   '@1delta/dex-registry@0.0.101':
     dependencies:
@@ -8128,10 +8132,10 @@ snapshots:
       '@1delta/chain-registry': 0.0.6
       '@1delta/lender-registry': 0.0.33
 
-  '@1delta/dex-registry@0.0.103':
+  '@1delta/dex-registry@0.0.104':
     dependencies:
       '@1delta/chain-registry': 0.0.6
-      '@1delta/lender-registry': 0.0.33
+      '@1delta/lender-registry': 0.0.34
 
   '@1delta/lender-registry@0.0.30': {}
 
@@ -8139,11 +8143,13 @@ snapshots:
 
   '@1delta/lender-registry@0.0.33': {}
 
+  '@1delta/lender-registry@0.0.34': {}
+
   '@1delta/margin-fetcher@0.0.308(@opentelemetry/api@1.9.1)(@types/node@15.14.9)(bufferutil@4.1.0)(typescript@4.9.5)(utf-8-validate@5.0.10)(vite@8.1.3(@types/node@15.14.9)(esbuild@0.28.1)(tsx@4.23.0))':
     dependencies:
       '@1delta/abis': 0.0.21
       '@1delta/calldata-sdk': 0.0.155(bufferutil@4.1.0)(typescript@4.9.5)(utf-8-validate@5.0.10)
-      '@1delta/data-sdk': 0.0.28
+      '@1delta/data-sdk': 0.0.31
       '@1delta/dex-registry': 0.0.102
       '@1delta/lender-registry': 0.0.33
       '@1delta/providers': 0.0.60(@opentelemetry/api@1.9.1)(@types/node@15.14.9)(vite@8.1.3(@types/node@15.14.9)(esbuild@0.28.1)(tsx@4.23.0))
@@ -8174,7 +8180,7 @@ snapshots:
   '@1delta/providers@0.0.60(@opentelemetry/api@1.9.1)(@types/node@15.14.9)(vite@8.1.3(@types/node@15.14.9)(esbuild@0.28.1)(tsx@4.23.0))':
     dependencies:
       '@1delta/chain-registry': 0.0.6
-      '@1delta/data-sdk': 0.0.28
+      '@1delta/data-sdk': 0.0.31
       vitest: 4.1.10(@opentelemetry/api@1.9.1)(@types/node@15.14.9)(vite@8.1.3(@types/node@15.14.9)(esbuild@0.28.1)(tsx@4.23.0))
     transitivePeerDependencies:
       - '@edge-runtime/vm'

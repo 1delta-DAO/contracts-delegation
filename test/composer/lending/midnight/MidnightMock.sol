@@ -118,6 +118,39 @@ contract MidnightMock {
         IERC20Min(token).transfer(receiver, assets);
     }
 
+    // exact-debt read support: mirrors the real `debt(bytes32 id, address user) view returns (uint128)`
+    mapping(bytes32 => mapping(address => uint128)) public debtBook;
+
+    function setDebt(bytes32 id, address user, uint128 units) external {
+        debtBook[id][user] = units;
+    }
+
+    function debt(bytes32 id, address user) external view returns (uint128) {
+        return debtBook[id][user];
+    }
+
+    // max-withdraw read support:
+    // - collateral(id,user,index): exact stored collateral (never accrues) — for withdrawCollateral-max
+    // - updatePositionView(market,id,user): accrual-aware redeemable credit (return[0]) — for withdraw-max
+    mapping(bytes32 => mapping(address => uint128)) public creditBook;
+    mapping(bytes32 => mapping(address => mapping(uint256 => uint128))) public collateralBook;
+
+    function setCredit(bytes32 id, address user, uint128 units) external {
+        creditBook[id][user] = units;
+    }
+
+    function setCollateral(bytes32 id, address user, uint256 index, uint128 amount) external {
+        collateralBook[id][user][index] = amount;
+    }
+
+    function collateral(bytes32 id, address user, uint256 index) external view returns (uint128) {
+        return collateralBook[id][user][index];
+    }
+
+    function updatePositionView(Market memory, bytes32 id, address user) external view returns (uint128, uint128, uint128) {
+        return (creditBook[id][user], 0, 0);
+    }
+
     function repay(Market memory market, uint256 units, address onBehalf, address callback, bytes memory) external {
         lastFn = "repay";
         lastCaller = msg.sender;

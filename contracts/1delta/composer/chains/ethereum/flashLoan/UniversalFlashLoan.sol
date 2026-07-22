@@ -13,7 +13,7 @@ import {DeltaErrors} from "../../../../shared/errors/Errors.sol";
 
 /**
  * @title Flash loan aggregator
- * @author 1delta Labs AG
+ * @author 1delta
  */
 contract UniversalFlashLoan is
     MorphoFlashLoans,

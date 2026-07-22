@@ -59,9 +59,42 @@ Morpho / Silo here.
 ### Provider-side callbacks are forced to zero
 
 `take` (`takerCallback`, head word 5) and `repay` (`callback`, head word 3) are overwritten with
-`address(0)`. Midnight therefore pulls the loan token from `msg.sender` (the composer) and **never
-invokes a caller-supplied Midnight-side callback** — closing a re-entrancy / fund-redirection vector.
-Atomicity for the lend/borrow legs is provided by the surrounding flash loan, not a taker callback.
+`address(0)`, so the composer never registers **itself or a caller-supplied address in those two
+slots** as a Midnight-side callback. The composer implements none of the Midnight lending-callback
+receivers (`onRepay` / `onBuy` / `onSell`) — only `onFlashLoan` (see Flash loans below).
+
+- **`repay`** with `callback == 0` is genuinely callback-free: Midnight gates `onRepay` on
+  `callback != 0` and otherwise just does `transferFrom(msg.sender, …)`
+  ([Midnight.sol#L538-L556](https://github.com/morpho-org/midnight/blob/main/src/Midnight.sol#L538-L557)).
+  The `data` field is only ever forwarded to `onRepay`, so with `callback == 0` it is inert — the
+  encoder should pass empty `data`.
+
+> #### Audit note — `take` still makes a caller-influenceable external call (accepted, bounded)
+>
+> Zeroing `takerCallback` does **not** make `take` callback-free. The maker-signed `Offer` carries its
+> own `offer.callback` (invoked as `onBuy`/`onSell`) and `offer.ratifier` (invoked as `isRatified`);
+> both fire during `take` regardless of `takerCallback`, and the composer **cannot** zero them without
+> invalidating the maker's signature ([Midnight.sol#L387, L484, L497](https://github.com/morpho-org/midnight/blob/main/src/Midnight.sol#L363-L515)).
+> `offer.callback.onBuy/onSell` is a **non-view** call to a caller-supplied address.
+>
+> This is assessed as **low / bounded, not a drain**, on these grounds:
+> 1. **No passive surface.** The composer implements no `onBuy`/`onSell`, so it can never be a callback
+>    target a third party's transaction triggers; `offer.callback` fires only inside the caller's own
+>    `take`, in a batch the caller themselves initiated.
+> 2. **Reentrancy is scoped to the caller.** Any re-entry runs with `callerAddress = the reentrant
+>    `msg.sender``, and the composer holds no funds between transactions and pins `onBehalf`/`taker`
+>    to `callerAddress`, so it can only reach the reentrant caller's own funds — never a victim's.
+> 3. **The maker is the exposed party, not the taker.** By Midnight's settlement ordering the maker
+>    callback fires either *after* the taker has already paid (lending side: `onSell`, post-settlement)
+>    or with the **maker as `payer`** (borrow side: `onBuy`, maker funds the fill). The most a malicious
+>    maker could reach is transient/excess balance the taker left on the composer — the same exposure
+>    every external call the composer makes already carries, covered by the standing invariant.
+>
+> Consequence: `take`'s safety rests on the whole-composer reentrancy invariant (authenticated
+> `callerAddress` + no persistent funds), **not** on "take makes no external call." Revisit if the
+> composer ever starts holding balances across ops or caching state keyed on `msg.sender`. Defense-in-
+> depth option: wrap `take` in `nonReentrant` (as `ComposerLite` does; `BaseComposer` deliberately
+> omits it to allow flash/swap-callback re-entry).
 
 ### External assumptions (must hold for correct + safe use)
 

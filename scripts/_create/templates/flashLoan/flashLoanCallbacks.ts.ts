@@ -7,7 +7,7 @@ export const templateFlashLoan = (
     hasUniV3 = false,
     hasMidnight = false
 ) => {
-    let cbs: {imports: string; name: string}[] = [];
+    let cbs: { imports: string; name: string }[] = [];
 
     if (hasAaveV2) {
         cbs.push({
@@ -69,7 +69,7 @@ ${cbs.map((a) => a.imports + `\n`).join("")}
 
 /**
  * @title Flash loan callbacks - these are chain-specific
- * @author 1delta Labs AG
+ * @author 1delta
  */
 contract FlashLoanCallbacks ${cbs.length === 0 ? "" : "is"}
 ${cbs.map((a) => a.name).join(",\n") + (cbs.length !== 1 ? "//" : "")}
@@ -88,10 +88,9 @@ ${cbs.map((a) => a.name).join(",\n") + (cbs.length !== 1 ? "//" : "")}
     )
         internal
         virtual
-        ${
-            cbs.length === 0
-                ? ""
-                : `override(
+        ${cbs.length === 0
+            ? ""
+            : `override(
             ${cbs.map((a) => a.name).join(",\n") + (cbs.length !== 1 ? "//" : "")}
         )`
         }

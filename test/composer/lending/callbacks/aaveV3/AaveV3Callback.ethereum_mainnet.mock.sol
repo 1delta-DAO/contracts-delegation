@@ -18,7 +18,6 @@ contract AaveV3FlashLoanCallbackTest is BaseTest, DeltaErrors {
     address private AAVE_V3_ETHER_FI;
     address private AAVE_V3_HORIZON;
     address private SPARK;
-    address private KINZA;
 
     address private USDC;
 
@@ -96,16 +95,6 @@ contract AaveV3FlashLoanCallbackTest is BaseTest, DeltaErrors {
         oneDV2.deltaCompose(params);
     }
 
-    function test_unit_lending_flashloans_aaveV3_callback_kinzaPool() public {
-        // mock implementation
-        replaceLendingPoolWithMock(KINZA);
-
-        bytes memory params = CalldataLib.encodeFlashLoan(USDC, 1e6, KINZA, uint8(2), uint8(82), sweepCall());
-
-        vm.prank(user);
-        oneDV2.deltaCompose(params);
-    }
-
     function test_unit_lending_flashloans_aaveV3_callback_wrongCallerRevert() public {
         for (uint256 i = 0; i < validPools.length; i++) {
             bytes memory params =
@@ -152,7 +141,6 @@ contract AaveV3FlashLoanCallbackTest is BaseTest, DeltaErrors {
         AAVE_V3_ETHER_FI = chain.getLendingController(Lenders.AAVE_V3_ETHER_FI);
         AAVE_V3_HORIZON = chain.getLendingController(Lenders.AAVE_V3_HORIZON);
         SPARK = chain.getLendingController(Lenders.SPARK);
-        KINZA = chain.getLendingController(Lenders.KINZA);
 
         // Get token addresses
         USDC = chain.getTokenAddress(Tokens.USDC);
@@ -164,7 +152,6 @@ contract AaveV3FlashLoanCallbackTest is BaseTest, DeltaErrors {
         validPools.push(PoolCase({poolId: 2, poolAddr: AAVE_V3_ETHER_FI, asset: USDC}));
         validPools.push(PoolCase({poolId: 3, poolAddr: AAVE_V3_HORIZON, asset: USDC}));
         validPools.push(PoolCase({poolId: 10, poolAddr: SPARK, asset: USDC}));
-        validPools.push(PoolCase({poolId: 82, poolAddr: KINZA, asset: USDC}));
     }
 
     function mockERC20FunctionsForAllTokens() internal {

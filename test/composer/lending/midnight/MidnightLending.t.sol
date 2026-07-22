@@ -138,21 +138,46 @@ contract MidnightLendingMockTest is BaseTest {
         bytes memory args = abi.encode(
             _market(),
             uint256(0),
-            uint256(5e7),
-            /*assets, not injected*/
+            uint256(0),
+            /*assets placeholder (injected from header)*/
             PLACEHOLDER,
             user
         );
-        bytes memory op = CalldataLib.encodeMidnightWithdrawCollateral(MIDNIGHT, args);
+        bytes memory op = CalldataLib.encodeMidnightWithdrawCollateral(MIDNIGHT, 5e7, args);
 
         vm.prank(user);
         composer.deltaCompose(op);
 
         assertEq(midnight.lastFn(), "withdrawCollateral");
-        assertEq(midnight.lastAssets(), 5e7, "assets relayed verbatim");
+        assertEq(midnight.lastAssets(), 5e7, "assets injected from header amount");
         assertEq(midnight.lastOnBehalf(), user, "onBehalf pinned to caller");
         assertEq(midnight.lastReceiver(), user, "receiver relayed verbatim");
         assertEq(coll.balanceOf(user), 5e7, "user received withdrawn collateral");
+    }
+
+    function test_midnight_withdrawCollateral_max_pulls_full_collateral() public {
+        coll.mint(MIDNIGHT, 2e8);
+        bytes32 id = keccak256("midnight-market-id");
+        uint256 collateralIndex = 0;
+        // position holds 1.2e8 collateral at index 0 (read on-chain via collateral(id, caller, index))
+        midnight.setCollateral(id, user, collateralIndex, 1.2e8);
+
+        bytes memory args = abi.encode(
+            _market(),
+            collateralIndex, // used to read the exact collateral
+            uint256(0), // assets placeholder
+            PLACEHOLDER, // onBehalf (pinned to caller)
+            user // receiver
+        );
+        bytes memory op = CalldataLib.encodeMidnightWithdrawCollateralMax(MIDNIGHT, id, args);
+
+        vm.prank(user);
+        composer.deltaCompose(op);
+
+        assertEq(midnight.lastFn(), "withdrawCollateral");
+        assertEq(midnight.lastAssets(), 1.2e8, "withdraws the exact on-chain collateral (max)");
+        assertEq(midnight.lastOnBehalf(), user, "onBehalf pinned to caller");
+        assertEq(coll.balanceOf(user), 1.2e8, "user received the full collateral");
     }
 
     // ─────────────────────── 3. repay (REPAY) ───────────────────────
@@ -162,7 +187,14 @@ contract MidnightLendingMockTest is BaseTest {
 
         // onBehalf is a third-party debtor: repay is benign, so the composer does NOT pin it to the caller.
         address debtor = address(0xB0B);
-        bytes memory args = abi.encode(_market(), uint256(777) /*units placeholder*/, debtor, CB_PLACEHOLDER, bytes(""));
+        bytes memory args = abi.encode(
+            _market(),
+            uint256(777),
+            /*units placeholder*/
+            debtor,
+            CB_PLACEHOLDER,
+            bytes("")
+        );
         bytes memory op = CalldataLib.encodeMidnightRepay(MIDNIGHT, address(loan), 200e6, args);
 
         vm.prank(user);
@@ -180,7 +212,14 @@ contract MidnightLendingMockTest is BaseTest {
     function test_midnight_repay_zero_amount_uses_composer_balance() public {
         _prime(loan, 321e6);
 
-        bytes memory args = abi.encode(_market(), uint256(0), user /*onBehalf*/, CB_PLACEHOLDER, bytes(""));
+        bytes memory args = abi.encode(
+            _market(),
+            uint256(0),
+            user,
+            /*onBehalf*/
+            CB_PLACEHOLDER,
+            bytes("")
+        );
         bytes memory op = CalldataLib.encodeMidnightRepay(MIDNIGHT, address(loan), 0, args);
 
         vm.prank(user);
@@ -191,6 +230,52 @@ contract MidnightLendingMockTest is BaseTest {
         assertEq(loan.balanceOf(MIDNIGHT), 321e6);
     }
 
+    function test_midnight_repay_exact_debt_repays_onchain_debt_when_below_balance() public {
+        _prime(loan, 500e6);
+        address debtor = address(0xB0B);
+        bytes32 id = keccak256("midnight-market-id");
+
+        // borrower owes 150 units on-chain; composer will hold 200 => repay min(200,150) = 150
+        midnight.setDebt(id, debtor, 150e6);
+
+        bytes memory args = abi.encode(
+            _market(),
+            uint256(0),
+            /*units placeholder*/
+            debtor,
+            CB_PLACEHOLDER,
+            bytes("")
+        );
+        bytes memory op = CalldataLib.encodeMidnightRepayExactDebt(MIDNIGHT, address(loan), id, args);
+
+        vm.prank(user);
+        composer.deltaCompose(abi.encodePacked(_transferIn(loan, 200e6), op));
+
+        assertEq(midnight.lastFn(), "repay");
+        assertEq(midnight.lastUnits(), 150e6, "repays exact on-chain debt (debt < balance)");
+        assertEq(midnight.lastOnBehalf(), debtor, "onBehalf (the read debtor) relayed verbatim");
+        assertEq(loan.balanceOf(MIDNIGHT), 150e6, "only the exact debt was pulled");
+        assertEq(loan.balanceOf(address(composer)), 50e6, "excess stays on composer to be swept");
+    }
+
+    function test_midnight_repay_exact_debt_capped_by_composer_balance() public {
+        _prime(loan, 500e6);
+        address debtor = address(0xB0B);
+        bytes32 id = keccak256("midnight-market-id");
+
+        // borrower owes 300 units but composer holds only 200 => repay min(200,300) = 200 (no over-repay)
+        midnight.setDebt(id, debtor, 300e6);
+
+        bytes memory args = abi.encode(_market(), uint256(0), debtor, CB_PLACEHOLDER, bytes(""));
+        bytes memory op = CalldataLib.encodeMidnightRepayExactDebt(MIDNIGHT, address(loan), id, args);
+
+        vm.prank(user);
+        composer.deltaCompose(abi.encodePacked(_transferIn(loan, 200e6), op));
+
+        assertEq(midnight.lastUnits(), 200e6, "capped at composer balance when debt exceeds it");
+        assertEq(loan.balanceOf(MIDNIGHT), 200e6);
+    }
+
     // ─────────────────────── 4. withdraw credit (WITHDRAW_LENDING_TOKEN) ───────────────────────
 
     function test_midnight_withdraw_credit_pins_onBehalf_relays_receiver() public {
@@ -198,21 +283,46 @@ contract MidnightLendingMockTest is BaseTest {
 
         bytes memory args = abi.encode(
             _market(),
-            uint256(50e6),
-            /*units, not injected*/
+            uint256(0),
+            /*units placeholder (injected from header)*/
             PLACEHOLDER,
             user
         );
-        bytes memory op = CalldataLib.encodeMidnightWithdraw(MIDNIGHT, args);
+        bytes memory op = CalldataLib.encodeMidnightWithdraw(MIDNIGHT, 50e6, args);
 
         vm.prank(user);
         composer.deltaCompose(op);
 
         assertEq(midnight.lastFn(), "withdraw");
-        assertEq(midnight.lastUnits(), 50e6, "units relayed verbatim");
+        assertEq(midnight.lastUnits(), 50e6, "units injected from header amount");
         assertEq(midnight.lastOnBehalf(), user, "onBehalf pinned to caller");
         assertEq(midnight.lastReceiver(), user);
         assertEq(loan.balanceOf(user), 50e6, "user redeemed credit for loan token");
+    }
+
+    function test_midnight_withdraw_max_redeems_full_credit() public {
+        loan.mint(MIDNIGHT, 100e6);
+        bytes32 id = keccak256("midnight-market-id");
+        // accrual-aware redeemable credit = 80e6 (read on-chain via updatePositionView().newCredit).
+        // This also exercises the Market-struct reconstruction: the mock ABI-decodes the Market the
+        // composer rebuilds from `args`, so a malformed reconstruction would revert here.
+        midnight.setCredit(id, user, 80e6);
+
+        bytes memory args = abi.encode(
+            _market(),
+            uint256(0), // units placeholder
+            PLACEHOLDER, // onBehalf (pinned to caller)
+            user // receiver
+        );
+        bytes memory op = CalldataLib.encodeMidnightWithdrawMax(MIDNIGHT, id, args);
+
+        vm.prank(user);
+        composer.deltaCompose(op);
+
+        assertEq(midnight.lastFn(), "withdraw");
+        assertEq(midnight.lastUnits(), 80e6, "redeems the exact accrual-aware credit (max)");
+        assertEq(midnight.lastOnBehalf(), user, "onBehalf pinned to caller");
+        assertEq(loan.balanceOf(user), 80e6, "user received the full redeemed credit");
     }
 
     // ─────────────────────── 5. take (MIDNIGHT_TAKE) ───────────────────────

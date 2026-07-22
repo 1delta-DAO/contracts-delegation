@@ -13,8 +13,6 @@ contract AaveV2FlashLoanCallbackTest is BaseTest, DeltaErrors {
     AaveV2MockPool mockPool;
 
     address private AAVE_V2;
-    address private NEREUS;
-    address private GRANARY;
 
     address private USDC;
 
@@ -46,24 +44,6 @@ contract AaveV2FlashLoanCallbackTest is BaseTest, DeltaErrors {
         replaceLendingPoolWithMock(AAVE_V2);
 
         bytes memory params = CalldataLib.encodeFlashLoan(USDC, 1e6, AAVE_V2, uint8(3), uint8(0), sweepCall());
-
-        vm.prank(user);
-        oneDV2.deltaCompose(params);
-    }
-
-    function test_unit_lending_flashloans_aaveV2_callback_nereusPool() public {
-        replaceLendingPoolWithMock(NEREUS);
-
-        bytes memory params = CalldataLib.encodeFlashLoan(USDC, 1e6, NEREUS, uint8(3), uint8(6), sweepCall());
-
-        vm.prank(user);
-        oneDV2.deltaCompose(params);
-    }
-
-    function test_unit_lending_flashloans_aaveV2_callback_granaryPool() public {
-        replaceLendingPoolWithMock(GRANARY);
-
-        bytes memory params = CalldataLib.encodeFlashLoan(USDC, 1e6, GRANARY, uint8(3), uint8(7), sweepCall());
 
         vm.prank(user);
         oneDV2.deltaCompose(params);
@@ -116,8 +96,6 @@ contract AaveV2FlashLoanCallbackTest is BaseTest, DeltaErrors {
 
     function getAddressFromRegistry() internal {
         AAVE_V2 = chain.getLendingController(Lenders.AAVE_V2);
-        NEREUS = chain.getLendingController(Lenders.NEREUS);
-        GRANARY = chain.getLendingController(Lenders.GRANARY);
 
         // Get token addresses
         USDC = chain.getTokenAddress(Tokens.USDC);
@@ -125,8 +103,6 @@ contract AaveV2FlashLoanCallbackTest is BaseTest, DeltaErrors {
 
     function populateValidPools() internal {
         validPools.push(PoolCase({poolId: 0, poolAddr: AAVE_V2, asset: USDC}));
-        validPools.push(PoolCase({poolId: 6, poolAddr: NEREUS, asset: USDC}));
-        validPools.push(PoolCase({poolId: 7, poolAddr: GRANARY, asset: USDC}));
     }
 
     function mockERC20FunctionsForAllTokens() internal {

@@ -28,7 +28,6 @@ contract FlashLoanLightTest is BaseTest {
 
     address internal MORPHO = 0xBBBBBbbBBb9cC5e90e3b3Af64bdAF62C37EEFFCb;
     address internal AAVE_V3_POOL;
-    address internal GRANARY_POOL;
     address internal constant UNI_V4_PM = 0x498581fF718922c3f8e6A244956aF099B2652b2b;
 
     // balancer dex data
@@ -46,7 +45,6 @@ contract FlashLoanLightTest is BaseTest {
         AAVE_V3_POOL = chain.getLendingController(Lenders.AAVE_V3);
         WETH = chain.getTokenAddress(Tokens.WETH);
         USDC = chain.getTokenAddress(Tokens.USDC);
-        GRANARY_POOL = chain.getLendingController(Lenders.GRANARY);
     }
 
     uint256 internal constant UPPER_BIT = 1 << 255;
@@ -107,32 +105,9 @@ contract FlashLoanLightTest is BaseTest {
         oneD.executeOperation(asset, 0, 9, user, d);
     }
 
-    function test_unit_lending_flashloans_aaveV2_basic() external {
-        address asset = WETH;
-        uint256 sweepAm = 30.0e18;
-        vm.deal(address(oneD), sweepAm);
-        uint256 amount = 1.0e18;
-        deal(asset, address(oneD), 0.0009e18); // fee
-        bytes memory dp = CalldataLib.encodeSweep(
-            address(0),
-            user,
-            sweepAm, //
-            SweepType.AMOUNT
-        );
-        bytes memory d = CalldataLib.encodeFlashLoan(
-            asset,
-            amount,
-            GRANARY_POOL,
-            uint8(3), // aave v2
-            uint8(7), //is Granary in the auto-gen setup
-            dp
-        );
-        vm.prank(user);
-        oneD.deltaCompose(d);
-
-        vm.expectRevert();
-        oneD.executeOperation(asset, 0, 9, user, d);
-    }
+    // Note: no Aave V2 flash-loan test on Base — Base has no trusted Aave V2 flash source after
+    // Granary and PrimeFi were blacklisted. Aave V2 flash-loan coverage lives in the per-chain
+    // generated callback mocks (Avalanche AAVE_V2, PulseChain PHIAT).
 
     function test_unit_lending_flashloans_balancerV3_basic() external {
         address assetFlash = USDC;

@@ -6,7 +6,7 @@ import {MorphoFlashLoanCallback} from "./callbacks/MorphoCallback.sol";
 
 /**
  * @title Flash loan callbacks - these are chain-specific
- * @author 1delta Labs AG
+ * @author 1delta
  */
 contract FlashLoanCallbacks is MorphoFlashLoanCallback {
     /**

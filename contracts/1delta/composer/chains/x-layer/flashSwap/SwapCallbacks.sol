@@ -6,7 +6,7 @@ import {UniV4Callbacks} from "./callbacks/UniV4Callback.sol";
 
 /**
  * @title Swap Callback executor
- * @author 1delta Labs AG
+ * @author 1delta
  */
 contract SwapCallbacks is UniV4Callbacks {
     /**

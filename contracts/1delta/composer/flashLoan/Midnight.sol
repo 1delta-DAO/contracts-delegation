@@ -8,7 +8,7 @@ import {Masks} from "../../shared/masks/Masks.sol";
 
 /**
  * @title Morpho Midnight flash loans
- * @author 1delta Labs AG
+ * @author 1delta
  * @notice Midnight exposes a multi-token flash loan: `flashLoan(address[] tokens, uint256[] assets, address callback, bytes data)`.
  *         Midnight transfers each `assets[i]` of `tokens[i]` to `callback` (this composer), invokes
  *         `callback.onFlashLoan(msg.sender, tokens, assets, data)`, and then pulls each amount back via

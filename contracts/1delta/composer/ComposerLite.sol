@@ -14,7 +14,7 @@ import {DeadLogger} from "../shared/logs/DeadLogger.sol";
 /**
  * @title Slim composer version without swaps, callbacks and flash loans
  *        Ideal for basic lending aggregation.
- * @author 1delta Labs AG
+ * @author 1delta
  */
 contract ComposerLite is
     ReentrancyGuard,

@@ -13,9 +13,7 @@ contract AaveV3FlashLoanCallbackTest is BaseTest, DeltaErrors {
     IComposerLike oneDV2;
     AaveMockPool mockPool;
 
-    address private HYPERYIELD;
     address private HYPERLEND;
-    address private HYPURRFI;
 
     address private USDC;
 
@@ -43,31 +41,11 @@ contract AaveV3FlashLoanCallbackTest is BaseTest, DeltaErrors {
         mockPool = new AaveMockPool();
     }
 
-    function test_unit_lending_flashloans_aaveV3_callback_hyperyieldPool() public {
-        // mock implementation
-        replaceLendingPoolWithMock(HYPERYIELD);
-
-        bytes memory params = CalldataLib.encodeFlashLoan(USDC, 1e6, HYPERYIELD, uint8(2), uint8(63), sweepCall());
-
-        vm.prank(user);
-        oneDV2.deltaCompose(params);
-    }
-
     function test_unit_lending_flashloans_aaveV3_callback_hyperlendPool() public {
         // mock implementation
         replaceLendingPoolWithMock(HYPERLEND);
 
         bytes memory params = CalldataLib.encodeFlashLoan(USDC, 1e6, HYPERLEND, uint8(2), uint8(81), sweepCall());
-
-        vm.prank(user);
-        oneDV2.deltaCompose(params);
-    }
-
-    function test_unit_lending_flashloans_aaveV3_callback_hypurrfiPool() public {
-        // mock implementation
-        replaceLendingPoolWithMock(HYPURRFI);
-
-        bytes memory params = CalldataLib.encodeFlashLoan(USDC, 1e6, HYPURRFI, uint8(2), uint8(83), sweepCall());
 
         vm.prank(user);
         oneDV2.deltaCompose(params);
@@ -97,12 +75,12 @@ contract AaveV3FlashLoanCallbackTest is BaseTest, DeltaErrors {
     }
 
     function test_unit_lending_flashloans_aaveV3_callback_fuzzInvalidPoolIds(uint8 poolId) public {
-        replaceLendingPoolWithMock(HYPERYIELD);
+        replaceLendingPoolWithMock(HYPERLEND);
 
         for (uint256 i = 0; i < validPools.length; i++) {
             if (poolId == validPools[i].poolId) return;
         }
-        bytes memory params = CalldataLib.encodeFlashLoan(USDC, 1e6, HYPERYIELD, uint8(2), uint8(poolId), sweepCall());
+        bytes memory params = CalldataLib.encodeFlashLoan(USDC, 1e6, HYPERLEND, uint8(2), uint8(poolId), sweepCall());
         vm.prank(user);
         vm.expectRevert(DeltaErrors.INVALID_FLASH_LOAN);
         oneDV2.deltaCompose(params);
@@ -114,18 +92,14 @@ contract AaveV3FlashLoanCallbackTest is BaseTest, DeltaErrors {
     }
 
     function getAddressFromRegistry() internal {
-        HYPERYIELD = chain.getLendingController(Lenders.HYPERYIELD);
         HYPERLEND = chain.getLendingController(Lenders.HYPERLEND);
-        HYPURRFI = chain.getLendingController(Lenders.HYPURRFI);
 
         // Get token addresses
         USDC = chain.getTokenAddress(Tokens.USDC);
     }
 
     function populateValidPools() internal {
-        validPools.push(PoolCase({poolId: 63, poolAddr: HYPERYIELD, asset: USDC}));
         validPools.push(PoolCase({poolId: 81, poolAddr: HYPERLEND, asset: USDC}));
-        validPools.push(PoolCase({poolId: 83, poolAddr: HYPURRFI, asset: USDC}));
     }
 
     function mockERC20FunctionsForAllTokens() internal {

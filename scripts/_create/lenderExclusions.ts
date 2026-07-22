@@ -92,15 +92,51 @@ export const FLASH_LOAN_LENDER_EXCLUSIONS = {
 
         // Sonic — remove.
         "MAGSIN",
+
+        // ────────────────────────────────────────────────────────────────────────
+        // Governance-policy removals (fork trust audit, 2026-07).
+        // Policy: trust only the original Aave DAO deployments or forks with strong
+        // governance. The only exception deliberately KEPT despite failing the bar is
+        // PHIAT (main lender on PulseChain, kept on Pulse; still excluded on Ethereum
+        // below). MOOLA, and COLEND/FATHOM (frozen flash loans), were removed (below).
+        // ────────────────────────────────────────────────────────────────────────
+        // Confirmed single-EOA / cosmetic-timelock control — an EOA can upgrade the
+        // pool impl and drain composer approvers via the flash-loan callback:
+        "SAKE", // Soneium — single EOA behind a 10-min timelock (verified on-chain)
+        "SAKE_ASTAR", // Soneium — same EOA-controlled stack as SAKE
+        "VALAS", // BNB — anon team, self-described "no governance", moribund
+        "KLAYBANK", // Kaia — anon, opaque admin
+        "NEREUS", // Avalanche — exploited (2022), opaque admin, defunct
+        "LORE", // Scroll — anon, winding down, ~$4k TVL
+        // New / obscure forks, unverified governance, no reputable audit:
+        "HYPERYIELD", // HyperEVM — ZeroLend-derived, no public audit
+        "HYPURRFI", // HyperEVM — semi-anon, sunsetting (Euler takeover)
+        "NEVERLAND", // Monad — early; only custom modules audited (1 Critical + 3 High)
+        "YEI_SOLV", // Sei — 2nd market is multisig-only, no timelock (YEI main market kept)
+        // Previously-exploited forks:
+        "AGAVE", // Gnosis — 1hive multisig; ~$5.5M reentrancy exploit (2022), near-defunct
+        "MOOLA", // Celo — 4/10 multisig, no timelock; ~$8.4M oracle exploit (2022), ~$0.9M TVL near-dormant; Celo keeps Aave V3
+        // Multisig+timelock (Byte Masons / Conclave) — below the strong-governance bar
+        // but NOT single-EOA; removed per policy, easily re-added if desired:
+        "IRONCLAD", // Mode — Feb-2025 Ionic bad-debt spillover
+        "GRANARY", // multi-chain — <4-signer multisig + ~48h timelock, no DAO
+        // Removed on every chain: EOA-governed on HyperEVM/XDC, and on Base the same
+        // assets are already covered (better) by other lenders — so drop it there too
+        // to shrink the trusted flash-loan set. Leaves Base with no Aave V2 flash source.
+        "PRIME_FI",
+        // Flash loans frozen / disabled at the protocol — dropped from the trusted
+        // flash-loan set before the composers are made immutable (2026-07).
+        "COLEND", // Core — flash loans frozen
+        "COLEND_LSTBTC", // Core — flash loans frozen
+        "FATHOM", // XDC — flash loans frozen/disabled
     ] as string[],
     BY_CHAIN: {
         // Ethereum mainnet — drop niche Aave V2/V3 forks that are rarely flash-loaned from the composer.
         // (ZeroLend, Avalon and Radiant are now covered by ALWAYS.)
         "1": [
             // Aave V2 fork — restricted; only the canonical Aave V2 flash-loan source is kept on mainnet.
+            // (PHIAT is kept on PulseChain — its main deployment — but not on Ethereum.)
             "PHIAT",
-            // Aave V2 forks — primarily deployed on other chains (Avalanche / Optimism / Arbitrum).
-            "GRANARY",
             // Kinza is EOA-governed on mainnet (timelocked only on BNB, which is kept).
             "KINZA",
         ],
@@ -108,14 +144,7 @@ export const FLASH_LOAN_LENDER_EXCLUSIONS = {
         "5000": [
             "KINZA",
         ],
-        // HyperEVM — Prime Fi is EOA-governed here (kept on Base where it is contract-governed).
-        "999": [
-            "PRIME_FI",
-        ],
-        // XDC — Prime Fi is EOA-governed here (kept on Base where it is contract-governed).
-        "50": [
-            "PRIME_FI",
-        ],
+        // (PRIME_FI is now removed on every chain via ALWAYS — see above.)
         // Abstract (2741) — Aave V3 fork restricted; keep only the canonical Aave V3 flash-loan source.
         "2741": [
             "KONA_LEND",

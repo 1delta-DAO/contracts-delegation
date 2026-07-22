@@ -8,7 +8,7 @@ import {UniversalFlashLoan} from "./flashLoan/UniversalFlashLoan.sol";
 
 /**
  * @title Chain-dependent Universal aggregator contract.
- * @author 1delta Labs AG
+ * @author 1delta
  */
 contract OneDeltaComposerGoat is BaseComposer, UniversalFlashLoan {
     /**

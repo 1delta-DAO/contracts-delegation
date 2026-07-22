@@ -14,8 +14,6 @@ contract AaveV3FlashLoanCallbackTest is BaseTest, DeltaErrors {
     AaveMockPool mockPool;
 
     address private AAVE_V3;
-    address private AVALON;
-    address private AVALON_PUMPBTC;
 
     address private USDC;
 
@@ -48,26 +46,6 @@ contract AaveV3FlashLoanCallbackTest is BaseTest, DeltaErrors {
         replaceLendingPoolWithMock(AAVE_V3);
 
         bytes memory params = CalldataLib.encodeFlashLoan(USDC, 1e6, AAVE_V3, uint8(2), uint8(0), sweepCall());
-
-        vm.prank(user);
-        oneDV2.deltaCompose(params);
-    }
-
-    function test_unit_lending_flashloans_aaveV3_callback_avalonPool() public {
-        // mock implementation
-        replaceLendingPoolWithMock(AVALON);
-
-        bytes memory params = CalldataLib.encodeFlashLoan(USDC, 1e6, AVALON, uint8(2), uint8(50), sweepCall());
-
-        vm.prank(user);
-        oneDV2.deltaCompose(params);
-    }
-
-    function test_unit_lending_flashloans_aaveV3_callback_avalon_pumpbtcPool() public {
-        // mock implementation
-        replaceLendingPoolWithMock(AVALON_PUMPBTC);
-
-        bytes memory params = CalldataLib.encodeFlashLoan(USDC, 1e6, AVALON_PUMPBTC, uint8(2), uint8(53), sweepCall());
 
         vm.prank(user);
         oneDV2.deltaCompose(params);
@@ -115,8 +93,6 @@ contract AaveV3FlashLoanCallbackTest is BaseTest, DeltaErrors {
 
     function getAddressFromRegistry() internal {
         AAVE_V3 = chain.getLendingController(Lenders.AAVE_V3);
-        AVALON = chain.getLendingController(Lenders.AVALON);
-        AVALON_PUMPBTC = chain.getLendingController(Lenders.AVALON_PUMPBTC);
 
         // Get token addresses
         USDC = chain.getTokenAddress(Tokens.USDC);
@@ -124,8 +100,6 @@ contract AaveV3FlashLoanCallbackTest is BaseTest, DeltaErrors {
 
     function populateValidPools() internal {
         validPools.push(PoolCase({poolId: 0, poolAddr: AAVE_V3, asset: USDC}));
-        validPools.push(PoolCase({poolId: 50, poolAddr: AVALON, asset: USDC}));
-        validPools.push(PoolCase({poolId: 53, poolAddr: AVALON_PUMPBTC, asset: USDC}));
     }
 
     function mockERC20FunctionsForAllTokens() internal {

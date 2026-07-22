@@ -6,7 +6,7 @@ import {Masks} from "../../shared/masks/Masks.sol";
 
 /**
  * @title Aave V2 flash loan executor
- * @author 1delta Labs AG
+ * @author 1delta
  */
 contract AaveV2FlashLoans is Masks {
     /**

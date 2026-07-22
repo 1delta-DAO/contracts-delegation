@@ -24,10 +24,6 @@ contract UniV3FlashLoanCallback is Masks, DeltaErrors {
     // ff-factory + init-code-hash constants (Algebra forks carry the FF complement in the low bytes)
     bytes32 private constant UNISWAP_V3_FF_FACTORY = 0xff0d922fb1bc191f64970ac40376643808b4b74df90000000000000000000000;
     bytes32 private constant UNISWAP_V3_CODE_HASH = 0xe34f199b19b2b4f47f68442619d555527d244f78a3297ea89325f843f87b8b54;
-    bytes32 private constant METHLAB_FF_FACTORY = 0xff8f140fc3e9211b8dc2fc1d7ee3292f6817c5dd5d0000000000000000000000;
-    bytes32 private constant METHLAB_CODE_HASH = 0xacd26fbb15704ae5e5fe7342ea8ebace020e4fa5ad4a03122ce1678278cf382b;
-    bytes32 private constant CRUST_FF_FACTORY = 0xffead128bdf9cff441ef401ec8d18a96b4a2d252520000000000000000000000;
-    bytes32 private constant CRUST_CODE_HASH = 0x55664e1b1a13929bcf29e892daf029637225ec5c85a385091b8b31dcca255627;
     bytes32 private constant SWAPSICLE_FF_FACTORY = 0xff9de2dea5c68898eb4cb2deaff357dfb26255a4aaffffffffffffffffffffff;
     bytes32 private constant SWAPSICLE_CODE_HASH = 0x177d5fbf994f4d130c008797563306f1a168dc689f81b2fa23b4396931014d91;
 
@@ -58,14 +54,6 @@ contract UniV3FlashLoanCallback is Masks, DeltaErrors {
                 case 0 {
                     ffFactoryAddress := UNISWAP_V3_FF_FACTORY
                     codeHash := UNISWAP_V3_CODE_HASH
-                }
-                case 10 {
-                    ffFactoryAddress := METHLAB_FF_FACTORY
-                    codeHash := METHLAB_CODE_HASH
-                }
-                case 12 {
-                    ffFactoryAddress := CRUST_FF_FACTORY
-                    codeHash := CRUST_CODE_HASH
                 }
                 default {
                     mstore(0, BAD_POOL)

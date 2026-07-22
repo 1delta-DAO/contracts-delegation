@@ -46,6 +46,17 @@ abstract contract MidnightLending is ERC20Selectors, Masks {
     /// @dev repay(Market,uint256,address,address,bytes)
     bytes32 private constant MIDNIGHT_REPAY = 0x6b210f9e00000000000000000000000000000000000000000000000000000000;
 
+    /// @dev debt(bytes32,address) view getter — returns a borrower's exact outstanding units (Midnight src)
+    bytes32 private constant MIDNIGHT_DEBT = 0x93af51c200000000000000000000000000000000000000000000000000000000;
+
+    /// @dev collateral(bytes32,address,uint256) view getter — a position's exact collateral for an index
+    ///      (collateral never accrues, so the raw value is the withdrawable amount)
+    bytes32 private constant MIDNIGHT_COLLATERAL = 0xecdcc72d00000000000000000000000000000000000000000000000000000000;
+
+    /// @dev updatePositionView(Market,bytes32,address) view getter — return[0] `newCredit` is the accrual-aware
+    ///      redeemable credit units (raw credit() is stale because credit is fee/slash-adjusted at withdraw time)
+    bytes32 private constant MIDNIGHT_UPDATE_POSITION_VIEW = 0xd4de497400000000000000000000000000000000000000000000000000000000;
+
     /// @dev withdraw(Market,uint256,address,address)
     bytes32 private constant MIDNIGHT_WITHDRAW = 0xa6db175000000000000000000000000000000000000000000000000000000000;
 
@@ -109,9 +120,11 @@ abstract contract MidnightLending is ERC20Selectors, Masks {
 
     /**
      * @notice Withdraws collateral from a Morpho Midnight market (`withdrawCollateral`).
-     * @dev `onBehalf` (head word 3) is pinned to `callerAddress`. The `receiver` (head word 4) and
-     *      `assets` (head word 2) are taken as-is from the caller-encoded args (the caller may route the
-     *      collateral to the composer to continue the batch, or to themselves).
+     * @dev `onBehalf` (head word 3) is pinned to `callerAddress`. `assets` (head word 2) is injected from
+     *      the header amount: an explicit value is used as-is; the max-uint112 sentinel resolves to the
+     *      position's FULL collateral for `collateralIndex`, read on-chain via `collateral(id, callerAddress,
+     *      collateralIndex)` (exact — collateral never accrues). In max mode a 32-byte market `id`
+     *      (IdLib.toId(market)) is inserted at offset 36. `receiver` (head word 4) is relayed as-is.
      * @param currentOffset Current position in the calldata
      * @param callerAddress Address of the caller
      * @return Updated calldata offset after processing
@@ -119,20 +132,45 @@ abstract contract MidnightLending is ERC20Selectors, Masks {
      * | Offset | Length (bytes) | Description                                                       |
      * |--------|----------------|-------------------------------------------------------------------|
      * | 0      | 20             | midnight (target)                                                 |
-     * | 20     | 2              | argsLength                                                        |
-     * | 22     | argsLength     | ABI-encoded args (Market, collateralIndex, assets, onBehalf, receiver) |
+     * | 20     | 16             | assets (0xff..ff uint112 => full collateral of collateralIndex)   |
+     * | 36     | 32             | market id (ONLY present in max mode)                              |
+     * | 36/68  | 2              | argsLength (offset 68 in max mode, else 36)                       |
+     * | +2     | argsLength     | ABI-encoded args (Market, collateralIndex, assets, onBehalf, receiver) |
      */
     function _midnightWithdrawCollateral(uint256 currentOffset, address callerAddress) internal returns (uint256) {
         assembly {
             let target := shr(96, calldataload(currentOffset))
-            let argsLength := and(UINT16_MASK, shr(240, calldataload(add(currentOffset, 20))))
-            let argsOffset := add(currentOffset, 22)
+            let amount := shr(128, calldataload(add(currentOffset, 20)))
+
+            // args header is at offset 36; in max mode a 32-byte market `id` is inserted first (→ 68)
+            let headerOffset := add(currentOffset, 36)
+            let id
+            if eq(amount, 0xffffffffffffffffffffffffffff) {
+                id := calldataload(add(currentOffset, 36))
+                headerOffset := add(currentOffset, 68)
+            }
+            let argsLength := and(UINT16_MASK, shr(240, calldataload(headerOffset)))
+            let argsOffset := add(headerOffset, 2)
+
+            // max sentinel => resolve to the position's full collateral for `collateralIndex` (args word 1)
+            if eq(amount, 0xffffffffffffffffffffffffffff) {
+                let p := mload(0x40)
+                mstore(p, MIDNIGHT_COLLATERAL)
+                mstore(add(p, 0x04), id)
+                mstore(add(p, 0x24), callerAddress) // onBehalf pinned to caller
+                mstore(add(p, 0x44), calldataload(add(argsOffset, 0x20))) // collateralIndex (word 1)
+                if iszero(staticcall(gas(), target, p, 0x64, p, 0x20)) {
+                    returndatacopy(0, 0, returndatasize())
+                    revert(0, returndatasize())
+                }
+                amount := mload(p)
+            }
 
             let ptr := mload(0x40)
             mstore(ptr, MIDNIGHT_WITHDRAW_COLLATERAL)
             calldatacopy(add(ptr, 4), argsOffset, argsLength)
-            // pin onBehalf (word 3)
-            mstore(add(ptr, 100), callerAddress)
+            mstore(add(ptr, 68), amount) // inject assets (word 2)
+            mstore(add(ptr, 100), callerAddress) // pin onBehalf (word 3)
 
             if iszero(call(gas(), target, 0x0, ptr, add(4, argsLength), 0x0, 0x0)) {
                 returndatacopy(0, 0, returndatasize())
@@ -150,31 +188,45 @@ abstract contract MidnightLending is ERC20Selectors, Masks {
      *      Unlike the outflow ops, repay is a pure inflow (the composer pays and someone's debt shrinks), so
      *      repaying on behalf of any address is benign - matching the Blue/Aave repay convention. `callback`
      *      (head word 3) is forced to zero, so Midnight pulls the loan token from `msg.sender` (the composer)
-     *      and never invokes a caller-supplied repay callback. `units` (head word 1) is injected: a zero
-     *      amount resolves to the contract balance of `loanToken` (1 unit == 1 loan token at repayment). The
-     *      caller must ensure the resolved amount does not exceed the position debt (Midnight reverts on
-     *      over-repay).
+     *      and never invokes a caller-supplied repay callback. `units` (head word 1) is injected. Three modes:
+     *      - explicit non-zero amount => repay exactly that (caller must avoid over-repay, Midnight reverts);
+     *      - zero => repay the contract balance of `loanToken` (1 unit == 1 loan token at repayment);
+     *      - max-uint112 sentinel => "exact debt": read `debt(id, onBehalf)` on-chain and repay
+     *        min(contract balance, debt units) — never over-repays, never leaves dust. In this mode a
+     *        32-byte market `id` (IdLib.toId(market)) is inserted at offset 56 (mirroring Aave's max-repay,
+     *        which passes the debt token). `id` is absent in the other two modes.
      * @param currentOffset Current position in the calldata
      * @return Updated calldata offset after processing
      * @custom:calldata-offset-table
      * | Offset | Length (bytes) | Description                                              |
      * |--------|----------------|----------------------------------------------------------|
      * | 0      | 20             | midnight (target)                                        |
-     * | 20     | 20             | loanToken (for zero-amount balance resolution)           |
-     * | 40     | 16             | units (0 => contract balance of loanToken)               |
-     * | 56     | 2              | argsLength                                               |
-     * | 58     | argsLength     | ABI-encoded args (Market, units, onBehalf, callback, data) |
+     * | 20     | 20             | loanToken (for zero-amount / exact-debt balance read)    |
+     * | 40     | 16             | units (0 => balance; 0xff..ff uint112 => exact debt)     |
+     * | 56     | 32             | market id (ONLY present in exact-debt mode)              |
+     * | 56/88  | 2              | argsLength (offset 88 in exact-debt mode, else 56)       |
+     * | +2     | argsLength     | ABI-encoded args (Market, units, onBehalf, callback, data) |
      */
     function _midnightRepay(uint256 currentOffset) internal returns (uint256) {
         assembly {
             let target := shr(96, calldataload(currentOffset))
             let token := shr(96, calldataload(add(currentOffset, 20)))
             let amount := shr(128, calldataload(add(currentOffset, 40)))
-            let argsLength := and(UINT16_MASK, shr(240, calldataload(add(currentOffset, 56))))
-            let argsOffset := add(currentOffset, 58)
 
+            // The args header normally starts at offset 56. In exact-debt mode a 32-byte market `id`
+            // is inserted at offset 56, shifting the header (length + ABI blob) to offset 88.
+            let headerOffset := add(currentOffset, 56)
+            let id
+            if eq(amount, 0xffffffffffffffffffffffffffff) {
+                id := calldataload(add(currentOffset, 56))
+                headerOffset := add(currentOffset, 88)
+            }
+            let argsLength := and(UINT16_MASK, shr(240, calldataload(headerOffset)))
+            let argsOffset := add(headerOffset, 2)
+
+            switch amount
             // zero amount => repay the full contract balance of the loan token
-            if iszero(amount) {
+            case 0 {
                 mstore(0, ERC20_BALANCE_OF)
                 mstore(0x04, address())
                 if iszero(staticcall(gas(), token, 0x0, 0x24, 0x0, 0x20)) {
@@ -182,6 +234,31 @@ abstract contract MidnightLending is ERC20Selectors, Masks {
                     revert(0, returndatasize())
                 }
                 amount := mload(0x0)
+            }
+            // max-uint112 sentinel => exact debt: repay min(contract balance, on-chain debt units)
+            case 0xffffffffffffffffffffffffffff {
+                // contract balance of the loan token
+                mstore(0, ERC20_BALANCE_OF)
+                mstore(0x04, address())
+                if iszero(staticcall(gas(), token, 0x0, 0x24, 0x0, 0x20)) {
+                    returndatacopy(0, 0, returndatasize())
+                    revert(0, returndatasize())
+                }
+                amount := mload(0x0)
+                // onBehalf is head word 2 of the ABI args (Market, units, onBehalf, callback, data)
+                let onBehalf := and(ADDRESS_MASK, calldataload(add(argsOffset, 0x40)))
+                // debt(id, onBehalf) on the Midnight contract => exact current units owed (uint128, no accrual)
+                let p := mload(0x40)
+                mstore(p, MIDNIGHT_DEBT)
+                mstore(add(p, 0x04), id)
+                mstore(add(p, 0x24), onBehalf)
+                if iszero(staticcall(gas(), target, p, 0x44, p, 0x20)) {
+                    returndatacopy(0, 0, returndatasize())
+                    revert(0, returndatasize())
+                }
+                // repay the smaller of what we hold and what is owed (never over-repay => no revert)
+                let debtUnits := mload(p)
+                if lt(debtUnits, amount) { amount := debtUnits }
             }
 
             let ptr := mload(0x40)
@@ -204,29 +281,62 @@ abstract contract MidnightLending is ERC20Selectors, Masks {
 
     /**
      * @notice Redeems credit units for the loan token from a Morpho Midnight market (`withdraw`).
-     * @dev `onBehalf` (head word 2) is pinned to `callerAddress`. `units` (head word 1) and `receiver`
-     *      (head word 3) are taken as-is from the caller-encoded args.
+     * @dev `onBehalf` (head word 2) is pinned to `callerAddress`. `units` (head word 1) is injected from
+     *      the header amount: an explicit value is used as-is; the max-uint112 sentinel resolves to the
+     *      position's FULL redeemable credit via `updatePositionView(market, id, callerAddress)` (return[0]
+     *      `newCredit` — accrual-aware; the raw credit() getter is stale because credit is fee/slash-adjusted
+     *      at withdraw time). The Market for that view is reused from `args` (its first field); the `id`
+     *      (IdLib.toId(market)) is inserted at offset 36 in max mode. `receiver` (head word 3) is relayed.
      * @param currentOffset Current position in the calldata
      * @param callerAddress Address of the caller
      * @return Updated calldata offset after processing
      * @custom:calldata-offset-table
-     * | Offset | Length (bytes) | Description                                       |
-     * |--------|----------------|---------------------------------------------------|
-     * | 0      | 20             | midnight (target)                                 |
-     * | 20     | 2              | argsLength                                        |
-     * | 22     | argsLength     | ABI-encoded args (Market, units, onBehalf, receiver) |
+     * | Offset | Length (bytes) | Description                                          |
+     * |--------|----------------|------------------------------------------------------|
+     * | 0      | 20             | midnight (target)                                    |
+     * | 20     | 16             | units (0xff..ff uint112 => full redeemable credit)   |
+     * | 36     | 32             | market id (ONLY present in max mode)                 |
+     * | 36/68  | 2              | argsLength (offset 68 in max mode, else 36)          |
+     * | +2     | argsLength     | ABI-encoded args (Market, units, onBehalf, receiver) |
      */
     function _midnightWithdraw(uint256 currentOffset, address callerAddress) internal returns (uint256) {
         assembly {
             let target := shr(96, calldataload(currentOffset))
-            let argsLength := and(UINT16_MASK, shr(240, calldataload(add(currentOffset, 20))))
-            let argsOffset := add(currentOffset, 22)
+            let amount := shr(128, calldataload(add(currentOffset, 20)))
+
+            let headerOffset := add(currentOffset, 36)
+            let id
+            if eq(amount, 0xffffffffffffffffffffffffffff) {
+                id := calldataload(add(currentOffset, 36))
+                headerOffset := add(currentOffset, 68)
+            }
+            let argsLength := and(UINT16_MASK, shr(240, calldataload(headerOffset)))
+            let argsOffset := add(headerOffset, 2)
+
+            // max sentinel => full redeemable credit via the accrual-aware updatePositionView(Market,id,user).
+            // `args` = abi.encode(Market, units, onBehalf, receiver) → 4 head words → Market tail at +0x80.
+            // Rebuild the getter call: selector | market-offset(0x60) | id | user | <Market tail copied verbatim>.
+            if eq(amount, 0xffffffffffffffffffffffffffff) {
+                let p := mload(0x40)
+                mstore(p, MIDNIGHT_UPDATE_POSITION_VIEW)
+                mstore(add(p, 0x04), 0x60) // offset to Market (3 head words: market, id, user)
+                mstore(add(p, 0x24), id)
+                mstore(add(p, 0x44), callerAddress) // user = onBehalf, pinned to caller
+                let marketTailLen := sub(argsLength, 0x80)
+                calldatacopy(add(p, 0x64), add(argsOffset, 0x80), marketTailLen)
+                // returns (uint128 newCredit, uint128, uint128); read the first word
+                if iszero(staticcall(gas(), target, p, add(0x64, marketTailLen), p, 0x20)) {
+                    returndatacopy(0, 0, returndatasize())
+                    revert(0, returndatasize())
+                }
+                amount := mload(p)
+            }
 
             let ptr := mload(0x40)
             mstore(ptr, MIDNIGHT_WITHDRAW)
             calldatacopy(add(ptr, 4), argsOffset, argsLength)
-            // pin onBehalf (word 2)
-            mstore(add(ptr, 68), callerAddress)
+            mstore(add(ptr, 36), amount) // inject units (word 1)
+            mstore(add(ptr, 68), callerAddress) // pin onBehalf (word 2)
 
             if iszero(call(gas(), target, 0x0, ptr, add(4, argsLength), 0x0, 0x0)) {
                 returndatacopy(0, 0, returndatasize())
@@ -244,9 +354,12 @@ abstract contract MidnightLending is ERC20Selectors, Masks {
      *      (borrows, incurring debt and receiving `sellerAssets` at `receiverIfTakerIsSeller`); when false
      *      the taker is the buyer (lends, paying `buyerAssets` from the composer and gaining credit units).
      *      `taker` (head word 3) is pinned to `callerAddress`, and `takerCallback` (head word 5) is forced to
-     *      zero (atomicity is provided by the surrounding flash loan, not a taker-side callback). `units`
-     *      (head word 2) and `receiverIfTakerIsSeller` (head word 4) are taken as-is from the caller-encoded
-     *      args. For the lending side the composer must have approved Midnight for the loan token.
+     *      zero. Note this does NOT make `take` callback-free: the maker-signed `Offer` still carries
+     *      `offer.callback` (non-view onBuy/onSell) and `offer.ratifier`, which the composer cannot zero
+     *      without breaking the signature. That external-call surface is assessed as low/bounded — see the
+     *      "Audit note — take" section in MIDNIGHT.md. `units` (head word 2) and `receiverIfTakerIsSeller`
+     *      (head word 4) are taken as-is from the caller-encoded args. For the lending side the composer must
+     *      have approved Midnight for the loan token.
      * @param currentOffset Current position in the calldata
      * @param callerAddress Address of the caller
      * @return Updated calldata offset after processing

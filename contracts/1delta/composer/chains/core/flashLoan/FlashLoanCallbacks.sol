@@ -2,17 +2,13 @@
 
 pragma solidity 0.8.34;
 
-import {AaveV3FlashLoanCallback} from "./callbacks/AaveV3Callback.sol";
 import {UniV3FlashLoanCallback} from "./callbacks/UniV3Callback.sol";
 
 /**
  * @title Flash loan callbacks - these are chain-specific
- * @author 1delta Labs AG
+ * @author 1delta
  */
-contract FlashLoanCallbacks is
-    AaveV3FlashLoanCallback,
-    UniV3FlashLoanCallback //
-{
+contract FlashLoanCallbacks is UniV3FlashLoanCallback {
     /**
      * @notice Internal function to execute compose operations
      * @dev Override point for flash loan callbacks to execute compose operations
@@ -27,10 +23,7 @@ contract FlashLoanCallbacks is
     )
         internal
         virtual
-        override(
-            AaveV3FlashLoanCallback,
-            UniV3FlashLoanCallback //
-        )
+        override(UniV3FlashLoanCallback)
     {}
 }
 

@@ -28,8 +28,6 @@ contract UniV3FlashLoanCallback is Masks, DeltaErrors {
     bytes32 private constant DTX_CODE_HASH = 0xe34f199b19b2b4f47f68442619d555527d244f78a3297ea89325f843f87b8b54;
     bytes32 private constant TAIKOSWAP_V3_FF_FACTORY = 0xff826d713e30f0bf09dd3219494a508e6b30327d4f0000000000000000000000;
     bytes32 private constant TAIKOSWAP_V3_CODE_HASH = 0xe34f199b19b2b4f47f68442619d555527d244f78a3297ea89325f843f87b8b54;
-    bytes32 private constant UNAGI_V3_FF_FACTORY = 0xff78172691dd3b8ada7aebd9bffb487fb11d735db20000000000000000000000;
-    bytes32 private constant UNAGI_V3_CODE_HASH = 0x5ccd5621c1bb9e44ce98cef8b90d31eb2423dec3793b6239232cefae976936ea;
     bytes32 private constant PANKO_FF_FACTORY = 0xff7dd105453d0aef177743f5461d7472cc779e63f70000000000000000000000;
     bytes32 private constant PANKO_CODE_HASH = 0x6ce8eb472fa82df5469c6ab6d485f17c3ad13c8cd7af59b3d4a8026c5ce0f7e2;
     bytes32 private constant SWAPSICLE_FF_FACTORY = 0xffb68b27a1c93a52d698eeca5a759e2e4469432c09ffffffffffffffffffffff;
@@ -76,10 +74,6 @@ contract UniV3FlashLoanCallback is Masks, DeltaErrors {
                 case 11 {
                     ffFactoryAddress := TAIKOSWAP_V3_FF_FACTORY
                     codeHash := TAIKOSWAP_V3_CODE_HASH
-                }
-                case 20 {
-                    ffFactoryAddress := UNAGI_V3_FF_FACTORY
-                    codeHash := UNAGI_V3_CODE_HASH
                 }
                 default {
                     mstore(0, BAD_POOL)

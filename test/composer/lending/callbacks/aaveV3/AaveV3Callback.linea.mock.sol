@@ -14,9 +14,6 @@ contract AaveV3FlashLoanCallbackTest is BaseTest, DeltaErrors {
     AaveMockPool mockPool;
 
     address private AAVE_V3;
-    address private ZEROLEND;
-    address private ZEROLEND_CROAK;
-    address private ZEROLEND_FOXY;
 
     address private USDC;
 
@@ -49,36 +46,6 @@ contract AaveV3FlashLoanCallbackTest is BaseTest, DeltaErrors {
         replaceLendingPoolWithMock(AAVE_V3);
 
         bytes memory params = CalldataLib.encodeFlashLoan(USDC, 1e6, AAVE_V3, uint8(2), uint8(0), sweepCall());
-
-        vm.prank(user);
-        oneDV2.deltaCompose(params);
-    }
-
-    function test_unit_lending_flashloans_aaveV3_callback_zerolendPool() public {
-        // mock implementation
-        replaceLendingPoolWithMock(ZEROLEND);
-
-        bytes memory params = CalldataLib.encodeFlashLoan(USDC, 1e6, ZEROLEND, uint8(2), uint8(20), sweepCall());
-
-        vm.prank(user);
-        oneDV2.deltaCompose(params);
-    }
-
-    function test_unit_lending_flashloans_aaveV3_callback_zerolend_croakPool() public {
-        // mock implementation
-        replaceLendingPoolWithMock(ZEROLEND_CROAK);
-
-        bytes memory params = CalldataLib.encodeFlashLoan(USDC, 1e6, ZEROLEND_CROAK, uint8(2), uint8(24), sweepCall());
-
-        vm.prank(user);
-        oneDV2.deltaCompose(params);
-    }
-
-    function test_unit_lending_flashloans_aaveV3_callback_zerolend_foxyPool() public {
-        // mock implementation
-        replaceLendingPoolWithMock(ZEROLEND_FOXY);
-
-        bytes memory params = CalldataLib.encodeFlashLoan(USDC, 1e6, ZEROLEND_FOXY, uint8(2), uint8(25), sweepCall());
 
         vm.prank(user);
         oneDV2.deltaCompose(params);
@@ -126,9 +93,6 @@ contract AaveV3FlashLoanCallbackTest is BaseTest, DeltaErrors {
 
     function getAddressFromRegistry() internal {
         AAVE_V3 = chain.getLendingController(Lenders.AAVE_V3);
-        ZEROLEND = chain.getLendingController(Lenders.ZEROLEND);
-        ZEROLEND_CROAK = chain.getLendingController(Lenders.ZEROLEND_CROAK);
-        ZEROLEND_FOXY = chain.getLendingController(Lenders.ZEROLEND_FOXY);
 
         // Get token addresses
         USDC = chain.getTokenAddress(Tokens.USDC);
@@ -136,9 +100,6 @@ contract AaveV3FlashLoanCallbackTest is BaseTest, DeltaErrors {
 
     function populateValidPools() internal {
         validPools.push(PoolCase({poolId: 0, poolAddr: AAVE_V3, asset: USDC}));
-        validPools.push(PoolCase({poolId: 20, poolAddr: ZEROLEND, asset: USDC}));
-        validPools.push(PoolCase({poolId: 24, poolAddr: ZEROLEND_CROAK, asset: USDC}));
-        validPools.push(PoolCase({poolId: 25, poolAddr: ZEROLEND_FOXY, asset: USDC}));
     }
 
     function mockERC20FunctionsForAllTokens() internal {
